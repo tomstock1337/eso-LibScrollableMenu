@@ -217,8 +217,8 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows)
 			if not checkbox then
 				checkbox = wm:CreateControlFromVirtual("$(parent)Checkbox", control, "ZO_CheckButton")
 				checkbox:SetAnchor(LEFT, nil, LEFT, 2, -1)
-				checkbox:SetHandler("OnMouseEnter", function(checkbox) ZO_ScrollableComboBox_Entry_OnMouseEnter(control) end)
-				checkbox:SetHandler("OnMouseExit", function(checkbox) ZO_ScrollableComboBox_Entry_OnMouseExit(control) end)
+				checkbox:SetHandler("OnMouseEnter", function(checkbox) ZO_ComboBox_Entry_OnMouseEnter(control) end)
+				checkbox:SetHandler("OnMouseExit", function(checkbox) ZO_ComboBox_Entry_OnMouseExit(control) end)
 				control.m_checkbox = checkbox
 			end
 			checkbox:SetHidden(false)
