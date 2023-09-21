@@ -1,9 +1,14 @@
 -- Register with LibStub
-local lib ={}
+if LibScrollableMenu ~= nil then return end -- the same or newer version of this lib is already loaded into memory
+
+local lib = {}
 lib.name = "LibScrollableMenu"
+local MAJOR = lib.name
+lib.version = "1.2"
+
 lib.data = {}
 
-if not lib then return end -- the same or newer version of this lib is already loaded into memory
+if not lib then return end
 
 local wm = WINDOW_MANAGER
 local em = EVENT_MANAGER
@@ -13,7 +18,7 @@ local SUBMENU_ITEM_MOUSE_EXIT = 2
 local SUBMENU_SHOW_TIMEOUT = 350
 local SUBMENU_HIDE_TIMEOUT = 350
 
-local ROOT_PREFIX = "LibScrollableMenuSub"
+local ROOT_PREFIX = MAJOR.."Sub"
 
 local submenuCallLaterHandle
 local nextId = 1
@@ -26,7 +31,7 @@ end
 
 local function SetTimeout(callback)
 	if (submenuCallLaterHandle ~= nil) then ClearTimeout() end
-	submenuCallLaterHandle = "LibScrollableMenuTimeout" .. nextId
+	submenuCallLaterHandle = MAJOR.."Timeout" .. nextId
 	nextId = nextId + 1
 
 	em:RegisterForUpdate(submenuCallLaterHandle, SUBMENU_SHOW_TIMEOUT, function()
@@ -212,8 +217,8 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows)
 			if not checkbox then
 				checkbox = wm:CreateControlFromVirtual("$(parent)Checkbox", control, "ZO_CheckButton")
 				checkbox:SetAnchor(LEFT, nil, LEFT, 2, -1)
-				checkbox:SetHandler("OnMouseEnter", function(checkbox) ZO_ScrollableComboBox_Entry_OnMouseEnter(control) end)
-				checkbox:SetHandler("OnMouseExit", function(checkbox) ZO_ScrollableComboBox_Entry_OnMouseExit(control) end)
+				checkbox:SetHandler("OnMouseEnter", function(checkbox) ZO_ComboBox_Entry_OnMouseEnter(control) end)
+				checkbox:SetHandler("OnMouseExit", function(checkbox) ZO_ComboBox_Entry_OnMouseExit(control) end)
 				control.m_checkbox = checkbox
 			end
 			checkbox:SetHidden(false)
@@ -446,7 +451,7 @@ function ScrollableSubmenu:Initialize()
 	submenuControl:SetDrawLevel(ZO_Menu:GetDrawLevel() + 1)
 	--submenuControl:SetExcludeFromResizeToFitExtents(true)
 
-	local scrollableDropdown = WINDOW_MANAGER:CreateControlFromVirtual("$(parent)Dropdown", submenuControl, "ZO_ScrollableComboBox")
+	local scrollableDropdown = WINDOW_MANAGER:CreateControlFromVirtual("$(parent)Dropdown", submenuControl, "ZO_ComboBox")
 	scrollableDropdown:SetAnchor(TOPLEFT, submenuControl, TOPLEFT, 0, 0)
 	-- hide the combobox itself
 	--scrollableDropdown:GetNamedChild("BG"):SetHidden(true)
@@ -632,8 +637,8 @@ local function HookScrollableEntry()
 			SetTimeout( OnMouseExitTimeout )
 		end
 	end
-	ZO_PreHook("ZO_ScrollableComboBox_Entry_OnMouseEnter", ScrollableEntry_OnMouseEnter)
-	ZO_PreHook("ZO_ScrollableComboBox_Entry_OnMouseExit",  ScrollableEntry_OnMouseExit)
+	ZO_PreHook("ZO_ComboBox_Entry_OnMouseEnter", ScrollableEntry_OnMouseEnter)
+	ZO_PreHook("ZO_ComboBox_Entry_OnMouseExit",  ScrollableEntry_OnMouseExit)
 
 	local function ScrollableEntry_OnSelected(control)
 		local data = ZO_ScrollList_GetData(control)
@@ -657,7 +662,7 @@ local function HookScrollableEntry()
 			return true
 		end
 	end
-	ZO_PreHook("ZO_ScrollableComboBox_Entry_OnSelected", ScrollableEntry_OnSelected)
+	ZO_PreHook("ZO_ComboBox_Entry_OnSelected", ScrollableEntry_OnSelected)
 
 	-- Now watch for mouse clicks outside of the submenu (if it's persistant)
 	local function MouseIsOverDropdownOrSubmenu(dropdown)
@@ -674,18 +679,19 @@ local function HookScrollableEntry()
 		return false
 	end
 
-	ZO_ScrollableComboBox.OnGlobalMouseUp = function(self, _, button)
+	ZO_ComboBox.OnGlobalMouseUp = function(self, _, button)
 		if self:IsDropdownVisible() then
 			if button == MOUSE_BUTTON_INDEX_LEFT and not MouseIsOverDropdownOrSubmenu(self) then
 				self:HideDropdown()
 			end
-		elseif self.m_container:IsHidden() then
-			self:HideDropdown()
 		else
-			self:ShowDropdownOnMouseUp()
+			if self.m_container:IsHidden() then
+				self:HideDropdown()
+			else
+				self:ShowDropdownOnMouseUp()
+			end
 		end
 	end
-
 end
 
 
