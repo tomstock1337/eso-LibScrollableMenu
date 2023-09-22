@@ -81,9 +81,13 @@ lib.HELPER_MODE_LAYOUT_ONLY = 1 -- means only the layout of the dropdown will be
 local ENTRY_ID = 1
 local LAST_ENTRY_ID = 2
 local DIVIDER_ENTRY_ID = 3
+local HEADER_ENTRY_ID = 4
 
 lib.DIVIDER = "-"
 local DIVIDER_ENTRY_HEIGHT = 7
+
+local HEADER_ENTRY_HEIGHT = 25
+
 
 local DEFAULT_VISIBLE_ROWS = 10
 local SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = 25 -- same as in zo_combobox.lua
@@ -230,24 +234,6 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 		elseif control.m_checkbox then
 			control.m_checkbox:SetHidden(true)
 		end
-
-		-- NOTE: Cannot do it like this due to the fixed height of this data type
-		--local divider = control.m_divider
-		--if data.name == lib.DIVIDER then
-		--	control:SetHeight(DIVIDER_ENTRY_HEIGHT)
-		--	if not divider then
-		--		divider = wm:CreateControlFromVirtual("$(parent)Divider", control, "ZO_BaseTooltipDivider")
-		--		divider:ClearAnchors()
-		--		divider:SetAnchor(TOPLEFT, control, TOPLEFT, 0, 2)
-		--		divider:SetAnchor(TOPRIGHT, control, TOPRIGHT, 0, 2)
-		--		control.m_divider = divider
-		--	end
-		--	divider:SetHidden(false)
-		--	control.m_label:SetHidden(true)
-		--	control:SetMouseEnabled(false)
-		--elseif divider then
-		--	divider:SetHidden(true)
-		--end
 	end
 	dataType1.setupCallback = SetupEntry
 	dataType2.setupCallback = SetupEntry
@@ -274,6 +260,54 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 	end
 	ZO_ScrollList_AddDataType(dropdown.m_scroll, DIVIDER_ENTRY_ID, "ZO_ScrollableComboBoxItem", DIVIDER_ENTRY_HEIGHT, SetupDividerEntry)
 
+	-- add data type for headers - based on ZO_AddOnSectionHeaderRow
+	local function SetupHeaderEntry(control, data, list)
+		control.isHeader = true
+		control.m_owner = data.m_owner
+		control.m_data = data
+
+		control:SetHeight(HEADER_ENTRY_HEIGHT)
+
+		local divider = control:GetNamedChild("Divider")
+		control.m_divider = divider
+
+		--Checkbox was added to ZO_AddOnSectionHeaderRow
+		local checkbox = control:GetNamedChild("Checkbox")
+		if checkbox then
+			control.m_checkbox = checkbox
+			checkbox:SetHidden(true)
+			checkbox:SetMouseEnabled(false)
+		end
+
+		local label = control:GetNamedChild("Text")
+		control.m_label = label
+		label:SetFont("ZoFontWinH5") -- Header font
+		label.normalColor = ZO_WHITE
+		label:SetText(data.name)
+
+		local orgGetTextDimensions = label.GetTextDimensions
+		function label:GetTextDimensions()
+			local w, h = orgGetTextDimensions(self)
+			local hdivider = divider and (select(2, divider:GetDimensions()) + 9) or 0
+			return w, h + hdivider
+		end
+
+		label:ClearAnchors()
+		label:SetAnchor(TOPLEFT, control, TOPLEFT, 2, 2)
+		label:SetAnchor(TOPRIGHT, control, TOPRIGHT, -2, 2)
+		label:SetMaxLineCount(1)
+		label:SetHidden(false)
+
+		divider:ClearAnchors()
+		divider:SetAnchor(TOPLEFT, label, BOTTOMLEFT, 4, 1)
+		divider:SetAnchor(TOPRIGHT, label, BOTTOMRIGHT, -4, 1)
+		divider:SetHidden(false)
+
+
+		control:SetMouseEnabled(false)
+	end
+	ZO_ScrollList_AddDataType(dropdown.m_scroll, HEADER_ENTRY_ID, "ZO_AddOnSectionHeaderRow", HEADER_ENTRY_HEIGHT, SetupHeaderEntry)
+
 	-- make sure spacing is updated for dividers
 	local function SetSpacing(dropdown, spacing)
 		local newHeight = DIVIDER_ENTRY_HEIGHT + spacing
@@ -292,34 +326,36 @@ function ScrollableDropdownHelper:AddMenuItems()
 	local dropdown = self.dropdown
 
 	-- adjust dimensions based on entries
-	local maxWidth, dividers = self:GetMaxWidth()
+	local maxWidth, dividers, headers = self:GetMaxWidth()
 	local width = PADDING * 2 + zo_max(maxWidth, combobox:GetWidth()) + CONTENT_PADDING -- always add this now
 	local visibleItems = #dropdown.m_sortedItems
 	local anchorOffset = 0
 	local dividerOffset = 0
+	local headerOffset = 0
 	local visibleRows =  (self.isSubMenuScrollHelper and self.parentScrollableDropdownHelper and self.parentScrollableDropdownHelper.visibleRowsSubmenu) or self.visibleRows
-	visibleRows = visibleRows or 10
+	visibleRows = visibleRows or DEFAULT_VISIBLE_ROWS
 	if(visibleItems > visibleRows) then
 		width = width + SCROLLBAR_PADDING
 		anchorOffset = -SCROLLBAR_PADDING
 		visibleItems = visibleRows
 	else -- account for divider height difference when we shrink the height
 		dividerOffset = dividers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - DIVIDER_ENTRY_HEIGHT)
+		headerOffset = headers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - HEADER_ENTRY_HEIGHT)
 	end
 
 	local scroll = dropdown.m_dropdown:GetNamedChild("Scroll")
 	local scrollContent = scroll:GetNamedChild("Contents")
 	scrollContent:SetAnchor(BOTTOMRIGHT, nil, nil, anchorOffset)
 
-	local height = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + ZO_SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + (SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) - dividerOffset
+	local height = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + ZO_SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + (SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) - dividerOffset - headerOffset
 	dropdown.m_dropdown:SetWidth(width)
 	dropdown.m_dropdown:SetHeight(height)
 
-	-- NOTE: the whole reason we need to override it completely, to add our divider data entry
+	-- NOTE: the whole reason we need to override it completely, to add our divider and header data entry
 	local function CreateEntry(self, item, index, isLast)
 		item.m_index = index
 		item.m_owner = self
-		local entryType = item.name == lib.DIVIDER and DIVIDER_ENTRY_ID or isLast and LAST_ENTRY_ID or ENTRY_ID
+		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (item.isHeader and HEADER_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or ENTRY_ID
 		return ZO_ScrollList_CreateDataEntry(entryType, item)
 	end
 
@@ -379,16 +415,22 @@ function ScrollableDropdownHelper:GetMaxWidth()
 	}, dropdown)
 
 	local dividers = 0
+	local headers = 0
 	local maxWidth = 0
 	local label = dummy.m_label
 	local entries = dropdown.m_sortedItems
 	local numItems = #entries
 	for index = 1, numItems do
-		local name = entries[index].name
+		local item = entries[index]
+		local name = item.name
 		if name == lib.DIVIDER then
 			dividers = dividers + 1
 		elseif entries[index].checked ~= nil then
 			name = string.format(" |u18:0::|u%s", name)
+		else
+			if item.dataEntry and item.dataEntry.data and item.dataEntry.data.isHeader then
+				headers = headers + 1
+			end
 		end
 		label:SetText(name)
 		local width = label:GetTextWidth() + TEXT_PADDING
@@ -398,7 +440,7 @@ function ScrollableDropdownHelper:GetMaxWidth()
 	end
 
 	dataType.pool:ReleaseObject(dummy.key)
-	return maxWidth, dividers
+	return maxWidth, dividers, headers
 end
 
 function ScrollableDropdownHelper:OnMouseEnter(control)
@@ -489,7 +531,7 @@ function ScrollableSubmenu:Initialize()
 
 	--don't need parent for this / leave visibleRows nil (defualt 10 will be used) / only use visibleSubmenuRows = 10 as default
 	-->visibleSubmenuRows will be overwritten at ScrollableSubmenu:Show -> taken from parent's ScrollableDropdownHelper dropdown.visibleRowsSubMenu
-	self.scrollHelper = ScrollableDropdownHelper:New(nil, self.control, nil, DEFAULT_VISIBLE_ROWS, true)
+	self.scrollHelper = ScrollableDropdownHelper:New(nil, self.control, nil, 10, true)
 
 	--self.scrollHelper.OnShow = function() end
 	self.control.scrollHelper = self.scrollHelper
