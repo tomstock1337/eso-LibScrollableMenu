@@ -489,7 +489,7 @@ function ScrollableSubmenu:Initialize()
 
 	--don't need parent for this / leave visibleRows nil (defualt 10 will be used) / only use visibleSubmenuRows = 10 as default
 	-->visibleSubmenuRows will be overwritten at ScrollableSubmenu:Show -> taken from parent's ScrollableDropdownHelper dropdown.visibleRowsSubMenu
-	self.scrollHelper = ScrollableDropdownHelper:New(nil, self.control, nil, 10, true)
+	self.scrollHelper = ScrollableDropdownHelper:New(nil, self.control, nil, DEFAULT_VISIBLE_ROWS, true)
 
 	--self.scrollHelper.OnShow = function() end
 	self.control.scrollHelper = self.scrollHelper
