@@ -116,7 +116,7 @@ end
 ]]
 function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visibleRowsSubmenu, isSubMenuScrollHelper)
 	visibleRows = visibleRows or 15
-	visibleRowsSubmenu = visibleRowsSubmenu or 10
+	visibleRowsSubmenu = visibleRowsSubmenu or DEFAULT_VISIBLE_ROWS
 	isSubMenuScrollHelper = isSubMenuScrollHelper or false
 
 	local combobox = control.combobox
