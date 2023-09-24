@@ -188,6 +188,11 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 	local oSetup = dataType1.setupCallback -- both types have the same setup function
 	local function SetupEntry(control, data, list)
 		oSetup(control, data, list)
+		if data.label ~= nil then
+			local labelStr = GetValueOrCallback(data.label, data)
+			data.labelStr = labelStr
+			control.m_label:SetText(labelStr) -- Override the label's text with the data.label, if provided
+		end
 		control.m_label:SetAnchor(LEFT, nil, nil, 2)
 
 		-- no need to store old ones since we have full ownership of our dropdown controls
@@ -230,7 +235,7 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 			checkbox:SetHidden(false)
 			ZO_CheckButton_SetToggleFunction(checkbox, setChecked)
 			ZO_CheckButton_SetCheckState(checkbox, GetValueOrCallback(data.checked, data))
-			control.m_label:SetText(string.format(" |u18:0::|u%s", data.label or data.name))
+			control.m_label:SetText(string.format(" |u18:0::|u%s", data.labelStr or data.name))
 		elseif control.m_checkbox then
 			control.m_checkbox:SetHidden(true)
 		end
@@ -283,7 +288,7 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 		control.m_label = label
 		label:SetFont("ZoFontWinH5") -- Header font
 		label.normalColor = ZO_WHITE
-		label:SetText(data.label or data.name)
+		label:SetText(data.labelStr or data.name)
 
 		local orgGetTextDimensions = label.GetTextDimensions
 		function label:GetTextDimensions()
@@ -424,17 +429,17 @@ function ScrollableDropdownHelper:GetMaxWidth()
 	for index = 1, numItems do
 		local item = entries[index]
 		local name = item.name
-		local labelStr = item.label or name
+		local labelStr = item.labelStr
 		if name == lib.DIVIDER then
 			dividers = dividers + 1
 		elseif entries[index].checked ~= nil then
-			name = string.format(" |u18:0::|u%s", labelStr)
+			name = string.format(" |u18:0::|u%s", labelStr or name)
 		else
 			if item.dataEntry and item.dataEntry.data and item.dataEntry.data.isHeader then
 				headers = headers + 1
 			end
 		end
-		label:SetText(labelStr)
+		label:SetText(labelStr or name)
 		local width = label:GetTextWidth() + TEXT_PADDING
 		if (width > maxWidth) then
 			maxWidth = width
