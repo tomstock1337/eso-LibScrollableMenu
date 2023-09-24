@@ -332,8 +332,9 @@ function ScrollableDropdownHelper:AddMenuItems()
 	local anchorOffset = 0
 	local dividerOffset = 0
 	local headerOffset = 0
-	local visibleRows =  (self.isSubMenuScrollHelper and self.parentScrollableDropdownHelper and self.parentScrollableDropdownHelper.visibleRowsSubmenu) or self.visibleRows
-	visibleRows = visibleRows or DEFAULT_VISIBLE_ROWS
+	local visibleRows =  (self.isSubMenuScrollHelper and
+			(lib.submenu and lib.submenu.parentScrollableDropdownHelper and lib.submenu.parentScrollableDropdownHelper.visibleRowsSubmenu)) or self.visibleRows
+
 	if(visibleItems > visibleRows) then
 		width = width + SCROLLBAR_PADDING
 		anchorOffset = -SCROLLBAR_PADDING
