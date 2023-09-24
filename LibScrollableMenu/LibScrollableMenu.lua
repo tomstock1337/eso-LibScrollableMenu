@@ -230,7 +230,7 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 			checkbox:SetHidden(false)
 			ZO_CheckButton_SetToggleFunction(checkbox, setChecked)
 			ZO_CheckButton_SetCheckState(checkbox, GetValueOrCallback(data.checked, data))
-			control.m_label:SetText(string.format(" |u18:0::|u%s", data.name))
+			control.m_label:SetText(string.format(" |u18:0::|u%s", data.label or data.name))
 		elseif control.m_checkbox then
 			control.m_checkbox:SetHidden(true)
 		end
@@ -283,7 +283,7 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 		control.m_label = label
 		label:SetFont("ZoFontWinH5") -- Header font
 		label.normalColor = ZO_WHITE
-		label:SetText(data.name)
+		label:SetText(data.label or data.name)
 
 		local orgGetTextDimensions = label.GetTextDimensions
 		function label:GetTextDimensions()
@@ -424,16 +424,17 @@ function ScrollableDropdownHelper:GetMaxWidth()
 	for index = 1, numItems do
 		local item = entries[index]
 		local name = item.name
+		local labelStr = item.label or name
 		if name == lib.DIVIDER then
 			dividers = dividers + 1
 		elseif entries[index].checked ~= nil then
-			name = string.format(" |u18:0::|u%s", name)
+			name = string.format(" |u18:0::|u%s", labelStr)
 		else
 			if item.dataEntry and item.dataEntry.data and item.dataEntry.data.isHeader then
 				headers = headers + 1
 			end
 		end
-		label:SetText(name)
+		label:SetText(labelStr)
 		local width = label:GetTextWidth() + TEXT_PADDING
 		if (width > maxWidth) then
 			maxWidth = width
