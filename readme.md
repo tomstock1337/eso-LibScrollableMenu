@@ -1,4 +1,4 @@
-# LibScrollMenu
+# LibScrollableMenu
 
 <center><img src="preview.png" alt="Screenshot" width=300px/></center>
 
@@ -17,10 +17,10 @@ That's why LibScrollableMenu got implemented additional features that LibCustomM
 header rows, label texts for the entries (used instead of normal entry.name).
 
 Here is a brief "howto change addons using LibCustomMenu and overwriting ZO_ComboBox:AddMenuItems" to LibScrollableMenu instead:
-##If you only want some non-submenu entries in the combobox:
+## If you only want some non-submenu entries in the combobox:
 Do not override :AddMenuItems() and just do it the normal way. Your combobox will be scrollable by default now and will work well.
 
-##If you still want to use submenus: Instructions how to change your ZO_ComboBox to a scrollable list with submenus (scrollable too!)
+## If you still want to use submenus: Instructions how to change your ZO_ComboBox to a scrollable list with submenus (scrollable too!)
 
 Create a comboBox from virtual template e.g.:
 ```local comboBox = WINDOW_MANAGER:CreateControlFromVirtual("AF_FilterBar" .. myName .. "DropdownFilter", parentControl, "ZO_ComboBox")```
@@ -47,7 +47,7 @@ You can add submenus and even the submenus are scrollable AND provide submenus a
 -> btw: Technically the submenus are scrollable comoboxes too, only hiding their dropdown controls etc. around them ;)
 
 
-###In order to add items to the combobox - Use the comboBox:AddItems(table) function
+### In order to add items to the combobox - Use the comboBox:AddItems(table) function
 Just use (comboBox = dropdown.m_comboBox)
 ```comboBox:AddItems(tableWithEntries)```
 
