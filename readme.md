@@ -7,7 +7,6 @@ The purpose of this plugin is to allow for creation of custom scrollable menus.
 Originally developed in Kyoma's Titlizer.  Now used in ImprovedTitleizer.
 
 GitHub: https://github.com/tomstock1337/eso-LibScrollableMenu
-
 ESOUI.com (AddOns): https://www.esoui.com/downloads/fileinfo.php?id=3546
 
 With update P40, API101040 ~2023-09-20 the ZO_ComboBox was changed into a ZO_ScrollableComboBox directly.
