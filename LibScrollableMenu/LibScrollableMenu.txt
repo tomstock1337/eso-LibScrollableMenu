@@ -5,10 +5,10 @@
 
 ## Title: LibScrollableMenu
 ## Description: Adds scrollable menu functionality.  Originally developed by Kyoma's Titlizer
-## Version: 1.2
-## AddOnVersion: 0102
+## Version: 1.1
 ## IsLibrary: true
 ## Author: tomstock
-## APIVersion: 101039 101040
+## APIVersion: 101037
 
 LibScrollableMenu.lua
+LibScrollableMenu.xml

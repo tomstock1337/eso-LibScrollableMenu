@@ -1,0 +1,70 @@
+<GuiXml>
+	<Controls>
+        <Texture name="LibScrollableMenu_Divider" virtual="true" inherits="ZO_HorizontalDivider">
+			<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="-50"/>
+			<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="50" />
+        </Texture>
+		
+        <Control name="LibScrollableMenu_ComboBoxEntryDivider" level="3" mouseEnabled="false" virtual="true">
+			<Dimensions y="6" />
+            <Controls>
+                <Texture name="$(parent)Divider" inherits="LibScrollableMenu_Divider"/>
+            </Controls>
+        </Control>
+
+        <Control name="LibScrollableMenu_ComboBoxEntryHeader" level="3" virtual="true">
+            <Dimensions y="25" />
+            <Controls>
+                <Label name="$(parent)Label" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
+                    <Anchor point="LEFT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+                    <Anchor point="RIGHT" offsetX="-ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+                </Label>
+                <Texture name="$(parent)Divider" inherits="LibScrollableMenu_Divider"/>
+            </Controls>
+        </Control>
+		
+        <Control name="LibScrollableMenu_ComboBoxEntry" inherits="ZO_ComboBoxEntry" resizeToFitDescendents="true" virtual="true">
+			<OnInitialized>
+                self.selectible = true <!-- Denotes this is a selectible entry.   -->
+				self.label = self:GetNamedChild('Label')
+				self.arrow = self:GetNamedChild('LabelArrow')
+            </OnInitialized>
+			
+            <OnMouseUp>
+                LibScrollableMenu_OnSelected(self)
+                PlaySound(SOUNDS.COMBO_CLICK)
+            </OnMouseUp>
+			
+			<OnMouseEnter>
+				LibScrollableMenu_Entry_OnMouseEnter(self)
+			</OnMouseEnter>
+			
+			<OnMouseExit>
+				LibScrollableMenu_Entry_OnMouseExit(self)
+			</OnMouseExit>
+            <Controls>
+                <Label name="$(parent)Label" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
+                    <Anchor point="LEFT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+                    <!--Anchor point="RIGHT" offsetX="-ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" /-->
+                    <Anchor point="RIGHT" offsetX="ZO_SCROLL_BAR_WIDTH" />
+					
+					<Controls>
+						<Texture name="$(parent)Arrow" textureFile="/esoui/art/buttons/large_rightdoublearrow_up.dds">
+							<Dimensions x="20"  y="20"/>
+							<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" />
+						</Texture>
+					</Controls>
+                </Label>
+            </Controls>
+        </Control>
+		
+        <Control name="LibScrollableMenu_ComboBox" mouseEnabled="false" clampedToScreen="true" virtual="true">
+			<Dimensions x="135"  y="31"/>
+            <Controls>
+                <Control name="$(parent)Dropdown" inherits="ZO_ComboBox">
+                    <Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" />
+                </Control>
+            </Controls>
+        </Control>
+	</Controls>
+</GuiXml>
