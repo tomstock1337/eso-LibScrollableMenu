@@ -139,9 +139,10 @@ local function silenceComboBoxClickedSound(doSilence)
 end
 
 local function playSelectedSoundCheck(entry)
-	local soundToPlay
-	local options = GetOptionsForEntry(entry)
 	silenceComboBoxClickedSound(false)
+
+	local soundToPlay = origSoundComboClicked
+	local options = GetOptionsForEntry(entry)
 	if options ~= nil then
 		--Chosen at options to play no selected sound?
 		if GetValueOrCallback(options.selectedSoundDisabled, options) == true then
@@ -150,9 +151,9 @@ local function playSelectedSoundCheck(entry)
 		else
 			soundToPlay = GetValueOrCallback(options.selectedSound, options)
 			soundToPlay = soundToPlay or SOUNDS.COMBO_CLICK
-			PlaySound(soundToPlay) --SOUNDS.COMBO_CLICK
 		end
 	end
+	PlaySound(soundToPlay) --SOUNDS.COMBO_CLICK
 end
 
 -- Loop through, if needed, to find any entry set as new.
@@ -555,7 +556,7 @@ function ScrollableDropdownHelper:AddMenuItems()
 		item.m_owner = self
 				
 		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (item.isHeader and HEADER_ENTRY_ID) or 
-			(item.entries and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or (item.entries and SUBMENU_ENTRY_ID) or ENTRY_ID
+			(item.entries and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or ENTRY_ID
 		if item.entries then
 			item.hasSubmenu = true
 			item.isNew = areAnyEntriesNew(item)
@@ -995,6 +996,7 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 function LibScrollableMenu_Entry_OnMouseEnter(entry)
     if entry.m_owner and entry.selectible then
+--d("LibScrollableMenu_Entry_OnMouseEnter")
 		-- For submenus
 		local data = ZO_ScrollList_GetData(entry)
 		local mySubmenu = GetSubmenuFromControl(entry)
@@ -1012,6 +1014,7 @@ function LibScrollableMenu_Entry_OnMouseEnter(entry)
 		end
 		--Submenu
 		if entry.hasSubmenu or data.entries ~= nil then
+			entry.hasSubmenu = true
 			ClearTimeout()
 			
 			if mySubmenu then -- open next submenu (nested)
@@ -1068,21 +1071,37 @@ end
 
 function LibScrollableMenu_OnSelected(entry)
     if entry.m_owner then
-d("LibScrollableMenu_OnSelected")
+--TODO: For debugging
+lib._selectedEntry = entry
+--d("LibScrollableMenu_OnSelected")
 		local data = ZO_ScrollList_GetData(entry)
 		local mySubmenu = GetSubmenuFromControl(entry)
 	--	d( data.entries)
 		if entry.hasSubmenu or data.entries ~= nil then
+			entry.hasSubmenu = true
+--d(">menu entry with submenu - hasSubmenu: " ..tostring(entry.hasSubmenu))
+			--Save the current entry to lib.submenu.lastClickedEntryWithSubmenu
+			lib.submenu.lastClickedEntryWithSubmenu = entry
+
 			local targetSubmenu = lib.submenu
 			if mySubmenu and mySubmenu.childMenu then
+--d(">childMenu")
 				targetSubmenu = mySubmenu.childMenu
 			end
 			
 			if targetSubmenu then
 				if targetSubmenu:IsVisible() then
+--d(">targetSubMenu:IsVisible")
 					targetSubmenu:Clear() -- need to clear it straight away, no timeout
 				else
-					-- just calling this to not have to copy code
+					--Has the entry a submenu but also a callback function: Do not show the submenu if you click the entry
+					-->e.g. AddonSelector: Click main entry to select addon pack, instead of having to select the submenu entry
+					if data.callback ~= nil then
+						data.callback(entry)
+						targetSubmenu:Clear()
+						return
+					end
+					--Check if submenu should be shown/hidden
 					libMenuEntryOnMouseEnter(entry)
 				end
 			end
@@ -1090,11 +1109,17 @@ d("LibScrollableMenu_OnSelected")
 		elseif data.checked ~= nil then
 			playSelectedSoundCheck(entry)
 			ZO_CheckButton_OnClicked(entry.m_checkbox)
+			lib.submenu.lastClickedEntryWithSubmenu = nil
 			return true
 		else
-			-- Original
+			--Check if the selected entry belongs to a submenu:	if mySubmenu ~= nil
+--d(">menu entry - isSubmenuClickedEntry: " ..tostring(mySubmenu ~= nil))
 			playSelectedSoundCheck(entry)
+
+			--Pass the entrie's text to the dropdown control's selectedItemText
 			entry.m_owner:SetSelected(entry.m_data.m_index)
+
+			lib.submenu.lastClickedEntryWithSubmenu = nil
 		end
 		
     end
