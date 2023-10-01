@@ -535,7 +535,9 @@ function ScrollableDropdownHelper:AddMenuItems()
 	-- so just add 5 to make sure we don't truncate at certain screen sizes
 --	largestEntryWidth = largestEntryWidth + 5
 	
+	local scrollbarEnabled = false
 	if(visibleItems > visibleRows - 1) then
+		scrollbarEnabled = true
 		largestEntryWidth = largestEntryWidth + ZO_SCROLL_BAR_WIDTH
 		anchorOffset = -ZO_SCROLL_BAR_WIDTH
 		visibleItems = visibleRows
@@ -566,15 +568,31 @@ function ScrollableDropdownHelper:AddMenuItems()
 	local maxHeight = dropdown.m_height
 	-- get the height of all the entries we are going to show
 	-- the last entry uses a separate entry template that does not include the spacing in its height
---	local allItemsHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
-	local allItemsHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + ZO_SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + (SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) - dividerOffset - headerOffset
+	--	local allItemsHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
+	local entryTemplateHeightOfAll = dropdown:GetEntryTemplateHeightWithSpacing() * visibleItems
+	local allItemsHeight = entryTemplateHeightOfAll + (SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) - dividerOffset - headerOffset --+ ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
 
 	local desiredHeight = maxHeight
-	if allItemsHeight < desiredHeight then
-		desiredHeight = allItemsHeight
+	if scrollbarEnabled == true then
+		--Enlarge menu height if more rows as maxVisible should be shown
+		if allItemsHeight > desiredHeight then
+			desiredHeight = allItemsHeight
+		end
+	else
+		--Shrink menu height if only a few rows of maxVisible should be shown
+		if allItemsHeight < desiredHeight then
+			desiredHeight = allItemsHeight
+		else
+			--Show all rows (e.g. if 20 rows could be shown but currently only 17 entries exist.
+			--But the menu's height is too low for 17 -> Increase to show all 17, without scrollbar)
+			if dropdown.m_height < allItemsHeight then
+				desiredHeight = allItemsHeight
+			end
+		end
 	end
 
 	dropdown.m_dropdown:SetHeight(desiredHeight)
+
 	ZO_ScrollList_SetHeight(dropdown.m_scroll, desiredHeight)
 
 	ZO_ScrollList_Commit(dropdown.m_scroll)
