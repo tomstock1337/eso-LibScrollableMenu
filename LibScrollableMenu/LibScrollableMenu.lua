@@ -48,6 +48,8 @@ local ROUNDING_MARGIN = 0.01 -- needed to avoid rare issue with too many anchors
 
 local SCROLLABLE_COMBO_BOX_LIST_PADDING_Y = 9
 
+local MAX_MENU_WIDTH
+
 local ENTRY_ID = 1
 local LAST_ENTRY_ID = 2
 local DIVIDER_ENTRY_ID = 3
@@ -170,7 +172,7 @@ defaultXMLTemplates  = {
 --		setupFunc = ,
 	},
 	[HEADER_ENTRY_ID] = {
-		template = 'LibScrollableMenu_ComboBoxEntryHeader',
+		template = 'LibScrollableMenu_ComboBoxHeaderEntry', --LibScrollableMenu_ComboBoxEntryHeader
 --		setupFunc = ,
 	},
 }
