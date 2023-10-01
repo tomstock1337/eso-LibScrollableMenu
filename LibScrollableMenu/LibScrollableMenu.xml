@@ -20,7 +20,7 @@
 			<OnInitialized>
 				self.isHeader = true
 			</OnInitialized>
-			
+
 			<Controls>
 				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon" excludeFromResizeToFitExtents="true">
 					<Dimensions x="25"  y="25"/>
@@ -36,21 +36,20 @@
 				</Texture>
 			</Controls>
 		</Control>
-		
+
 		<Control name="LibScrollableMenu_ComboBoxEntry" resizeToFitDescendents="true" inherits="ZO_ComboBoxEntry" virtual="true">
 			<OnInitialized>
 				self.selectible = true <!-- Denotes this is a selectible entry.   -->
 			</OnInitialized>
-			
+
 			<OnMouseUp>
 				LibScrollableMenu_OnSelected(self)
-				PlaySound(SOUNDS.COMBO_CLICK)
 			</OnMouseUp>
-			
+
 			<OnMouseEnter>
 				LibScrollableMenu_Entry_OnMouseEnter(self)
 			</OnMouseEnter>
-			
+
 			<OnMouseExit>
 				LibScrollableMenu_Entry_OnMouseExit(self)
 			</OnMouseExit>
@@ -66,7 +65,7 @@
 				</Label>
 			</Controls>
 		</Control>
-		
+
 		<Control name="LibScrollableMenu_ComboBoxEntrySubmenu" inherits="LibScrollableMenu_ComboBoxEntry" virtual="true">
 			<Controls>
 				<Label name="$(parent)Label" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
@@ -74,12 +73,12 @@
 					<Anchor point="RIGHT" offsetX="-25" />
 				</Label>
 				<Texture name="$(parent)Arrow" textureFile="/esoui/art/buttons/rightarrow_up.dds">
-					<Dimensions x="25"  y="25"/>
-					<Anchor point="LEFT" relativeTo="$(parent)Label" relativePoint="RIGHT" offsetX="0"/>
+					<Dimensions x="18"  y="18"/>
+					<Anchor point="LEFT" relativeTo="$(parent)Label" relativePoint="RIGHT" offsetY="2"/>
 				</Texture>
 			</Controls>
 		</Control>
-		
+
 		<Control name="LibScrollableMenu_ComboBox" mouseEnabled="false" clampedToScreen="true" virtual="true">
 			<Dimensions x="135"  y="31"/>
 			<Controls>
