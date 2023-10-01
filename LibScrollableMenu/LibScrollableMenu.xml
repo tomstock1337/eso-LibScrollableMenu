@@ -1,39 +1,51 @@
 <GuiXml>
 	<Controls>
-        <Texture name="LibScrollableMenu_Divider" virtual="true" inherits="ZO_HorizontalDivider">
+		<!--Texture name="LibScrollableMenu_Divider" virtual="true" inherits="ZO_HorizontalDivider">
 			<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="-50"/>
 			<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="50" />
-        </Texture>
+		</Texture-->
 		
-        <Control name="LibScrollableMenu_ComboBoxEntryDivider" level="3" mouseEnabled="false" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxEntryDivider" level="3" mouseEnabled="false" virtual="true">
 			<Dimensions y="6" />
-            <Controls>
-                <Texture name="$(parent)Divider" inherits="LibScrollableMenu_Divider"/>
-            </Controls>
-        </Control>
+			<Controls>
+				<Texture name="$(parent)Divider" inherits="ZO_HorizontalDivider">
+					<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="-50"/>
+					<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="50" />
+				</Texture>
+			</Controls>
+		</Control>
 
-        <Control name="LibScrollableMenu_ComboBoxEntryHeader" level="3" virtual="true">
-            <Dimensions y="25" />
-            <Controls>
-                <Label name="$(parent)Label" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
-                    <Anchor point="LEFT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
-                    <Anchor point="RIGHT" offsetX="-ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
-                </Label>
-                <Texture name="$(parent)Divider" inherits="LibScrollableMenu_Divider"/>
-            </Controls>
-        </Control>
-		
-        <Control name="LibScrollableMenu_ComboBoxEntry" inherits="ZO_ComboBoxEntry" resizeToFitDescendents="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxEntryHeader" level="3" virtual="true">
+			<Dimensions y="25" />
 			<OnInitialized>
-                self.selectible = true <!-- Denotes this is a selectible entry.   -->
-				self.label = self:GetNamedChild('Label')
-				self.arrow = self:GetNamedChild('LabelArrow')
-            </OnInitialized>
+				self.isHeader = true
+			</OnInitialized>
 			
-            <OnMouseUp>
-                LibScrollableMenu_OnSelected(self)
-                PlaySound(SOUNDS.COMBO_CLICK)
-            </OnMouseUp>
+			<Controls>
+				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon" excludeFromResizeToFitExtents="true">
+					<Dimensions x="25"  y="25"/>
+					<Anchor point="LEFT" offsetX="0"/>
+				</Texture>
+				<Label name="$(parent)Label" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
+					<Anchor point="LEFT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+					<Anchor point="RIGHT" offsetX="-ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+				</Label>
+				<Texture name="Divider" virtual="true" inherits="ZO_HorizontalDivider">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="BOTTOMLEFT" offsetX="-50"/>
+					<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="50" />
+				</Texture>
+			</Controls>
+		</Control>
+		
+		<Control name="LibScrollableMenu_ComboBoxEntry" resizeToFitDescendents="true" inherits="ZO_ComboBoxEntry" virtual="true">
+			<OnInitialized>
+				self.selectible = true <!-- Denotes this is a selectible entry.   -->
+			</OnInitialized>
+			
+			<OnMouseUp>
+				LibScrollableMenu_OnSelected(self)
+				PlaySound(SOUNDS.COMBO_CLICK)
+			</OnMouseUp>
 			
 			<OnMouseEnter>
 				LibScrollableMenu_Entry_OnMouseEnter(self)
@@ -42,29 +54,39 @@
 			<OnMouseExit>
 				LibScrollableMenu_Entry_OnMouseExit(self)
 			</OnMouseExit>
-            <Controls>
-                <Label name="$(parent)Label" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
-                    <Anchor point="LEFT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
-                    <!--Anchor point="RIGHT" offsetX="-ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" /-->
-                    <Anchor point="RIGHT" offsetX="ZO_SCROLL_BAR_WIDTH" />
-					
-					<Controls>
-						<Texture name="$(parent)Arrow" textureFile="/esoui/art/buttons/large_rightdoublearrow_up.dds">
-							<Dimensions x="20"  y="20"/>
-							<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" />
-						</Texture>
-					</Controls>
-                </Label>
-            </Controls>
-        </Control>
+			<Controls>
+				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon" excludeFromResizeToFitExtents="true">
+					<Dimensions x="25"  y="25"/>
+					<Anchor point="LEFT" offsetX="0"/>
+				</Texture>
+				<Label name="$(parent)Label" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
+					<Anchor point="LEFT" relativeTo="$(parent)Icon" relativePoint="RIGHT" offsetX="4" />
+					<!--Anchor point="RIGHT" offsetX="ZO_SCROLL_BAR_WIDTH" /-->
+					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+				</Label>
+			</Controls>
+		</Control>
 		
-        <Control name="LibScrollableMenu_ComboBox" mouseEnabled="false" clampedToScreen="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxEntrySubmenu" inherits="LibScrollableMenu_ComboBoxEntry" virtual="true">
+			<Controls>
+				<Label name="$(parent)Label" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
+					<Anchor point="LEFT" relativeTo="$(parent)Icon" relativePoint="RIGHT" offsetX="4" />
+					<Anchor point="RIGHT" offsetX="-25" />
+				</Label>
+				<Texture name="$(parent)Arrow" textureFile="/esoui/art/buttons/rightarrow_up.dds">
+					<Dimensions x="25"  y="25"/>
+					<Anchor point="LEFT" relativeTo="$(parent)Label" relativePoint="RIGHT" offsetX="0"/>
+				</Texture>
+			</Controls>
+		</Control>
+		
+		<Control name="LibScrollableMenu_ComboBox" mouseEnabled="false" clampedToScreen="true" virtual="true">
 			<Dimensions x="135"  y="31"/>
-            <Controls>
-                <Control name="$(parent)Dropdown" inherits="ZO_ComboBox">
-                    <Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" />
-                </Control>
-            </Controls>
-        </Control>
+			<Controls>
+				<Control name="$(parent)Dropdown" inherits="ZO_ComboBox">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" />
+				</Control>
+			</Controls>
+		</Control>
 	</Controls>
 </GuiXml>

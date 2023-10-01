@@ -82,6 +82,7 @@ local ENTRY_ID = 1
 local LAST_ENTRY_ID = 2
 local DIVIDER_ENTRY_ID = 3
 local HEADER_ENTRY_ID = 4
+local SUBMENU_ENTRY_ID = 5
 
 lib.DIVIDER = "-"
 local DIVIDER_ENTRY_HEIGHT = 7
@@ -95,8 +96,15 @@ local TEXT_PADDING = 4
 local CONTENT_PADDING = 18 -- decreased from 24
 local SCROLLBAR_PADDING = 16
 
+local ICON_PADDING = 0
+
+--local NO_ICON_PADDING = 0
+local NO_ICON_PADDING = -5
+local ICON_PADDING = 20
+
 local PADDING = GetMenuPadding() / 2 -- half the amount looks closer to the regular dropdown
 local ROUNDING_MARGIN = 0.01 -- needed to avoid rare issue with too many anchors processed
+
 local SCROLLABLE_COMBO_BOX_LIST_PADDING_Y = 9
 
 
@@ -107,19 +115,37 @@ local ScrollableDropdownHelper = ZO_InitializingObject:Subclass()
 lib.ScrollableDropdownHelper = ScrollableDropdownHelper
 
 -- Available options are:
---   visibleRows			Visible rows at the scollable list, for the main menu scroll helper
+--   visibleRowsDropdown	Visible rows at the scollable list, for the main menu scroll helper
 --	 visibleRowsSubmenu		Visible rows at the scollable list of submenu helpers of this main menu scroll helper
 --[[
 --   persistantMenus - its submenus won't close when the mouse exits them, only by clicking somewhere or selecting something else
 --   orientation - the preferred direction for tooltips and submenus (either LEFT or RIGHT)
 ]]
-function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visibleRowsSubmenu, isSubMenuScrollHelper)
-	visibleRows = visibleRows or 15
-	visibleRowsSubmenu = visibleRowsSubmenu or DEFAULT_VISIBLE_ROWS
+
+-- Split the data types out
+function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenuScrollHelper)
 	isSubMenuScrollHelper = isSubMenuScrollHelper or false
+
+	--Read the passed in options table
+	local visibleRows, visibleRowsSubmenu
+	if options ~= nil then
+		if type(options) == "table" then
+			visibleRows = GetValueOrCallback(options.visibleRowsDropdown, options)
+			visibleRowsSubmenu = GetValueOrCallback(options.visibleRowsSubmenu, options)
+		else
+			--Backwards compatibility with AddOns using older library version ScrollableDropdownHelper:Initialize where options was the visibleRows directly
+			visibleRows = options
+		end
+	end
+	visibleRows = visibleRows or DEFAULT_VISIBLE_ROWS
+	visibleRowsSubmenu = visibleRowsSubmenu or DEFAULT_VISIBLE_ROWS
 
 	local combobox = control.combobox
 	local dropdown = control.dropdown
+
+	lib._combobox = combobox
+	lib._dropdown = dropdown
+	lib._selfScrollHelper = self
 
 	self.parent = parent
 	self.control = control
@@ -128,8 +154,10 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 	self.visibleRows = visibleRows					--Will be nil for a submenu!
 	self.visibleRowsSubmenu = visibleRowsSubmenu
 	self.isSubMenuScrollHelper = isSubMenuScrollHelper
+	--Not a submenu? Add the reference to our ScrollHelper object to the combobox's control/container
+	--so we can read it via the Submenu's "owner" (= the combobox control) .parentScrollableDropdownHelper again
 	if not isSubMenuScrollHelper then
-		dropdown.parentScrollableDropdownHelper = self
+		control.parentScrollableDropdownHelper = self
 	end
 	--self.visibleRows = GetOption(options, "visibleRows", DEFAULT_VISIBLE_ROWS)
 	--self.mode        = GetOption(options, "mode", lib.HELPER_MODE_NORMAL)
@@ -150,12 +178,12 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 	if parent then parent:SetHandler("OnEffectivelyHidden", doHide) end
 
 	-- dont fade entries near the edges
-	local scrollList = dropdown.m_scroll
-	scrollList.selectionTemplate = nil
-	scrollList.highlightTemplate = nil
-	ZO_ScrollList_EnableSelection(scrollList, "ZO_SelectionHighlight")
-	ZO_ScrollList_EnableHighlight(scrollList, "ZO_SelectionHighlight")
-	ZO_Scroll_SetUseFadeGradient(scrollList, false)
+	local mScroll = dropdown.m_scroll
+	mScroll.selectionTemplate = nil
+	mScroll.highlightTemplate = nil
+	ZO_ScrollList_EnableSelection(mScroll, "ZO_SelectionHighlight")
+	ZO_ScrollList_EnableHighlight(mScroll, "ZO_SelectionHighlight")
+	ZO_Scroll_SetUseFadeGradient(mScroll, false)
 
 	-- adjust scroll content anchor to mimic menu padding
 	local scroll = dropdown.m_dropdown:GetNamedChild("Scroll")
@@ -164,8 +192,33 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 	scroll:ClearAnchors()
 	scroll:SetAnchor(anchor1[2], anchor1[3], anchor1[4], anchor1[5] + PADDING, anchor1[6] + PADDING)
 	scroll:SetAnchor(anchor2[2], anchor2[3], anchor2[4], anchor2[5] - PADDING, anchor2[6] - PADDING)
-	ZO_ScrollList_Commit(scrollList)
 
+	--Disable multi selection (added zo ZO_ComboBox with update P40)
+	-->Clears the box!
+	dropdown:DisableMultiSelect()
+
+	ZO_ScrollList_Commit(mScroll)
+
+	-- make sure spacing is updated for dividers
+	local function SetSpacing(dropdown, spacing)
+		local newHeight = DIVIDER_ENTRY_HEIGHT + spacing
+		ZO_ScrollList_UpdateDataTypeHeight(mScroll, DIVIDER_ENTRY_ID, newHeight)
+	end
+	ZO_PreHook(dropdown, "SetSpacing", SetSpacing)
+
+	-- NOTE: changed to completely override the function
+	dropdown.AddMenuItems = function() self:AddMenuItems() end
+	
+	self:AddDataTypes()
+end
+
+-- With multi icon
+function ScrollableDropdownHelper:AddDataTypes()
+	local dropdown = self.dropdown
+	
+	local mScroll = dropdown.m_scroll
+	-- dont fade entries near the edges
+	
 	-- hook mouse enter/exit
 	local function onMouseEnter(control) return self:OnMouseEnter(control) end
 	local function onMouseExit(control)  return self:OnMouseExit(control)  end
@@ -178,23 +231,51 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 		end
 	end
 
-	local dataType1 = ZO_ScrollList_GetDataTypeTable(dropdown.m_scroll, 1)
-	local dataType2 = ZO_ScrollList_GetDataTypeTable(dropdown.m_scroll, 2)
-	
-	local oSetup = dataType1.setupCallback -- both types have the same setup function
-	
+	local dataType1 = ZO_ScrollList_GetDataTypeTable(mScroll, 1)
+	--local dataType2 = ZO_ScrollList_GetDataTypeTable(mScroll, 2)
+	--Determine the original setupCallback for the list row -> Maybe default's ZO:ComboBox one, but maybe even changed by any addon -> Depends on the
+	--combobox this ScrollHelper was added to!
+	local oSetup = dataType1.setupCallback -- both data types 1 (normal row) and 2 (last row) use the same setup function. See ZO_ComboBox.lua, ZO_ComboBox:SetupScrollList()
+ 
 	local function SetupEntry(control, data, list)
+		--Check if the data.name is a function returning a string, so prepare the String value now
+		--and update the original function for later usage to data.oName
+		local oName = data.name
+		local name = GetValueOrCallback(data.name, data)
+		if oName ~= name then
+			data.oName = oName
+			data.name = name
+		end
+
+		--Reference original setupCallback for the list row
 		local oSetup = control.oSetup or oSetup
 		control.oSetup = oSetup
+		--Call original callback function -> e.g.  ZO_ComboBox.lua, SetupScrollableEntry(control, data, list)
+		-->To set the data.name to teh control's label, and update the selection highlight etc.
 		oSetup(control, data, list)
-		
-		self.font = control.m_owner.m_font
+
+		--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
+		if data.label ~= nil then
+			local labelStr = GetValueOrCallback(data.label, data)
+			data.labelStr = labelStr
+			control.m_label:SetText(labelStr) -- Override the label's text with the String created from data.label, if provided
+		end
+
+		--From: ZO_Combobox.lua, ZO_ComboBox:SetupScrollList()
 		control.m_owner = data.m_owner
-		control.m_data	= data
-		control.m_label = control:GetNamedChild("Label")
-		control.m_arrow = control:GetNamedChild("LabelArrow")
-		-- The only line needed for the arrow
-		control.m_arrow:SetHidden(data.entries == nil)
+		local mOwner = control.m_owner --local reference -> Speed
+		--control.m_label = control:GetNamedChild("Label") -- was set in oSetup already
+
+		--Set the font and color
+		self.font = mOwner.m_font
+		
+		control.m_owner = data.m_owner
+		control.m_arrow = control:GetNamedChild("Arrow")
+		control.m_icon = control:GetNamedChild("Icon")
+		
+		if control.m_arrow then
+			control.m_arrow:SetHidden(data.entries == nil)
+		end
 		
 		if data.label ~= nil then
 			local labelStr = GetValueOrCallback(data.label, data)
@@ -202,14 +283,16 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 			control.m_label:SetText(labelStr) -- Override the label's text with the data.label, if provided
 		end
 		
+		-- This is for the mouse-over tooltips
 		if not control.hookedMouseHandlers then --only do it once per control
 			control.hookedMouseHandlers = true
 			ZO_PreHookHandler(control, "OnMouseEnter", onMouseEnter)
 			ZO_PreHookHandler(control, "OnMouseExit", onMouseExit)
 		end
-		
 		control.m_label:SetFont(control.m_owner.m_font)
-		control.m_label:SetColor(control.m_owner.m_normalColor:UnpackRGBA())
+		ScrollableDropdownHelper.UpdateIcons(control.m_icon, data)
+		
+	--	control.m_label:SetColor(control.m_owner.m_normalColor:UnpackRGBA())
 		
 		-- if a menu never uses "checked" then it will never create these controls
 		if data.checked ~= nil then
@@ -228,14 +311,18 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 		elseif control.m_checkbox then
 			control.m_checkbox:SetHidden(true)
 		end
+		
+		control.m_data = data --update changed (after oSetup) data entries to the control, and other entries have been updated
 	end
-	
-	dropdown.m_scroll.dataTypes[ENTRY_ID] = nil
-	dropdown.m_scroll.dataTypes[LAST_ENTRY_ID] = nil
-	
+	--Overwrite(remove) the list's data types for entry and last entry: Set nil
+	mScroll.dataTypes[ENTRY_ID] = nil
+	mScroll.dataTypes[LAST_ENTRY_ID] = nil
+
+	--Add the list's data types for entry and last entry again, this time with our custom setupCallback function "SetupEntry"
     local entryHeight = dropdown:GetEntryTemplateHeightWithSpacing()
-    ZO_ScrollList_AddDataType(dropdown.m_scroll, ENTRY_ID, "LibScrollableMenu_ComboBoxEntry", entryHeight, SetupEntry)
-    ZO_ScrollList_AddDataType(dropdown.m_scroll, LAST_ENTRY_ID, "LibScrollableMenu_ComboBoxEntry", entryHeight, SetupEntry)
+    ZO_ScrollList_AddDataType(mScroll, ENTRY_ID, "LibScrollableMenu_ComboBoxEntry", entryHeight, SetupEntry)
+    ZO_ScrollList_AddDataType(mScroll, LAST_ENTRY_ID, "LibScrollableMenu_ComboBoxEntry", entryHeight, SetupEntry)
+	ZO_ScrollList_AddDataType(mScroll, SUBMENU_ENTRY_ID, "LibScrollableMenu_ComboBoxEntrySubmenu", entryHeight, SetupEntry)
 
 	-- add data type for dividers, tho we don't bother with a special "LAST_" entry
 	local function SetupDividerEntry(control, data, list)
@@ -243,11 +330,8 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 		control.m_data = data
 		control.m_divider  = control:GetNamedChild("Divider")
 		control.m_divider:SetHidden(false)
-		
-	--	control:SetHeight(DIVIDER_ENTRY_HEIGHT)
 	end
-	ZO_ScrollList_AddDataType(dropdown.m_scroll, DIVIDER_ENTRY_ID, "LibScrollableMenu_ComboBoxEntryDivider", DIVIDER_ENTRY_HEIGHT, SetupDividerEntry)
-	ZO_ScrollList_SetTypeSelectable(dropdown.m_scroll, DIVIDER_ENTRY_ID, false)
+	ZO_ScrollList_AddDataType(mScroll, DIVIDER_ENTRY_ID, "LibScrollableMenu_ComboBoxEntryDivider", DIVIDER_ENTRY_HEIGHT, SetupDividerEntry)
 
 	-- add data type for headers - based on ZO_AddOnSectionHeaderRow
 	local function SetupHeaderEntry(control, data, list)
@@ -264,45 +348,48 @@ function ScrollableDropdownHelper:Initialize(parent, control, visibleRows, visib
 		control.m_label = label
 --		label:SetFont("ZoFontWinH5") -- Header font
 --		label.normalColor = ZO_WHITE
-		label:SetText(data.labelStr or data.name)
-		
---[[ the divider is part of the template now
-		local orgGetTextDimensions = label.GetTextDimensions
-		function label:GetTextDimensions()
-			local w, h = orgGetTextDimensions(self)
-			local hdivider = divider and (select(2, divider:GetDimensions()) + 9) or 0
-			return w, h + hdivider
+
+		local oName = data.name
+		local name = GetValueOrCallback(data.name, data)
+		if oName ~= name then
+			data.oName = oName
+			data.name = name
 		end
-]]
 
---		label:ClearAnchors()
---		label:SetAnchor(TOPLEFT, control, TOPLEFT, 2, 2)
---		label:SetAnchor(TOPRIGHT, control, TOPRIGHT, -2, 2)
---		label:SetMaxLineCount(1)
-		label:SetHidden(false)
+		--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
+		if data.label ~= nil then
+			local labelStr = GetValueOrCallback(data.label, data)
+			data.labelStr = labelStr
+		end
 
---		divider:ClearAnchors()
---		divider:SetAnchor(TOPLEFT, label, BOTTOMLEFT, 4, 1)
---		divider:SetAnchor(TOPRIGHT, label, BOTTOMRIGHT, -4, 1)
-		divider:SetHidden(false)
-
-
---		control:SetMouseEnabled(false)
+		label:SetText(data.labelStr or data.name)
+		control.m_icon = control:GetNamedChild("Icon")
+		ScrollableDropdownHelper.UpdateIcons(control.m_icon, data)
 	end
-	ZO_ScrollList_AddDataType(dropdown.m_scroll, HEADER_ENTRY_ID, "LibScrollableMenu_ComboBoxEntryHeader", HEADER_ENTRY_HEIGHT, SetupHeaderEntry)
-	ZO_ScrollList_SetTypeSelectable(dropdown.m_scroll, HEADER_ENTRY_ID, false)
---	ZO_ScrollList_SetTypeCategoryHeader(dropdown.m_scroll, HEADER_ENTRY_ID, true)
+	ZO_ScrollList_AddDataType(mScroll, HEADER_ENTRY_ID, "LibScrollableMenu_ComboBoxEntryHeader", HEADER_ENTRY_HEIGHT, SetupHeaderEntry)
+	ZO_ScrollList_SetTypeSelectable(mScroll, HEADER_ENTRY_ID, false)
+--	ZO_ScrollList_SetTypeCategoryHeader(mScroll, HEADER_ENTRY_ID, true)
+end
 
-	-- make sure spacing is updated for dividers
-	local function SetSpacing(dropdown, spacing)
-		local newHeight = DIVIDER_ENTRY_HEIGHT + spacing
-		ZO_ScrollList_UpdateDataTypeHeight(dropdown.m_scroll, DIVIDER_ENTRY_ID, newHeight)
+function ScrollableDropdownHelper:UpdateIcons(data)
+	local visible = (data.icons ~= nil and #data.icons > 0)
+	local iconSize = visible and self:GetParent():GetHeight() or 4
+	
+	self:ClearIcons()
+	if visible then
+		if #data.icons > 1 then
+			for _, icon in pairs() do
+				self:AddIcon(icon)
+			end
+		else
+			self:AddIcon(data.icons[1])
+		--	self:AddIcon(ZO_KEYBOARD_NEW_ICON) -- Used for testing
+		end
+		self:Show()
 	end
-	ZO_PreHook(dropdown, "SetSpacing", SetSpacing)
 
-	-- NOTE: changed to completely override the function
-	dropdown.AddMenuItems = function() self:AddMenuItems() end
-
+	self:SetDimensions(iconSize, iconSize)
+	self:SetHidden(not visible)
 end
 
 -- Add the MenuItems to the list (also for submenu lists!)
@@ -322,7 +409,9 @@ function ScrollableDropdownHelper:AddMenuItems()
 	local function CreateEntry(self, item, index, isLast)
 		item.m_index = index
 		item.m_owner = self
-		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (item.isHeader and HEADER_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or ENTRY_ID
+				
+		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (item.isHeader and HEADER_ENTRY_ID) or (item.entries and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or (item.entries and SUBMENU_ENTRY_ID) or ENTRY_ID
+				
 		return ZO_ScrollList_CreateDataEntry(entryType, item)
 	end
 	
@@ -349,22 +438,24 @@ function ScrollableDropdownHelper:AddMenuItems()
 
 	-- using the exact width of the text can leave us with pixel rounding issues
 	-- so just add 5 to make sure we don't truncate at certain screen sizes
-	largestEntryWidth = largestEntryWidth + 5
+--	largestEntryWidth = largestEntryWidth + 5
 	
-	if(visibleItems > visibleRows) then
+	if(visibleItems > visibleRows - 1) then
 		largestEntryWidth = largestEntryWidth + ZO_SCROLL_BAR_WIDTH
 		anchorOffset = -ZO_SCROLL_BAR_WIDTH
 		visibleItems = visibleRows
 	else -- account for divider height difference when we shrink the height
 		dividerOffset = dividers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - DIVIDER_ENTRY_HEIGHT)
 		headerOffset = headers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - HEADER_ENTRY_HEIGHT)
+	--	largestEntryWidth = largestEntryWidth + 10
 	end
-d( largestEntryWidth)
+	
 	-- Allow the dropdown to automatically widen to fit the widest entry, but
 	-- prevent it from getting any skinnier than the container's initial width
 --	local totalDropDownWidth = largestEntryWidth + ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2 + ZO_SCROLL_BAR_WIDTH
 	-- I don't know if there's a difference in dropdown.m_containerWidth and combobox:GetWidth(). I left the if in there since zos used it to force a min with based on the container,
-	local totalDropDownWidth = PADDING * 2 + zo_max(largestEntryWidth, combobox:GetWidth()) + CONTENT_PADDING
+--	local totalDropDownWidth = PADDING * 2 + zo_max(largestEntryWidth, combobox:GetWidth()) + CONTENT_PADDING
+	local totalDropDownWidth = PADDING * 2 + largestEntryWidth + CONTENT_PADDING
 	
 	if totalDropDownWidth > dropdown.m_containerWidth then
 		dropdown.m_dropdown:SetWidth(totalDropDownWidth)
@@ -374,8 +465,9 @@ d( largestEntryWidth)
 	
 	local scroll = dropdown.m_dropdown:GetNamedChild("Scroll")
 	local scrollContent = scroll:GetNamedChild("Contents")
---	scrollContent:ClearAnchors()
---	scrollContent:SetAnchor(BOTTOMRIGHT, nil, nil, anchorOffset)
+	scrollContent:ClearAnchors()
+	scrollContent:SetAnchor(TOPLEFT)
+	scrollContent:SetAnchor(BOTTOMRIGHT, nil, nil, anchorOffset)
 
 	local maxHeight = dropdown.m_height
 	-- get the height of all the entries we are going to show
@@ -424,6 +516,8 @@ function ScrollableDropdownHelper:DoHide()
 end
 
 function ScrollableDropdownHelper:GetMaxWidth(item, maxWidth, dividers, headers)
+	local dropdown = self.dropdown
+	local fontObject = _G[dropdown.m_font]
 	-- I based this off of how the lib is using "item" in AddMenuItems and GetMaxWidth
 	if item.name == lib.DIVIDER then
 		dividers = dividers + 1
@@ -431,10 +525,15 @@ function ScrollableDropdownHelper:GetMaxWidth(item, maxWidth, dividers, headers)
 		headers = headers + 1
 	end
 	
-	-- This is how ZO_ComboBox:AddMenuItems() figures the width
-	-- m_owner.m_container.m_comboBox
-	local fontObject = _G[self.font]
-	local width = GetStringWidthScaled(fontObject, item.name, 1, SPACE_INTERFACE)
+	local labelStr = item.name
+	if item.label ~= nil then
+		labelStr = GetValueOrCallback(item.label, item)
+		
+	end
+	
+	local padding = (item.icons ~= nil and #item.icons > 0) and ICON_PADDING or NO_ICON_PADDING
+	local width = GetStringWidthScaled(fontObject, labelStr, 1, SPACE_INTERFACE) + padding
+	
 	if (width > maxWidth) then
 		maxWidth = width
 	end
@@ -672,43 +771,34 @@ function lib.SetPersistentMenus(persistent)
 	lib.persistentMenus = persistent
 end
 
-
 --Adds a scroll helper to the comboBoxControl dropdown entries, and enables submenus (scollable too) at the entries.
 --	control parent 							Must be the parent control of the comboBox
 --	control comboBoxControl 				Must be any ZO_ComboBox control (e.g. created from virtual template ZO_ComboBox)
---	number visibleRowsDropDown:optional		Number of shown entries at 1 page of the scrollable comboBox's opened dropdown
---	userdata dropdown:optional				Either this exists as comboBoxControl.dropdown already, or you can pass in the
---											dropdown object (containing the m_comboBox etc.) here to add it to the comboBoxControl
-function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxControl, visibleRowsDropDown, visibleRowsSubmenus, dropdown)
+
+--  table options:optional = {
+--		number visibleRowsDropdown:optional		Number of shown entries at 1 page of the scrollable comboBox's opened dropdown
+--		number visibleRowsSubmenu:optional		Number of shown entries at 1 page of the scrollable comboBox's opened submenus
+--		userdata dropdown:optional				Either this exists as comboBoxControl.dropdown already, or you can pass in the
+--												dropdown object (containing the m_comboBox etc.) here to add it to the comboBoxControl
+--  }
+function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxControl, options)
 	assert(parent ~= nil and comboBoxControl ~= nil, MAJOR .. " - AddCustomScrollableComboBoxDropdownMenu ERROR: Parameters parent and comboBoxControl must be provided!")
+	
+	local m_comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxControl)
+	
 	if comboBoxControl.combobox == nil then
 		comboBoxControl.combobox = comboBoxControl
 	end
-	if comboBoxControl.dropdown == nil and dropdown ~= nil then
-		comboBoxControl.dropdown = dropdown
+	if comboBoxControl.dropdown == nil then
+		comboBoxControl.dropdown = m_comboBox
 	end
-	return ScrollableDropdownHelper:New(parent, comboBoxControl, visibleRowsDropDown, visibleRowsSubmenus, false)
+	if options ~= nil then
+	--	if comboBoxControl.dropdown == nil and options.dropdown ~= nil then
+	end
+	--Add a new scrollable menu helper
+	return ScrollableDropdownHelper:New(parent, comboBoxControl, options, false)
 end
 
-
-------------------------------------------------------------------------------------------------------------------------
--- Init
-------------------------------------------------------------------------------------------------------------------------
-local function OnAddonLoaded(event, name)
-	if name:find("^ZO_") then return end
-	EVENT_MANAGER:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
-	lib.submenu = GetScrollableSubmenu(1)
-	HookScrollableEntry()
-end
-
-EVENT_MANAGER:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
-EVENT_MANAGER:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, OnAddonLoaded)
-
-
-------------------------------------------------------------------------------------------------------------------------
--- Global library reference
-------------------------------------------------------------------------------------------------------------------------
-LibScrollableMenu = lib
 
 ------------------------------------------------------------------------------------------------------------------------
 -- XML functions
@@ -747,6 +837,7 @@ function LibScrollableMenu_Entry_OnMouseEnter(entry)
         end
     end
 end
+local libMenuEntryOnMouseEnter = LibScrollableMenu_Entry_OnMouseEnter
 
 local function OnMouseExitTimeout()
 	local control = moc()
@@ -773,6 +864,12 @@ function LibScrollableMenu_Entry_OnMouseExit(entry)
 	end
 end
 
+local function playSelectedSoundCheck(entry)
+	local data = entry.m_data
+	if GetValueOrCallback(data.selectedSoundDisabled, data) == true then return end
+	PlaySound(SOUNDS.COMBO_CLICK)
+end
+
 function LibScrollableMenu_OnSelected(entry)
     if entry.m_owner then
 		local data = ZO_ScrollList_GetData(entry)
@@ -789,18 +886,39 @@ function LibScrollableMenu_OnSelected(entry)
 					targetSubmenu:Clear() -- need to clear it straight away, no timeout
 				else
 					-- just calling this to not have to copy code
-					LibScrollableMenu_Entry_OnMouseEnter(entry)
+					libMenuEntryOnMouseEnter(entry)
 				end
 			end
 			return true
 		elseif data.checked ~= nil then
 			ZO_CheckButton_OnClicked(entry.m_checkbox)
+			playSelectedSoundCheck(entry)
 			return true
 		else
 			-- Original
 			entry.m_owner:SetSelected(entry.m_data.m_index)
+			playSelectedSoundCheck(entry)
 		end
 		
     end
 end
 
+
+------------------------------------------------------------------------------------------------------------------------
+-- Init
+------------------------------------------------------------------------------------------------------------------------
+local function OnAddonLoaded(event, name)
+	if name:find("^ZO_") then return end
+	EVENT_MANAGER:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
+	lib.submenu = GetScrollableSubmenu(1)
+	HookScrollableEntry()
+end
+
+EVENT_MANAGER:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
+EVENT_MANAGER:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, OnAddonLoaded)
+
+
+------------------------------------------------------------------------------------------------------------------------
+-- Global library reference
+------------------------------------------------------------------------------------------------------------------------
+LibScrollableMenu = lib
