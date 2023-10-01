@@ -840,6 +840,7 @@ function ScrollableSubmenu:AnchorToControl(parentControl)
 
 	local anchorPoint = LEFT
 	local anchorOffset = -3
+	local anchorOffsetY = -7
 
 	if self.parentMenu then
 		anchorPoint = self.parentMenu.anchorPoint
@@ -851,7 +852,7 @@ function ScrollableSubmenu:AnchorToControl(parentControl)
 		anchorOffset = parentDropdown:GetWidth() - parentControl:GetWidth() - PADDING * 2
 	end
 
-	myControl:SetAnchor(TOP + (10 - anchorPoint), parentControl, TOP + anchorPoint, anchorOffset)
+	myControl:SetAnchor(TOP + (10 - anchorPoint), parentControl, TOP + anchorPoint, anchorOffset, anchorOffsetY)
 	self.anchorPoint = anchorPoint
 	myControl:SetHidden(false)
 end
