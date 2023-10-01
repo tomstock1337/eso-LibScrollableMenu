@@ -72,9 +72,10 @@
 					<Anchor point="LEFT" relativeTo="$(parent)Icon" relativePoint="RIGHT" offsetX="4" />
 					<Anchor point="RIGHT" offsetX="-25" />
 				</Label>
-				<Texture name="$(parent)Arrow" textureFile="/esoui/art/buttons/rightarrow_up.dds">
-					<Dimensions x="18"  y="18"/>
-					<Anchor point="LEFT" relativeTo="$(parent)Label" relativePoint="RIGHT" offsetY="2"/>
+				<Texture name="$(parent)Arrow" textureFile="EsoUI/Art/Miscellaneous/colorPicker_slider_vertical.dds">
+					<TextureCoords left="0" right="0.5" top="0" bottom="1"/>
+					<Dimensions x="16"  y="20"/>
+					<Anchor point="LEFT" relativeTo="$(parent)Label" relativePoint="RIGHT" offsetY="0"/>
 				</Texture>
 			</Controls>
 		</Control>

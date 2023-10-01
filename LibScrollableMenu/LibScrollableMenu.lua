@@ -361,9 +361,11 @@ function ScrollableDropdownHelper:AddDataTypes()
 		control.m_owner = data.m_owner
 		control.m_arrow = control:GetNamedChild("Arrow")
 		control.m_icon = control:GetNamedChild("Icon")
-		
+
+		local hasSubmenu = data.entries ~= nil
+		data.hasSubmenu = hasSubmenu
 		if control.m_arrow then
-			control.m_arrow:SetHidden(data.entries == nil)
+			control.m_arrow:SetHidden(not hasSubmenu)
 		end
 		
 		if data.label ~= nil then
@@ -505,6 +507,7 @@ function ScrollableDropdownHelper:AddMenuItems()
 		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (item.isHeader and HEADER_ENTRY_ID) or 
 			(item.entries and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or (item.entries and SUBMENU_ENTRY_ID) or ENTRY_ID
 		if item.entries then
+			item.hasSubmenu = true
 			item.isNew = areAnyEntriesNew(item)
 		end
 		return ZO_ScrollList_CreateDataEntry(entryType, item)
