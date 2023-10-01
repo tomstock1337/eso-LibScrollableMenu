@@ -19,6 +19,9 @@ lib.HELPER_MODE_LAYOUT_ONLY = 1 -- means only the layout of the dropdown will be
 local wm = WINDOW_MANAGER
 local em = EVENT_MANAGER
 
+local origSoundComboClicked = SOUNDS.COMBO_CLICK
+local soundComboClickedSilenced = SOUNDS.NONE
+
 local SUBMENU_ITEM_MOUSE_ENTER = 1
 local SUBMENU_ITEM_MOUSE_EXIT = 2
 local SUBMENU_SHOW_TIMEOUT = 350
@@ -43,12 +46,12 @@ local ICON_PADDING = 0
 local NO_ICON_PADDING = -5
 local ICON_PADDING = 20
 
+local MAX_MENU_WIDTH
 local PADDING = GetMenuPadding() / 2 -- half the amount looks closer to the regular dropdown
 local ROUNDING_MARGIN = 0.01 -- needed to avoid rare issue with too many anchors processed
 
 local SCROLLABLE_COMBO_BOX_LIST_PADDING_Y = 9
 
-local MAX_MENU_WIDTH
 
 local ENTRY_ID = 1
 local LAST_ENTRY_ID = 2
@@ -117,6 +120,39 @@ end
 local function GetSubmenuFromControl(control)
 	local owner = control.m_owner
 	return owner and owner.m_submenu
+end
+
+local function GetOptionsForEntry(entry)
+	local entrysComboBox = GetContainerFromControl(entry)
+	return entrysComboBox ~= nil and entrysComboBox.options
+end
+
+local function silenceComboBoxClickedSound(doSilence)
+	doSilence = doSilence or false
+	if doSilence == true then
+		--Silence the "selected combobox sound"
+		SOUNDS.COMBO_CLICK = soundComboClickedSilenced
+	else
+		--Unsilence the "selected combobox sound" again
+		SOUNDS.COMBO_CLICK = origSoundComboClicked
+	end
+end
+
+local function playSelectedSoundCheck(entry)
+	local soundToPlay
+	local options = GetOptionsForEntry(entry)
+	silenceComboBoxClickedSound(false)
+	if options ~= nil then
+		--Chosen at options to play no selected sound?
+		if GetValueOrCallback(options.selectedSoundDisabled, options) == true then
+			silenceComboBoxClickedSound(true)
+			return
+		else
+			soundToPlay = GetValueOrCallback(options.selectedSound, options)
+			soundToPlay = soundToPlay or SOUNDS.COMBO_CLICK
+			PlaySound(soundToPlay) --SOUNDS.COMBO_CLICK
+		end
+	end
 end
 
 -- Loop through, if needed, to find any entry set as new.
@@ -216,6 +252,7 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 	local dropdown = control.dropdown
 
 --todo: For debugging!
+lib._control = control
 lib._combobox = combobox
 lib._dropdown = dropdown
 lib._selfScrollHelper = self
@@ -284,6 +321,17 @@ lib._selfScrollHelper = self
 	
 	--Add the dataTypes to the scroll list (normal row, last row, header row, submenu row)
 	self:AddDataTypes()
+
+	--Hooks
+	--Disable the SOUNDS.COMBO_CLICK upon item selected. Will be handled via options table AND
+	--function LibScrollableMenu_OnSelected below!
+	--...
+	--Reenable the sound for comboBox select item again
+	SecurePostHook(dropdown, "SelectItem", function()
+		silenceComboBoxClickedSound(false)
+	end)
+
+
 end
 
 -- With multi icon
@@ -863,7 +911,7 @@ local function HookScrollableEntry()
 		end
 		return false
 	end
-
+	--Overwrite ZO_ComboBox.OnGlobalMouseUp to support submenu hide, if clicked somewhere
 	ZO_ComboBox.OnGlobalMouseUp = function(self, _, button)
 		if self:IsDropdownVisible() then
 			if not MouseIsOverDropdownOrSubmenu(self) then
@@ -955,18 +1003,18 @@ function LibScrollableMenu_Entry_OnMouseEnter(entry)
 			if data.entries == nil or not areAnyEntriesNew(data) then
 				data.isNew = false
 				-- first send the data to the addon that sent the entry so it can update it's data
-				LibScrollableMenu:FireCallbacks('NewStatusUpdated', data)
+				LibScrollableMenu:FireCallbacks('NewStatusUpdated', data, entry)
 				
 				-- Next refresh visible
 				ZO_ScrollList_RefreshVisible(entry.m_owner.m_scroll)
 				LibScrollableMenu.submenu.combobox.m_comboBox:ShowDropdownOnMouseUp()
 			end
 		end
-		
-		if data.entries then
+		--Submenu
+		if entry.hasSubmenu or data.entries ~= nil then
 			ClearTimeout()
 			
-			if mySubmenu then -- open next submenu
+			if mySubmenu then -- open next submenu (nested)
 				local childMenu = mySubmenu:GetChild(true) -- create if needed
 				if childMenu then
 					childMenu:Show(entry)
@@ -1018,18 +1066,13 @@ function LibScrollableMenu_Entry_OnMouseExit(entry)
 	end
 end
 
-local function playSelectedSoundCheck(entry)
-	local data = entry.m_data
-	if GetValueOrCallback(data.selectedSoundDisabled, data) == true then return end
-	PlaySound(SOUNDS.COMBO_CLICK)
-end
-
 function LibScrollableMenu_OnSelected(entry)
     if entry.m_owner then
+d("LibScrollableMenu_OnSelected")
 		local data = ZO_ScrollList_GetData(entry)
 		local mySubmenu = GetSubmenuFromControl(entry)
 	--	d( data.entries)
-		if data.entries then
+		if entry.hasSubmenu or data.entries ~= nil then
 			local targetSubmenu = lib.submenu
 			if mySubmenu and mySubmenu.childMenu then
 				targetSubmenu = mySubmenu.childMenu
@@ -1045,13 +1088,13 @@ function LibScrollableMenu_OnSelected(entry)
 			end
 			return true
 		elseif data.checked ~= nil then
-			ZO_CheckButton_OnClicked(entry.m_checkbox)
 			playSelectedSoundCheck(entry)
+			ZO_CheckButton_OnClicked(entry.m_checkbox)
 			return true
 		else
 			-- Original
-			entry.m_owner:SetSelected(entry.m_data.m_index)
 			playSelectedSoundCheck(entry)
+			entry.m_owner:SetSelected(entry.m_data.m_index)
 		end
 		
     end
