@@ -571,6 +571,8 @@ function ScrollableDropdownHelper:AddMenuItems()
 			largestEntryWidth = maxWidth
 		end
 	end
+
+d(">maxWidth: " ..tostring(maxWidth))
 	
 	local visibleRows =  (self.isSubMenuScrollHelper and
 			(lib.submenu and lib.submenu.parentScrollableDropdownHelper and lib.submenu.parentScrollableDropdownHelper.visibleRowsSubmenu)) or self.visibleRows
@@ -651,7 +653,7 @@ function ScrollableDropdownHelper:DoHide()
 end
 
 function ScrollableDropdownHelper:GetMaxWidth(item, maxWidth, dividers, headers)
-	local dropdown = self.dropdown
+	--local dropdown = self.dropdown
 	local fontObject = _G[item.m_owner.m_font]
 	
 	-- I based this off of how the lib is using "item" in AddMenuItems and GetMaxWidth
@@ -667,9 +669,10 @@ function ScrollableDropdownHelper:GetMaxWidth(item, maxWidth, dividers, headers)
 	end
 	
 	local padding = (item.icon ~= nil or item.isNew) and ICON_PADDING or NO_ICON_PADDING
-	local width = GetStringWidthScaled(fontObject, labelStr, 1, SPACE_INTERFACE) + padding
+	local width = GetStringWidthScaled(fontObject, labelStr, 1, SPACE_INTERFACE) + padding + 30
 	-- MAX_MENU_WIDTH is to set a cap on how wide text can make a menu. Don't want a menu being 2934 pixels wide.
 	width = zo_min(MAX_MENU_WIDTH, width)
+
 	if (width > maxWidth) then
 		maxWidth = width
 	end
