@@ -382,12 +382,26 @@ function ScrollableDropdownHelper:AddDataTypes()
 			data.name = name
 		end
 		control.m_font = control.m_owner.m_font
-		
-		control.m_label:SetText(data.name)
+
+		--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
+		if data.label ~= nil then
+			data.labelStr  = GetValueOrCallback(data.label, data)
+		end
+
+		control.m_label:SetText(data.labelStr or data.name)
 		if not control.isHeader then
 			-- This would overwrite the header's font and color.
 			control.m_label:SetFont(control.m_owner.m_font)
 			control.m_label:SetColor(control.m_owner.m_normalColor:UnpackRGBA())
+		end
+	end
+
+	local function hookMouseHandlers(control)
+		-- This is for the mouse-over tooltips
+		if not control.hookedMouseHandlers then --only do it once per control
+			control.hookedMouseHandlers = true
+			ZO_PreHookHandler(control, "OnMouseEnter", onMouseEnter)
+			ZO_PreHookHandler(control, "OnMouseExit", onMouseExit)
 		end
 	end
 
@@ -404,19 +418,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 				addArrow(control, data, list)
 				addLabel(control, data, list)
 				addCheckbox(control, data, list)
-				
-				--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
-				if data.label ~= nil then
-					data.labelStr  = GetValueOrCallback(data.label, data)
-					control.m_label:SetText(data.labelStr)
-				end
-				
-				-- This is for the mouse-over tooltips
-				if not control.hookedMouseHandlers then --only do it once per control
-					control.hookedMouseHandlers = true
-					ZO_PreHookHandler(control, "OnMouseEnter", onMouseEnter)
-					ZO_PreHookHandler(control, "OnMouseExit", onMouseExit)
-				end
+				hookMouseHandlers(control)
 			--	control.m_data = data --update changed (after oSetup) data entries to the control, and other entries have been updated
 			end,
 		},
@@ -430,21 +432,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 				addArrow(control, data, list)
 				addLabel(control, data, list)
 				addCheckbox(control, data, list)
-				
-				--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
-				if data.label ~= nil then
-					data.labelStr  = GetValueOrCallback(data.label, data)
-					control.m_label:SetText(data.labelStr)
-				end
-				
-				-- This is for the mouse-over tooltips
-				if not control.hookedMouseHandlers then --only do it once per control
-					control.hookedMouseHandlers = true
-					ZO_PreHookHandler(control, "OnMouseEnter", onMouseEnter)
-					ZO_PreHookHandler(control, "OnMouseExit", onMouseExit)
-				end
-				
-				
+				hookMouseHandlers(control)
 			--	control.m_data = data --update changed (after oSetup) data entries to the control, and other entries have been updated
 			end,
 		},
@@ -466,12 +454,6 @@ function ScrollableDropdownHelper:AddDataTypes()
 				addLabel(control, data, list)
 
 			--	control:SetHeight(HEADER_ENTRY_HEIGHT)
-
-				--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
-				if data.label ~= nil then
-					data.labelStr  = GetValueOrCallback(data.label, data)
-					control.m_label:SetText(data.labelStr)
-				end
 			end,
 		},
 	}
