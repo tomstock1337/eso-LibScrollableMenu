@@ -587,9 +587,9 @@ function ScrollableDropdownHelper:AddMenuItems()
 		dividerOffset = dividers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - DIVIDER_ENTRY_HEIGHT)
 		headerOffset = headers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - HEADER_ENTRY_HEIGHT)
 	end
-		-- need to compensate for them all even if there is no scroll bar
-		dividerOffset = dividers * (ZO_SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - DIVIDER_ENTRY_HEIGHT)
-		headerOffset = headers * (ZO_SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - HEADER_ENTRY_HEIGHT)
+	-- need to compensate for them all even if there is no scroll bar
+	dividerOffset = dividers * (ZO_SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - DIVIDER_ENTRY_HEIGHT)
+	headerOffset = headers * (ZO_SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - HEADER_ENTRY_HEIGHT)
 	
 	-- Allow the dropdown to automatically widen to fit the widest entry, but
 	-- prevent it from getting any skinnier than the container's initial width
@@ -680,6 +680,7 @@ end
 function ScrollableDropdownHelper:OnMouseEnter(control)
 	-- show tooltip
 	local data = ZO_ScrollList_GetData(control)
+	if data == nil then return end
 	if data.tooltip then
 		InitializeTooltip(InformationTooltip, control, TOPLEFT, 0, 0, BOTTOMRIGHT)
 		SetTooltipText(InformationTooltip, GetValueOrCallback(data.tooltip, data))
@@ -693,6 +694,7 @@ end
 function ScrollableDropdownHelper:OnMouseExit(control)
 	-- hide tooltip
 	local data = ZO_ScrollList_GetData(control)
+	if data == nil then return end
 	if data.tooltip then
 		ClearTooltip(InformationTooltip)
 	end
@@ -944,7 +946,6 @@ end
 /script LibScrollableMenuSub1DropdownDropdown:SetWidth(LibScrollableMenuSub1DropdownDropdown:GetWidth() - 10)
 /script LibScrollableMenuSub1DropdownDropdown:SetWidth(LibScrollableMenuSub1DropdownDropdown:GetWidth() - 10)
 ]]
-
 
 --Adds a scroll helper to the comboBoxControl dropdown entries, and enables submenus (scollable too) at the entries.
 --	control parent 							Must be the parent control of the comboBox
