@@ -481,7 +481,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 
     local entryHeight = dropdown:GetEntryTemplateHeightWithSpacing()
 	
-		--Were any options and XMLRowTemplates passed in?
+	--Were any options and XMLRowTemplates passed in?
 	local optionTemplates = options and GetValueOrCallback(options.XMLRowTemplates, options)
 	local XMLrowTemplatesToUse = defaultXMLTemplates
 	--Check if all XML row templates are passed in, and update missing ones with default values
