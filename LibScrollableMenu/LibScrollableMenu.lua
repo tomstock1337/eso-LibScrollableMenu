@@ -1080,6 +1080,11 @@ function LibScrollableMenu_OnSelected(entry)
 					if data.callback ~= nil then
 						data.callback(entry)
 						targetSubmenu:Clear()
+						--entry.m_owner:Hide()
+						local comboBox = GetContainerFromControl(entry)
+						if comboBox and comboBox.scrollHelper then
+							comboBox.scrollHelper:DoHide()
+						end
 						return
 					end
 					--Check if submenu should be shown/hidden
