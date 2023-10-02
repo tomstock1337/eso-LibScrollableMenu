@@ -492,7 +492,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 			if optionTemplates[entryType] == nil or optionTemplates[entryType].template == nil then
 				XMLrowTemplatesToUse[entryType] = defaultData
 			else
-				XMLrowTemplatesToUse[entryType] = optionTemplates
+				XMLrowTemplatesToUse[entryType] = optionTemplates[entryType]
 			end
 		end
 	end
