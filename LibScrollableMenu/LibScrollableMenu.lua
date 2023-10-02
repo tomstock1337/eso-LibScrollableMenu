@@ -47,7 +47,7 @@ local ICON_PADDING = 0
 
 local NO_ICON_PADDING = -5
 local ICON_PADDING = 20
-local SUBMENU_ARROW_PADDING = 20
+local SUBMENU_ARROW_PADDING = 25
 
 local PADDING = GetMenuPadding() / 2 -- half the amount looks closer to the regular dropdown
 local ROUNDING_MARGIN = 0.01 -- needed to avoid rare issue with too many anchors processed
@@ -667,7 +667,7 @@ function ScrollableDropdownHelper:GetMaxWidth(item, maxWidth, dividers, headers)
 		labelStr = GetValueOrCallback(item.label, item)
 	end
 	
-	local submenuEntryPadding = item.hasSubmenu and SUBMENU_ARROW_PADDING or 0
+	local submenuEntryPadding = (item.hasSubmenu and SUBMENU_ARROW_PADDING) or 0
 	local iconPadding = (item.icon ~= nil or item.isNew) and ICON_PADDING or NO_ICON_PADDING
 	local width = GetStringWidthScaled(fontObject, labelStr, 1, SPACE_INTERFACE) + iconPadding + submenuEntryPadding
 	-- MAX_MENU_WIDTH is to set a cap on how wide text can make a menu. Don't want a menu being 2934 pixels wide.
