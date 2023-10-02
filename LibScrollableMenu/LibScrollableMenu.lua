@@ -572,8 +572,6 @@ function ScrollableDropdownHelper:AddMenuItems()
 		end
 	end
 
-d(">maxWidth: " ..tostring(maxWidth))
-	
 	local visibleRows =  (self.isSubMenuScrollHelper and
 			(lib.submenu and lib.submenu.parentScrollableDropdownHelper and lib.submenu.parentScrollableDropdownHelper.visibleRowsSubmenu)) or self.visibleRows
 
