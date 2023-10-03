@@ -385,6 +385,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 		control.m_owner = data.m_owner
 		control.m_data = data
 		control.m_divider = control:GetNamedChild("Divider")
+		control.m_divider:SetHidden(false)
 	end
 
 	local function addLabel(control, data, list)
@@ -629,13 +630,13 @@ function ScrollableDropdownHelper:AddMenuItems()
 	-- the last entry uses a separate entry template that does not include the spacing in its height
 	if visibleItems > MAX_MENU_ROWS then
 		visibleItems = MAX_MENU_ROWS
-		visibleItems = 3
 	end
 	
 	-- firstRowPadding is to compensate for the additional padding required by the container, 5 above and 5 below entries.
 	-- Why is this modification needed? ZO_ComboBox does not add the + 10.
-	local firstRowPadding = (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) + 10
+	local firstRowPadding = (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
     local desiredHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + firstRowPadding - (dividerOffset + headerOffset)
+	desiredHeight = desiredHeight + 8
 
 	dropdown.m_dropdown:SetHeight(desiredHeight)
 	ZO_ScrollList_SetHeight(dropdown.m_scroll, desiredHeight)
@@ -1189,13 +1190,17 @@ local function test()
 		dropdown:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
 		dropdown:SetHeight(24)
 		dropdown:SetWidth(250)
+		dropdown:SetMovable(true)
 
-		local options = nil -- { visibleRowsDropdown = 10, visibleRowsSubmenu = 15 }
+		local options = { visibleRowsDropdown = 5, visibleRowsSubmenu = 5 }
 		AddCustomScrollableComboBoxDropdownMenu(testTLC, dropdown, options)
 
 		lib.testDropdown = dropdown
 
 		--Prepare and add the text entries in the dropdown's comboBox
+		local comboBox = dropdown.m_comboBox
+		comboBox:SetSortsItems(false)
+
 		local comboBoxMenuEntries = {}
 		local submenuEntries = {}
 
@@ -1254,6 +1259,60 @@ local function test()
 			tooltip         = function() return "Submenu Entry Test 4"  end
 			--icons 			= nil,
 		}
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = false,
+			name            = "Submenu Entry Test 5",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Submenu entry test 5")
+			end,
+			--tooltip         = function() return "Submenu Entry Test 4"  end
+			--icons 			= nil,
+		}
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = false,
+			name            = "Submenu Entry Test 6",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Submenu entry test 6")
+			end,
+			--tooltip         = function() return "Submenu Entry Test 4"  end
+			--icons 			= nil,
+		}
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = false,
+			name            = "Submenu Entry Test 7",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Submenu entry test 7")
+			end,
+			--tooltip         = function() return "Submenu Entry Test 4"  end
+			--icons 			= nil,
+		}
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = false,
+			name            = "Submenu Entry Test 8",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Submenu entry test 8")
+			end,
+			--tooltip         = function() return "Submenu Entry Test 4"  end
+			--icons 			= nil,
+		}
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = false,
+			name            = "Submenu Entry Test 9",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Submenu entry test 9")
+			end,
+			--tooltip         = function() return "Submenu Entry Test 4"  end
+			--icons 			= nil,
+		}
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = false,
+			name            = "Submenu Entry Test 10",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Submenu entry test 10")
+			end,
+			--tooltip         = function() return "Submenu Entry Test 4"  end
+			--icons 			= nil,
+		}
 
 		--Normal entries
 		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
@@ -1299,9 +1358,64 @@ local function test()
 			--entries         = submenuEntries,
 			tooltip         = function() return "Normal entry 3"  end
 		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Normal entry 4",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Normal entry 4")
+			end,
+			--entries         = submenuEntries,
+			tooltip         = function() return "Normal entry 4"  end
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Normal entry 5",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Normal entry 5")
+			end,
+			--entries         = submenuEntries,
+			tooltip         = function() return "Normal entry 5"  end
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Normal entry 6",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Normal entry 6")
+			end,
+			--entries         = submenuEntries,
+			tooltip         = function() return "Normal entry 6"  end
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Normal entry 7",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Normal entry 7")
+			end,
+			--entries         = submenuEntries,
+			tooltip         = function() return "Normal entry 7"  end
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Normal entry 8",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Normal entry 8")
+			end,
+			--entries         = submenuEntries,
+			tooltip         = function() return "Normal entry 8"  end
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Normal entry 9",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Normal entry 9")
+			end,
+			--entries         = submenuEntries,
+			tooltip         = function() return "Normal entry 9"  end
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Normal entry 10 - Very long text here at this entry!",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Normal entry 10")
+			end,
+			--entries         = submenuEntries,
+			tooltip         = function() return "Normal entry 10"  end
+		}
 
 		--Add the items
-		local comboBox = dropdown.m_comboBox
 		comboBox:AddItems(comboBoxMenuEntries)
 	end
 	local dropdown = lib.testDropdown
@@ -1316,7 +1430,8 @@ local function test()
 
 end
 lib.Test = test
---	/script LibScrollableMenu:Test()
+--	/script LibScrollableMenu.Test()
+SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Init
