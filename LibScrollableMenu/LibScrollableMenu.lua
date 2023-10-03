@@ -1186,7 +1186,7 @@ local function test()
 		local dropdown = WINDOW_MANAGER:CreateControlFromVirtual(MAJOR .. "TestDropdown", testTLC, "ZO_ComboBox")
 		dropdown:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
 		dropdown:SetHeight(24)
-		dropdown:SetWidth(250)
+		dropdown:SetWidth(300)
 		dropdown:SetMovable(true)
 		dropdown:SetMouseEnabled(true)
 
@@ -1196,6 +1196,9 @@ local function test()
 		lib.testDropdown = dropdown
 
 		--Prepare and add the text entries in the dropdown's comboBox
+		local comboBox = dropdown.m_comboBox
+		comboBox:SetSortsItems(false)
+
 		local comboBoxMenuEntries = {}
 		local submenuEntries = {}
 
@@ -1295,7 +1298,6 @@ local function test()
 		}
 
 		--Add the items
-		local comboBox = dropdown.m_comboBox
 		comboBox:AddItems(comboBoxMenuEntries)
 	end
 	local dropdown = lib.testDropdown
