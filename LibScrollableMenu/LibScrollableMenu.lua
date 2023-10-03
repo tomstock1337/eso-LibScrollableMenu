@@ -1178,8 +1178,10 @@ end
 local function test()
 	if lib.testDropdown == nil then
 		local testTLC = CreateTopLevelWindow(MAJOR .. "TestTLC")
+		testTLC:ClearAnchors()
+		testTLC:SetAnchor(CENTER, GuiRoot, CENTER)
 		testTLC:SetHidden(true)
-		testTLC:SetDimensions(800, 600)
+		testTLC:SetDimensions(1, 1)
 		testTLC:SetMovable(true)
 		testTLC:SetMouseEnabled(false)
 
