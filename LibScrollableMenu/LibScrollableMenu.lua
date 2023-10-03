@@ -1173,6 +1173,145 @@ lib._selectedEntry = entry
 end
 
 ------------------------------------------------------------------------------------------------------------------------
+-- For testing - Combobox with all kind of entry types (test offsets, etc.)
+------------------------------------------------------------------------------------------------------------------------
+local function test()
+	if lib.testDropdown == nil then
+		local testTLC = CreateTopLevelWindow(MAJOR .. "TestTLC")
+		testTLC:SetHidden(true)
+		testTLC:SetDimensions(800, 600)
+		testTLC:SetMovable(true)
+		testTLC:SetMouseEnabled(false)
+
+		local dropdown = WINDOW_MANAGER:CreateControlFromVirtual(MAJOR .. "TestDropdown", testTLC, "ZO_ComboBox")
+		dropdown:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
+		dropdown:SetHeight(24)
+		dropdown:SetWidth(250)
+		dropdown:SetMovable(true)
+		dropdown:SetMouseEnabled(true)
+
+		local options = nil -- { visibleRowsDropdown = 10, visibleRowsSubmenu = 15 }
+		AddCustomScrollableComboBoxDropdownMenu(testTLC, dropdown, options)
+
+		lib.testDropdown = dropdown
+
+		--Prepare and add the text entries in the dropdown's comboBox
+		local comboBoxMenuEntries = {}
+		local submenuEntries = {}
+
+		--LibScrollableMenu - LSM entry - Submenu normal
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = false,
+			name            = "Submenu Entry Test 1",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Submenu entry test 1")
+			end,
+			--tooltip         = "Submenu Entry Test 1",
+			--icons 			= nil,
+		}
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = false,
+			name            = "Submenu Entry Test 2",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Submenu entry test 2")
+			end,
+			tooltip         = "Submenu Entry Test 2",
+			--icons 			= nil,
+		}
+		--LibScrollableMenu - LSM entry - Submenu divider
+		submenuEntries[#submenuEntries+1] = {
+			name            = "-",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				--Headers do not use any callback
+			end,
+			tooltip         = "Submenu Divider Test 1",
+			--icons 			= nil,
+		}
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = false,
+			name            = "Submenu Entry Test 3",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Submenu entry test 3")
+			end,
+			--tooltip         = "Submenu Entry Test 3",
+			--icons 			= nil,
+		}
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = true, --Enables the header at LSM
+			name            = "Header Test 1",
+			tooltip         = "Header test 1",
+			--icons 			= nil,
+		}
+		submenuEntries[#submenuEntries+1] = {
+			isHeader        = false,
+			name            = "Submenu Entry Test 4",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Submenu entry test 4")
+			end,
+			tooltip         = function() return "Submenu Entry Test 4"  end
+			--icons 			= nil,
+		}
+
+		--Normal entries
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Normal entry 1",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Normal entry 1")
+			end,
+			--entries         = submenuEntries,
+			--tooltip         =
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "-", --Divider
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Entry having submenu 1",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Entry having submenu 1")
+			end,
+			entries         = submenuEntries,
+			--tooltip         =
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Normal entry 2",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Normal entry 2")
+			end,
+			--entries         = submenuEntries,
+			--tooltip         =
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			isHeader		= true,
+			name            = "Header entry 1",
+			--icons 	     = nil,
+		}
+		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
+			name            = "Normal entry 3",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Normal entry 3")
+			end,
+			--entries         = submenuEntries,
+			tooltip         = function() return "Normal entry 3"  end
+		}
+
+		--Add the items
+		local comboBox = dropdown.m_comboBox
+		comboBox:AddItems(comboBoxMenuEntries)
+	end
+	local dropdown = lib.testDropdown
+	local testTLC = dropdown:GetParent()
+	if testTLC:IsHidden() then
+		testTLC:SetHidden(false)
+		testTLC:SetMouseEnabled(true)
+	else
+		testTLC:SetHidden(true)
+		testTLC:SetMouseEnabled(false)
+	end
+
+end
+lib.Test = test
+
+------------------------------------------------------------------------------------------------------------------------
 -- Init
 ------------------------------------------------------------------------------------------------------------------------
 local function OnAddonLoaded(event, name)
@@ -1190,3 +1329,6 @@ EVENT_MANAGER:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, OnAddonLoaded)
 -- Global library reference
 ------------------------------------------------------------------------------------------------------------------------
 LibScrollableMenu = lib
+
+
+
