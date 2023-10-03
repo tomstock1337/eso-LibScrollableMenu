@@ -39,7 +39,7 @@ local DIVIDER_ENTRY_HEIGHT = 7
 local HEADER_ENTRY_HEIGHT = 30
 
 local DEFAULT_VISIBLE_ROWS = 10
-local SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT -- same as in zo_combobox.lua
+local SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT -- same as in zo_combobox.lua: 25
 local TEXT_PADDING = 4
 local CONTENT_PADDING = 18 -- decreased from 24
 local SCROLLBAR_PADDING = 16
@@ -551,7 +551,7 @@ end
 function ScrollableDropdownHelper:AddMenuItems()
 	local combobox = self.combobox
 	local dropdown = self.dropdown
-	
+
 	local dividers = 0
 	local headers = 0
 	local maxWidth = 0
@@ -559,21 +559,21 @@ function ScrollableDropdownHelper:AddMenuItems()
 	local dividerOffset = 0
 	local headerOffset = 0
 	local largestEntryWidth = 0
-	
+
 	-- NOTE: the whole reason we need to override it completely, to add our divider and header data entry
 	local function CreateEntry(self, item, index, isLast)
 		item.m_index = index
 		item.m_owner = self
-		
-		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (item.isHeader and HEADER_ENTRY_ID) or 
-			(item.entries and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or ENTRY_ID
+
+		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (item.isHeader and HEADER_ENTRY_ID) or
+				(item.entries and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or ENTRY_ID
 		if item.entries then
 			item.hasSubmenu = true
 			item.isNew = areAnyEntriesNew(item)
 		end
 		return ZO_ScrollList_CreateDataEntry(entryType, item)
 	end
-	
+
 	ZO_ScrollList_Clear(dropdown.m_scroll)
 
 	local dataList = ZO_ScrollList_GetDataList(dropdown.m_scroll)
@@ -583,7 +583,7 @@ function ScrollableDropdownHelper:AddMenuItems()
 		local item = dropdown.m_sortedItems[i]
 		local entry = CreateEntry(dropdown, item, i, i == visibleItems)
 		table.insert(dataList, entry)
-		
+
 		-- Here the width is calculated while the list is being populated. 
 		-- It also makes it so the for loop on m_sortedItems is not done more than once per run
 		maxWidth, dividers, headers = self:GetMaxWidth(item, maxWidth, dividers, headers)
@@ -591,14 +591,14 @@ function ScrollableDropdownHelper:AddMenuItems()
 			largestEntryWidth = maxWidth
 		end
 	end
-	
+
 	local visibleRows =  (self.isSubMenuScrollHelper and
 			(lib.submenu and lib.submenu.parentScrollableDropdownHelper and lib.submenu.parentScrollableDropdownHelper.visibleRowsSubmenu)) or self.visibleRows
 
 	-- using the exact width of the text can leave us with pixel rounding issues
 	-- so just add 5 to make sure we don't truncate at certain screen sizes
 	largestEntryWidth = largestEntryWidth + 5
-	
+
 	if(visibleItems > visibleRows - 1) then
 		largestEntryWidth = largestEntryWidth + ZO_SCROLL_BAR_WIDTH
 		anchorOffset = -ZO_SCROLL_BAR_WIDTH
@@ -607,17 +607,20 @@ function ScrollableDropdownHelper:AddMenuItems()
 		dividerOffset = dividers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - DIVIDER_ENTRY_HEIGHT)
 		headerOffset = headers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - HEADER_ENTRY_HEIGHT)
 	end
-	
-    -- Allow the dropdown to automatically widen to fit the widest entry, but
-    -- prevent it from getting any skinnier than the container's initial width
-    local totalDropDownWidth = largestEntryWidth + (ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2) + ZO_SCROLL_BAR_WIDTH
-	
-    if totalDropDownWidth > dropdown.m_containerWidth then
-        dropdown.m_dropdown:SetWidth(totalDropDownWidth)
-    else
-        dropdown.m_dropdown:SetWidth(dropdown.m_containerWidth)
-    end
-	
+
+	d(">Dividers: " ..tostring(dividers) .. ", headers: " ..tostring(headers))
+
+
+	-- Allow the dropdown to automatically widen to fit the widest entry, but
+	-- prevent it from getting any skinnier than the container's initial width
+	local totalDropDownWidth = largestEntryWidth + (ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2) + ZO_SCROLL_BAR_WIDTH
+
+	if totalDropDownWidth > dropdown.m_containerWidth then
+		dropdown.m_dropdown:SetWidth(totalDropDownWidth)
+	else
+		dropdown.m_dropdown:SetWidth(dropdown.m_containerWidth)
+	end
+
 	local scroll = dropdown.m_dropdown:GetNamedChild("Scroll")
 	local scrollContent = scroll:GetNamedChild("Contents")
 	-- Shift right edge of container over to compensate for with/without scroll-bars
@@ -627,15 +630,43 @@ function ScrollableDropdownHelper:AddMenuItems()
 
 	-- get the height of all the entries we are going to show
 	-- the last entry uses a separate entry template that does not include the spacing in its height
+
+	visibleItems = visibleItems - (headers + dividers)
+	if visibleItems > visibleRows then visibleItems = visibleRows end
+
 	if visibleItems > MAX_MENU_ROWS then
 		visibleItems = MAX_MENU_ROWS
 	end
-	
-	-- firstRowPadding is to compensate for the additional padding required by the container, 5 above and 5 below entries.
-	-- Why is this modification needed? ZO_ComboBox does not add the + 10.
-	local firstRowPadding = (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
-    local desiredHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + firstRowPadding - (dividerOffset + headerOffset)
-	desiredHeight = desiredHeight + 8
+
+	--[[
+        -- firstRowPadding is to compensate for the additional padding required by the container, 5 above and 5 below entries.
+        -- Why is this modification needed? ZO_ComboBox does not add the + 10.
+        local firstRowPadding = (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
+        --add + 8 to fix scrollbar showing for e.g. only 2 menu entries
+        local desiredHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + firstRowPadding + 8
+    d(">desiredHeight1: " ..tostring(desiredHeight))
+    d(">dividerOffset: " ..tostring(dividerOffset) ..", headerOffset: " ..tostring(headerOffset) .. "; sum: " ..tostring(dividerOffset + headerOffset))
+        if headerOffset ~= 0 then
+            desiredHeight = desiredHeight - (dividerOffset + headerOffset)
+        else
+            desiredHeight = desiredHeight + ( dividerOffset / 2 )
+        end
+
+    d(">>desiredHeight end: " .. tostring(desiredHeight))
+    ]]
+
+	dividerOffset = dividers * (DIVIDER_ENTRY_HEIGHT)
+	d(">visibleItems: " ..tostring(visibleItems) .. ", visibleRows: " .. tostring(visibleRows) .. ", dividerOffset: " ..tostring(dividerOffset))
+	if dividerOffset > 0 then dividerOffset = dividerOffset + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) end
+	headerOffset = headers * (HEADER_ENTRY_HEIGHT)
+	d(">headerOffset: " ..tostring(headerOffset))
+	if headerOffset > 0 then headerOffset = headerOffset + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) end
+
+	d(">dividerOffset: " ..tostring(dividerOffset) ..", headerOffset: " ..tostring(headerOffset) .. "; sum: " ..tostring(dividerOffset + headerOffset))
+
+	local firstRowPadding = (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) + 8
+	local desiredHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + firstRowPadding + dividerOffset + headerOffset
+	d(">>desiredHeight end: " .. tostring(desiredHeight))
 
 	dropdown.m_dropdown:SetHeight(desiredHeight)
 	ZO_ScrollList_SetHeight(dropdown.m_scroll, desiredHeight)
