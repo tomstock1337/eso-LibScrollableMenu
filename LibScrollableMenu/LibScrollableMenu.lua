@@ -482,6 +482,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 	}
 	--Default last entry ID copies from normal entry id
 	defaultXMLTemplates[LAST_ENTRY_ID] = ZO_ShallowTableCopy(defaultXMLTemplates[ENTRY_ID])
+	lib.DefaultXMLTemplates = defaultXMLTemplates
 
 	-- >> template, height, setupFunction
 	local function getTemplateData(entryType, template)
@@ -497,7 +498,8 @@ function ScrollableDropdownHelper:AddDataTypes()
 	
 		--Were any options and XMLRowTemplates passed in?
 	local optionTemplates = options and GetValueOrCallback(options.XMLRowTemplates, options)
-	local XMLrowTemplatesToUse = defaultXMLTemplates
+	local XMLrowTemplatesToUse = ZO_ShallowTableCopy(defaultXMLTemplates)
+
 	--Check if all XML row templates are passed in, and update missing ones with default values
 	if optionTemplates ~= nil then
 		for entryType, defaultData in pairs(defaultXMLTemplates) do
