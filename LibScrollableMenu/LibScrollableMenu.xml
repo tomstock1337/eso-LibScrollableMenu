@@ -3,9 +3,9 @@
 		<Control name="LibScrollableMenu_ComboBoxDividerEntry" level="3" mouseEnabled="false" virtual="true">
 			<Dimensions y="6" />
 			<Controls>
-				<Texture name="$(parent)Divider" inherits="ZO_HorizontalDivider">
-					<Anchor point="LEFT" offsetX="-0"/>
-					<Anchor point="RIGHT" offsetX="0" />
+				<Texture name="$(parent)Divider" inherits="ZO_BaseTooltipDivider">
+					<Anchor point="LEFT" offsetX="-0" offsetY="-2.5" />
+					<Anchor point="RIGHT" offsetX="0" offsetY="2.5" />
 				</Texture>
 			</Controls>
 		</Control>
@@ -15,37 +15,38 @@
 			<OnInitialized>
 				self.isHeader = true
 			</OnInitialized>
-			
+
 			<Controls>
 				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon">
 					<Dimensions x="25"  y="25"/>
-					<Anchor point="LEFT" offsetX="0" offsetY="-5"/>
+					<Anchor point="LEFT" offsetX="0" offsetY="0"/>
 				</Texture>
-				<Label name="$(parent)Label" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
-					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="4" />
+				<Label name="$(parent)Label" verticalAlignment="CENTER" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="0" />
 					<!--Anchor point="RIGHT" offsetX="ZO_SCROLL_BAR_WIDTH" /-->
 					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
 				</Label>
-				<Texture name="$(parent)Divider" inherits="ZO_HorizontalDivider">
-					<Anchor point="BOTTOMLEFT" offsetX="-0" offsetY="-0"/>
+				<!-- ZoFontWinH5 inherits="ZO_HorizontalDivider" inherits="ZO_WideHorizontalDivider" offsetY="4" -->
+				<Texture name="$(parent)Divider" inherits="ZO_Options_Divider">
+					<Anchor point="BOTTOMLEFT" offsetX="4" offsetY="-0"/>
 					<Anchor point="BOTTOMRIGHT" offsetX="0" offsetY="5" />
 				</Texture>
 			</Controls>
 		</Control>
-		
+
 		<Control name="LibScrollableMenu_ComboBoxEntry" resizeToFitDescendents="true" inherits="ZO_ComboBoxEntry" virtual="true">
 			<OnInitialized>
 				self.selectible = true <!-- Denotes this is a selectible entry.   -->
 			</OnInitialized>
-			
+
 			<OnMouseUp>
 				LibScrollableMenu_OnSelected(self)
 			</OnMouseUp>
-			
+
 			<OnMouseEnter>
 				LibScrollableMenu_Entry_OnMouseEnter(self)
 			</OnMouseEnter>
-			
+
 			<OnMouseExit>
 				LibScrollableMenu_Entry_OnMouseExit(self)
 			</OnMouseExit>
@@ -54,18 +55,18 @@
 					<Dimensions x="25"  y="25"/>
 					<Anchor point="LEFT" offsetX="0"/>
 				</Texture>
-				<Label name="$(parent)Label" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
-					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="4" />
+				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="0" />
 					<!--Anchor point="RIGHT" offsetX="ZO_SCROLL_BAR_WIDTH" /-->
 					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
 				</Label>
 			</Controls>
 		</Control>
-		
+
 		<Control name="LibScrollableMenu_ComboBoxSubmenuEntry" inherits="LibScrollableMenu_ComboBoxEntry" virtual="true">
 			<Controls>
-				<Label name="$(parent)Label" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
-					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="4" />
+				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="0" />
 					<Anchor point="RIGHT" offsetX="-25" />
 				</Label>
 				<Texture name="$(parent)Arrow" textureFile="EsoUI/Art/Miscellaneous/colorPicker_slider_vertical.dds">

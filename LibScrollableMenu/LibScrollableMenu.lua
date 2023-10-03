@@ -605,6 +605,7 @@ function ScrollableDropdownHelper:AddMenuItems()
 		visibleItems = visibleRows
 	else -- account for divider height difference when we shrink the height
 		dividerOffset = dividers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - DIVIDER_ENTRY_HEIGHT)
+		headerOffset = headers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - HEADER_ENTRY_HEIGHT)
 	end
 	
     -- Allow the dropdown to automatically widen to fit the widest entry, but
@@ -634,7 +635,7 @@ function ScrollableDropdownHelper:AddMenuItems()
 	-- firstRowPadding is to compensate for the additional padding required by the container, 5 above and 5 below entries.
 	-- Why is this modification needed? ZO_ComboBox does not add the + 10.
 	local firstRowPadding = (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) + 10
-    local desiredHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + firstRowPadding - dividerOffset
+    local desiredHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + firstRowPadding - (dividerOffset + headerOffset)
 
 	dropdown.m_dropdown:SetHeight(desiredHeight)
 	ZO_ScrollList_SetHeight(dropdown.m_scroll, desiredHeight)
@@ -686,7 +687,7 @@ function ScrollableDropdownHelper:GetMaxWidth(item, maxWidth, dividers, headers)
 	end
 	
 	local submenuEntryPadding = item.hasSubmenu and SCROLLABLE_ENTRY_TEMPLATE_HEIGHT or 0
-	local iconPadding = (item.icon ~= nil or item.isNew) and ICON_PADDING or NO_ICON_PADDING
+	local iconPadding = (item.icon ~= nil or item.isNew) and ICON_PADDING or 0 -- NO_ICON_PADDING
 	local width = GetStringWidthScaled(fontObject, labelStr, 1, SPACE_INTERFACE) + iconPadding + submenuEntryPadding
 	
 	-- MAX_MENU_WIDTH is to set a cap on how wide text can make a menu. Don't want a menu being 2934 pixels wide.
@@ -1178,19 +1179,16 @@ end
 local function test()
 	if lib.testDropdown == nil then
 		local testTLC = CreateTopLevelWindow(MAJOR .. "TestTLC")
-		testTLC:ClearAnchors()
-		testTLC:SetAnchor(CENTER, GuiRoot, CENTER)
 		testTLC:SetHidden(true)
 		testTLC:SetDimensions(1, 1)
+		testTLC:SetAnchor(CENTER, GuiRoot, CENTEr)
 		testTLC:SetMovable(true)
 		testTLC:SetMouseEnabled(false)
 
 		local dropdown = WINDOW_MANAGER:CreateControlFromVirtual(MAJOR .. "TestDropdown", testTLC, "ZO_ComboBox")
 		dropdown:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
 		dropdown:SetHeight(24)
-		dropdown:SetWidth(300)
-		dropdown:SetMovable(true)
-		dropdown:SetMouseEnabled(true)
+		dropdown:SetWidth(250)
 
 		local options = nil -- { visibleRowsDropdown = 10, visibleRowsSubmenu = 15 }
 		AddCustomScrollableComboBoxDropdownMenu(testTLC, dropdown, options)
@@ -1198,9 +1196,6 @@ local function test()
 		lib.testDropdown = dropdown
 
 		--Prepare and add the text entries in the dropdown's comboBox
-		local comboBox = dropdown.m_comboBox
-		comboBox:SetSortsItems(false)
-
 		local comboBoxMenuEntries = {}
 		local submenuEntries = {}
 
@@ -1221,6 +1216,7 @@ local function test()
 				d("Submenu entry test 2")
 			end,
 			tooltip         = "Submenu Entry Test 2",
+			isNew			= true,
 			--icons 			= nil,
 		}
 		--LibScrollableMenu - LSM entry - Submenu divider
@@ -1238,12 +1234,14 @@ local function test()
 			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 				d("Submenu entry test 3")
 			end,
+			isNew			= true,
 			--tooltip         = "Submenu Entry Test 3",
 			--icons 			= nil,
 		}
 		submenuEntries[#submenuEntries+1] = {
 			isHeader        = true, --Enables the header at LSM
 			name            = "Header Test 1",
+			icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
 			tooltip         = "Header test 1",
 			--icons 			= nil,
 		}
@@ -1263,6 +1261,8 @@ local function test()
 			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 				d("Normal entry 1")
 			end,
+			icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
+			isNew			= true,
 			--entries         = submenuEntries,
 			--tooltip         =
 		}
@@ -1282,6 +1282,7 @@ local function test()
 			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 				d("Normal entry 2")
 			end,
+			isNew			= true,
 			--entries         = submenuEntries,
 			--tooltip         =
 		}
@@ -1300,6 +1301,7 @@ local function test()
 		}
 
 		--Add the items
+		local comboBox = dropdown.m_comboBox
 		comboBox:AddItems(comboBoxMenuEntries)
 	end
 	local dropdown = lib.testDropdown
@@ -1314,6 +1316,7 @@ local function test()
 
 end
 lib.Test = test
+--	/script LibScrollableMenu:Test()
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Init
