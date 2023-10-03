@@ -3,7 +3,7 @@
 		<Control name="LibScrollableMenu_ComboBoxDividerEntry" level="3" mouseEnabled="false" virtual="true">
 			<Dimensions y="7" />
 			<Controls>
-				<Texture name="$(parent)Divider" inherits="ZO_BaseTooltipDivider">
+				<Texture name="$(parent)Divider" inherits="ZO_BaseTooltipDivider" hidden="false">
 					<!-- <Dimensions	x="32" y="8" /> -->
 					<Anchor point="TOPLEFT" relativePoint="TOPLEFT" offsetX="0" offsetY="2" />
 					<Anchor point="TOPRIGHT" relativePoint="TOPRIGHT" offsetX="0" offsetY="2" />

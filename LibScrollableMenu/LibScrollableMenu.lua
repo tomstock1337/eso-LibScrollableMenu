@@ -385,7 +385,6 @@ function ScrollableDropdownHelper:AddDataTypes()
 		control.m_owner = data.m_owner
 		control.m_data = data
 		control.m_divider = control:GetNamedChild("Divider")
-		control.m_divider:SetHidden(false)
 	end
 
 	local function addLabel(control, data, list)
