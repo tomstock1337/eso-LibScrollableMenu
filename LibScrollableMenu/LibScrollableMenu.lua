@@ -436,6 +436,8 @@ function ScrollableDropdownHelper:AddDataTypes()
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
 				oSetup(control, data, list)
+				control.oSetup = oSetup
+
 				--Check if the data.name is a function returning a string, so prepare the String value now
 				--and update the original function for later usage to data.oName
 				addIcon(control, data, list)
