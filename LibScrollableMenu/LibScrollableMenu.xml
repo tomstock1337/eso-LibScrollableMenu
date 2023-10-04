@@ -1,12 +1,11 @@
 <GuiXml>
 	<Controls>
 		<Control name="LibScrollableMenu_ComboBoxDividerEntry" level="3" mouseEnabled="false" virtual="true">
-			<Dimensions y="7" />
+			<Dimensions y="6" />
 			<Controls>
-				<Texture name="$(parent)Divider" inherits="ZO_BaseTooltipDivider" hidden="false">
-					<!-- <Dimensions	x="32" y="8" /> -->
-					<Anchor point="TOPLEFT" relativePoint="TOPLEFT" offsetX="0" offsetY="2" />
-					<Anchor point="TOPRIGHT" relativePoint="TOPRIGHT" offsetX="0" offsetY="2" />
+				<Texture name="$(parent)Divider" hidden="false" inherits="ZO_BaseTooltipDivider">
+					<Anchor point="LEFT" offsetX="-0" offsetY="-2.5" />
+					<Anchor point="RIGHT" offsetX="0" offsetY="2.5" />
 				</Texture>
 			</Controls>
 		</Control>
@@ -20,17 +19,18 @@
 			<Controls>
 				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon">
 					<Dimensions x="25"  y="25"/>
-					<Anchor point="LEFT" offsetX="0" offsetY="0"/>
+					<Anchor point="TOPLEFT" offsetX="4" offsetY="0"/>
+					<Anchor point="BOTTOMLEFT" offsetY="-5" />
 				</Texture>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="0" />
 					<!--Anchor point="RIGHT" offsetX="ZO_SCROLL_BAR_WIDTH" /-->
-					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+					<Anchor point="BOTTOMRIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" offsetY="-5"  />
 				</Label>
 				<!-- ZoFontWinH5 inherits="ZO_HorizontalDivider" inherits="ZO_WideHorizontalDivider" offsetY="4" -->
 				<Texture name="$(parent)Divider" inherits="ZO_Options_Divider">
-					<Anchor point="BOTTOMLEFT" offsetX="4" offsetY="-0"/>
-					<Anchor point="BOTTOMRIGHT" offsetX="0" offsetY="5" />
+					<Anchor point="BOTTOMLEFT" offsetX="4" offsetY="-5"/>
+					<Anchor point="BOTTOMRIGHT" offsetX="0" offsetY="0" />
 				</Texture>
 			</Controls>
 		</Control>
@@ -77,7 +77,7 @@
 				</Texture>
 			</Controls>
 		</Control>
-		
+
 		<Control name="LibScrollableMenu_ComboBox" mouseEnabled="false" clampedToScreen="true" virtual="true">
 			<Dimensions x="135"  y="31"/>
 			<Controls>

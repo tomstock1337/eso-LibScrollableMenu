@@ -19,41 +19,31 @@ lib.HELPER_MODE_LAYOUT_ONLY = 1 -- means only the layout of the dropdown will be
 local wm = WINDOW_MANAGER
 local em = EVENT_MANAGER
 
+--Sound settings
 local origSoundComboClicked = SOUNDS.COMBO_CLICK
 local soundComboClickedSilenced = SOUNDS.NONE
 
-local SUBMENU_ITEM_MOUSE_ENTER = 1
-local SUBMENU_ITEM_MOUSE_EXIT = 2
-local SUBMENU_SHOW_TIMEOUT = 350
-local SUBMENU_HIDE_TIMEOUT = 350
-
+--Submenu settings
 local ROOT_PREFIX = MAJOR.."Sub"
-
+local SUBMENU_SHOW_TIMEOUT = 350
 local submenuCallLaterHandle
 local nextId = 1
 
+--Menu settings (main and submenu)
 local MAX_MENU_ROWS = 25
 local MAX_MENU_WIDTH
---local MAX_MENU_HEIGHT
+local DEFAULT_VISIBLE_ROWS = 10
+local DEFAULT_SORTS_ENTRIES = true --sort the entries in main- and submenu lists
+
+
+--Entry type settings
 local DIVIDER_ENTRY_HEIGHT = 7
 local HEADER_ENTRY_HEIGHT = 30
-
-local DEFAULT_VISIBLE_ROWS = 10
 local SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT -- same as in zo_combobox.lua: 25
-local TEXT_PADDING = 4
-local CONTENT_PADDING = 18 -- decreased from 24
-local SCROLLBAR_PADDING = 16
-
-local ICON_PADDING = 0
-
-local NO_ICON_PADDING = -5
 local ICON_PADDING = 20
-
 local PADDING = GetMenuPadding() / 2 -- half the amount looks closer to the regular dropdown
-local ROUNDING_MARGIN = 0.01 -- needed to avoid rare issue with too many anchors processed
 
-local SCROLLABLE_COMBO_BOX_LIST_PADDING_Y = 9
-
+--Entry types
 local ENTRY_ID = 1
 local LAST_ENTRY_ID = 2
 local DIVIDER_ENTRY_ID = 3
@@ -67,7 +57,11 @@ lib.scrollListRowTypes = {
 	HEADER_ENTRY_ID = HEADER_ENTRY_ID,
 	SUBMENU_ENTRY_ID = SUBMENU_ENTRY_ID,
 }
-
+--Saved indices of header and divider entries (upon showing the menu -> AddMenuItems)
+local rowIndex = {
+	[DIVIDER_ENTRY_ID] = {},
+	[HEADER_ENTRY_ID] = {},
+}
 --------------------------------------------------------------------
 -- Local functions
 --------------------------------------------------------------------
@@ -105,10 +99,6 @@ local function GetValueOrCallback(arg, ...)
 	else
 		return arg
 	end
-end
-
-local function GetOption(options, value, default)
-	return options and options[value] or default
 end
 
 -- use container.m_comboBox for the object
@@ -185,8 +175,17 @@ local function setMaxMenuWidthAndRows()
 --	/script d(GuiRoot:GetDimensions() * 0.2)
 -- On mu screen this is currently 384
 end
-setMaxMenuWidthAndRows()
-EVENT_MANAGER:RegisterForEvent(lib.name, EVENT_SCREEN_RESIZED, setMaxMenuWidthAndRows)
+
+local function getVisible(visibleRows, entryType)
+	local highest = 0
+	for k, index in ipairs(rowIndex[entryType]) do
+		if index < visibleRows then
+			highest = highest + 1
+		end
+	end
+	
+	return highest
+end
 
 --------------------------------------------------------------------
 -- ScrollableDropdownHelper
@@ -196,23 +195,32 @@ lib.ScrollableDropdownHelper = ScrollableDropdownHelper
 
 -- ScrollableDropdownHelper:New( -- Just a reference for New
 -- Available options are:
---   visibleRowsDropdown	Visible rows at the scollable list, for the main menu scroll helper
---	 visibleRowsSubmenu		Visible rows at the scollable list of submenu helpers of this main menu scroll helper
---[[
---   persistantMenus - its submenus won't close when the mouse exits them, only by clicking somewhere or selecting something else
---   orientation - the preferred direction for tooltips and submenus (either LEFT or RIGHT)
-]]
+ --  table options:optional = {
+ --		number visibleRowsDropdown:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened dropdown
+ --		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
+ --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically
+--		table	XMLRowTemplates:optional		Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
+--												"template" String = XMLVirtualTemplateName, rowHeight number = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,setupFunc = function(control, data, list) end
+--												-->See local table "defaultXMLTemplates" in LibScrollableMenu
+--												-->Attention: If you do not specify all template attributes, the non-specified will be mixedIn from defaultXMLTemplates[entryType_ID] again!
+--		{
+--			[lib.scrollListRowTypes.ENTRY_ID] = 		{ template = "XMLVirtualTemplateRow_ForEntryId", ... }
+--			[lib.scrollListRowTypes.SUBMENU_ENTRY_ID] = { template = "XMLVirtualTemplateRow_ForSubmenuEntryId", ... },
+--			...
+--		}
 
 -- Split the data types out
 function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenuScrollHelper)
 	isSubMenuScrollHelper = isSubMenuScrollHelper or false
 
 	--Read the passed in options table
-	local visibleRows, visibleRowsSubmenu
+	local visibleRows, visibleRowsSubmenu, sortsItems
 	if options ~= nil then
 		if type(options) == "table" then
-			visibleRows = GetValueOrCallback(options.visibleRowsDropdown, options)
-			visibleRowsSubmenu = GetValueOrCallback(options.visibleRowsSubmenu, options)
+			visibleRows = 			GetValueOrCallback(options.visibleRowsDropdown, options)
+			visibleRowsSubmenu = 	GetValueOrCallback(options.visibleRowsSubmenu, options)
+			sortsItems = 			GetValueOrCallback(options.sortEntries, options)
+
 			control.options = options
 			self.options = options
 		else
@@ -222,17 +230,10 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 	end
 	visibleRows = visibleRows or DEFAULT_VISIBLE_ROWS
 	visibleRowsSubmenu = visibleRowsSubmenu or DEFAULT_VISIBLE_ROWS
+	if sortsItems == nil then sortsItems = DEFAULT_SORTS_ENTRIES end
 
 	local combobox = control.combobox
 	local dropdown = control.dropdown
-
---todo: For debugging!
-lib._control = control
-lib._combobox = combobox
-lib._dropdown = dropdown
-lib._selfScrollHelper = self
-
-	--dropdown:SetSpacing(8)
 
 	self.parent = parent
 	self.control = control
@@ -264,6 +265,8 @@ lib._selfScrollHelper = self
 	combobox:SetHandler("OnEffectivelyHidden", onHide)
 	if parent then parent:SetHandler("OnEffectivelyHidden", doHide) end
 
+	combobox.m_comboBox:SetSortsItems(sortsItems)
+
 	-- dont fade entries near the edges
 	local mScroll = dropdown.m_scroll
 	mScroll.selectionTemplate = nil
@@ -292,20 +295,19 @@ lib._selfScrollHelper = self
 		ZO_ScrollList_UpdateDataTypeHeight(mScroll, DIVIDER_ENTRY_ID, newHeight)
 	end
 	ZO_PreHook(dropdown, "SetSpacing", SetSpacing)
-	
+
 	-- NOTE: changed to completely override the function
+	--> Will add the entries added via comboBox:AddItems(), calculate height and width, etc.
 	dropdown.AddMenuItems = function() self:AddMenuItems() end
-	
-	--Add the dataTypes to the scroll list (normal row, last row, header row, submenu row)
+
+	--Add the dataTypes to the scroll list (normal row, last row, header row, submenu row, divider row)
 	self:AddDataTypes()
---	self:SetSpacing(4) -- TODO: remove it not used
- 
- 
---------------------------------------------------------------------
+
+	--------------------------------------------------------------------
 	--Hooks
--- List data type templates
+	-- List data type templates
 	--Disable the SOUNDS.COMBO_CLICK upon item selected. Will be handled via options table AND
---------------------------------------------------------------------
+	--------------------------------------------------------------------
 	--function LibScrollableMenu_OnSelected below!
 	--...
 	--Reenable the sound for comboBox select item again
@@ -318,7 +320,7 @@ end
 -- List data type templates
 --------------------------------------------------------------------
 
--- With multi icon
+-- Add the dataTypes for the different entry types
 function ScrollableDropdownHelper:AddDataTypes()
 	local dropdown = self.dropdown
 	local mScroll = dropdown.m_scroll
@@ -471,8 +473,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 		},
 		[HEADER_ENTRY_ID] = {
 			template = 'LibScrollableMenu_ComboBoxHeaderEntry',
-		--	rowHeight = HEADER_ENTRY_HEIGHT,
-			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			rowHeight = HEADER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
 				control.isHeader = true
 				
@@ -521,6 +522,8 @@ function ScrollableDropdownHelper:AddDataTypes()
 --	ZO_ScrollList_SetTypeCategoryHeader(mScroll, HEADER_ENTRY_ID, true)
 
 	SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = XMLrowTemplatesToUse[ENTRY_ID].rowHeight
+	DIVIDER_ENTRY_HEIGHT = XMLrowTemplatesToUse[DIVIDER_ENTRY_ID].rowHeight
+	HEADER_ENTRY_HEIGHT = XMLrowTemplatesToUse[HEADER_ENTRY_ID].rowHeight
 	ICON_PADDING = SCROLLABLE_ENTRY_TEMPLATE_HEIGHT
 end
 
@@ -549,7 +552,7 @@ end
 
 -- Add the MenuItems to the list (also for submenu lists!)
 function ScrollableDropdownHelper:AddMenuItems()
-	local combobox = self.combobox
+	--local combobox = self.combobox
 	local dropdown = self.dropdown
 
 	local dividers = 0
@@ -560,17 +563,32 @@ function ScrollableDropdownHelper:AddMenuItems()
 	local headerOffset = 0
 	local largestEntryWidth = 0
 
+	-- Clear the indices of saved headers and dividers
+	rowIndex[DIVIDER_ENTRY_ID] = {}
+	rowIndex[HEADER_ENTRY_ID] = {}
+	--Get currently shown divider and header idices of the menu entries
+	local function getVisibleHeadersAndDivider(visibleItems)
+		return getVisible(visibleItems, HEADER_ENTRY_ID), getVisible(visibleItems, DIVIDER_ENTRY_ID)
+	end
+	
 	-- NOTE: the whole reason we need to override it completely, to add our divider and header data entry
 	local function CreateEntry(self, item, index, isLast)
 		item.m_index = index
 		item.m_owner = self
 
+		local hasSubmenu = item.entries ~= nil
 		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (item.isHeader and HEADER_ENTRY_ID) or
-				(item.entries and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or ENTRY_ID
-		if item.entries then
+				(hasSubmenu and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or ENTRY_ID
+		if hasSubmenu then
 			item.hasSubmenu = true
 			item.isNew = areAnyEntriesNew(item)
 		end
+
+		--Save divider and header entries' indices for later usage at the height calulation
+		if rowIndex[entryType] ~= nil then
+			table.insert(rowIndex[entryType], index)
+		end
+		
 		return ZO_ScrollList_CreateDataEntry(entryType, item)
 	end
 
@@ -578,6 +596,7 @@ function ScrollableDropdownHelper:AddMenuItems()
 
 	local dataList = ZO_ScrollList_GetDataList(dropdown.m_scroll)
 
+	--Got passed in via comboBox:AddItems(table)
 	local visibleItems = #dropdown.m_sortedItems
 	for i = 1, visibleItems do
 		local item = dropdown.m_sortedItems[i]
@@ -586,12 +605,13 @@ function ScrollableDropdownHelper:AddMenuItems()
 
 		-- Here the width is calculated while the list is being populated. 
 		-- It also makes it so the for loop on m_sortedItems is not done more than once per run
+		-- Also detect the totla number of dividers and headers in the list (not only the currntly shown ones!)
 		maxWidth, dividers, headers = self:GetMaxWidth(item, maxWidth, dividers, headers)
 		if maxWidth > largestEntryWidth then
 			largestEntryWidth = maxWidth
 		end
 	end
-
+	--Visible rows of the main menu, or if a submenu: Read from mainMenu's owner data's scrollhelper
 	local visibleRows =  (self.isSubMenuScrollHelper and
 			(lib.submenu and lib.submenu.parentScrollableDropdownHelper and lib.submenu.parentScrollableDropdownHelper.visibleRowsSubmenu)) or self.visibleRows
 
@@ -607,9 +627,6 @@ function ScrollableDropdownHelper:AddMenuItems()
 		dividerOffset = dividers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - DIVIDER_ENTRY_HEIGHT)
 		headerOffset = headers * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - HEADER_ENTRY_HEIGHT)
 	end
-
-	d(">Dividers: " ..tostring(dividers) .. ", headers: " ..tostring(headers))
-
 
 	-- Allow the dropdown to automatically widen to fit the widest entry, but
 	-- prevent it from getting any skinnier than the container's initial width
@@ -629,44 +646,18 @@ function ScrollableDropdownHelper:AddMenuItems()
 	scrollContent:SetAnchor(BOTTOMRIGHT, nil, nil, anchorOffset)
 
 	-- get the height of all the entries we are going to show
-	-- the last entry uses a separate entry template that does not include the spacing in its height
-
-	visibleItems = visibleItems - (headers + dividers)
 	if visibleItems > visibleRows then visibleItems = visibleRows end
-
 	if visibleItems > MAX_MENU_ROWS then
 		visibleItems = MAX_MENU_ROWS
 	end
-
-	--[[
-        -- firstRowPadding is to compensate for the additional padding required by the container, 5 above and 5 below entries.
-        -- Why is this modification needed? ZO_ComboBox does not add the + 10.
-        local firstRowPadding = (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
-        --add + 8 to fix scrollbar showing for e.g. only 2 menu entries
-        local desiredHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + firstRowPadding + 8
-    d(">desiredHeight1: " ..tostring(desiredHeight))
-    d(">dividerOffset: " ..tostring(dividerOffset) ..", headerOffset: " ..tostring(headerOffset) .. "; sum: " ..tostring(dividerOffset + headerOffset))
-        if headerOffset ~= 0 then
-            desiredHeight = desiredHeight - (dividerOffset + headerOffset)
-        else
-            desiredHeight = desiredHeight + ( dividerOffset / 2 )
-        end
-
-    d(">>desiredHeight end: " .. tostring(desiredHeight))
-    ]]
-
-	dividerOffset = dividers * (DIVIDER_ENTRY_HEIGHT)
-	d(">visibleItems: " ..tostring(visibleItems) .. ", visibleRows: " .. tostring(visibleRows) .. ", dividerOffset: " ..tostring(dividerOffset))
-	if dividerOffset > 0 then dividerOffset = dividerOffset + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) end
-	headerOffset = headers * (HEADER_ENTRY_HEIGHT)
-	d(">headerOffset: " ..tostring(headerOffset))
-	if headerOffset > 0 then headerOffset = headerOffset + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) end
-
-	d(">dividerOffset: " ..tostring(dividerOffset) ..", headerOffset: " ..tostring(headerOffset) .. "; sum: " ..tostring(dividerOffset + headerOffset))
+	--Get the only curently visible headers and dividers, within the visible number of rows
+	local visibleHeaders, visibleDividers = getVisibleHeadersAndDivider(visibleItems)
+	dividerOffset = visibleDividers * (DIVIDER_ENTRY_HEIGHT)
+	headerOffset = visibleHeaders * (SCROLLABLE_ENTRY_TEMPLATE_HEIGHT - HEADER_ENTRY_HEIGHT)
 
 	local firstRowPadding = (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) + 8
-	local desiredHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + firstRowPadding + dividerOffset + headerOffset
-	d(">>desiredHeight end: " .. tostring(desiredHeight))
+	local desiredHeight = dropdown:GetEntryTemplateHeightWithSpacing() * (visibleItems - 1) + SCROLLABLE_ENTRY_TEMPLATE_HEIGHT + firstRowPadding + dividerOffset - headerOffset
+
 
 	dropdown.m_dropdown:SetHeight(desiredHeight)
 	ZO_ScrollList_SetHeight(dropdown.m_scroll, desiredHeight)
@@ -846,7 +837,6 @@ function ScrollableSubmenu:IsVisible()
 	return not self.control:IsControlHidden()
 end
 
-local TOP_MOST = true -- not being used
 function ScrollableSubmenu:GetOwner(topmost)
 	if topmost and self.parentMenu then
 		return self.parentMenu:GetOwner(topmost)
@@ -877,7 +867,7 @@ function ScrollableSubmenu:AnchorToControl(parentControl)
 
 	local anchorPoint = LEFT
 	local anchorOffset = -3
-	local anchorOffsetY = -7
+	local anchorOffsetY = -7 --Move the submenu a bi up so it's 1st row is even with the main menu's row having/showing this submenu
 
 	if self.parentMenu then
 		anchorPoint = self.parentMenu.anchorPoint
@@ -1025,19 +1015,17 @@ end
 --Adds a scroll helper to the comboBoxControl dropdown entries, and enables submenus (scollable too) at the entries.
 --	control parent 							Must be the parent control of the comboBox
 --	control comboBoxControl 				Must be any ZO_ComboBox control (e.g. created from virtual template ZO_ComboBox)
-
  --  table options:optional = {
- --  table options:optional = {
- --		number visibleRowsDropdown:optional		Number of shown entries at 1 page of the scrollable comboBox's opened dropdown
- --		number visibleRowsDropdown:optional		Number of shown entries at 1 page of the scrollable comboBox's opened dropdown
- --		number visibleRowsSubmenu:optional		Number of shown entries at 1 page of the scrollable comboBox's opened submenus
- --		number visibleRowsSubmenu:optional		Number of shown entries at 1 page of the scrollable comboBox's opened submenus
---		userdata dropdown:optional				Either this exists as comboBoxControl.dropdown already, or you can pass in the
---		table	XMLRowTemplates:optional		Table with key = row type of lib.scrollListRowTypes and the value = subtable having "template" String = XMLVirtualTemplateName
---												dropdown object (containing the m_comboBox etc.) here to add it to the comboBoxControl
+ --		number visibleRowsDropdown:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened dropdown
+ --		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
+ --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically
+--		table	XMLRowTemplates:optional		Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
+--												"template" String = XMLVirtualTemplateName, rowHeight number = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,setupFunc = function(control, data, list) end
+--												-->See local table "defaultXMLTemplates" in LibScrollableMenu
+--												-->Attention: If you do not specify all template attributes, the non-specified will be mixedIn from defaultXMLTemplates[entryType_ID] again!
 --		{
---			[lib.scrollListRowTypes.ENTRY_ID] = 		{ template = "XMLVirtualTemplateRow_ForEntryId", }
---			[lib.scrollListRowTypes.SUBMENU_ENTRY_ID] = { template = "XMLVirtualTemplateRow_ForSubmenuEntryId" },
+--			[lib.scrollListRowTypes.ENTRY_ID] = 		{ template = "XMLVirtualTemplateRow_ForEntryId", ... }
+--			[lib.scrollListRowTypes.SUBMENU_ENTRY_ID] = { template = "XMLVirtualTemplateRow_ForSubmenuEntryId", ... },
 --			...
 --		}
 --  }
@@ -1054,6 +1042,7 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxControl, option
 	--Add a new scrollable menu helper
 	return ScrollableDropdownHelper:New(parent, comboBoxControl, options, false)
 end
+
 
 --------------------------------------------------------------------
 -- XML functions
@@ -1204,6 +1193,7 @@ lib._selectedEntry = entry
     end
 end
 
+
 ------------------------------------------------------------------------------------------------------------------------
 -- For testing - Combobox with all kind of entry types (test offsets, etc.)
 ------------------------------------------------------------------------------------------------------------------------
@@ -1222,227 +1212,231 @@ local function test()
 		dropdown:SetWidth(250)
 		dropdown:SetMovable(true)
 
-		local options = { visibleRowsDropdown = 5, visibleRowsSubmenu = 5 }
+		local options = { visibleRowsDropdown = 5, visibleRowsSubmenu = 5, sortEntries=function() return false end, }
 		AddCustomScrollableComboBoxDropdownMenu(testTLC, dropdown, options)
 
 		lib.testDropdown = dropdown
 
 		--Prepare and add the text entries in the dropdown's comboBox
 		local comboBox = dropdown.m_comboBox
-		comboBox:SetSortsItems(false)
 
 		local comboBoxMenuEntries = {}
 		local submenuEntries = {}
 
 		--LibScrollableMenu - LSM entry - Submenu normal
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = false,
-			name            = "Submenu Entry Test 1",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Submenu entry test 1")
-			end,
-			--tooltip         = "Submenu Entry Test 1",
-			--icons 			= nil,
-		}
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = false,
-			name            = "Submenu Entry Test 2",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Submenu entry test 2")
-			end,
-			tooltip         = "Submenu Entry Test 2",
-			isNew			= true,
-			--icons 			= nil,
-		}
-		--LibScrollableMenu - LSM entry - Submenu divider
-		submenuEntries[#submenuEntries+1] = {
-			name            = "-",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				--Headers do not use any callback
-			end,
-			tooltip         = "Submenu Divider Test 1",
-			--icons 			= nil,
-		}
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = false,
-			name            = "Submenu Entry Test 3",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Submenu entry test 3")
-			end,
-			isNew			= true,
-			--tooltip         = "Submenu Entry Test 3",
-			--icons 			= nil,
-		}
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = true, --Enables the header at LSM
-			name            = "Header Test 1",
-			icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
-			tooltip         = "Header test 1",
-			--icons 			= nil,
-		}
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = false,
-			name            = "Submenu Entry Test 4",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Submenu entry test 4")
-			end,
-			tooltip         = function() return "Submenu Entry Test 4"  end
-			--icons 			= nil,
-		}
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = false,
-			name            = "Submenu Entry Test 5",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Submenu entry test 5")
-			end,
-			--tooltip         = function() return "Submenu Entry Test 4"  end
-			--icons 			= nil,
-		}
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = false,
-			name            = "Submenu Entry Test 6",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Submenu entry test 6")
-			end,
-			--tooltip         = function() return "Submenu Entry Test 4"  end
-			--icons 			= nil,
-		}
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = false,
-			name            = "Submenu Entry Test 7",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Submenu entry test 7")
-			end,
-			--tooltip         = function() return "Submenu Entry Test 4"  end
-			--icons 			= nil,
-		}
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = false,
-			name            = "Submenu Entry Test 8",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Submenu entry test 8")
-			end,
-			--tooltip         = function() return "Submenu Entry Test 4"  end
-			--icons 			= nil,
-		}
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = false,
-			name            = "Submenu Entry Test 9",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Submenu entry test 9")
-			end,
-			--tooltip         = function() return "Submenu Entry Test 4"  end
-			--icons 			= nil,
-		}
-		submenuEntries[#submenuEntries+1] = {
-			isHeader        = false,
-			name            = "Submenu Entry Test 10",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Submenu entry test 10")
-			end,
-			--tooltip         = function() return "Submenu Entry Test 4"  end
-			--icons 			= nil,
+		local submenuEntries = {
+			{
+				isHeader        = false,
+				name            = "Submenu Entry Test 1",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 1")
+				end,
+				--tooltip         = "Submenu Entry Test 1",
+				--icons 			= nil,
+			},
+			{
+				isHeader        = false,
+				name            = "Submenu Entry Test 2",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 2")
+				end,
+				tooltip         = "Submenu Entry Test 2",
+				isNew			= true,
+				--icons 			= nil,
+			},
+			--LibScrollableMenu - LSM entry - Submenu divider
+			{
+				name            = "-",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					--Headers do not use any callback
+				end,
+				tooltip         = "Submenu Divider Test 1",
+				--icons 			= nil,
+			},
+			{
+				isHeader        = false,
+				name            = "Submenu Entry Test 3",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 3")
+				end,
+				isNew			= true,
+				--tooltip         = "Submenu Entry Test 3",
+				--icons 			= nil,
+			},
+			{
+				isHeader        = true, --Enables the header at LSM
+				name            = "Header Test 1",
+				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
+				tooltip         = "Header test 1",
+				--icons 			= nil,
+			},
+			{
+				isHeader        = false,
+				name            = "Submenu Entry Test 4",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 4")
+				end,
+				tooltip         = function() return "Submenu Entry Test 4"  end
+				--icons 			= nil,
+			},
+			{
+				isHeader        = false,
+				name            = "Submenu Entry Test 5",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 5")
+				end,
+				--tooltip         = function() return "Submenu Entry Test 4"  end
+				--icons 			= nil,
+			},
+			{
+				isHeader        = false,
+				name            = "Submenu Entry Test 6",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 6")
+				end,
+				--tooltip         = function() return "Submenu Entry Test 4"  end
+				--icons 			= nil,
+			},
+			{
+				isHeader        = false,
+				name            = "Submenu Entry Test 7",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 7")
+				end,
+				--tooltip         = function() return "Submenu Entry Test 4"  end
+				--icons 			= nil,
+			},
+			{
+				isHeader        = false,
+				name            = "Submenu Entry Test 8",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 8")
+				end,
+				--tooltip         = function() return "Submenu Entry Test 4"  end
+				--icons 			= nil,
+			},
+			{
+				isHeader        = false,
+				name            = "Submenu Entry Test 9",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 9")
+				end,
+				--tooltip         = function() return "Submenu Entry Test 4"  end
+				--icons 			= nil,
+			},
+			{
+				isHeader        = false,
+				name            = "Submenu Entry Test 10",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 10")
+				end,
+				--tooltip         = function() return "Submenu Entry Test 4"  end
+				--icons 			= nil,
+			}
 		}
 
 		--Normal entries
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Normal entry 1",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Normal entry 1")
-			end,
-			icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
-			isNew			= true,
-			--entries         = submenuEntries,
-			--tooltip         =
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "-", --Divider
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Entry having submenu 1",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Entry having submenu 1")
-			end,
-			entries         = submenuEntries,
-			--tooltip         =
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Normal entry 2",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Normal entry 2")
-			end,
-			isNew			= true,
-			--entries         = submenuEntries,
-			--tooltip         =
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			isHeader		= true,
-			name            = "Header entry 1",
-			--icons 	     = nil,
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Normal entry 3",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Normal entry 3")
-			end,
-			--entries         = submenuEntries,
-			tooltip         = function() return "Normal entry 3"  end
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Normal entry 4",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Normal entry 4")
-			end,
-			--entries         = submenuEntries,
-			tooltip         = function() return "Normal entry 4"  end
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Normal entry 5",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Normal entry 5")
-			end,
-			--entries         = submenuEntries,
-			tooltip         = function() return "Normal entry 5"  end
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Normal entry 6",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Normal entry 6")
-			end,
-			--entries         = submenuEntries,
-			tooltip         = function() return "Normal entry 6"  end
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Normal entry 7",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Normal entry 7")
-			end,
-			--entries         = submenuEntries,
-			tooltip         = function() return "Normal entry 7"  end
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Normal entry 8",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Normal entry 8")
-			end,
-			--entries         = submenuEntries,
-			tooltip         = function() return "Normal entry 8"  end
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Normal entry 9",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Normal entry 9")
-			end,
-			--entries         = submenuEntries,
-			tooltip         = function() return "Normal entry 9"  end
-		}
-		comboBoxMenuEntries[#comboBoxMenuEntries+1] = {
-			name            = "Normal entry 10 - Very long text here at this entry!",
-			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				d("Normal entry 10")
-			end,
-			--entries         = submenuEntries,
-			tooltip         = function() return "Normal entry 10"  end
+		local comboBoxMenuEntries = {
+			{
+				name            = "Normal entry 1",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Normal entry 1")
+				end,
+				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
+				isNew			= true,
+				--entries         = submenuEntries,
+				--tooltip         =
+			},
+			{
+				name            = "-", --Divider
+			},
+			{
+				name            = "Entry having submenu 1",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Entry having submenu 1")
+				end,
+				entries         = submenuEntries,
+				--tooltip         =
+			},
+			{
+				name            = "Normal entry 2",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Normal entry 2")
+				end,
+				isNew			= true,
+				--entries         = submenuEntries,
+				--tooltip         =
+			},
+			{
+				isHeader		= true,
+				name            = "Header entry 1",
+				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
+				--icons 	     = nil,
+			},
+			{
+				name            = "Normal entry 3",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Normal entry 3")
+				end,
+				--entries         = submenuEntries,
+				tooltip         = function() return "Normal entry 3"  end
+			},
+			{
+				name            = "Normal entry 4",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Normal entry 4")
+				end,
+				--entries         = submenuEntries,
+				tooltip         = function() return "Normal entry 4"  end
+			},
+			{
+				name            = "Normal entry 5",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Normal entry 5")
+				end,
+				--entries         = submenuEntries,
+				tooltip         = function() return "Normal entry 5"  end
+			},
+			{
+				name            = "Normal entry 6",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Normal entry 6")
+				end,
+				--entries         = submenuEntries,
+				tooltip         = function() return "Normal entry 6"  end
+			},
+			{
+				name            = "Normal entry 7",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Normal entry 7")
+				end,
+				--entries         = submenuEntries,
+				tooltip         = function() return "Normal entry 7"  end
+			},
+			{
+				name            = "Normal entry 8",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Normal entry 8")
+				end,
+				--entries         = submenuEntries,
+				tooltip         = function() return "Normal entry 8"  end
+			},
+			{
+				name            = "Normal entry 9",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Normal entry 9")
+				end,
+				--entries         = submenuEntries,
+				tooltip         = function() return "Normal entry 9"  end
+			},
+			{
+				name            = "Normal entry 10 - Very long text here at this entry!",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Normal entry 10")
+				end,
+				--entries         = submenuEntries,
+				tooltip         = function() return "Normal entry 10"  end
+			}
 		}
 
 		--Add the items
@@ -1463,14 +1457,20 @@ lib.Test = test
 --	/script LibScrollableMenu.Test()
 SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
 
+
 ------------------------------------------------------------------------------------------------------------------------
 -- Init
 ------------------------------------------------------------------------------------------------------------------------
 local function OnAddonLoaded(event, name)
 	if name:find("^ZO_") then return end
 	EVENT_MANAGER:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
+	setMaxMenuWidthAndRows()
+
 	lib.submenu = GetScrollableSubmenu(1)
 	HookScrollableEntry()
+
+	--Other events
+	EVENT_MANAGER:RegisterForEvent(lib.name, EVENT_SCREEN_RESIZED, setMaxMenuWidthAndRows)
 end
 
 EVENT_MANAGER:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
@@ -1481,6 +1481,3 @@ EVENT_MANAGER:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, OnAddonLoaded)
 -- Global library reference
 ------------------------------------------------------------------------------------------------------------------------
 LibScrollableMenu = lib
-
-
-
