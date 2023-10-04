@@ -16,7 +16,6 @@ lib.HELPER_MODE_LAYOUT_ONLY = 1 -- means only the layout of the dropdown will be
 --------------------------------------------------------------------
 -- Locals
 --------------------------------------------------------------------
-local wm = WINDOW_MANAGER
 local em = EVENT_MANAGER
 
 --Sound settings
@@ -49,6 +48,7 @@ local LAST_ENTRY_ID = 2
 local DIVIDER_ENTRY_ID = 3
 local HEADER_ENTRY_ID = 4
 local SUBMENU_ENTRY_ID = 5
+local CHECKBOX_ENTRY_ID = 6
 --Make them accessible for the ScrollableDropdownHelper:New options table -> options.XMLRowTemplates 
 lib.scrollListRowTypes = {
 	ENTRY_ID = ENTRY_ID,
@@ -56,6 +56,7 @@ lib.scrollListRowTypes = {
 	DIVIDER_ENTRY_ID = DIVIDER_ENTRY_ID,
 	HEADER_ENTRY_ID = HEADER_ENTRY_ID,
 	SUBMENU_ENTRY_ID = SUBMENU_ENTRY_ID,
+	CHECKBOX_ENTRY_ID = CHECKBOX_ENTRY_ID,
 }
 --Saved indices of header and divider entries (upon showing the menu -> AddMenuItems)
 local rowIndex = {
@@ -341,29 +342,18 @@ function ScrollableDropdownHelper:AddDataTypes()
 	-- checkbox wrappers
 	local function setChecked(checkbox, checked)
 		local data = ZO_ScrollList_GetData(checkbox:GetParent())
+		
+		data.checked = checked
 		if data.callback then
 			data.callback(checked, data)
 		end
 	end
 
 	local function addCheckbox(control, data, list)
-		-- if a menu never uses "checked" then it will never create these controls
-		if data.checked ~= nil then
-			local checkbox = control.m_checkbox
-			if not checkbox then
-				checkbox = wm:CreateControlFromVirtual("$(parent)Checkbox", control, "ZO_CheckButton")
-				checkbox:SetAnchor(LEFT, nil, LEFT, 2, -1)
-				checkbox:SetHandler("OnMouseEnter", function(checkbox) ZO_ComboBox_Entry_OnMouseEnter(control) end)
-				checkbox:SetHandler("OnMouseExit", function(checkbox) ZO_ComboBox_Entry_OnMouseExit(control) end)
-				control.m_checkbox = checkbox
-			end
-			checkbox:SetHidden(false)
-			ZO_CheckButton_SetToggleFunction(checkbox, setChecked)
-			ZO_CheckButton_SetCheckState(checkbox, GetValueOrCallback(data.checked, data))
-			control.m_label:SetText(string.format(" |u18:0::|u%s", data.labelStr or data.name))
-		elseif control.m_checkbox then
-			control.m_checkbox:SetHidden(true)
-		end
+		control.m_checkbox = control:GetNamedChild("Checkbox")
+		local checkbox = control.m_checkbox
+		ZO_CheckButton_SetToggleFunction(checkbox, setChecked)
+		ZO_CheckButton_SetCheckState(checkbox, GetValueOrCallback(data.checked, data))
 	end
 	
 	local function addIcon(control, data, list)
@@ -421,7 +411,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 		end
 	end
 
-	local function hooHandlers(control, data, list)
+	local function hookHandlers(control, data, list)
 			-- This is for the mouse-over tooltips
 		if not control.hookedMouseHandlers then --only do it once per control
 			control.hookedMouseHandlers = true
@@ -445,8 +435,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 				addIcon(control, data, list)
 				addArrow(control, data, list)
 				addLabel(control, data, list)
-				addCheckbox(control, data, list)
-				hooHandlers(control, data, list)
+				hookHandlers(control, data, list)
 			--	control.m_data = data --update changed (after oSetup) data entries to the control, and other entries have been updated
 			end,
 		},
@@ -459,8 +448,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 				addIcon(control, data, list)
 				addArrow(control, data, list)
 				addLabel(control, data, list)
-				addCheckbox(control, data, list)
-				hooHandlers(control, data, list)
+				hookHandlers(control, data, list)
 			--	control.m_data = data --update changed (after oSetup) data entries to the control, and other entries have been updated
 			end,
 		},
@@ -476,10 +464,23 @@ function ScrollableDropdownHelper:AddDataTypes()
 			rowHeight = HEADER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
 				control.isHeader = true
-				
 				addDivider(control, data, list)
 				addIcon(control, data, list)
 				addLabel(control, data, list)
+			end,
+		},
+		[CHECKBOX_ENTRY_ID] = {
+			template = 'LibScrollableMenu_ComboBoxCheckboxEntry',
+			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			setupFunc = function(control, data, list)
+				oSetup(control, data, list)
+				control.oSetup = oSetup
+
+				control.isCheckbox = true
+				addIcon(control, data, list)
+				addCheckbox(control, data, list)
+				addLabel(control, data, list)
+				hookHandlers(control, data, list)
 			end,
 		},
 	}
@@ -517,10 +518,12 @@ function ScrollableDropdownHelper:AddDataTypes()
 	ZO_ScrollList_AddDataType(mScroll, SUBMENU_ENTRY_ID, getTemplateData(SUBMENU_ENTRY_ID, XMLrowTemplatesToUse))
 	ZO_ScrollList_AddDataType(mScroll, DIVIDER_ENTRY_ID, getTemplateData(DIVIDER_ENTRY_ID, XMLrowTemplatesToUse))
 	ZO_ScrollList_AddDataType(mScroll, HEADER_ENTRY_ID, getTemplateData(HEADER_ENTRY_ID, XMLrowTemplatesToUse))
+	ZO_ScrollList_AddDataType(mScroll, CHECKBOX_ENTRY_ID, getTemplateData(CHECKBOX_ENTRY_ID, XMLrowTemplatesToUse))
 	ZO_ScrollList_SetTypeSelectable(mScroll, DIVIDER_ENTRY_ID, false)
 	ZO_ScrollList_SetTypeSelectable(mScroll, HEADER_ENTRY_ID, false)
 --	ZO_ScrollList_SetTypeCategoryHeader(mScroll, HEADER_ENTRY_ID, true)
 
+	--Define the heights of the different rowTypes, for later totaleight calculation
 	SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = XMLrowTemplatesToUse[ENTRY_ID].rowHeight
 	DIVIDER_ENTRY_HEIGHT = XMLrowTemplatesToUse[DIVIDER_ENTRY_ID].rowHeight
 	HEADER_ENTRY_HEIGHT = XMLrowTemplatesToUse[HEADER_ENTRY_ID].rowHeight
@@ -530,7 +533,9 @@ end
 function ScrollableDropdownHelper:UpdateIcons(data)
 	local visible = data.isNew or data.icon ~= nil
 --	local iconSize = visible and ICON_PADDING or 4
-	local iconSize = visible and self.m_icon:GetParent():GetHeight() or 4
+	local iconHeight = self.m_icon:GetParent():GetHeight()
+	-- This leaves a padding to keep the label from being too close to the edge
+	local iconWidth = visible and iconHeight or 4
 	
 	self.m_icon:ClearIcons()
 	if visible then
@@ -546,7 +551,7 @@ function ScrollableDropdownHelper:UpdateIcons(data)
 	
 	-- Using the control also as a padding. if no icon then shrink it
 	-- This also allows for keeping the icon in size with the row height.
-	self.m_icon:SetDimensions(iconSize, iconSize)
+	self.m_icon:SetDimensions(iconWidth, iconHeight)
 	self.m_icon:SetHidden(not visible)
 end
 
@@ -577,7 +582,7 @@ function ScrollableDropdownHelper:AddMenuItems()
 		item.m_owner = self
 
 		local hasSubmenu = item.entries ~= nil
-		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (item.isHeader and HEADER_ENTRY_ID) or
+		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (item.isCheckbox and CHECKBOX_ENTRY_ID) or (item.isHeader and HEADER_ENTRY_ID) or
 				(hasSubmenu and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or ENTRY_ID
 		if hasSubmenu then
 			item.hasSubmenu = true
@@ -1006,7 +1011,8 @@ function lib.CreateEntry(name, icon, tooltip, entries, callback)
 	-- Optional params added to returned newEntry
 	-- newEntry.label string or function returning a string
 	-- newEntry.isHeader bool
-	-- newEntry.checked bool
+	-- newEntry.isCheckbox bool
+	-- newEntry.checked bool, in combination with isCheckbox!
 	-- newEntry.isNew bool
 	return newEntry
 end
@@ -1048,7 +1054,7 @@ end
 -- XML functions
 --------------------------------------------------------------------
 local function refeshNewStatus(entry, data)
-	local data = data or ZO_ScrollList_GetData(entry)
+	data = data or ZO_ScrollList_GetData(entry)
 	if data.isNew then
 		-- Check if not a submenu or, check if any subentries(recursively) are new.
 		if data.entries == nil or not areAnyEntriesNew(data) then
@@ -1076,9 +1082,7 @@ function LibScrollableMenu_Entry_OnMouseEnter(entry)
 
 		if entry.hasSubmenu or data.entries ~= nil then
 			lib.submenu.m_owner = lib.submenu.m_owner or entry
---For debugging
-lib._lastMouseOverSubmenuEntry = entry
-			
+
 			entry.hasSubmenu = true
 			ClearTimeout()
 			if mySubmenu then -- open next submenu (nested)
@@ -1136,27 +1140,20 @@ end
 
 function LibScrollableMenu_OnSelected(entry)
     if entry.m_owner then
---TODO: For debugging
-lib._selectedEntry = entry
---d("LibScrollableMenu_OnSelected")
 		local data = ZO_ScrollList_GetData(entry)
 		local mySubmenu = GetSubmenuFromControl(entry)
-	--	d( data.entries)
 		if entry.hasSubmenu or data.entries ~= nil then
 			entry.hasSubmenu = true
---d(">menu entry with submenu - hasSubmenu: " ..tostring(entry.hasSubmenu))
 			--Save the current entry to lib.submenu.lastClickedEntryWithSubmenu
 			lib.submenu.lastClickedEntryWithSubmenu = entry
 
 			local targetSubmenu = lib.submenu
 			if mySubmenu and mySubmenu.childMenu then
---d(">childMenu")
 				targetSubmenu = mySubmenu.childMenu
 			end
 			
 			if targetSubmenu then
 				if targetSubmenu:IsVisible() then
---d(">targetSubMenu:IsVisible")
 					targetSubmenu:Clear() -- need to clear it straight away, no timeout
 				else
 					--Has the entry a submenu but also a callback function: Do not show the submenu if you click the entry
@@ -1183,7 +1180,6 @@ lib._selectedEntry = entry
 			return true
 		else
 			--Check if the selected entry belongs to a submenu:	if mySubmenu ~= nil
---d(">menu entry - isSubmenuClickedEntry: " ..tostring(mySubmenu ~= nil))
 			playSelectedSoundCheck(entry)
 
 			--Pass the entrie's text to the dropdown control's selectedItemText
@@ -1374,12 +1370,22 @@ local function test()
 				--icons 	     = nil,
 			},
 			{
-				name            = "Normal entry 3",
+				isCheckbox		= true,
+				name            = "Checkbox entry 1",
+				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Normal entry 3")
+					d("Checkbox entry 1")
 				end,
-				--entries         = submenuEntries,
-				tooltip         = function() return "Normal entry 3"  end
+				tooltip         = function() return "Checkbox entry 1"  end
+			},
+			{
+				isCheckbox		= true,
+				name            = "Checkbox entry 2",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Checkbox entry 2")
+				end,
+				checked			= true, -- Confirmed does start checked.
+				tooltip         = function() return "Checkbox entry 2"  end
 			},
 			{
 				name            = "Normal entry 4",
@@ -1463,18 +1469,18 @@ SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
 ------------------------------------------------------------------------------------------------------------------------
 local function OnAddonLoaded(event, name)
 	if name:find("^ZO_") then return end
-	EVENT_MANAGER:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
+	em:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 	setMaxMenuWidthAndRows()
 
 	lib.submenu = GetScrollableSubmenu(1)
 	HookScrollableEntry()
 
 	--Other events
-	EVENT_MANAGER:RegisterForEvent(lib.name, EVENT_SCREEN_RESIZED, setMaxMenuWidthAndRows)
+	em:RegisterForEvent(lib.name, EVENT_SCREEN_RESIZED, setMaxMenuWidthAndRows)
 end
 
-EVENT_MANAGER:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
-EVENT_MANAGER:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, OnAddonLoaded)
+em:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
+em:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, OnAddonLoaded)
 
 
 ------------------------------------------------------------------------------------------------------------------------

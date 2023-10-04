@@ -15,13 +15,14 @@
 			<OnInitialized>
 				self.isHeader = true
 			</OnInitialized>
-
+			
 			<Controls>
 				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon">
 					<Dimensions x="25"  y="25"/>
 					<Anchor point="TOPLEFT" offsetX="4" offsetY="0"/>
 					<Anchor point="BOTTOMLEFT" offsetY="-5" />
 				</Texture>
+		
 				<Label name="$(parent)Label" verticalAlignment="CENTER" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="0" />
 					<!--Anchor point="RIGHT" offsetX="ZO_SCROLL_BAR_WIDTH" /-->
@@ -34,20 +35,20 @@
 				</Texture>
 			</Controls>
 		</Control>
-
+		
 		<Control name="LibScrollableMenu_ComboBoxEntry" resizeToFitDescendents="true" inherits="ZO_ComboBoxEntry" virtual="true">
 			<OnInitialized>
 				self.selectible = true <!-- Denotes this is a selectible entry.   -->
 			</OnInitialized>
-
+			
 			<OnMouseUp>
 				LibScrollableMenu_OnSelected(self)
 			</OnMouseUp>
-
+			
 			<OnMouseEnter>
 				LibScrollableMenu_Entry_OnMouseEnter(self)
 			</OnMouseEnter>
-
+			
 			<OnMouseExit>
 				LibScrollableMenu_Entry_OnMouseExit(self)
 			</OnMouseExit>
@@ -63,7 +64,7 @@
 				</Label>
 			</Controls>
 		</Control>
-
+		
 		<Control name="LibScrollableMenu_ComboBoxSubmenuEntry" inherits="LibScrollableMenu_ComboBoxEntry" virtual="true">
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
@@ -77,7 +78,34 @@
 				</Texture>
 			</Controls>
 		</Control>
-
+		
+		
+		<Control name="LibScrollableMenu_ComboBoxCheckboxEntry" mouseEnabled="true" virtual="true">
+			<Dimensions y="25" />
+			<OnMouseEnter>
+				LibScrollableMenu_Entry_OnMouseEnter(self)
+			</OnMouseEnter>
+			
+			<OnMouseExit>
+				LibScrollableMenu_Entry_OnMouseExit(self)
+			</OnMouseExit>
+			
+			<Controls>
+				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon" excludeFromResizeToFitExtents="true">
+					<Dimensions x="25"  y="25"/>
+					<Anchor point="LEFT" offsetX="0"/>
+				</Texture>
+				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton">
+					<!-- Centered on the icon -->
+					<Anchor point="LEFT" relativeTo="$(parent)Icon" relativePoint="RIGHT" offsetX="0"/>
+				</Button>
+				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
+					<Anchor point="LEFT" relativeTo="$(parent)Checkbox" relativePoint="RIGHT" offsetX="4"/>
+					<Anchor point="RIGHT" offsetX="-25" />
+				</Label>
+			</Controls>
+		</Control>
+		
 		<Control name="LibScrollableMenu_ComboBox" mouseEnabled="false" clampedToScreen="true" virtual="true">
 			<Dimensions x="135"  y="31"/>
 			<Controls>
