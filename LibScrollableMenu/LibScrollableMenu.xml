@@ -80,21 +80,27 @@
 		</Control>
 		
 		
-		<Control name="LibScrollableMenu_ComboBoxCheckboxEntry" mouseEnabled="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxCheckboxEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
 			<Dimensions y="25" />
-			<OnMouseEnter>
-				LibScrollableMenu_Entry_OnMouseEnter(self)
-			</OnMouseEnter>
 			
-			<OnMouseExit>
-				LibScrollableMenu_Entry_OnMouseExit(self)
-			</OnMouseExit>
+			<OnInitialized>
+				self.Checkbox = self:GetNamedChild('Checkbox')
+				self.selectible = true <!-- Denotes this is a selectible entry.   -->
+			</OnInitialized>
+			
+			<OnMouseUp>
+				ZO_CheckButton_OnClicked(self.Checkbox)
+			</OnMouseUp>
+			
+			<OnMouseDown>
+				<!-- Call the OnMouseExit haandler upon OnMouseDown to hide the tooltip as the checkbox get's clicked -->
+				local onMouseExitHandler = self:GetHandler("OnMouseExit")
+				if onMouseExitHandler ~= nil then
+					onMouseExitHandler(self)
+				end
+			</OnMouseDown>
 			
 			<Controls>
-				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon" excludeFromResizeToFitExtents="true">
-					<Dimensions x="25"  y="25"/>
-					<Anchor point="LEFT" offsetX="0"/>
-				</Texture>
 				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton">
 					<!-- Centered on the icon -->
 					<Anchor point="LEFT" relativeTo="$(parent)Icon" relativePoint="RIGHT" offsetX="0"/>
@@ -106,8 +112,11 @@
 			</Controls>
 		</Control>
 		
-		<Control name="LibScrollableMenu_ComboBox" mouseEnabled="false" clampedToScreen="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBox" mouseEnabled="false" clampedToScreen="true" hidden="false" virtual="true">
 			<Dimensions x="135"  y="31"/>
+			<OnInitialized>
+				self.dropdown = self:GetNamedChild('Dropdown')
+			</OnInitialized>
 			<Controls>
 				<Control name="$(parent)Dropdown" inherits="ZO_ComboBox">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" />
