@@ -93,10 +93,9 @@
 			</OnMouseUp>
 			
 			<OnMouseDown>
-				<!-- Call the OnMouseExit haandler upon OnMouseDown to hide the tooltip as the checkbox get's clicked -->
-				local onMouseExitHandler = self:GetHandler("OnMouseExit")
-				if onMouseExitHandler ~= nil then
-					onMouseExitHandler(self)
+				local onMouseUp = self:GetHandler("OnMouseExit")
+				if onMouseUp ~= nil then
+					onMouseUp(self)
 				end
 			</OnMouseDown>
 			
