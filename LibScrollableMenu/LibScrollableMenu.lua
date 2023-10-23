@@ -758,7 +758,7 @@ function ScrollableDropdownHelper:OnHide(isOnEffectivelyHiddenCall)
 	if not not isOnEffectivelyHiddenCall then
 		isSubmenu = self.isSubMenuScrollHelper
 		if not isSubmenu then
-d("lib:FireCallbacks('MenuOnHide)")
+--d("lib:FireCallbacks('MenuOnHide)")
 			lib:FireCallbacks('MenuOnHide', self)
 			isSubmenu = false
 		end
@@ -781,7 +781,7 @@ function ScrollableDropdownHelper:OnShow()
 		ZO_Menus:BringWindowToTop()
 
 		if not self.isSubMenuScrollHelper then
-d("lib:FireCallbacks('MenuOnShow)")
+--d("lib:FireCallbacks('MenuOnShow)")
 			lib:FireCallbacks('MenuOnShow', self)
 		end
 	end
@@ -888,7 +888,7 @@ function ScrollableSubmenu:Initialize(submenuDepth)
 		clearTimeout()
 		self:Clear()
 	end)
-	submenuControl:SetDrawLevel(ZO_Menu:GetDrawLevel() + 1)
+	submenuControl:SetDrawLevel(ZO_Menu:GetDrawLevel() + submenuDepth)
 	--submenuControl:SetExcludeFromResizeToFitExtents(true)
 	
 	local scrollableDropdown = submenuControl:GetNamedChild('Dropdown')
@@ -962,7 +962,7 @@ end
 
 function ScrollableSubmenu:Clear(doFireCallback)
 	if self.isShown == true then
-d("lib:FireCallbacks('SubmenuOnHide)")
+--d("lib:FireCallbacks('SubmenuOnHide)")
 		lib:FireCallbacks('SubmenuOnHide', self)
 	end
 
@@ -1043,7 +1043,7 @@ function ScrollableSubmenu:Show(parentControl) -- parentControl is a row within 
 	self.m_parent = parentControl
 
 	self.isShown = true
-d("lib:FireCallbacks('SubmenuOnShow)")
+--d("lib:FireCallbacks('SubmenuOnShow)")
 	lib:FireCallbacks('SubmenuOnShow', self)
 
 	return true
@@ -1155,7 +1155,7 @@ local function updateSubmenuNewStatus(m_parent)
 		end
 	end
 	
-	d( 'updateSubmenuNewStatus ' .. tos(result))
+	--d( 'updateSubmenuNewStatus ' .. tos(result))
 	
 	data.isNew = result
 	if not result then

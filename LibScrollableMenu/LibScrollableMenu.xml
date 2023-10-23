@@ -1,6 +1,6 @@
 <GuiXml>
 	<Controls>
-		<Control name="LibScrollableMenu_ComboBoxDividerEntry" level="3" mouseEnabled="false" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxDividerEntry" layer="CONTROLS" level="1" mouseEnabled="false" virtual="true">
 			<Dimensions y="6" />
 			<Controls>
 				<Texture name="$(parent)Divider" hidden="false" inherits="ZO_BaseTooltipDivider">
@@ -10,7 +10,7 @@
 			</Controls>
 		</Control>
 
-		<Control name="LibScrollableMenu_ComboBoxHeaderEntry" level="3" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxHeaderEntry" layer="CONTROLS" level="1" virtual="true">
 			<Dimensions y="25" />
 			<OnInitialized>
 				self.isHeader = true
@@ -36,7 +36,7 @@
 			</Controls>
 		</Control>
 		
-		<Control name="LibScrollableMenu_ComboBoxEntry" resizeToFitDescendents="true" inherits="ZO_ComboBoxEntry" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxEntry" resizeToFitDescendents="true" inherits="ZO_ComboBoxEntry" layer="CONTROLS" level="1" virtual="true">
 			<OnInitialized>
 				self.selectible = true <!-- Denotes this is a selectible entry.   -->
 			</OnInitialized>
