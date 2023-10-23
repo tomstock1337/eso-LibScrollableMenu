@@ -9,15 +9,21 @@ lib.data = {}
 
 if not lib then return end
 
+--Constant for the divider entryType
 lib.DIVIDER = "-"
+
 lib.HELPER_MODE_NORMAL = 0
 lib.HELPER_MODE_LAYOUT_ONLY = 1 -- means only the layout of the dropdown will be altered, not the way it handles layering through ZO_Menus
-
 
 --------------------------------------------------------------------
 -- Locals
 --------------------------------------------------------------------
+--local speed up variables
 local em = EVENT_MANAGER
+
+local tos = tostring
+local sfor = string.format
+local tins = table.insert
 
 --Sound settings
 local origSoundComboClicked = SOUNDS.COMBO_CLICK
@@ -196,21 +202,21 @@ local function setMaxMenuWidthAndRows()
 -- On my screen, at 0.2, this is currently 384
 end
 
--- TODO: Rename
-local function getVisible(visibleRows, entryType)
+--Get currently shown entryType in the dropdown, to calculate the height properly
+local function getVisibleEntryTypeControls(visibleRows, entryType)
 	local highest = 0
+	--Filled at function ScrollableDropdownHelper:AddMenuItems(), CreateEntry
 	for k, index in ipairs(rowIndex[entryType]) do
 		if index < visibleRows then
 			highest = highest + 1
 		end
 	end
-	
 	return highest
 end
 
 --Get currently shown divider and header indices of the menu entries
 local function getVisibleHeadersAndDivider(visibleItems)
-	return getVisible(visibleItems, HEADER_ENTRY_ID), getVisible(visibleItems, DIVIDER_ENTRY_ID)
+	return getVisibleEntryTypeControls(visibleItems, HEADER_ENTRY_ID), getVisibleEntryTypeControls(visibleItems, DIVIDER_ENTRY_ID)
 end
 	
 local function doMapEntries(entryTable, mapTable)
@@ -221,7 +227,7 @@ local function doMapEntries(entryTable, mapTable)
 		
 		-- TODO: only map entries with callbacks?
 		if entry.callback then
-		--	table.insert(mapTable, entry)
+		--	tins(mapTable, entry)
 			mapTable[entry] = entry
 		end
 	end
@@ -238,13 +244,12 @@ local function mapEntries(entryTable, mapTable, blank)
     end
 	
 	local entryTableType, mapTableType = type(entryTable), type(mapTable)
-	assert(entryTableType == 'table' and mapTableType == 'table' , string.format('[LibScrollableMenu:MapEntries] tables expected got entryTable = %s, mapTable = %s', tostring(entryTableType), tostring(mapTableType)))
+	assert(entryTableType == 'table' and mapTableType == 'table' , sfor('[LibScrollableMenu:MapEntries] tables expected got entryTable = %s, mapTable = %s', tos(entryTableType), tos(mapTableType)))
 	
 	-- Splitting these up so the above is not done each iteration
 	doMapEntries(entryTable, mapTable)
 end
--- LibScrollableMenu:MapEntries(__table__ entryTable, __table__ mapTable)
--- LibScrollableMenu.MapEntries(__table__ entryTable, __table__ mapTable)
+
 
 --------------------------------------------------------------------
 -- ScrollableDropdownHelper
@@ -625,7 +630,7 @@ function ScrollableDropdownHelper:AddMenuItems()
 
 		--Save divider and header entries' indices for later usage at the height calulation
 		if rowIndex[entryType] ~= nil then
-			table.insert(rowIndex[entryType], index)
+			tins(rowIndex[entryType], index)
 		end
 		
 		return ZO_ScrollList_CreateDataEntry(entryType, item)
@@ -640,7 +645,7 @@ function ScrollableDropdownHelper:AddMenuItems()
 	for i = 1, visibleItems do
 		local item = dropdown.m_sortedItems[i]
 		local entry = createEntry(dropdown, item, i, i == visibleItems)
-		table.insert(dataList, entry)
+		tins(dataList, entry)
 
 		-- Here the width is calculated while the list is being populated. 
 		-- It also makes it so the for loop on m_sortedItems is not done more than once per run
@@ -727,7 +732,7 @@ function ScrollableDropdownHelper:GetMaxWidth(item, maxWidth, dividers, headers)
 	width = zo_min(MAX_MENU_WIDTH, width)
 	if (width > maxWidth) then
 		maxWidth = width
-	--	d( string.format('maxWidth = %s', width))
+	--	d( sfor('maxWidth = %s', width))
 	end
 	
 	return maxWidth, dividers, headers
@@ -749,7 +754,11 @@ function ScrollableDropdownHelper:OnHide()
 
 	 -- NOTE: do we really want this here???
 	if self.parent then -- submenus won't have a parent for their scroll helper
+		--Fires SubmenuOnHide callback
 		lib.submenu:Clear()
+	else
+d("lib:FireCallbacks('MenuOnHide)")
+		lib:FireCallbacks('MenuOnHide', self)
 	end
 end
 
@@ -760,6 +769,11 @@ function ScrollableDropdownHelper:OnShow()
 		dropdown.m_lastParent = dropdown.m_dropdown:GetParent()
 		dropdown.m_dropdown:SetParent(ZO_Menus)
 		ZO_Menus:BringWindowToTop()
+
+		if not self.isSubMenuScrollHelper then
+d("lib:FireCallbacks('MenuOnShow)")
+			lib:FireCallbacks('MenuOnShow', self)
+		end
 	end
 end
 
@@ -848,7 +862,7 @@ local ScrollableSubmenu = ZO_InitializingObject:Subclass()
 
 local function getScrollableSubmenu(depth)
 	if depth > #submenus then
-		table.insert(submenus, ScrollableSubmenu:New(depth))
+		tins(submenus, ScrollableSubmenu:New(depth))
 	end
 	return submenus[depth]
 end
@@ -858,7 +872,10 @@ end
 function ScrollableSubmenu:Initialize(submenuDepth)
 	local submenuControl = WINDOW_MANAGER:CreateControlFromVirtual(ROOT_PREFIX..submenuDepth, ZO_Menus, 'LibScrollableMenu_ComboBox')
 	submenuControl:SetHidden(true)
-	submenuControl:SetHandler("OnHide", function(control) clearTimeout() self:Clear() end)
+	submenuControl:SetHandler("OnHide", function(control)
+		clearTimeout()
+		self:Clear()
+	end)
 	submenuControl:SetDrawLevel(ZO_Menu:GetDrawLevel() + 1)
 	--submenuControl:SetExcludeFromResizeToFitExtents(true)
 	
@@ -931,7 +948,12 @@ function ScrollableSubmenu:AnchorToControl(parentControl)
 	myControl:SetHidden(false)
 end
 
-function ScrollableSubmenu:Clear()
+function ScrollableSubmenu:Clear(doFireCallback)
+	if doFireCallback ~= false then
+d("lib:FireCallbacks('SubmenuOnHide)")
+		lib:FireCallbacks('SubmenuOnHide', self)
+	end
+
 	self:ClearItems()
 	self:SetOwner(nil)
 	self.control:SetHidden(true)
@@ -1005,6 +1027,10 @@ function ScrollableSubmenu:Show(parentControl) -- parentControl is a row within 
 	-- This gives us a parent submenu to all entries
 	-- entry.m_owner.m_submenu.m_parent
 	self.m_parent = parentControl
+
+d("lib:FireCallbacks('SubmenuOnShow)")
+	lib:FireCallbacks('SubmenuOnShow', self)
+
 	return true
 end
 
@@ -1056,42 +1082,7 @@ function lib.SetPersistentMenus(persistent)
 end
 
 lib.MapEntries = mapEntries
---[[
-	--Currently disabled as not used/non tested - 2023.10.05
 
-	local newEntry = createEntry(
-		name,
-		icon,
-		tooltip,
-		entries,
-		callback
-	)
-	-- Add additional variables
-	newEntry.label = label
-	table.insert(dropdownEntries, newEntry)
-
-	Function to create a new entry for a combobox, for LibScrollableMenu
-function lib.CreateEntry(name, icon, tooltip, entries, callback)
-	local newEntry = {
-		name = name, 				--string or function returning a string
-		icon = icon, 				-- string iconPath or function returning a string iconPath, or nil
-		callback = callback, 		-- function, or nil
-		tooltip = tooltip, 			-- string or function returning a string, or nil
-		entries = entries, 			-- nil or table of submenu entries
-		hasSubmenu = (entries ~= nil),
-	}
-	
-	-- Optional params added to returned newEntry:
-	-- newEntry.label string or function returning a string
- 	-- newEntry.isHeader boolean or function returning a boolean
- 	-- newEntry.isCheckbox boolean or function returning a boolean
-	-- newEntry.checked boolean or function returning a boolean (in combination with isCheckbox)
- 	-- newEntry.isNew boolean or function returning a boolean
-	return newEntry
-end
-]]
-
---	/script LibScrollableMenuSub1DropdownDropdown:SetWidth(LibScrollableMenuSub1DropdownDropdown:GetWidth() - 10)
 --Adds a scroll helper to the comboBoxControl dropdown entries, and enables submenus (scollable too) at the entries.
 --	control parent 							Must be the parent control of the comboBox
 --	control comboBoxControl 				Must be any ZO_ComboBox control (e.g. created from virtual template ZO_ComboBox)
@@ -1149,18 +1140,18 @@ local function updateSubmenuNewStatus(m_parent)
 		end
 	end
 	
-	d( 'updateSubmenuNewStatus ' .. tostring(result))
+	d( 'updateSubmenuNewStatus ' .. tos(result))
 	
 	data.isNew = result
 	if not result then
---		d( '> m_parent.m_owner ' .. tostring(m_parent.m_owner ~= nil))
+--		d( '> m_parent.m_owner ' .. tos(m_parent.m_owner ~= nil))
 		if m_parent.m_owner then
---	d( 'm_parent.m_owner.m_scroll ' .. tostring(m_parent.m_owner.m_scroll:GetName()))
+--	d( 'm_parent.m_owner.m_scroll ' .. tos(m_parent.m_owner.m_scroll:GetName()))
 			ZO_ScrollList_RefreshVisible(m_parent.m_owner.m_scroll)
 			
 			if m_parent.m_owner.m_submenu then
 				local m_submenu = m_parent.m_owner.m_submenu
---		d( '> m_submenu.m_parent ' .. tostring(m_submenu.m_parent ~= nil))
+--		d( '> m_submenu.m_parent ' .. tos(m_submenu.m_parent ~= nil))
 				
 				if m_submenu.m_parent then
 					updateSubmenuNewStatus(m_submenu.m_parent)
@@ -1181,7 +1172,7 @@ local function clearNewStatus(entry, data)
 			
 			local m_submenu = entry.m_owner.m_submenu or {}-- entry.m_owner.m_submenu.m_parent
 			
---		d( '> m_submenu.m_parent ' .. tostring(m_submenu.m_parent ~= nil))
+--		d( '> m_submenu.m_parent ' .. tos(m_submenu.m_parent ~= nil))
 			if m_submenu.m_parent ~= nil then
 				updateSubmenuNewStatus(m_submenu.m_parent)
 			end
@@ -1191,8 +1182,12 @@ end
 
 function LibScrollableMenu_Entry_OnMouseEnter(entry)
     if entry.m_owner and entry.selectible then
-		-- For submenus
 		local data = ZO_ScrollList_GetData(entry)
+
+d("lib:FireCallbacks('EntryOnMouseEnter)")
+		lib:FireCallbacks('EntryOnMouseEnter', data, entry)
+
+		-- For submenus
 		local mySubmenu = getSubmenuFromControl(entry)
 
 		if entry.hasSubmenu or data.entries ~= nil then
@@ -1223,7 +1218,7 @@ function LibScrollableMenu_Entry_OnMouseEnter(entry)
         end
 		
 		-- I moved this to the bottom to see if any of the Clear*s had any effect on submenu data.
-	--	d( 'LibScrollableMenu_Entry_OnMouseEnter ' .. tostring(data.name))
+	--	d( 'LibScrollableMenu_Entry_OnMouseEnter ' .. tos(data.name))
 		clearNewStatus(entry, data)
     end
 end
@@ -1235,13 +1230,17 @@ local function onMouseExitTimeout()
 	if name and zo_strfind(name, ROOT_PREFIX) == 1 then
 		--TODO: check for matching depth??
 	else
-		lib.submenu:Clear()
+		lib.submenu:Clear(false)
 	end
 end
 
 function LibScrollableMenu_Entry_OnMouseExit(entry)
 	-- Original
     if entry.m_owner then
+		local data = ZO_ScrollList_GetData(entry)
+d("lib:FireCallbacks('EntryOnMouseExit)")
+		lib:FireCallbacks('EntryOnMouseExit', data, entry)
+
         ZO_ScrollList_MouseExit(entry.m_owner.m_scroll, entry)
         entry.m_label:SetColor(entry.m_owner.m_normalColor:UnpackRGBA())
         if entry.m_owner.onMouseExitCallback then
@@ -1258,11 +1257,15 @@ function LibScrollableMenu_OnSelected(entry)
     if entry.m_owner then
 --d("LibScrollableMenu_OnSelected")
 		local data = ZO_ScrollList_GetData(entry)
+
+d("lib:FireCallbacks('EntryOnSelected)")
+		lib:FireCallbacks('EntryOnSelected', data, entry)
+
 		local mySubmenu = getSubmenuFromControl(entry)
 	--	d( data.entries)
 		if entry.hasSubmenu or data.entries ~= nil then
 			entry.hasSubmenu = true
---d(">menu entry with submenu - hasSubmenu: " ..tostring(entry.hasSubmenu))
+--d(">menu entry with submenu - hasSubmenu: " ..tos(entry.hasSubmenu))
 			--Save the current entry to lib.submenu.lastClickedEntryWithSubmenu
 			lib.submenu.lastClickedEntryWithSubmenu = entry
 
@@ -1301,7 +1304,7 @@ function LibScrollableMenu_OnSelected(entry)
 			return true
 		else
 			--Check if the selected entry belongs to a submenu:	if mySubmenu ~= nil
---d(">menu entry - isSubmenuClickedEntry: " ..tostring(mySubmenu ~= nil))
+--d(">menu entry - isSubmenuClickedEntry: " ..tos(mySubmenu ~= nil))
 			playSelectedSoundCheck(entry)
 
 			--Pass the entrie's text to the dropdown control's selectedItemText
@@ -1311,462 +1314,6 @@ function LibScrollableMenu_OnSelected(entry)
     end
 end
 
-
-------------------------------------------------------------------------------------------------------------------------
--- For testing - Combobox with all kind of entry types (test offsets, etc.)
-------------------------------------------------------------------------------------------------------------------------
-local function test()
-	if lib.testDropdown == nil then
-		local testTLC = CreateTopLevelWindow(MAJOR .. "TestTLC")
-		testTLC:SetHidden(true)
-		testTLC:SetDimensions(1, 1)
-		testTLC:SetAnchor(CENTER, GuiRoot, CENTER)
-		testTLC:SetMovable(true)
-		testTLC:SetMouseEnabled(false)
-
-		local dropdown = WINDOW_MANAGER:CreateControlFromVirtual(MAJOR .. "TestDropdown", testTLC, "ZO_ComboBox")
-		dropdown:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
-		dropdown:SetHeight(24)
-		dropdown:SetWidth(250)
-		dropdown:SetMovable(true)
-
-		local options = { visibleRowsDropdown = 10, visibleRowsSubmenu = 5, sortEntries=function() return false end, }
-		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, dropdown, options)
-
--- did not work		scrollHelper.OnShow = function() end --don't change parenting
-	
-		lib.testDropdown = dropdown
-
-		--Prepare and add the text entries in the dropdown's comboBox
-		local comboBox = dropdown.m_comboBox
-
-		--LibScrollableMenu - LSM entry - Submenu normal
-		local submenuEntries = {
-			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 1",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry test 1")
-				end,
-				--tooltip         = "Submenu Entry Test 1",
-				--icons 			= nil,
-			},
-			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 2",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry test 2")
-				end,
-				tooltip         = "Submenu Entry Test 2",
-				isNew			= true,
-				--icons 			= nil,
-			},
-			--LibScrollableMenu - LSM entry - Submenu divider
-			{
-				name            = "-",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					--Headers do not use any callback
-				end,
-				tooltip         = "Submenu Divider Test 1",
-				--icons 			= nil,
-			},
-			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 3",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry test 3")
-				end,
-				isNew			= true,
-				--tooltip         = "Submenu Entry Test 3",
-				--icons 			= nil,
-			},
-			{
-				isHeader        = true, --Enables the header at LSM
-				name            = "Header Test 1",
-				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
-				tooltip         = "Header test 1",
-				--icons 			= nil,
-			},
-			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 4",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry test 4")
-				end,
-				tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
-			},
-			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 5",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry test 5")
-				end,
-				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
-			},
-			{
-				name            = "Submenu entry 6",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry 6")
-				end,
-				entries         = {
-					{
-						isHeader        = false,
-						name            = "Normal entry 6 1:1",
-						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-							d("Submenu entry 6 1:1")
-						end,
-						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
-					},
-					{
-						isHeader        = false,
-						name            = "Submenu entry 6 1:2",
-						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-							d("Submenu entry 6 1:2")
-						end,
-						tooltip         = "Submenu entry 6 1:2",
-						entries         = {
-							{
-								isHeader        = false,
-								name            = "Submenu entry 6 2:1",
-								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-									d("Submenu entry 6 2:1")
-								end,
-								--tooltip         = "Submenu Entry Test 1",
-								--icons 			= nil,
-							},
-							{
-								isHeader        = false,
-								name            = "Submenu entry 6 2:2",
-								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-									d("Submenu entry 6 2:2")
-								end,
-								tooltip         = "Submenu entry 6 2:2",
-								entries         = {
-									{
-										isHeader        = false,
-										name            = "Normal entry 6 2:1",
-										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-											d("Normal entry 6 2:1")
-										end,
-										--tooltip         = "Submenu Entry Test 1",
-										--icons 			= nil,
-									},
-									{
-										isHeader        = false,
-										name            = "Normal entry 6 2:2",
-										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-											d("Normal entry 6 2:2")
-										end,
-										tooltip         = "Normal entry 6 2:2",
-										isNew			= true,
-										--icons 			= nil,
-									},
-								},
-							},
-						},
-					},
-					{
-						isHeader        = false,
-						name            = "Normal entry 6 1:2",
-						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-							d("Normal entry 6 1:2")
-						end,
-						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
-					},
-				},
-			--	tooltip         = function() return "Submenu entry 6"  end
-				tooltip         = "Submenu entry 6"
-			},
-			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 7",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry test 7")
-				end,
-				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
-			},
-			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 8",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry test 8")
-				end,
-				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
-			},
-			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 9",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry test 9")
-				end,
-				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
-			},
-			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 10",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry test 10")
-				end,
-				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
-			}
-		}
-
-		--Normal entries
-		local comboBoxMenuEntries = {
-			{
-				name            = "Normal entry 1",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Normal entry 1")
-				end,
-				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
-				isNew			= true,
-				--entries         = submenuEntries,
-				--tooltip         =
-			},
-			{
-				name            = "-", --Divider
-			},
-			{
-				name            = "Entry having submenu 1",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Entry having submenu 1")
-				end,
-				entries         = submenuEntries,
-				--tooltip         =
-			},
-			{
-				name            = "Normal entry 2",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Normal entry 2")
-				end,
-				isNew			= true,
-				--entries         = submenuEntries,
-				--tooltip         =
-			},
-			{
-				isHeader		= function() return true  end,
-				name            = "Header entry 1",
-				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
-				--icons 	     = nil,
-			},
-			{
-				isCheckbox		= function() return true  end,
-				name            = "Checkbox entry 1",
-				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Checkbox entry 1")
-				end,
-			--	tooltip         = function() return "Checkbox entry 1"  end
-				tooltip         = "Checkbox entry 1"
-			},
-			{
-				name            = "-", --Divider
-			},
-			{
-				isCheckbox		= true,
-				name            = "Checkbox entry 2",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Checkbox entry 2")
-				end,
-				checked			= true, -- Confirmed does start checked.
-				--tooltip         = function() return "Checkbox entry 2" end
-				tooltip         = "Checkbox entry 2"
-			},
-			{
-				name            = "-", --Divider
-			},
-			{
-				name            = "Normal entry 4",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Normal entry 4")
-				end,
-				--entries         = submenuEntries,
-			--	tooltip         = function() return "Normal entry 4"  end
-				tooltip         = "Normal entry 4"
-			},
-			{
-				name            = "Normal entry 5",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Normal entry 5")
-				end,
-				--entries         = submenuEntries,
-			--	tooltip         = function() return "Normal entry 5"  end
-				tooltip         = "Normal entry 5"
-			},
-			{
-				name            = "Submenu entry 6",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry 6")
-				end,
-				entries         = {
-					{
-						isHeader        = false,
-						name            = "Normal entry 6 1:1",
-						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-							d("Submenu entry 6 1:1")
-						end,
-						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
-					},
-					{
-						isHeader        = false,
-						name            = "Submenu entry 6 1:1",
-						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-							d("Submenu entry 6 1:2")
-						end,
-						tooltip         = "Submenu entry 6 1:2",
-						entries         = {
-							{
-								isHeader        = false,
-								name            = "Submenu entry 6 2:1",
-								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-									d("Submenu entry 6 2:1")
-								end,
-								--tooltip         = "Submenu Entry Test 1",
-								--icons 			= nil,
-							},
-							{
-								isHeader        = false,
-								name            = "Submenu entry 6 2:2",
-								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-									d("Submenu entry 6 2:2")
-								end,
-								tooltip         = "Submenu entry 6 2:2",
-								entries         = {
-									{
-										isHeader        = false,
-										name            = "Normal entry 6 2:1",
-										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-											d("Normal entry 6 2:1")
-										end,
-										--tooltip         = "Submenu Entry Test 1",
-										--icons 			= nil,
-									},
-									{
-										isHeader        = false,
-										name            = "Normal entry 6 2:2",
-										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-											d("Normal entry 6 2:2")
-										end,
-										tooltip         = "Normal entry 6 2:2",
-										isNew			= true,
-										--icons 			= nil,
-									},
-								},
-							},
-						},
-					},
-					{
-						isHeader        = false,
-						name            = "Normal entry 6 1:2",
-						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-							d("Normal entry 6 1:2")
-						end,
-						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
-					},
-				},
-			--	tooltip         = function() return "Submenu entry 6"  end
-				tooltip         = "Submenu entry 6"
-			},
-			{
-				name            = "Normal entry 7",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Normal entry 7")
-				end,
-				--entries         = submenuEntries,
-			--	tooltip         = function() return "Normal entry 7"  end
-				tooltip         = "Normal entry 7"
-			},
-			{
-				name            = "Normal entry 8",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Normal entry 8")
-				end,
-				--entries         = submenuEntries,
-			--	tooltip         = function() return "Normal entry 8"  end
-				tooltip         = "Normal entry 8"
-			},
-			{
-				name            = "Normal entry 9",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Normal entry 9")
-				end,
-				--entries         = submenuEntries,
-			--	tooltip         = function() return "Normal entry 9"  end
-				tooltip         = "Normal entry 9"
-			},
-			{
-				name            = "Normal entry 10 - Very long text here at this entry!",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Normal entry 10")
-				end,
-				--entries         = submenuEntries,
-			--	tooltip         = function() return "Normal entry 10"  end
-				tooltip         = "Normal entry 10"
-			}
-		}
-
-		--Add the items
-		comboBox:AddItems(comboBoxMenuEntries)
-		
-		local entryMap = {}
-		-- entries are mapped by 
-		-- entryMap[#entryMap + 1]
-		-- entryMap[data] 
-		lib:MapEntries(comboBoxMenuEntries, entryMap)
-	--	lib.MapEntries(comboBoxMenuEntries, entryMap)
-	--	mapEntries(comboBoxMenuEntries, entryMap)
-	
-		lib.testDropdown.entryMap = entryMap
-		
-		lib:RegisterCallback('NewStatusUpdated', function(data, entry)
-			if entryMap[data] ~= nil then
-				d( '>>> INTERNAL <<< NewStatusUpdated ' .. data.name)
-			else
-				d( '>>> EXTERNAL <<< NewStatusUpdated ' .. data.name)
-			end
-		end)
-		
-		lib:RegisterCallback('CheckboxUpdated', function(checked, data, checkbox)
-			local internal = false
-			for k, v in pairs(entryMap) do
-				if v == data then
-					internal = true
-					break
-				end
-			end
-			
-			if internal then
-				d( '>>> INTERNAL <<< CheckboxUpdated ' .. data.name)
-			else
-				d( '>>> EXTERNAL <<< CheckboxUpdated ' .. data.name)
-			end
-		end)
-	end
-	
-	local dropdown = lib.testDropdown
-	local testTLC = dropdown:GetParent()
-	if testTLC:IsHidden() then
-		testTLC:SetHidden(false)
-		testTLC:SetMouseEnabled(true)
-	else
-		testTLC:SetHidden(true)
-		testTLC:SetMouseEnabled(false)
-	end
-
-end
-lib.Test = test
---	/script LibScrollableMenu.Test()
-SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
 
 
 ------------------------------------------------------------------------------------------------------------------------
