@@ -292,14 +292,14 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 			visibleRows = options
 		end
 	end
-	
+
 	visibleRows = visibleRows or DEFAULT_VISIBLE_ROWS
 	visibleRowsSubmenu = visibleRowsSubmenu or DEFAULT_VISIBLE_ROWS
 	if sortsItems == nil then sortsItems = DEFAULT_SORTS_ENTRIES end
 
 	local combobox = control.combobox
 	local dropdown = control.dropdown
-	
+
 	self.parent = parent
 	self.control = control
 	self.combobox = combobox
@@ -322,12 +322,12 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 	-- handle dropdown or settingsmenu opening/closing
 	-- I would prefer to add these to a class
 	local function onShow() self:OnShow() end
-	local function onHide() self:OnHide() end
+	local function onHide(isOnEffectivelyHiddenCall) self:OnHide(isOnEffectivelyHiddenCall) end
 	local function doHide() self:DoHide() end
 
 	ZO_PreHook(dropdown,"ShowDropdownOnMouseUp", onShow)
 	ZO_PreHook(dropdown,"HideDropdownInternal", onHide)
-	combobox:SetHandler("OnEffectivelyHidden", onHide)
+	combobox:SetHandler("OnEffectivelyHidden", function() onHide(false) end)
 	if parent then parent:SetHandler("OnEffectivelyHidden", doHide) end
 
 	combobox.m_comboBox:SetSortsItems(sortsItems)
@@ -356,8 +356,8 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 
 	-- make sure spacing is updated for dividers
 	local function setSpacing(dropdown, spacing)
-		local newHeight = DIVIDER_ENTRY_HEIGHT + spacing
-		ZO_ScrollList_UpdateDataTypeHeight(mScroll, DIVIDER_ENTRY_ID, newHeight)
+	local newHeight = DIVIDER_ENTRY_HEIGHT + spacing
+	ZO_ScrollList_UpdateDataTypeHeight(mScroll, DIVIDER_ENTRY_ID, newHeight)
 	end
 	ZO_PreHook(dropdown, "SetSpacing", setSpacing)
 
@@ -377,7 +377,7 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 	--...
 	--Reenable the sound for comboBox select item again
 	SecurePostHook(dropdown, "SelectItem", function()
-		silenceComboBoxClickedSound(false)
+	silenceComboBoxClickedSound(false)
 	end)
 end
 
@@ -745,20 +745,30 @@ function ScrollableDropdownHelper:DoHide()
 	end
 end
 
-function ScrollableDropdownHelper:OnHide()
+function ScrollableDropdownHelper:OnHide(isOnEffectivelyHiddenCall)
+	isOnEffectivelyHiddenCall = isOnEffectivelyHiddenCall or false
+
 	local dropdown = self.dropdown
 	if dropdown.m_lastParent then
 		dropdown.m_dropdown:SetParent(dropdown.m_lastParent)
 		dropdown.m_lastParent = nil
 	end
 
-	 -- NOTE: do we really want this here???
-	if self.parent then -- submenus won't have a parent for their scroll helper
-		--Fires SubmenuOnHide callback
-		lib.submenu:Clear()
-	else
+	local isSubmenu
+	if not not isOnEffectivelyHiddenCall then
+		isSubmenu = self.isSubMenuScrollHelper
+		if not isSubmenu then
 d("lib:FireCallbacks('MenuOnHide)")
-		lib:FireCallbacks('MenuOnHide', self)
+			lib:FireCallbacks('MenuOnHide', self)
+			isSubmenu = false
+		end
+	else
+		isSubmenu = false
+	end
+
+	if self.parent ~= nil then -- submenus won't have a parent for their scroll helper
+		--Fires SubmenuOnHide callback
+		lib.submenu:Clear(isSubmenu)
 	end
 end
 
@@ -870,6 +880,8 @@ end
 -- ScrollableSubmenu:New
 
 function ScrollableSubmenu:Initialize(submenuDepth)
+	self.isShown = false
+
 	local submenuControl = WINDOW_MANAGER:CreateControlFromVirtual(ROOT_PREFIX..submenuDepth, ZO_Menus, 'LibScrollableMenu_ComboBox')
 	submenuControl:SetHidden(true)
 	submenuControl:SetHandler("OnHide", function(control)
@@ -949,7 +961,7 @@ function ScrollableSubmenu:AnchorToControl(parentControl)
 end
 
 function ScrollableSubmenu:Clear(doFireCallback)
-	if doFireCallback ~= false then
+	if self.isShown == true then
 d("lib:FireCallbacks('SubmenuOnHide)")
 		lib:FireCallbacks('SubmenuOnHide', self)
 	end
@@ -958,6 +970,8 @@ d("lib:FireCallbacks('SubmenuOnHide)")
 	self:SetOwner(nil)
 	self.control:SetHidden(true)
 	self:ClearChild()
+
+	self.isShown = false
 end
 
 function ScrollableSubmenu:ClearChild()
@@ -1028,6 +1042,7 @@ function ScrollableSubmenu:Show(parentControl) -- parentControl is a row within 
 	-- entry.m_owner.m_submenu.m_parent
 	self.m_parent = parentControl
 
+	self.isShown = true
 d("lib:FireCallbacks('SubmenuOnShow)")
 	lib:FireCallbacks('SubmenuOnShow', self)
 
@@ -1184,7 +1199,7 @@ function LibScrollableMenu_Entry_OnMouseEnter(entry)
     if entry.m_owner and entry.selectible then
 		local data = ZO_ScrollList_GetData(entry)
 
-d("lib:FireCallbacks('EntryOnMouseEnter)")
+--d("lib:FireCallbacks('EntryOnMouseEnter)")
 		lib:FireCallbacks('EntryOnMouseEnter', data, entry)
 
 		-- For submenus
@@ -1207,7 +1222,7 @@ d("lib:FireCallbacks('EntryOnMouseEnter)")
 			clearTimeout()
 			mySubmenu:ClearChild()
 		else
-			lib.submenu:Clear()
+			lib.submenu:Clear(false)
 		end
 		
 		-- Original
@@ -1230,7 +1245,7 @@ local function onMouseExitTimeout()
 	if name and zo_strfind(name, ROOT_PREFIX) == 1 then
 		--TODO: check for matching depth??
 	else
-		lib.submenu:Clear(false)
+		lib.submenu:Clear()
 	end
 end
 
@@ -1238,7 +1253,7 @@ function LibScrollableMenu_Entry_OnMouseExit(entry)
 	-- Original
     if entry.m_owner then
 		local data = ZO_ScrollList_GetData(entry)
-d("lib:FireCallbacks('EntryOnMouseExit)")
+--d("lib:FireCallbacks('EntryOnMouseExit)")
 		lib:FireCallbacks('EntryOnMouseExit', data, entry)
 
         ZO_ScrollList_MouseExit(entry.m_owner.m_scroll, entry)
@@ -1258,7 +1273,7 @@ function LibScrollableMenu_OnSelected(entry)
 --d("LibScrollableMenu_OnSelected")
 		local data = ZO_ScrollList_GetData(entry)
 
-d("lib:FireCallbacks('EntryOnSelected)")
+--d("lib:FireCallbacks('EntryOnSelected)")
 		lib:FireCallbacks('EntryOnSelected', data, entry)
 
 		local mySubmenu = getSubmenuFromControl(entry)
