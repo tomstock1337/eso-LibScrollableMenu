@@ -812,7 +812,9 @@ local function showTooltip(control, data, wasDelayed)
 			if control.m_active ~= nil then
 				parent = control.m_active.m_comboBox.m_dropdown
 				local anchorPoint = select(2,parent:GetAnchor())
-				anchor = {anchorPoint + 3, 0, 0, anchorPoint}
+				local anchorPointNew = anchorPoint + 3
+				local offsetX = ((anchorPointNew == TOPLEFT or anchorPointNew == LEFT or anchorPointNew == BOTTOMLEFT) and 15) or -15
+				anchor = {anchorPointNew, offsetX, -10, anchorPoint} --anchor right if anchor of parent was left, and vice versa
 			end
 			InitializeTooltip(InformationTooltip, parent, unpack(anchor))
 			SetTooltipText(InformationTooltip, getValueOrCallback(tooltipData, data))
