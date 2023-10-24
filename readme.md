@@ -24,7 +24,7 @@ Here is a brief "howto change addons using LibCustomMenu and overwriting ZO_Comb
 Do not override :AddMenuItems() and just do it the normal way. Your combobox will be scrollable by default now and will work well.
 
 ## If you still want to use submenus: Instructions how to change your ZO_ComboBox to a scrollable list with submenus (scrollable too!)
-Check file LSM_test.lua for example code and menus + submenus + callbacks!
+__Check file LSM_test.lua for example code and menus + submenus + callbacks!__
 
 Create a comboBox from virtual template e.g.:
 ```local comboBox = WINDOW_MANAGER:CreateControlFromVirtual("AF_FilterBar" .. myName .. "DropdownFilter", parentControl, "ZO_ComboBox")```
