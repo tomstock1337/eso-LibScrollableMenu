@@ -790,6 +790,37 @@ function ScrollableDropdownHelper:OnShow()
 	end
 end
 
+
+local function hideTooltip()
+	ClearTooltip(InformationTooltip)
+end
+
+local function showTooltip(control, data, wasDelayed)
+	--Was the call delayed by 1 frame? Check if the tooltip should still be shown. Maybe OnMouseExit already fired before
+	if wasDelayed == true then
+		if not control.showTooltip then return end
+	end
+	local tooltipData = data.tooltip
+	if tooltipData ~= nil then
+		if type(tooltipData) == "function" then
+			local SHOW = true
+			tooltipData(data, control, SHOW)
+		else
+			local parent = control
+			local anchor = defaultTooltipAnchor
+			--Is a submenu's combobox shown meanwhile (see ScrollableSubmenu:Show(...))
+			if control.m_active ~= nil then
+				parent = control.m_active.m_comboBox.m_dropdown
+				local anchorPoint = select(2,parent:GetAnchor())
+				anchor = {anchorPoint + 3, 0, 0, anchorPoint}
+			end
+			InitializeTooltip(InformationTooltip, parent, unpack(anchor))
+			SetTooltipText(InformationTooltip, getValueOrCallback(tooltipData, data))
+			InformationTooltipTopLevel:BringWindowToTop()
+		end
+	end
+end
+
 function ScrollableDropdownHelper:OnMouseEnter(control)
 	-- show tooltip
 	local data = ZO_ScrollList_GetData(control)
@@ -799,44 +830,34 @@ function ScrollableDropdownHelper:OnMouseEnter(control)
 		return true
 	end
 
-	local tooltipData = data.tooltip
-	if tooltipData ~= nil then
+	if data.hasSubmenu == true then
+		control.showTooltip = true
 		zo_callLater(function()
-			if type(tooltipData) == "function" then
-				local SHOW = true
-				tooltipData(data, control, SHOW)
-			else
-				local parent = control
-				local anchor = defaultTooltipAnchor
-				--Is a submenu's combobox shown meanwhile (see ScrollableSubmenu:Show(...))
-				if control.m_active ~= nil then
-					parent = control.m_active.m_comboBox.m_dropdown
-					local anchorPoint = select(2,parent:GetAnchor())
-					anchor = {anchorPoint + 3, 0, 0, anchorPoint}
-				end
-				InitializeTooltip(InformationTooltip, parent, unpack(anchor))
-				SetTooltipText(InformationTooltip, getValueOrCallback(tooltipData, data))
-				InformationTooltipTopLevel:BringWindowToTop()
-			end
+			showTooltip(control, data, true)
 		end, 0) --call 1 frame later so that the tooltip can find the submenu control created and properly anchor to it
+	else
+		showTooltip(control, data, false)
 	end
 end
 
 function ScrollableDropdownHelper:OnMouseExit(control)
+	control.showTooltip = nil
 	-- hide tooltip
 	local data = ZO_ScrollList_GetData(control)
 	if data == nil then return end
+
+	if data.disabled then
+		return true
+	end
+
 	local tooltipData = data.tooltip
 	if tooltipData ~= nil then
 		if type(tooltipData) == "function" then
 			local HIDE = false
 			tooltipData(control, data, HIDE)
 		else
-			ClearTooltip(InformationTooltip)
+			hideTooltip()
 		end
-	end
-	if data.disabled then
-		return true
 	end
 end
 
