@@ -70,6 +70,9 @@ local rowIndex = {
 	[HEADER_ENTRY_ID] = {},
 }
 
+--Tooltip anchors
+local defaultTooltipAnchor = {TOPLEFT, 0, 0, BOTTOMRIGHT}
+
 --------------------------------------------------------------------
 -- Local functions
 --------------------------------------------------------------------
@@ -791,20 +794,31 @@ function ScrollableDropdownHelper:OnMouseEnter(control)
 	-- show tooltip
 	local data = ZO_ScrollList_GetData(control)
 	if data == nil then return end
-	local tooltipData = data.tooltip
-	if tooltipData ~= nil then
-		if type(tooltipData) == "function" then
-			local SHOW = true
-			tooltipData(data, control, SHOW)
-		else
-			InitializeTooltip(InformationTooltip, control, TOPLEFT, 0, 0, BOTTOMRIGHT)
-			SetTooltipText(InformationTooltip, getValueOrCallback(tooltipData, data))
-			InformationTooltipTopLevel:BringWindowToTop()
-		end
-	end
-	
+
 	if data.disabled then
 		return true
+	end
+
+	local tooltipData = data.tooltip
+	if tooltipData ~= nil then
+		zo_callLater(function()
+			if type(tooltipData) == "function" then
+				local SHOW = true
+				tooltipData(data, control, SHOW)
+			else
+				local parent = control
+				local anchor = defaultTooltipAnchor
+				--Is a submenu's combobox shown meanwhile (see ScrollableSubmenu:Show(...))
+				if control.m_active ~= nil then
+					parent = control.m_active.m_comboBox.m_dropdown
+					local anchorPoint = select(2,parent:GetAnchor())
+					anchor = {anchorPoint + 3, 0, 0, anchorPoint}
+				end
+				InitializeTooltip(InformationTooltip, parent, unpack(anchor))
+				SetTooltipText(InformationTooltip, getValueOrCallback(tooltipData, data))
+				InformationTooltipTopLevel:BringWindowToTop()
+			end
+		end, 0) --call 1 frame later so that the tooltip can find the submenu control created and properly anchor to it
 	end
 end
 
@@ -943,7 +957,7 @@ function ScrollableSubmenu:AnchorToControl(parentControl)
 
 	local anchorPoint = LEFT
 	local anchorOffset = -3
-	local anchorOffsetY = -7 --Move the submenu a bi up so it's 1st row is even with the main menu's row having/showing this submenu
+	local anchorOffsetY = -7 --Move the submenu a bit up so it's 1st row is even with the main menu's row having/showing this submenu
 
 	if self.parentMenu then
 		anchorPoint = self.parentMenu.anchorPoint
@@ -1021,6 +1035,7 @@ function ScrollableSubmenu:Show(parentControl) -- parentControl is a row within 
 	local owner = getContainerFromControl(parentControl)
 	self:SetOwner(owner)
 
+	parentControl.m_owner.m_dropdown:SetDrawTier(DT_MEDIUM)
 	--Get the owner's ScrollableDropdownHelper object and the visibleSubmenuRows attribute, and update this
 	--ScrollableSubmenu's ScrollableDropdownHelper object with this owner data, as attribute .parentScrollableDropdownHelper
 	self.parentScrollableDropdownHelper = owner.parentScrollableDropdownHelper
@@ -1042,6 +1057,7 @@ function ScrollableSubmenu:Show(parentControl) -- parentControl is a row within 
 	-- entry.m_owner.m_submenu.m_parent
 	self.m_parent = parentControl
 
+	parentControl.m_active = self.combobox
 	self.isShown = true
 --d("lib:FireCallbacks('SubmenuOnShow)")
 	lib:FireCallbacks('SubmenuOnShow', self)
