@@ -1307,6 +1307,14 @@ function LibScrollableMenu_Entry_OnMouseExit(entry)
 	end
 end
 
+local function selectEntryAndResetLastSubmenuData(entry)
+	playSelectedSoundCheck(entry)
+
+	--Pass the entrie's text to the dropdown control's selectedItemText
+	entry.m_owner:SetSelected(entry.m_data.m_index)
+	lib.submenu.lastClickedEntryWithSubmenu = nil
+end
+
 function LibScrollableMenu_OnSelected(entry)
     if entry.m_owner then
 --d("LibScrollableMenu_OnSelected")
@@ -1337,13 +1345,15 @@ function LibScrollableMenu_OnSelected(entry)
 					--Has the entry a submenu but also a callback function: Do not show the submenu if you click the entry
 					-->e.g. AddonSelector: Click main entry to select addon pack, instead of having to select the submenu entry
 					if data.callback ~= nil then
+						--Run the callback
 						data.callback(entry)
 						targetSubmenu:Clear()
-						--entry.m_owner:Hide()
+						--Hide the dropdown
 						local comboBox = getContainerFromControl(entry)
 						if comboBox and comboBox.scrollHelper then
 							comboBox.scrollHelper:DoHide()
 						end
+						selectEntryAndResetLastSubmenuData(entry)
 						return
 					end
 					--Check if submenu should be shown/hidden
@@ -1357,13 +1367,7 @@ function LibScrollableMenu_OnSelected(entry)
 			lib.submenu.lastClickedEntryWithSubmenu = nil
 			return true
 		else
-			--Check if the selected entry belongs to a submenu:	if mySubmenu ~= nil
---d(">menu entry - isSubmenuClickedEntry: " ..tos(mySubmenu ~= nil))
-			playSelectedSoundCheck(entry)
-
-			--Pass the entrie's text to the dropdown control's selectedItemText
-			entry.m_owner:SetSelected(entry.m_data.m_index)
-			lib.submenu.lastClickedEntryWithSubmenu = nil
+			selectEntryAndResetLastSubmenuData(entry)
 		end
     end
 end
