@@ -802,22 +802,24 @@ function ScrollableDropdownHelper:OnShow()
 	end
 end
 
-
 local function hideTooltip()
 	ClearTooltip(InformationTooltip)
 end
 
 local function showTooltip(control, data, wasDelayed)
+	lib.lastCustomTooltipControl = nil
 	--Was the call delayed by 1 frame? Check if the tooltip should still be shown. Maybe OnMouseExit already fired before
 	if wasDelayed == true then
 		if not control.showTooltip then return end
 	end
-	local tooltipData = data.tooltip
-	if tooltipData ~= nil then
-		if type(tooltipData) == "function" then
-			local SHOW = true
-			tooltipData(data, control, SHOW)
-		else
+
+	local customTooltipFunc = data.customTooltip
+	if type(customTooltipFunc) == "function" then
+		local SHOW = true
+		lib.lastCustomTooltipControl = customTooltipFunc(data, control, SHOW)
+	else
+		local tooltipData = getValueOrCallback(data.tooltip, data)
+		if tooltipData ~= nil then
 			local parent = control
 			local anchor = defaultTooltipAnchor
 			--Is a submenu's combobox shown meanwhile (see ScrollableSubmenu:Show(...))
@@ -864,14 +866,13 @@ function ScrollableDropdownHelper:OnMouseExit(control)
 		return true
 	end
 
-	local tooltipData = data.tooltip
-	if tooltipData ~= nil then
-		if type(tooltipData) == "function" then
-			local HIDE = false
-			tooltipData(control, data, HIDE)
-		else
-			hideTooltip()
-		end
+	local customTooltipFunc = data.customTooltip
+	if type(customTooltipFunc) == "function" then
+		local HIDE = false
+		customTooltipFunc(data, control, HIDE)
+		lib.lastCustomTooltipControl = nil
+	else
+		hideTooltip()
 	end
 end
 
@@ -1242,6 +1243,20 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxControl, option
 	return ScrollableDropdownHelper:New(parent, comboBoxControl, options, false)
 end
 
+
+--Custom tooltip function
+--[[
+Function to show or hide a custom tooltip control. Pass that in to the data table of any entry, via data.customTooltip!
+
+Your function needs to create and show/hide that control, and populate the text etc to the control too!
+Parameters:
+-data The table with the current data of the rowControl
+-rowControl The userdata of the control the tooltip should show about
+-showOrHide boolean true to show, or hide to hide the tooltip
+
+myAddon.customTooltipFunc(table data, userdata rowControl, boolean showOrHide)
+e.g. data = { name="Test 1", label="Test", customTooltip=function(data, rowControl, showOrHide) ... end, ... }
+]]
 
 --------------------------------------------------------------------
 -- XML functions
