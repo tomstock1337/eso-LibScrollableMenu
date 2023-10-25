@@ -17,7 +17,7 @@
 			</OnInitialized>
 			
 			<Controls>
-				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon">
+				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon" tier="MEDIUM" layer="CONTROLS" level="10">
 					<Dimensions x="25"  y="25"/>
 					<Anchor point="TOPLEFT" offsetX="4" offsetY="0"/>
 					<Anchor point="BOTTOMLEFT" offsetY="-5" />

@@ -70,8 +70,14 @@ local rowIndex = {
 	[HEADER_ENTRY_ID] = {},
 }
 
+--Textures
+local iconNewIcon = ZO_KEYBOARD_NEW_ICON
+
 --Tooltip anchors
 local defaultTooltipAnchor = {TOPLEFT, 0, 0, BOTTOMRIGHT}
+
+--Narration
+local iconNarrationNewValue = GetString(SI_SCREEN_NARRATION_NEW_ICON_NARRATION)
 
 --------------------------------------------------------------------
 -- Local functions
@@ -877,27 +883,76 @@ end
 
 function ScrollableDropdownHelper:UpdateIcons(data)
 	local isNewValue = getValueOrCallback(data.isNew, data)
-	local iconValue = getValueOrCallback(data.icon, data)
+	local iconData = getValueOrCallback(data.icon, data)
+	--If only a "any.dds" texture was passed in
+	if type(iconData) ~= 'table' then
+		iconData = { iconTexture = iconData }
+	end
+	local iconValue = iconData ~= nil and getValueOrCallback(iconData.iconTexture, data)
 	local visible = isNewValue == true or iconValue ~= nil
-	local iconHeight = self.m_icon:GetParent():GetHeight()
+
+	local tooltipForIcon = getValueOrCallback(iconData.tooltip, data)
+	local iconNarration = visible and iconData.iconNarration
+
+
+	local parentHeight = self.m_icon:GetParent():GetHeight()
+	local iconHeight = parentHeight
 	-- This leaves a padding to keep the label from being too close to the edge
 	local iconWidth = visible and iconHeight or 4
-	
-	self.m_icon:ClearIcons()
-	if visible then
+
+
+	local multiIconCtrl = self.m_icon
+	multiIconCtrl:ClearIcons()
+	if visible == true then
+		self.m_icon.data = self.m_icon.data or {}
+
+		--Icon's height and width
+		if iconData.width ~= nil then
+			iconWidth = zo_clamp(getValueOrCallback(iconData.width, data), 4, parentHeight)
+		end
+		if iconData.height ~= nil then
+			iconHeight = zo_clamp(getValueOrCallback(iconData.height, data), 4, parentHeight)
+		end
+		--Icon's color
+		local iconTint = getValueOrCallback(iconData.iconTint, data)
+		if type(iconTint) == "string" then
+			local iconColorDef = ZO_ColorDef:New(iconTint)
+			iconTint = iconColorDef
+		end
+		--Icon's tooltip? Reusing default tooltip functions of controls: ZO_Options_OnMouseEnter and ZO_Options_OnMouseExit
+		multiIconCtrl.data.tooltipText = nil
+		if tooltipForIcon ~= nil and tooltipForIcon ~= "" then
+			multiIconCtrl.data.tooltipText = tooltipForIcon
+		end
+
+		--Icon's narration=
+		iconNarration = getValueOrCallback(iconData.iconNarration, data)
+
 		if isNewValue == true then
-			self.m_icon:AddIcon(ZO_KEYBOARD_NEW_ICON)
+			multiIconCtrl:AddIcon(iconNewIcon, nil, iconNarrationNewValue)
 		end
 		if iconValue ~= nil then
-			self.m_icon:AddIcon(iconValue)
+			multiIconCtrl:AddIcon(iconValue, iconTint, iconNarration)
 		end
-		self.m_icon:Show()
+
+		multiIconCtrl:SetHandler("OnMouseEnter", function(...)
+			ZO_Options_OnMouseEnter(...)
+			InformationTooltipTopLevel:BringWindowToTop()
+		end)
+		multiIconCtrl:SetHandler("OnMouseExit", ZO_Options_OnMouseExit)
+
+		multiIconCtrl:Show()
 	end
-	
+
+	multiIconCtrl:SetMouseEnabled(tooltipForIcon ~= nil)
+	multiIconCtrl:SetDrawTier(DT_MEDIUM)
+	multiIconCtrl:SetDrawLayer(DL_CONTROLS)
+	multiIconCtrl:SetDrawLevel(10)
+
 	-- Using the control also as a padding. if no icon then shrink it
 	-- This also allows for keeping the icon in size with the row height.
-	self.m_icon:SetDimensions(iconWidth, iconHeight)
-	self.m_icon:SetHidden(not visible)
+	multiIconCtrl:SetDimensions(iconWidth, iconHeight)
+	multiIconCtrl:SetHidden(not visible)
 end
 
 
