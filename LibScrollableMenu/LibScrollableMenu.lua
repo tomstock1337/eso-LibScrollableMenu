@@ -542,6 +542,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 				addDivider(control, data, list)
 				addIcon(control, data, list)
 				addLabel(control, data, list)
+				hookHandlers(control, data, list)
 			end,
 		},
 		[CHECKBOX_ENTRY_ID] = {
