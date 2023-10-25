@@ -17,14 +17,19 @@
 			</OnInitialized>
 			
 			<Controls>
-				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon" tier="MEDIUM" layer="CONTROLS" level="10">
+				<Control name="$(parent)IconContainer">
 					<Dimensions x="25"  y="25"/>
 					<Anchor point="TOPLEFT" offsetX="4" offsetY="0"/>
-					<Anchor point="BOTTOMLEFT" offsetY="-5" />
-				</Texture>
-		
+					<Anchor point="BOTTOMLEFT" offsetY="-4" />
+					<Controls>
+						<Texture name="$(parent)Icon" inherits="ZO_MultiIcon">
+							<Dimensions x="25"  y="25"/>
+							<Anchor point="CENTER"/>
+						</Texture>
+					</Controls>
+				</Control>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
-					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="0" />
+					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 					<!--Anchor point="RIGHT" offsetX="ZO_SCROLL_BAR_WIDTH" /-->
 					<Anchor point="BOTTOMRIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" offsetY="-5"  />
 				</Label>
@@ -53,12 +58,19 @@
 				LibScrollableMenu_Entry_OnMouseExit(self)
 			</OnMouseExit>
 			<Controls>
-				<Texture name="$(parent)Icon" inherits="ZO_MultiIcon" excludeFromResizeToFitExtents="true">
+				<Control name="$(parent)IconContainer">
 					<Dimensions x="25"  y="25"/>
-					<Anchor point="LEFT" offsetX="0"/>
-				</Texture>
+					<Anchor point="TOPLEFT" offsetX="4" offsetY="0"/>
+					<Anchor point="BOTTOMLEFT" offsetY="0" />
+					<Controls>
+						<Texture name="$(parent)Icon" inherits="ZO_MultiIcon" excludeFromResizeToFitExtents="true">
+							<Dimensions x="25"  y="25"/>
+							<Anchor point="CENTER"/>
+						</Texture>
+					</Controls>
+				</Control>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
-					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="0" />
+					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 					<!--Anchor point="RIGHT" offsetX="ZO_SCROLL_BAR_WIDTH" /-->
 					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
 				</Label>
@@ -68,7 +80,7 @@
 		<Control name="LibScrollableMenu_ComboBoxSubmenuEntry" inherits="LibScrollableMenu_ComboBoxEntry" virtual="true">
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
-					<Anchor point="TOPLEFT" relativeTo="$(parent)Icon" relativePoint="TOPRIGHT" offsetX="0" />
+					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 					<Anchor point="RIGHT" offsetX="-25" />
 				</Label>
 				<Texture name="$(parent)Arrow" textureFile="EsoUI/Art/Miscellaneous/colorPicker_slider_vertical.dds">
@@ -102,7 +114,7 @@
 			<Controls>
 				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton">
 					<!-- Centered on the icon -->
-					<Anchor point="LEFT" relativeTo="$(parent)Icon" relativePoint="RIGHT" offsetX="0"/>
+					<Anchor point="LEFT" relativeTo="$(parent)IconContainer" relativePoint="RIGHT" offsetX="1"/>
 				</Button>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
 					<Anchor point="LEFT" relativeTo="$(parent)Checkbox" relativePoint="RIGHT" offsetX="4"/>

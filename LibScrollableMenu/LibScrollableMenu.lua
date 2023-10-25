@@ -47,6 +47,7 @@ local HEADER_ENTRY_HEIGHT = 30
 local SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT -- same as in zo_combobox.lua: 25
 local ICON_PADDING = 20
 local PADDING = GetMenuPadding() / 2 -- half the amount looks closer to the regular dropdown
+local WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = 4
 
 --Entry types
 local ENTRY_ID = 1
@@ -420,14 +421,18 @@ function ScrollableDropdownHelper:AddDataTypes()
 	end
 
 	local function addCheckbox(control, data, list)
-		control.m_checkbox = control:GetNamedChild("Checkbox")
+		control.m_checkbox = control.m_checkbox or control:GetNamedChild("Checkbox")
 		local checkbox = control.m_checkbox
 		ZO_CheckButton_SetToggleFunction(checkbox, setChecked)
 		ZO_CheckButton_SetCheckState(checkbox, getValueOrCallback(data.checked, data))
 	end
 	
 	local function addIcon(control, data, list)
-		control.m_icon = control:GetNamedChild("Icon")
+		local iconContainer = control:GetNamedChild("IconContainer")
+		control.m_iconContainer = iconContainer
+		control.m_icon = iconContainer:GetNamedChild("Icon")
+		control.m_label = control.m_label or control:GetNamedChild("Label")
+		control.m_checkbox = control.m_checkbox or control:GetNamedChild("Checkbox")
 		ScrollableDropdownHelper.UpdateIcons(control, data)
 	end
 	
@@ -452,7 +457,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 	local function addLabel(control, data, list)
 		control.m_owner = data.m_owner
 		control.m_data = data
-		control.m_label = control:GetNamedChild("Label")
+		control.m_label = control.m_label or control:GetNamedChild("Label")
 
 		local oName = data.name
 		local name = getValueOrCallback(data.name, data)
@@ -894,24 +899,34 @@ function ScrollableDropdownHelper:UpdateIcons(data)
 	local tooltipForIcon = getValueOrCallback(iconData.tooltip, data)
 	local iconNarration = visible and iconData.iconNarration
 
-
-	local parentHeight = self.m_icon:GetParent():GetHeight()
+	local multiIconContainerCtrl = self.m_iconContainer
+	local multiIconCtrl = self.m_icon
+	--[[
+	local labelCtrl = self.m_label
+	local cBoxCtrl  = self.m_checkbox
+	local reAnchorCtrlToMultiIcon = (cBoxCtrl ~= nil and cBoxCtrl) or labelCtrl
+	if reAnchorCtrlToMultiIcon ~= nil then
+		local anchorTo = select(3, reAnchorCtrlToMultiIcon:GetAnchor())
+		--reAnchorCtrlToMultiIcon:ClearAnchors()
+		reAnchorCtrlToMultiIcon:SetAnchor(TOPLEFT, anchorTo, TOPRIGHT, (visible == true and 25) or WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, 0)
+	end
+	]]
+	local parentHeight = multiIconCtrl:GetParent():GetHeight()
 	local iconHeight = parentHeight
 	-- This leaves a padding to keep the label from being too close to the edge
-	local iconWidth = visible and iconHeight or 4
+	local iconWidth = visible and iconHeight or WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
 
 
-	local multiIconCtrl = self.m_icon
 	multiIconCtrl:ClearIcons()
 	if visible == true then
 		self.m_icon.data = self.m_icon.data or {}
 
 		--Icon's height and width
 		if iconData.width ~= nil then
-			iconWidth = zo_clamp(getValueOrCallback(iconData.width, data), 4, parentHeight)
+			iconWidth = zo_clamp(getValueOrCallback(iconData.width, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
 		end
 		if iconData.height ~= nil then
-			iconHeight = zo_clamp(getValueOrCallback(iconData.height, data), 4, parentHeight)
+			iconHeight = zo_clamp(getValueOrCallback(iconData.height, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
 		end
 		--Icon's color
 		local iconTint = getValueOrCallback(iconData.iconTint, data)
@@ -943,7 +958,6 @@ function ScrollableDropdownHelper:UpdateIcons(data)
 
 		multiIconCtrl:Show()
 	end
-
 	multiIconCtrl:SetMouseEnabled(tooltipForIcon ~= nil)
 	multiIconCtrl:SetDrawTier(DT_MEDIUM)
 	multiIconCtrl:SetDrawLayer(DL_CONTROLS)
@@ -951,6 +965,7 @@ function ScrollableDropdownHelper:UpdateIcons(data)
 
 	-- Using the control also as a padding. if no icon then shrink it
 	-- This also allows for keeping the icon in size with the row height.
+	multiIconContainerCtrl:SetDimensions(iconWidth, iconHeight)
 	multiIconCtrl:SetDimensions(iconWidth, iconHeight)
 	multiIconCtrl:SetHidden(not visible)
 end
