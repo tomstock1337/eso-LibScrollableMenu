@@ -19,7 +19,8 @@ lib.HELPER_MODE_LAYOUT_ONLY = 1 -- means only the layout of the dropdown will be
 -- Locals
 --------------------------------------------------------------------
 --local speed up variables
-local em = EVENT_MANAGER
+local EM = EVENT_MANAGER
+local SNM = SCREEN_NARRATION_MANAGER
 
 local tos = tostring
 local sfor = string.format
@@ -78,14 +79,26 @@ local iconNewIcon = ZO_KEYBOARD_NEW_ICON
 local defaultTooltipAnchor = {TOPLEFT, 0, 0, BOTTOMRIGHT}
 
 --Narration
+local UINarrationName = MAJOR .. "_UINarration_"
+local UINarrationUpdaterName = MAJOR .. "_UINarrationUpdater_"
+
+--Boolean to on/off texts for narration
+--[[
+local booleanToOnOff = {
+    [false] = GetString(SI_CHECK_BUTTON_OFF):upper(),
+    [true]  = GetString(SI_CHECK_BUTTON_ON):upper(),
+}
+]]
+--MultiIcon
 local iconNarrationNewValue = GetString(SI_SCREEN_NARRATION_NEW_ICON_NARRATION)
+
 
 --------------------------------------------------------------------
 -- Local functions
 --------------------------------------------------------------------
 local function clearTimeout()
 	if (submenuCallLaterHandle ~= nil) then
-		em:UnregisterForUpdate(submenuCallLaterHandle)
+		EM:UnregisterForUpdate(submenuCallLaterHandle)
 		submenuCallLaterHandle = nil
 	end
 end
@@ -95,7 +108,7 @@ local function setTimeout(callback)
 	submenuCallLaterHandle = MAJOR.."Timeout" .. nextId
 	nextId = nextId + 1
 
-	em:RegisterForUpdate(submenuCallLaterHandle, SUBMENU_SHOW_TIMEOUT, function()
+	EM:RegisterForUpdate(submenuCallLaterHandle, SUBMENU_SHOW_TIMEOUT, function()
 		clearTimeout()
 		if callback then callback() end
 	end )
@@ -119,16 +132,29 @@ local function getValueOrCallback(arg, ...)
 	end
 end
 
--- use container.m_comboBox for the object
 local function getContainerFromControl(control)
 	local owner = control.m_owner
 	return owner and owner.m_container
 end
 
--- the actual object
 local function getSubmenuFromControl(control)
 	local owner = control.m_owner
 	return owner and owner.m_submenu
+end
+
+local function getScrollHelperObjectFromControl(control)
+	--Submenu entry?
+	local submenu = getSubmenuFromControl(control)
+	if submenu ~= nil then
+		return submenu.scrollHelper
+	else
+		--Normal menu entry
+		local container = getContainerFromControl(control)
+		if container ~= nil then
+			return container.scrollHelper
+		end
+	end
+	return
 end
 
 local function getOptionsForEntry(entry)
@@ -262,40 +288,149 @@ end
 
 
 --------------------------------------------------------------------
+-- Local narration functions
+--------------------------------------------------------------------
+--todo 2023-10-27
+local function isAccessibilitySettingEnabled(settingId)
+    return GetSetting_Bool(SETTING_TYPE_ACCESSIBILITY, settingId)
+end
+
+local function isAccessibilityModeEnabled()
+	return isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_ACCESSIBILITY_MODE)
+end
+
+local function isAccessibilityUIReaderEnabled()
+	return isAccessibilityModeEnabled() and isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_SCREEN_NARRATION)
+end
+
+--Currently commented as these functions are used in each addon and the addons only pass in options.narrate table so their
+--functions will be called for narration
+local function canNarrate()
+	--todo: Add any other checks, like "Is any menu still showing ..."
+	return true
+end
+
+local customNarrateEntryNumber = 0
+local function addNewUINarrationText(newText, stopCurrent)
+    if isAccessibilityUIReaderEnabled() == false then return end
+    stopCurrent = stopCurrent or false
+--d("["..MAJOR.."]AddNewChatNarrationText-stopCurrent: " ..tostring(stopCurrent) ..", text: " ..tostring(newText))
+    --Stop the current UI narration before adding a new?
+	if stopCurrent == true then
+        --StopNarration(true)
+        ClearActiveNarration()
+    end
+
+	--!DO NOT USE CHAT NARRATION AS IT IS TO CLUNKY / NON RELIABLE!
+    --Remove any - from the text as it seems to make the text not "always" be read?
+    --local newTextClean = string.gsub(newText, "-", "")
+
+    --if newTextClean == nil or newTextClean == "" then return end
+    --PlaySound(SOUNDS.TREE_HEADER_CLICK)
+    --if LibDebugLogger == nil and DebugLogViewer == nil then
+        --Using this API does no always properly work
+        --RequestReadTextChatToClient(newText)
+        --Adding it to the chat as debug message works better/more reliably
+        --But this will add a timestamp which is read, too :-(
+        --CHAT_ROUTER:AddDebugMessage(newText)
+    --else
+        --Using this API does no always properly work
+        --RequestReadTextChatToClient(newText)
+        --Adding it to the chat as debug message works better/more reliably
+        --But this will add a timestamp which is read, too :-(
+        --Disable DebugLogViewer capture of debug messages?
+        --LibDebugLogger:SetBlockChatOutputEnabled(false)
+        --CHAT_ROUTER:AddDebugMessage(newText)
+        --LibDebugLogger:SetBlockChatOutputEnabled(true)
+    --end
+    --RequestReadTextChatToClient(newTextClean)
+
+
+    --Use UI Screen reader narration
+    local addOnNarationData = {
+        canNarrate = function()
+            return canNarrate() --ADDONS_FRAGMENT:IsShowing() -->Is currently showing
+        end,
+        selectedNarrationFunction = function()
+            return SNM:CreateNarratableObject(newText)
+        end,
+    }
+    --customNarrateEntryNumber = customNarrateEntryNumber + 1
+    local customNarrateEntryName = UINarrationName --.. tostring(customNarrateEntryNumber)
+    SNM:RegisterCustomObject(customNarrateEntryName, addOnNarationData)
+	SNM:QueueCustomEntry(customNarrateEntryName)
+    RequestReadPendingNarrationTextToClient(NARRATION_TYPE_UI_SCREEN)
+end
+
+--Delayed narration updater function to prevent queuing the same type of narration (e.g. OnMouseEnter and OnMouseExit)
+--several times after another, if you move the mouse from teh top of a menu to the bottom of the menu, hitting all entries once
+-->Only the last entry will be narrated then, where the mouse stops
+local function onUpdateDoNarrate(uniqueId, delay, callbackFunc)
+    local updaterName = UINarrationUpdaterName ..tostring(uniqueId)
+--d("[LSM]onUpdateDoNarrate-updaterName: " ..tos(updaterName))
+    EM:UnregisterForUpdate(updaterName)
+    if isAccessibilityUIReaderEnabled() == false or callbackFunc == nil then return end
+    delay = delay or 1000
+    EM:RegisterForUpdate(updaterName, delay, function()
+        if isAccessibilityUIReaderEnabled() == false then EM:UnregisterForUpdate(updaterName) return end
+--d(">>>calling func delayed now!")
+        callbackFunc()
+        EM:UnregisterForUpdate(updaterName)
+    end)
+end
+
+--Own narration functions, if ever needed -> Currently the addons pass in their narration functions
+local function onMouseEnterOrExitNarrate(narrateText, stopCurrent)
+	onUpdateDoNarrate("OnMouseEnterExit", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
+end
+
+local function onSelectedNarrate(narrateText, stopCurrent)
+	onUpdateDoNarrate("OnEntryOrCheckboxSelected", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
+end
+
+local function onMouseMenuOpenOrCloseNarrate(narrateText, stopCurrent)
+	onUpdateDoNarrate("OnMenuOpenOrClose", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
+end
+--Lookup table for ScrollableHelper:Narrate() function -> If a string will be returned as 1st return parameter (and optionally a boolean as 2nd, for stopCurrent)
+--by the addon's narrate function, the library will lookup the function to use for the narration event, and narrate it then via the UI narration.
+-->Select the same function if you want to suppress multiple similar messages to be played after another (e.g. OnMouseEnterExitNarrate for similar OnMouseEnter/Exit events)
+local narrationEventToLibraryNarrateFunction = {
+	["OnDropdownMouseEnter"] = 	onMouseEnterOrExitNarrate,
+	["OnDropdownMouseExit"] =	onMouseEnterOrExitNarrate,
+	["OnMenuShow"] = 			onMouseEnterOrExitNarrate,
+	["OnMenuHide"] = 			onMouseEnterOrExitNarrate,
+	["OnSubMenuShow"] = 		onMouseMenuOpenOrCloseNarrate,
+	["OnSubMenuHide"] = 		onMouseMenuOpenOrCloseNarrate,
+	["OnEntryMouseEnter"] = 	onMouseEnterOrExitNarrate,
+	["OnEntryMouseExit"] = 		onMouseEnterOrExitNarrate,
+	["OnEntrySelected"] = 		onSelectedNarrate,
+	["OnCheckboxUpdated"] = 	onSelectedNarrate,
+}
+
+
+--------------------------------------------------------------------
 -- ScrollableDropdownHelper
 --------------------------------------------------------------------
 local ScrollableDropdownHelper = ZO_InitializingObject:Subclass()
 lib.ScrollableDropdownHelper = ScrollableDropdownHelper
 
 -- ScrollableDropdownHelper:New( -- Just a reference for New
--- Available options are:
- --  table options:optional = {
- --		number visibleRowsDropdown:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened dropdown
- --		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
- --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically
---		table	XMLRowTemplates:optional		Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
---												"template" String = XMLVirtualTemplateName, rowHeight number = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,setupFunc = function(control, data, list) end
---												-->See local table "defaultXMLTemplates" in LibScrollableMenu
---												-->Attention: If you do not specify all template attributes, the non-specified will be mixedIn from defaultXMLTemplates[entryType_ID] again!
---		{
---			[lib.scrollListRowTypes.ENTRY_ID] = 		{ template = "XMLVirtualTemplateRow_ForEntryId", ... }
---			[lib.scrollListRowTypes.SUBMENU_ENTRY_ID] = { template = "XMLVirtualTemplateRow_ForSubmenuEntryId", ... },
---			...
---		}
-
--- Split the data types out
+-- Available options are: See below at API function "AddCustomScrollableComboBoxDropdownMenu"
 function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenuScrollHelper)
 	isSubMenuScrollHelper = isSubMenuScrollHelper or false
 
 	--Read the passed in options table
-	local visibleRows, visibleRowsSubmenu, sortsItems
+	local visibleRows, visibleRowsSubmenu, sortsItems, narrateData
 	if options ~= nil then
 		if type(options) == "table" then
 			visibleRows = 			getValueOrCallback(options.visibleRowsDropdown, options)
 			visibleRowsSubmenu = 	getValueOrCallback(options.visibleRowsSubmenu, options)
 			sortsItems = 			getValueOrCallback(options.sortEntries, options)
+			narrateData = 			getValueOrCallback(options.narrate, options)
+			self.narrateData = narrateData
 
 			control.options = options
+			control.narrateData = narrateData
 			self.options = options
 		else
 			--Backwards compatibility with AddOns using older library version ScrollableDropdownHelper:Initialize where options was the visibleRows directly
@@ -335,6 +470,17 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 	local function onHide(isOnEffectivelyHiddenCall) self:OnHide(isOnEffectivelyHiddenCall) end
 	local function doHide() self:DoHide() end
 
+	if not isSubMenuScrollHelper and narrateData ~= nil and (narrateData["OnDropdownMouseEnter"] or narrateData["OnDropdownMouseExit"]) then
+		local function dropdownOnMouseEnter()
+			self:Narrate("OnDropdownMouseEnter", control, nil, nil)
+		end
+		local function dropdownOnMouseExit()
+			self:Narrate("OnDropdownMouseExit", control, nil, nil)
+		end
+		combobox:SetHandler("OnMouseEnter", function() dropdownOnMouseEnter() end)
+		combobox:SetHandler("OnMouseExit", function() dropdownOnMouseExit() end)
+	end
+
 	ZO_PreHook(dropdown,"ShowDropdownOnMouseUp", onShow)
 	ZO_PreHook(dropdown,"HideDropdownInternal", onHide)
 	combobox:SetHandler("OnEffectivelyHidden", function() onHide(false) end)
@@ -366,8 +512,8 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 
 	-- make sure spacing is updated for dividers
 	local function setSpacing(dropdown, spacing)
-	local newHeight = DIVIDER_ENTRY_HEIGHT + spacing
-	ZO_ScrollList_UpdateDataTypeHeight(mScroll, DIVIDER_ENTRY_ID, newHeight)
+		local newHeight = DIVIDER_ENTRY_HEIGHT + spacing
+		ZO_ScrollList_UpdateDataTypeHeight(mScroll, DIVIDER_ENTRY_ID, newHeight)
 	end
 	ZO_PreHook(dropdown, "SetSpacing", setSpacing)
 
@@ -387,7 +533,7 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 	--...
 	--Reenable the sound for comboBox select item again
 	SecurePostHook(dropdown, "SelectItem", function()
-	silenceComboBoxClickedSound(false)
+		silenceComboBoxClickedSound(false)
 	end)
 end
 
@@ -417,6 +563,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 			data.callback(checked, data)
 		end
 		
+		self:Narrate("OnCheckboxUpdated", checkbox, data, nil)
 		lib:FireCallbacks('CheckboxUpdated', checked, data, checkbox)
 	end
 
@@ -774,6 +921,7 @@ function ScrollableDropdownHelper:OnHide(isOnEffectivelyHiddenCall)
 		isSubmenu = self.isSubMenuScrollHelper
 		if not isSubmenu then
 --d("lib:FireCallbacks('MenuOnHide)")
+			self:Narrate("OnMenuHide", self.control, nil, nil)
 			lib:FireCallbacks('MenuOnHide', self)
 			isSubmenu = false
 		end
@@ -796,7 +944,8 @@ function ScrollableDropdownHelper:OnShow()
 		ZO_Menus:BringWindowToTop()
 
 		if not self.isSubMenuScrollHelper then
---d("lib:FireCallbacks('MenuOnShow)")
+			--d("lib:FireCallbacks('MenuOnShow)")
+			self:Narrate("OnMenuShow", self.control, nil, nil)
 			lib:FireCallbacks('MenuOnShow', self)
 		end
 	end
@@ -903,16 +1052,7 @@ function ScrollableDropdownHelper:UpdateIcons(data)
 
 	local multiIconContainerCtrl = self.m_iconContainer
 	local multiIconCtrl = self.m_icon
-	--[[
-	local labelCtrl = self.m_label
-	local cBoxCtrl  = self.m_checkbox
-	local reAnchorCtrlToMultiIcon = (cBoxCtrl ~= nil and cBoxCtrl) or labelCtrl
-	if reAnchorCtrlToMultiIcon ~= nil then
-		local anchorTo = select(3, reAnchorCtrlToMultiIcon:GetAnchor())
-		--reAnchorCtrlToMultiIcon:ClearAnchors()
-		reAnchorCtrlToMultiIcon:SetAnchor(TOPLEFT, anchorTo, TOPRIGHT, (visible == true and 25) or WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, 0)
-	end
-	]]
+
 	local parentHeight = multiIconCtrl:GetParent():GetHeight()
 	local iconHeight = parentHeight
 	-- This leaves a padding to keep the label from being too close to the edge
@@ -972,6 +1112,39 @@ function ScrollableDropdownHelper:UpdateIcons(data)
 	multiIconCtrl:SetHidden(not visible)
 end
 
+--Narration
+function ScrollableDropdownHelper:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
+	local narrateData = self.narrateData
+--d("[LSM]Narrate-"..tos(eventName) .. ", narrateData: " ..tos(narrateData))
+	if eventName == nil or isAccessibilityUIReaderEnabled() == false or narrateData == nil then return end
+	local narrateCallbackFuncForEvent = narrateData[eventName]
+	if narrateCallbackFuncForEvent == nil or type(narrateCallbackFuncForEvent) ~= "function" then return end
+
+	local eventCallbackFunctionsSignatures = {
+		["OnDropdownMouseEnter"] = function() return self, ctrl end,
+		["OnDropdownMouseExit"] =  function() return self, ctrl end,
+		["OnMenuShow"]           = function() return self, ctrl end,
+		["OnMenuHide"]           = function() return self, ctrl end,
+		["OnSubMenuShow"]        = function() return self, ctrl, anchorPoint end,
+		["OnSubMenuHide"]        = function() return self, ctrl end,
+		["OnEntryMouseEnter"]    = function() return self, ctrl, data, hasSubmenu end,
+		["OnEntryMouseExit"]     = function() return self, ctrl, data, hasSubmenu end,
+		["OnEntrySelected"]      = function() return self, ctrl, data, hasSubmenu end,
+		["OnCheckboxUpdated"]    = function() return self, ctrl, data end,
+	}
+	--Create a table with the callback functions parameters
+	local callbackParams = { eventCallbackFunctionsSignatures[eventName]() }
+	--Pass in the callback params to the narrateFunction
+	local narrateText, stopCurrent = narrateCallbackFuncForEvent(unpack(callbackParams))
+
+--d(">NarrateText: " ..tos(narrateText) .. ", stopCurrent: " ..tos(stopCurrent))
+	--Didn't the addon take care of the narration itsself? So this library here should narrate the text returned
+	if type(narrateText) == "string" then
+		local narrateFuncOfLibrary = narrationEventToLibraryNarrateFunction[eventName]
+		if narrateFuncOfLibrary == nil then return end
+		narrateFuncOfLibrary(narrateText, stopCurrent)
+	end
+end
 
 --------------------------------------------------------------------
 -- ScrollableSubmenu
@@ -1072,6 +1245,7 @@ end
 function ScrollableSubmenu:Clear(doFireCallback)
 	if self.isShown == true then
 --d("lib:FireCallbacks('SubmenuOnHide)")
+		self.scrollHelper:Narrate("OnSubMenuHide", self.dropdown, nil, nil)
 		lib:FireCallbacks('SubmenuOnHide', self)
 	end
 
@@ -1131,13 +1305,14 @@ function ScrollableSubmenu:Show(parentControl) -- parentControl is a row within 
 	self:SetOwner(owner)
 
 	parentControl.m_owner.m_dropdown:SetDrawTier(DT_MEDIUM)
-	--Get the owner's ScrollableDropdownHelper object and the visibleSubmenuRows attribute, and update this
-	--ScrollableSubmenu's ScrollableDropdownHelper object with this owner data, as attribute .parentScrollableDropdownHelper
-	self.parentScrollableDropdownHelper = owner.parentScrollableDropdownHelper
-
-	--Get the owner's ScrollableDropdownHelper object and the visibleSubmenuRows attribute, and update this
+	--Get the owner's (ComboBox control) ScrollableDropdownHelper object and the visibleSubmenuRows attribute, and update this
 	--ScrollableSubmenu's ScrollableDropdownHelper object with this owner data, as attribute .parentScrollableDropdownHelper
 	self.parentScrollableDropdownHelper = owner and owner.parentScrollableDropdownHelper
+	--Take over options from the owner scrollhelper
+	-->Narration
+	if self.parentScrollableDropdownHelper ~= nil then
+		self.scrollHelper.narrateData = self.parentScrollableDropdownHelper.narrateData
+	end
 
 	local data = ZO_ScrollList_GetData(parentControl)
 	self:AddItems(getValueOrCallback(data.entries, data)) -- "self:GetOwner(TOP_MOST)", remove TOP_MOST if we want to pass the parent submenu control instead
@@ -1155,6 +1330,7 @@ function ScrollableSubmenu:Show(parentControl) -- parentControl is a row within 
 	parentControl.m_active = self.combobox
 	self.isShown = true
 --d("lib:FireCallbacks('SubmenuOnShow)")
+	self.scrollHelper:Narrate("OnSubMenuShow", parentControl, nil, nil, self.anchorPoint)
 	lib:FireCallbacks('SubmenuOnShow', self)
 
 	return true
@@ -1225,6 +1401,23 @@ lib.MapEntries = mapEntries
 --			[lib.scrollListRowTypes.SUBMENU_ENTRY_ID] = { template = "XMLVirtualTemplateRow_ForSubmenuEntryId", ... },
 --			...
 --		}
+--		table	narrate:optional				Table or function returning a table with key = narration event and value = function called for that narration event.
+--												Each functions signature/parameters is shown below!
+--												-> The function either builds your narrateString and narrates it in your addon.
+--												   Or you must return a string as 1st return param (and optionally a boolean "stopCurrentNarration" as 2nd return param. If this is nil it will be set to false!)
+--												    and let the library here narrate it for you via the UI narration
+--												Optional narration events can be:
+--												"OnDropdownMouseEnter" 	function(scrollhelperObject, dropdownControl)  Build your narrateString and narrate it now, or return a string and let the library narrate it for you end
+--												"OnDropdownMouseExit"	function(scrollhelperObject, dropdownControl) end
+--												"OnMenuShow"			function(scrollhelperObject, dropdownControl, nil, nil) end
+--												"OnMenuHide"			function(scrollhelperObject, dropdownControl) end
+--												"OnSubMenuShow"			function(scrollhelperObject, parentControl, anchorPoint) end
+--												"OnSubMenuHide"			function(scrollhelperObject, parentControl) end
+--												"OnEntryMouseEnter"		function(scrollhelperObject, entryControl, data, hasSubmenu) end
+--												"OnEntryMouseExit"		function(scrollhelperObject, entryControl, data, hasSubmenu) end
+--												"OnEntrySelected"		function(scrollhelperObject, entryControl, data, hasSubmenu) end
+--												"OnCheckboxUpdated"		function(scrollhelperObject, checkboxControl, data) end
+--			Example:	narrate = { ["OnDropdownMouseEnter"] = myAddonsNarrateDropdownOnMouseEnter, ... }
 --  }
 
 function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxControl, options)
@@ -1322,15 +1515,19 @@ end
 
 function LibScrollableMenu_Entry_OnMouseEnter(entry)
     if entry.m_owner and entry.selectible then
+--d("LibScrollableMenu_Entry_OnMouseEnter")
+
 		local data = ZO_ScrollList_GetData(entry)
+		local hasSubmenu = entry.hasSubmenu or data.entries ~= nil
 
 --d("lib:FireCallbacks('EntryOnMouseEnter)")
+		local scrollHelper = getScrollHelperObjectFromControl(entry)
+		scrollHelper:Narrate("OnEntryMouseEnter", entry, data, hasSubmenu)
 		lib:FireCallbacks('EntryOnMouseEnter', data, entry)
 
 		-- For submenus
 		local mySubmenu = getSubmenuFromControl(entry)
-
-		if entry.hasSubmenu or data.entries ~= nil then
+		if hasSubmenu then
 			entry.hasSubmenu = true
 			clearTimeout()
 			if mySubmenu then -- open next submenu (nested)
@@ -1376,17 +1573,22 @@ end
 
 function LibScrollableMenu_Entry_OnMouseExit(entry)
 	-- Original
-    if entry.m_owner then
+	if entry.m_owner then
+--d("LibScrollableMenu_Entry_OnMouseExit")
 		local data = ZO_ScrollList_GetData(entry)
---d("lib:FireCallbacks('EntryOnMouseExit)")
+		local hasSubmenu = entry.hasSubmenu or data.entries ~= nil
+
+		--d("lib:FireCallbacks('EntryOnMouseExit)")
+		local scrollHelper = getScrollHelperObjectFromControl(entry)
+		scrollHelper:Narrate("OnEntryMouseExit", entry, data, hasSubmenu)
 		lib:FireCallbacks('EntryOnMouseExit', data, entry)
 
-        ZO_ScrollList_MouseExit(entry.m_owner.m_scroll, entry)
-        entry.m_label:SetColor(entry.m_owner.m_normalColor:UnpackRGBA())
-        if entry.m_owner.onMouseExitCallback then
-            entry.m_owner:onMouseExitCallback(entry)
-        end
-    end
+		ZO_ScrollList_MouseExit(entry.m_owner.m_scroll, entry)
+		entry.m_label:SetColor(entry.m_owner.m_normalColor:UnpackRGBA())
+		if entry.m_owner.onMouseExitCallback then
+			entry.m_owner:onMouseExitCallback(entry)
+		end
+	end
 	
 	if not lib.GetPersistentMenus() then
 		setTimeout(onMouseExitTimeout)
@@ -1405,13 +1607,16 @@ function LibScrollableMenu_OnSelected(entry)
     if entry.m_owner then
 --d("LibScrollableMenu_OnSelected")
 		local data = ZO_ScrollList_GetData(entry)
+		local hasSubmenu = entry.hasSubmenu or data.entries ~= nil
 
+		local scrollHelper = getScrollHelperObjectFromControl(entry)
+		scrollHelper:Narrate("OnEntrySelected", entry, data, hasSubmenu)
 --d("lib:FireCallbacks('EntryOnSelected)")
 		lib:FireCallbacks('EntryOnSelected', data, entry)
 
 		local mySubmenu = getSubmenuFromControl(entry)
 	--	d( data.entries)
-		if entry.hasSubmenu or data.entries ~= nil then
+		if hasSubmenu then
 			entry.hasSubmenu = true
 --d(">menu entry with submenu - hasSubmenu: " ..tos(entry.hasSubmenu))
 			--Save the current entry to lib.submenu.lastClickedEntryWithSubmenu
@@ -1465,18 +1670,18 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 local function onAddonLoaded(event, name)
 	if name:find("^ZO_") then return end
-	em:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
+	EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 	setMaxMenuWidthAndRows()
 
 	lib.submenu = getScrollableSubmenu(1)
 	hookScrollableEntry()
 
 	--Other events
-	em:RegisterForEvent(lib.name, EVENT_SCREEN_RESIZED, setMaxMenuWidthAndRows)
+	EM:RegisterForEvent(lib.name, EVENT_SCREEN_RESIZED, setMaxMenuWidthAndRows)
 end
 
-em:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
-em:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
+EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
+EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ------------------------------------------------------------------------------------------------------------------------
