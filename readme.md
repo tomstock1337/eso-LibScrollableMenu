@@ -24,7 +24,7 @@ Here is a brief "howto change addons using LibCustomMenu and overwriting ZO_Comb
 Do not override :AddMenuItems() and just do it the normal way. Your combobox will be scrollable by default now and will work well.
 
 ## If you still want to use submenus: Instructions how to change your ZO_ComboBox to a scrollable list with submenus (scrollable too!)
-
+__Check file LSM_test.lua for example code and menus + submenus + callbacks!__
 
 Create a comboBox from virtual template e.g.:
 ```local comboBox = WINDOW_MANAGER:CreateControlFromVirtual("AF_FilterBar" .. myName .. "DropdownFilter", parentControl, "ZO_ComboBox")```
@@ -32,18 +32,13 @@ Create a comboBox from virtual template e.g.:
 
 Add the scrollable helper via LibScrollableMenu:
 ```
---Adds a scroll helper to the comboBoxControl dropdown entries, and enables submenus (scollable too) at the entries.
---	control parent 							Must be the parent control of the comboBox
---	control comboBoxControl 				Must be any ZO_ComboBox control (e.g. created from virtual template ZO_ComboBox)
---	number visibleRowsDropDown:optional		Number of shown entries at 1 page of the scrollable comboBox's opened dropdown
---	userdata dropdown:optional				Either this exists as comboBoxControl.dropdown already, or you can pass in the
---											dropdown object (containing the m_comboBox etc.) here to add it to the comboBoxControl
-
---This "could be" optional. The library needs the dropdownObject data from ZO_ComboBox_ObjectFromContainer at comboBox.dropdown internally! It could exist already once you create the control comboBox, but it mustn't!
-If you explicitly pass it in the API function will update comboBox.dropdown with it.
-local dropdownObject = ZO_ComboBox_ObjectFromContainer(comboBox)
-
-comboBox.scrollHelper = AddCustomScrollableComboBoxDropdownMenu(parentControl, comboBox, 15, 15, dropdownObject)
+		--Define your options for the scrollHelper here
+		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
+		-->LibScrollableMenu.lua
+		local options = { visibleRowsDropdown = 10, visibleRowsSubmenu = 5, sortEntries=function() return false end, }
+		--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
+		--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
+		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBox, options)
 ```
 
 The scroll helper enables a scrollable comboxbox then, without multi selection!
