@@ -3,7 +3,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
-lib.version = "1.2"
+lib.version = "1.3"
 
 lib.data = {}
 
@@ -151,7 +151,7 @@ local function getScrollHelperObjectFromControl(control)
 		--Normal menu entry
 		local container = getContainerFromControl(control)
 		if container ~= nil then
-			return container.scrollHelper
+			return container.parentScrollableDropdownHelper or container.scrollHelper
 		end
 	end
 	return
@@ -290,7 +290,6 @@ end
 --------------------------------------------------------------------
 -- Local narration functions
 --------------------------------------------------------------------
---todo 2023-10-27
 local function isAccessibilitySettingEnabled(settingId)
     return GetSetting_Bool(SETTING_TYPE_ACCESSIBILITY, settingId)
 end
@@ -418,6 +417,7 @@ lib.ScrollableDropdownHelper = ScrollableDropdownHelper
 -- Available options are: See below at API function "AddCustomScrollableComboBoxDropdownMenu"
 function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenuScrollHelper)
 	isSubMenuScrollHelper = isSubMenuScrollHelper or false
+	control.scrollHelper = self
 
 	--Read the passed in options table
 	local visibleRows, visibleRowsSubmenu, sortsItems, narrateData
