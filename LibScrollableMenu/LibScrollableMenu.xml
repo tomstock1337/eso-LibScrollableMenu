@@ -41,7 +41,7 @@
 			</Controls>
 		</Control>
 		
-		<Control name="LibScrollableMenu_ComboBoxEntry" resizeToFitDescendents="true" inherits="ZO_ComboBoxEntry" mouseEnabled="true" layer="CONTROLS" level="1" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxEntry" resizeToFitDescendents="true" resizeToFitConstrains="X" inherits="ZO_ComboBoxEntry" mouseEnabled="true" layer="CONTROLS" level="1" virtual="true">
 			<OnInitialized>
 				self.selectible = true <!-- Denotes this is a selectible entry.   -->
 			</OnInitialized>
