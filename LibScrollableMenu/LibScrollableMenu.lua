@@ -286,7 +286,6 @@ local function mapEntries(entryTable, mapTable, blank)
 	doMapEntries(entryTable, mapTable)
 end
 
-
 --------------------------------------------------------------------
 -- Local narration functions
 --------------------------------------------------------------------
@@ -1179,10 +1178,14 @@ function ScrollableSubmenu:Initialize(submenuDepth)
 	self.dropdown = ZO_ComboBox_ObjectFromContainer(scrollableDropdown)
 	self.dropdown.m_submenu = self
 
-	self.dropdown.SetSelected = function(dropdown, index)
-		local parentDropdown = lib.submenu.owner.m_comboBox
-		parentDropdown:ItemSelectedClickHelper(dropdown.m_sortedItems[index])
-		parentDropdown:HideDropdown()
+	self.dropdown.SetSelected = function(dropdown, index, upInside)
+		if upInside then
+			local parentDropdown = lib.submenu.owner.m_comboBox
+			parentDropdown:ItemSelectedClickHelper(dropdown.m_sortedItems[index])
+			parentDropdown:HideDropdown()
+		else
+		--	d( 'Dragged from over entry')
+		end
 	end
 
 	-- nesting
@@ -1599,12 +1602,14 @@ local function selectEntryAndResetLastSubmenuData(entry)
 	playSelectedSoundCheck(entry)
 
 	--Pass the entrie's text to the dropdown control's selectedItemText
-	entry.m_owner:SetSelected(entry.m_data.m_index)
+	local upInside = WINDOW_MANAGER:GetMouseOverControl() == entry
+	entry.m_owner:SetSelected(entry.m_data.m_index, upInside)
 	lib.submenu.lastClickedEntryWithSubmenu = nil
 end
 
-function LibScrollableMenu_OnSelected(entry)
-    if entry.m_owner then
+function LibScrollableMenu_OnSelected(entry, upInside)
+	if upInside then
+--	if entry.m_owner then
 --d("LibScrollableMenu_OnSelected")
 		local data = ZO_ScrollList_GetData(entry)
 		local hasSubmenu = entry.hasSubmenu or data.entries ~= nil
