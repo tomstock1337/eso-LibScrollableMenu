@@ -441,7 +441,7 @@ local function test()
 
 
 		--Custom scrollable context menu
-		AddCustomScrollableMenu(ZO_PlayerInventoryTabsActive, submenuEntries, nil)
+		AddCustomScrollableMenu(ZO_PlayerInventoryTabsActive, comboBoxMenuEntries, nil)
 
 
 		ZO_PlayerInventoryTabsActive:SetMouseEnabled(true)
