@@ -3,7 +3,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
-lib.version = "1.4"
+lib.version = "1.6"
 
 lib.data = {}
 
@@ -309,7 +309,7 @@ local function canNarrate()
 	return true
 end
 
-local customNarrateEntryNumber = 0
+--local customNarrateEntryNumber = 0
 local function addNewUINarrationText(newText, stopCurrent)
     if isAccessibilityUIReaderEnabled() == false then return end
     stopCurrent = stopCurrent or false
@@ -1179,10 +1179,14 @@ function ScrollableSubmenu:Initialize(submenuDepth)
 	self.dropdown = ZO_ComboBox_ObjectFromContainer(scrollableDropdown)
 	self.dropdown.m_submenu = self
 
-	self.dropdown.SetSelected = function(dropdown, index)
-		local parentDropdown = lib.submenu.owner.m_comboBox
-		parentDropdown:ItemSelectedClickHelper(dropdown.m_sortedItems[index])
-		parentDropdown:HideDropdown()
+	self.dropdown.SetSelected = function(dropdown, index, upInside)
+		if upInside then
+			local parentDropdown = lib.submenu.owner.m_comboBox
+			parentDropdown:ItemSelectedClickHelper(dropdown.m_sortedItems[index])
+			parentDropdown:HideDropdown()
+		--else
+		--	d( 'Dragged from over entry')
+		end
 	end
 
 	-- nesting
@@ -1340,6 +1344,7 @@ end
 ---------------------------------------------------------
 -- Actual hooks needed for ZO_ScrollableComboBox itself
 ---------------------------------------------------------
+--[[
 local function hookScrollableEntry()
 	-- Now watch for mouse clicks outside of the submenu (if it's persistant)
 	local function mouseIsOverDropdownOrSubmenu(dropdown)
@@ -1370,6 +1375,7 @@ local function hookScrollableEntry()
 		end
 	end
 end
+]]
 
 
 --------------------------------------------------------------------
@@ -1595,17 +1601,26 @@ function LibScrollableMenu_Entry_OnMouseExit(entry)
 	end
 end
 
-local function selectEntryAndResetLastSubmenuData(entry)
+local function selectEntryAndResetLastSubmenuData(entry, isSubmenuEntry)
+	isSubmenuEntry = isSubmenuEntry or false
 	playSelectedSoundCheck(entry)
 
+--d"[LSM]selectEntryAndResetLastSubmenuData-isEntryMoc: " ..tos(entry == moc()) .. ", isSubmenuEntry: " ..tos(isSubmenuEntry))
+	local ignoreCallback = false
+	if isSubmenuEntry == true then
+		ignoreCallback = entry == moc()
+	end
+
 	--Pass the entrie's text to the dropdown control's selectedItemText
-	entry.m_owner:SetSelected(entry.m_data.m_index)
+	entry.m_owner:SetSelected(entry.m_data.m_index, ignoreCallback) --do not suppress the callback!
 	lib.submenu.lastClickedEntryWithSubmenu = nil
 end
 
-function LibScrollableMenu_OnSelected(entry)
-    if entry.m_owner then
---d("LibScrollableMenu_OnSelected")
+function LibScrollableMenu_OnSelected(entry, button, upInside)
+--d(string.format('[%s]buttonIndex = %s, upInside = %s, owner=%q', "LibScrollableMenu_OnSelected", tos(button), tos(upInside), tos(entry.m_owner )))
+--lib._debugEntry = entry
+	local owner = entry.m_owner
+	if upInside and owner ~= nil then
 		local data = ZO_ScrollList_GetData(entry)
 		local hasSubmenu = entry.hasSubmenu or data.entries ~= nil
 
@@ -1615,7 +1630,7 @@ function LibScrollableMenu_OnSelected(entry)
 		lib:FireCallbacks('EntryOnSelected', data, entry)
 
 		local mySubmenu = getSubmenuFromControl(entry)
-	--	d( data.entries)
+		--	d( data.entries)
 		if hasSubmenu then
 			entry.hasSubmenu = true
 --d(">menu entry with submenu - hasSubmenu: " ..tos(entry.hasSubmenu))
@@ -1624,13 +1639,13 @@ function LibScrollableMenu_OnSelected(entry)
 
 			local targetSubmenu = lib.submenu
 			if mySubmenu and mySubmenu.childMenu then
---d(">childMenu")
+				--d(">childMenu")
 				targetSubmenu = mySubmenu.childMenu
 			end
-			
+
 			if targetSubmenu then
 				if targetSubmenu:IsVisible() then
---d(">targetSubMenu:IsVisible")
+					--d(">targetSubMenu:IsVisible")
 					targetSubmenu:Clear() -- need to clear it straight away, no timeout
 				else
 					--Has the entry a submenu but also a callback function: Do not show the submenu if you click the entry
@@ -1644,7 +1659,7 @@ function LibScrollableMenu_OnSelected(entry)
 						if comboBox and comboBox.scrollHelper then
 							comboBox.scrollHelper:DoHide()
 						end
-						selectEntryAndResetLastSubmenuData(entry)
+						selectEntryAndResetLastSubmenuData(entry, false)
 						return
 					end
 					--Check if submenu should be shown/hidden
@@ -1658,9 +1673,10 @@ function LibScrollableMenu_OnSelected(entry)
 			lib.submenu.lastClickedEntryWithSubmenu = nil
 			return true
 		else
-			selectEntryAndResetLastSubmenuData(entry)
+--d(">menu entry clicked, submenu entry: " ..tos(owner.m_submenu ~= nil))
+			selectEntryAndResetLastSubmenuData(entry, owner.m_submenu ~= nil)
 		end
-    end
+	end
 end
 
 
@@ -1674,7 +1690,7 @@ local function onAddonLoaded(event, name)
 	setMaxMenuWidthAndRows()
 
 	lib.submenu = getScrollableSubmenu(1)
-	hookScrollableEntry()
+	--hookScrollableEntry()
 
 	--Other events
 	EM:RegisterForEvent(lib.name, EVENT_SCREEN_RESIZED, setMaxMenuWidthAndRows)

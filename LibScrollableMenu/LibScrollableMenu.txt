@@ -5,8 +5,8 @@
 
 ## Title: LibScrollableMenu
 ## Description: Adds scrollable menu&nested submenus functionality to combobox. Originally developed by Kyoma's Titlizer
-## Version: 1.4
-## AddOnVersion: 0104
+## Version: 1.6
+## AddOnVersion: 0106
 ## IsLibrary: true
 ## Author: tomstock, Baertram, IsJustaGhost (, Kyoma)
 ## APIVersion: 101040 101041

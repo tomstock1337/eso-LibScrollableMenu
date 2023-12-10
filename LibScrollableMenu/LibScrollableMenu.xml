@@ -47,7 +47,7 @@
 			</OnInitialized>
 			
 			<OnMouseUp>
-				LibScrollableMenu_OnSelected(self)
+				LibScrollableMenu_OnSelected(self, button, upInside)
 			</OnMouseUp>
 			
 			<OnMouseEnter>
