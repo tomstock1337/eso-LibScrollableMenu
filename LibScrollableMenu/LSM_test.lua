@@ -450,6 +450,33 @@ local function test()
 		testTLC:SetMouseEnabled(false)
 	end
 
+
+	--Custom scrollable context menu
+	AddCustomScrollableMenu(ZO_PlayerInventoryTabsActive, {
+		{
+			isHeader        = false,
+			name            = "Submenu Entry Test 7",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Custom scrollable context menu entry test 1")
+			end,
+		},
+		{
+			isHeader        = false,
+			name            = "Submenu Entry Test 8",
+			callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				d("Custom scrollable context menu entry test 1")
+			end,
+		}
+	},
+	nil)
+
+	ZO_PlayerInventoryTabsActive:SetMouseEnabled(true)
+	ZO_PlayerInventoryTabsActive:SetHandler("OnMouseUp", function(ctrl, button, upInside)
+d("[LSM]ZO_PlayerInventoryTabsActive - OnMouseUp")
+		if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
+			ShowCustomScrollableMenu() --ZO_PlayerInventoryTabsActive
+		end
+	end)
 end
 lib.Test = test
 --	/script LibScrollableMenu.Test()

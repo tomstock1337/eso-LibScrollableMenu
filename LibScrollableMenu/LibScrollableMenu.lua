@@ -3,7 +3,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
-lib.version = "1.5"
+lib.version = "1.6"
 
 lib.data = {}
 
@@ -35,6 +35,9 @@ local ROOT_PREFIX = MAJOR.."Sub"
 local SUBMENU_SHOW_TIMEOUT = 350
 local submenuCallLaterHandle
 local nextId = 1
+
+--Custom scrollable menu settings (context menus e.g.)
+local CUSTOM_SCROLLABLE_MENU_NAME = MAJOR.."_CustomMenu"
 
 --Menu settings (main and submenu)
 local MAX_MENU_ROWS = 25
@@ -91,6 +94,9 @@ local booleanToOnOff = {
 ]]
 --MultiIcon
 local iconNarrationNewValue = GetString(SI_SCREEN_NARRATION_NEW_ICON_NARRATION)
+
+--Custom scrollable menu's ZO_ComboBox
+local customScrollableMenuComboBox
 
 
 --------------------------------------------------------------------
@@ -284,6 +290,40 @@ local function mapEntries(entryTable, mapTable, blank)
 	
 	-- Splitting these up so the above is not done each iteration
 	doMapEntries(entryTable, mapTable)
+end
+
+
+local function AnchorCustomMenuToMouse(menuToAnchor)
+	if menuToAnchor == nil then return end
+	local x, y = GetUIMousePosition()
+	local width, height = GuiRoot:GetDimensions()
+
+	menuToAnchor:ClearAnchors()
+
+--d("[LSM]AnchorCustomMenuToMouse-width: " ..tos(menuToAnchor:GetWidth()) .. ", height: " ..tos(menuToAnchor:GetHeight()))
+
+	local right = true
+	if x + menuToAnchor:GetWidth() > width then
+		right = false
+	end
+	local bottom = true
+	if y + menuToAnchor:GetHeight() > height then
+		bottom = false
+	end
+
+	if right then
+		if bottom then
+			menuToAnchor:SetAnchor(TOPLEFT, nil, TOPLEFT, x, y)
+		else
+			menuToAnchor:SetAnchor(BOTTOMLEFT, nil, TOPLEFT, x, y)
+		end
+	else
+		if bottom then
+			menuToAnchor:SetAnchor(TOPRIGHT, nil, TOPLEFT, x, y)
+		else
+			menuToAnchor:SetAnchor(BOTTOMRIGHT, nil, TOPLEFT, x, y)
+		end
+	end
 end
 
 
@@ -535,6 +575,8 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 	SecurePostHook(dropdown, "SelectItem", function()
 		silenceComboBoxClickedSound(false)
 	end)
+
+	return self
 end
 
 -- Add the dataTypes for the different entry types
@@ -1037,6 +1079,26 @@ function ScrollableDropdownHelper:SetSpacing(spacing) -- TODO: remove it not use
 end
 ]]
 
+
+function ScrollableDropdownHelper:UpdateOptions(options)
+	if options == nil then return end
+	--Update the scrollhelper's options
+	self.options = options
+	self.control.options = options
+	--todo Anything that needs to be "refreshed", e.g. sizes etc.?
+end
+
+function ScrollableDropdownHelper:ClearEntries()
+	self.dropdown:ClearItems()
+end
+
+function ScrollableDropdownHelper:UpdateEntries(entries)
+	if ZO_IsTableEmpty(entries) then return end
+	self:ClearEntries()
+	self.dropdown:AddItems(entries)
+end
+
+
 function ScrollableDropdownHelper:UpdateIcons(data)
 	local isNewValue = getValueOrCallback(data.isNew, data)
 	local iconData = getValueOrCallback(data.icon, data)
@@ -1341,41 +1403,17 @@ function ScrollableSubmenu:Show(parentControl) -- parentControl is a row within 
 end
 
 
----------------------------------------------------------
--- Actual hooks needed for ZO_ScrollableComboBox itself
----------------------------------------------------------
---[[
-local function hookScrollableEntry()
-	-- Now watch for mouse clicks outside of the submenu (if it's persistant)
-	local function mouseIsOverDropdownOrSubmenu(dropdown)
-		if MouseIsOver(dropdown.m_dropdown) then
-			return true
-		end
-		local submenu = lib.submenu
-		while submenu do
-			if MouseIsOver(submenu.dropdown.m_dropdown) then
-				return true
-			end
-			submenu = submenu:GetChild()
-		end
-		return false
-	end
-	--Overwrite ZO_ComboBox.OnGlobalMouseUp to support submenu hide, if clicked somewhere
-	ZO_ComboBox.OnGlobalMouseUp = function(self, _, button)
-		if self:IsDropdownVisible() then
-			if not mouseIsOverDropdownOrSubmenu(self) then
-				self:HideDropdown()
-			end
-		else
-			if self.m_container:IsHidden() then
-				self:HideDropdown()
-			else
-				self:ShowDropdownOnMouseUp()
-			end
-		end
-	end
+
+--------------------------------------------------------------------
+-- Custom scrollable menu combobox
+--------------------------------------------------------------------
+local function createNewCustomScrollableComboBox()
+d("[LSM]createNewCustomScrollableComboBox")
+	if customScrollableMenuComboBox ~= nil then return end
+	customScrollableMenuComboBox = WINDOW_MANAGER:CreateControlFromVirtual(CUSTOM_SCROLLABLE_MENU_NAME, ZO_Menus, 'LibScrollableMenu_CustomMenu_ComboBox')
+	customScrollableMenuComboBox:SetHidden(true)
+	--lib.customScrollableMenuComboBox = customScrollableMenuComboBox
 end
-]]
 
 
 --------------------------------------------------------------------
@@ -1440,6 +1478,78 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxControl, option
 	
 	--Add a new scrollable menu helper
 	return ScrollableDropdownHelper:New(parent, comboBoxControl, options, false)
+end
+local addCustomScrollableComboBoxDropdownMenu = AddCustomScrollableComboBoxDropdownMenu
+
+
+--Add a scrollable menu to any control (not only a ZO_ComboBox), e.g. to an inventory row
+function AddCustomScrollableMenu(parent, entries, options)
+	local scrollHelper
+	if customScrollableMenuComboBox == nil then
+		createNewCustomScrollableComboBox()
+		scrollHelper = addCustomScrollableComboBoxDropdownMenu(parent, customScrollableMenuComboBox, options)
+	else
+		scrollHelper = customScrollableMenuComboBox.scrollHelper
+	end
+	lib.customMenu = customScrollableMenuComboBox
+
+	scrollHelper:UpdateOptions(options)
+	scrollHelper:UpdateEntries(entries)
+	return customScrollableMenuComboBox
+end
+
+local mouseUpRefCounts = {}
+local function OnGlobalMouseUp()
+    local refCount = mouseUpRefCounts[customScrollableMenuComboBox]
+d("[LSM]OnGlobalMouseUp-refCount: " ..tos(refCount))
+    if refCount ~= nil then
+        local moc = WINDOW_MANAGER:GetMouseOverControl()
+        if moc:GetOwningWindow() ~= ZO_Menus then
+            refCount = refCount - 1
+            mouseUpRefCounts[customScrollableMenuComboBox] = refCount
+            if refCount <= 0 then
+                HideCustomScrollableMenu()
+            end
+        end
+    end
+end
+
+function ShowCustomScrollableMenu(controlToAnchorTo, point, relativePoint, offsetX, offsetY)
+d("[LMS]ShowCustomScrollableMenu")
+	EVENT_MANAGER:UnregisterForEvent(MAJOR .. "_OnGlobalMouseUp")
+	if customScrollableMenuComboBox == nil then return end
+
+	customScrollableMenuComboBox:SetHidden(true)
+	customScrollableMenuComboBox.dropdown:ShowDropdownOnMouseUp()
+
+	local dropdownCtrl = customScrollableMenuComboBox.dropdown.m_dropdown
+
+	if controlToAnchorTo == nil then
+		AnchorCustomMenuToMouse(dropdownCtrl)
+	else
+		point = point or LEFT
+		relativePoint = relativePoint or LEFT
+		offsetX = offsetX or 0
+		offsetY = offsetY or 0
+		dropdownCtrl:ClearAnchors()
+		dropdownCtrl:SetAnchor(point, controlToAnchorTo, relativePoint, offsetX, offsetY)
+	end
+
+	--Set to 2 so first global click (as the menu shows) will not directly close it again
+    mouseUpRefCounts[customScrollableMenuComboBox] = 2
+
+	EVENT_MANAGER:RegisterForEvent(MAJOR .. "_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_UP, OnGlobalMouseUp)
+
+	return true
+end
+
+
+function HideCustomScrollableMenu()
+d("[LSM]HideCustomScrollableMenu")
+	EVENT_MANAGER:UnregisterForEvent(MAJOR .. "_OnGlobalMouseUp")
+	customScrollableMenuComboBox.scrollHelper:DoHide()
+
+	return true
 end
 
 

@@ -134,5 +134,10 @@
 				</Control>
 			</Controls>
 		</Control>
+
+		<Control name="LibScrollableMenu_CustomMenu_ComboBox" inherits="ZO_ComboBox" mouseEnabled="false" clampedToScreen="true" hidden="true" virtual="true">
+			<Dimensions x="135"  y="31"/>
+			<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" />
+		</Control>
 	</Controls>
 </GuiXml>
