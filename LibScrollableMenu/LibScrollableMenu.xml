@@ -47,7 +47,7 @@
 			</OnInitialized>
 			
 			<OnMouseUp>
-				LibScrollableMenu_OnSelected(self, self == WINDOW_MANAGER:GetMouseOverControl())
+				LibScrollableMenu_OnSelected(self, button, upInside)
 			</OnMouseUp>
 			
 			<OnMouseEnter>

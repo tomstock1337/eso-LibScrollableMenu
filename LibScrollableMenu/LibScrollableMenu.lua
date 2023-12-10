@@ -3,7 +3,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
-lib.version = "1.5"
+lib.version = "1.6"
 
 lib.data = {}
 
@@ -1601,30 +1601,39 @@ function LibScrollableMenu_Entry_OnMouseExit(entry)
 	end
 end
 
-local function selectEntryAndResetLastSubmenuData(entry)
+local function selectEntryAndResetLastSubmenuData(entry, isSubmenuEntry)
+	isSubmenuEntry = isSubmenuEntry or false
 	playSelectedSoundCheck(entry)
 
+--d"[LSM]selectEntryAndResetLastSubmenuData-isEntryMoc: " ..tos(entry == moc()) .. ", isSubmenuEntry: " ..tos(isSubmenuEntry))
+	local ignoreCallback = false
+	if isSubmenuEntry == true then
+		ignoreCallback = entry == moc()
+	end
+
 	--Pass the entrie's text to the dropdown control's selectedItemText
-	entry.m_owner:SetSelected(entry.m_data.m_index, entry == moc())
+	entry.m_owner:SetSelected(entry.m_data.m_index, ignoreCallback) --do not suppress the callback!
 	lib.submenu.lastClickedEntryWithSubmenu = nil
 end
 
-function LibScrollableMenu_OnSelected(entry, upInside)
-	if upInside and entry.m_owner then
-		--d("LibScrollableMenu_OnSelected")
+function LibScrollableMenu_OnSelected(entry, button, upInside)
+--d(string.format('[%s]buttonIndex = %s, upInside = %s, owner=%q', "LibScrollableMenu_OnSelected", tos(button), tos(upInside), tos(entry.m_owner )))
+--lib._debugEntry = entry
+	local owner = entry.m_owner
+	if upInside and owner ~= nil then
 		local data = ZO_ScrollList_GetData(entry)
 		local hasSubmenu = entry.hasSubmenu or data.entries ~= nil
 
 		local scrollHelper = getScrollHelperObjectFromControl(entry)
 		scrollHelper:Narrate("OnEntrySelected", entry, data, hasSubmenu)
-		--d("lib:FireCallbacks('EntryOnSelected)")
+--d("lib:FireCallbacks('EntryOnSelected)")
 		lib:FireCallbacks('EntryOnSelected', data, entry)
 
 		local mySubmenu = getSubmenuFromControl(entry)
 		--	d( data.entries)
 		if hasSubmenu then
 			entry.hasSubmenu = true
-			--d(">menu entry with submenu - hasSubmenu: " ..tos(entry.hasSubmenu))
+--d(">menu entry with submenu - hasSubmenu: " ..tos(entry.hasSubmenu))
 			--Save the current entry to lib.submenu.lastClickedEntryWithSubmenu
 			lib.submenu.lastClickedEntryWithSubmenu = entry
 
@@ -1650,7 +1659,7 @@ function LibScrollableMenu_OnSelected(entry, upInside)
 						if comboBox and comboBox.scrollHelper then
 							comboBox.scrollHelper:DoHide()
 						end
-						selectEntryAndResetLastSubmenuData(entry)
+						selectEntryAndResetLastSubmenuData(entry, false)
 						return
 					end
 					--Check if submenu should be shown/hidden
@@ -1664,7 +1673,8 @@ function LibScrollableMenu_OnSelected(entry, upInside)
 			lib.submenu.lastClickedEntryWithSubmenu = nil
 			return true
 		else
-			selectEntryAndResetLastSubmenuData(entry)
+--d(">menu entry clicked, submenu entry: " ..tos(owner.m_submenu ~= nil))
+			selectEntryAndResetLastSubmenuData(entry, owner.m_submenu ~= nil)
 		end
 	end
 end
