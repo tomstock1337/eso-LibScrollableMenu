@@ -467,13 +467,26 @@ local function test()
 			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
 				ClearCustomScrollableMenu()
 
-				AddCustomScrollableMenuEntry("Normal entry 1", function()
-					d('Custom menu Normal entry 1')
-				end)
+				local entries = {
+					{
+						name = "Test",
+						callback = function()  d("test") end,
+					}
+				}
+				AddCustomScrollableMenu(ctrl, entries, nil)
+
 
 				AddCustomScrollableMenuEntry("Normal entry 2", function()
 					d('Custom menu Normal entry 2')
 				end)
+
+				AddCustomScrollableMenuDivider()
+
+				AddCustomScrollableMenuEntry("Normal entry 1", function()
+					d('Custom menu Normal entry 1')
+				end)
+
+				SetCustomScrollableMenuOptions({sortEntries=true})
 
 				ShowCustomScrollableMenu()
 

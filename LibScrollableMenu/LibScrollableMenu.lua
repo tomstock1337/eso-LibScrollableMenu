@@ -11,6 +11,7 @@ if not lib then return end
 
 --Constant for the divider entryType
 lib.DIVIDER = "-"
+local libDivider = lib.DIVIDER
 
 lib.HELPER_MODE_NORMAL = 0
 lib.HELPER_MODE_LAYOUT_ONLY = 1 -- means only the layout of the dropdown will be altered, not the way it handles layering through ZO_Menus
@@ -157,6 +158,18 @@ local function getValueOrCallback(arg, ...)
 	end
 end
 
+local function mixinTableAndSkipExisting(object, ...)
+    for i = 1, select("#", ...) do
+        local source = select(i, ...)
+        for k,v in pairs(source) do
+			--Skip existing entries in
+			if object[k] == nil then
+				object[k] = v
+			end
+        end
+    end
+end
+
 local function getContainerFromControl(control)
 	local owner = control.m_owner
 	return owner and owner.m_container
@@ -171,16 +184,13 @@ local function getScrollHelperObjectFromControl(control)
 	--Submenu entry?
 	local submenu = getSubmenuFromControl(control)
 	if submenu ~= nil then
-d(">submenu found form control")
 		return submenu.scrollHelper
 	else
-d(">normal menu found form control")
 		--Normal menu entry
 		local container = getContainerFromControl(control)
 		if container ~= nil then
 			return container.parentScrollableDropdownHelper or container.scrollHelper
 		else
-d(">Container is nil")
 			if control == lib.customContextMenu then
 				return control.scrollHelper
 			end
@@ -352,11 +362,6 @@ local function AnchorCustomContextMenuToMouse(menuToAnchor)
 	end
 end
 
-local function mergeTable(dest, src)
-	-- just reversing the desired table
-	zo_mixin(src, dest)
-end
-
 
 --------------------------------------------------------------------
 -- Local narration functions
@@ -476,6 +481,7 @@ local narrationEventToLibraryNarrateFunction = {
 	["OnEntrySelected"] = 		onSelectedNarrate,
 	["OnCheckboxUpdated"] = 	onSelectedNarrate,
 }
+
 
 
 --------------------------------------------------------------------
@@ -838,7 +844,7 @@ function ScrollableDropdownHelper:AddMenuItems()
 
 		local hasSubmenu = item.entries ~= nil
 
-		local entryType = (item.name == lib.DIVIDER and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) or
+		local entryType = (item.name == libDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) or
 				(hasSubmenu and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or ENTRY_ID
 		if hasSubmenu then
 			item.hasSubmenu = true
@@ -930,7 +936,7 @@ end
 function ScrollableDropdownHelper:GetMaxWidth(item, maxWidth, dividers, headers)
 	local fontObject = _G[item.m_owner.m_font]
 	
-	if item.name == lib.DIVIDER then
+	if item.name == libDivider then
 		dividers = dividers + 1
 	elseif item.isHeader then
 		headers = headers + 1
@@ -1092,9 +1098,12 @@ function ScrollableDropdownHelper:SetSpacing(spacing) -- TODO: remove it not use
 end
 ]]
 
-function ScrollableDropdownHelper:InitContextMenuValues()
+function ScrollableDropdownHelper:ResetOptions()
 	self.options = defaultContextMenuOptions
-	self.customContextMenuEntries = {}
+end
+
+function ScrollableDropdownHelper:InitContextMenuValues()
+	self:ClearContextMenuItems()
 	self:ClearDropdownEntries()
 end
 
@@ -1106,6 +1115,10 @@ function ScrollableDropdownHelper:UpdateDropdownEntries(entries)
 	if ZO_IsTableEmpty(entries) then return end
 	self:ClearDropdownEntries()
 	self.dropdown:AddItems(entries)
+end
+
+function ScrollableDropdownHelper:ClearContextMenuItems()
+	self.customContextMenuEntries = {}
 end
 
 function ScrollableDropdownHelper:SetContextMenuItems(entries)
@@ -1127,31 +1140,23 @@ function ScrollableDropdownHelper:GetOptions()
 end
 
 function ScrollableDropdownHelper:UpdateOptions(options)
-	local emptyOptions = false
-	if options == nil then
-		emptyOptions = true
-		options = {}
-	end
-	if self.options ~= nil then
-		if not emptyOptions then
-			mergeTable(self.options, options)
-		end
-	end
-
 	local control = self.control
 
 	--Read the passed in options table
 	local visibleRows, visibleRowsSubmenu, sortsItems, narrateData
 	if options ~= nil then
 		if type(options) == "table" then
+			--Options did exist already (e.g. we updated them for the Scrollable context menu)
+			if self.options ~= nil then
+				mixinTableAndSkipExisting(options, self.options)
+			end
+
 			visibleRows = 			getValueOrCallback(options.visibleRowsDropdown, options)
 			visibleRowsSubmenu = 	getValueOrCallback(options.visibleRowsSubmenu, options)
 			sortsItems = 			getValueOrCallback(options.sortEntries, options)
 			narrateData = 			getValueOrCallback(options.narrate, options)
-			self.narrateData = narrateData
 
 			control.options = options
-			control.narrateData = narrateData
 			self.options = options
 		else
 			--Backwards compatibility with AddOns using older library version ScrollableDropdownHelper:Initialize where options was the visibleRows directly
@@ -1172,6 +1177,8 @@ function ScrollableDropdownHelper:UpdateOptions(options)
 
 	self.options = options
 	self.control.options = options
+	self.narrateData = narrateData
+	self.control.narrateData = narrateData
 end
 
 
@@ -1558,10 +1565,16 @@ local addCustomScrollableComboBoxDropdownMenu = AddCustomScrollableComboBoxDropd
 
 
 --[Custom scrollable context menu at any control]
+--Add a scrollable menu to any control (not only a ZO_ComboBox), e.g. to an inventory row
+--by creating a DUMMY ZO_ComboBox, adding the ScrollHelper class to it and use it
 ----------------------------------------------------------------------
 local ENTRY_TYPE_HEADER = 1
 local ENTRY_TYPE_CHECKBOX = 2
 
+local initCustomScrollableMenu, clearCustomScrollableMenu, addCustomScrollableMenuEntry,
+		setCustomScrollableMenuOptions
+
+--Function to check for global mouse clicks -> to close the custom scrollable context menus if clicked somwhere else
 local mouseUpRefCounts = {}
 local function onGlobalMouseUp()
     local refCount = mouseUpRefCounts[customScrollableMenuComboBox]
@@ -1577,28 +1590,38 @@ d("[LSM]OnGlobalMouseUp-refCount: " ..tos(refCount))
             refCount = refCount - 1
             mouseUpRefCounts[customScrollableMenuComboBox] = refCount
             if refCount <= 0 then
-                HideCustomScrollableMenu()
+				clearCustomScrollableMenu = clearCustomScrollableMenu or ClearCustomScrollableMenu
+                clearCustomScrollableMenu()
             end
         end
     end
 end
 
---Add a scrollable menu to any control (not only a ZO_ComboBox), e.g. to an inventory row
-
-local function initCustomScrollMenuControl(parent)
+--If no ZO_ComboBox dummy control was created yet: Do so now
+local function initCustomScrollMenuControl(parent, options)
 	if customScrollableMenuComboBox == nil then
-		InitCustomScrollableMenu(parent)
+		initCustomScrollableMenu = initCustomScrollableMenu or InitCustomScrollableMenu
+		return initCustomScrollableMenu(parent, options)
+	else
+		if options ~= nil then
+			setCustomScrollableMenuOptions = setCustomScrollableMenuOptions or SetCustomScrollableMenuOptions
+			setCustomScrollableMenuOptions(options)
+		end
 	end
 end
 
-function ClearCustomScrollableMenu()
+--Clear all entries at the scrollable context menu
+local function clearCustomScrollableMenuInternals(scrollHelper)
 d("[LSM]ClearCustomScrollableMenu")
 	if customScrollableMenuComboBox == nil then return end
-	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
+	scrollHelper = scrollHelper or getScrollHelperObjectFromControl(customScrollableMenuComboBox)
 	scrollHelper:InitContextMenuValues()
+	scrollHelper:ResetOptions()
+	mouseUpRefCounts[customScrollableMenuComboBox] = nil
 end
 
-function InitCustomScrollableMenu(parent)
+--Initialize the scrollable context menu
+function InitCustomScrollableMenu(parent, options)
 	parent = parent or moc()
 d("[LSM]InitCustomScrollableMenu-parent: " ..tos(parent:GetName()))
 	if parent == nil then return end
@@ -1609,15 +1632,19 @@ d("[LSM]InitCustomScrollableMenu-parent: " ..tos(parent:GetName()))
 
 	lib.customContextMenu = customScrollableMenuComboBox
 
-	local scrollHelper = addCustomScrollableComboBoxDropdownMenu(parent, customScrollableMenuComboBox, customScrollableMenuComboBox.options)
+	local scrollHelper = addCustomScrollableComboBoxDropdownMenu(parent, customScrollableMenuComboBox, options or defaultContextMenuOptions)
 	customScrollableMenuComboBox.scrollHelper = scrollHelper
 	scrollHelper:InitContextMenuValues()
+
+	return scrollHelper
 end
 
-function AddCustomScrollableMenuEntry(text, callback, entryType, isNew, label)
-	initCustomScrollMenuControl()
-
-	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
+--Adds a new entry to the context menu entries with the shown text, which calls the callback function once clicked.
+--If entries is provided the entry will be a submenu having those entries. The callback can only be used if entries are passed in
+--but normally it should be nil in that case
+function AddCustomScrollableMenuEntry(text, callback, entryType, isNew, entries)
+	local scrollHelper = initCustomScrollMenuControl()
+	scrollHelper = scrollHelper or getScrollHelperObjectFromControl(customScrollableMenuComboBox)
 	local options = scrollHelper:GetOptions()
 
 	scrollHelper:AddContextMenuItem({
@@ -1625,37 +1652,45 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, isNew, label)
 		isCheckbox		= entryType == ENTRY_TYPE_CHECKBOX,
 		isNew        	= getValueOrCallback(isNew, options) or false,
 		name            = getValueOrCallback(text, options),
-		label			= getValueOrCallback(label, options),
+		entries			= entries, --For submenus
 		callback        = callback,
 	})
 end
+addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 
+--Adds a divider line to the context menu entries
+function AddCustomScrollableMenuDivider()
+	addCustomScrollableMenuEntry(libDivider)
+end
+
+--Set the options (visible rows max, etc.) for the scrollable context menu
+function SetCustomScrollableMenuOptions(options, scrollHelper)
+	local optionsTableType = type(options)
+	assert(optionsTableType == 'table' , sfor('[LibScrollableMenu:SetCustomScrollableMenuOptions] table expected got options = %s', tos(optionsTableType)))
+d("[LMS]SetCustomScrollableMenuOptions")
+	if customScrollableMenuComboBox == nil then return end
+	scrollHelper = scrollHelper or getScrollHelperObjectFromControl(customScrollableMenuComboBox)
+	scrollHelper:UpdateOptions(options)
+end
+setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
+
+--Add a new scrollable context menu with the defined entries table.
+--You can add more entries later via AddCustomScrollableMenuEntry function too
 function AddCustomScrollableMenu(parent, entries, options)
 	local entryTableType = type(entries)
 	assert(entryTableType == 'table' , sfor('[LibScrollableMenu:AddCustomScrollableMenu] table expected got entries = %s', tos(entryTableType)))
 
 	-- the menu is only being added to the first parent
 	--parent should be changed every time it's shown. so it can be the correct control even if from another addon
-	initCustomScrollMenuControl(parent)
-	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
+	local scrollHelper = initCustomScrollMenuControl(parent, options)
+	scrollHelper = scrollHelper or getScrollHelperObjectFromControl(customScrollableMenuComboBox)
 	--Set the passed in entries to the internal tables
 	-->Will be read at ShowCustomScrollableMenu then and add the entries to the dropdown of the ZO_ComboBox dummy
-	if entries ~= nil then
-		scrollHelper:SetContextMenuItems(entries)
-	end
-	if options ~= nil then
-		scrollHelper:UpdateOptions(options)
-	end
+	scrollHelper:SetContextMenuItems(entries)
 	return customScrollableMenuComboBox
 end
 
-function SetCustomScrollableMenuOptions(options)
-d("[LMS]SetCustomScrollableMenuOptions")
-	if customScrollableMenuComboBox == nil then return end
-	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
-	scrollHelper:UpdateOptions(options)
-end
-
+--Show the custom scrollable context menu now
 function ShowCustomScrollableMenu(controlToAnchorTo, point, relativePoint, offsetX, offsetY, options)
 d("[LMS]ShowCustomScrollableMenu", customScrollableMenuComboBox ~= nil)
 	EVENT_MANAGER:UnregisterForEvent(MAJOR .. "_OnGlobalMouseUp")
@@ -1665,10 +1700,10 @@ d("[LMS]ShowCustomScrollableMenu", customScrollableMenuComboBox ~= nil)
 	--Additional/changed options for this menu show were passed in?
 	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
 	if options ~= nil then
-		scrollHelper:UpdateOptions(options)
+		setCustomScrollableMenuOptions(options, scrollHelper)
 	end
 	--Add the items of internal table to the ZO_ComboBox dropdown's items
-	 scrollHelper:UpdateDropdownEntries(scrollHelper:GetContextMenuItems())
+	scrollHelper:UpdateDropdownEntries(scrollHelper:GetContextMenuItems())
 
 	-----------------
 	--Hide the ZO_ComboBox and only show it's dropdown -> opened. The dropdown is the "menu" then
@@ -1698,13 +1733,14 @@ d(">parent: " .. parent:GetName())
 	return true
 end
 
-function HideCustomScrollableMenu()
-d("[LSM]HideCustomScrollableMenu")
+--Hide the custom scrollable context menu and clear internal variables, mouse clicks etc.
+function ClearCustomScrollableMenu()
+	d("[LSM]ClearCustomScrollableMenu")
 	EVENT_MANAGER:UnregisterForEvent(MAJOR .. "_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_UP)
-	ClearCustomScrollableMenu()
+	if customScrollableMenuComboBox == nil then return end
 	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
 	scrollHelper:DoHide()
-	mouseUpRefCounts[customScrollableMenuComboBox] = nil
+	clearCustomScrollableMenuInternals()
 	return true
 end
 
