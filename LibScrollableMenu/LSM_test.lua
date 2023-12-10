@@ -438,19 +438,6 @@ local function test()
 				-- Belongs to this addon
 			end
 		end)
-
-
-		--Custom scrollable context menu
-		AddCustomScrollableMenu(ZO_PlayerInventoryTabsActive, comboBoxMenuEntries, nil)
-
-
-		ZO_PlayerInventoryTabsActive:SetMouseEnabled(true)
-		ZO_PlayerInventoryTabsActive:SetHandler("OnMouseUp", function(ctrl, button, upInside)
-	d("[LSM]ZO_PlayerInventoryTabsActive - OnMouseUp")
-			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
-				ShowCustomScrollableMenu() --ZO_PlayerInventoryTabsActive
-			end
-		end)
 	end
 
 	local dropdown = lib.testDropdown
@@ -462,6 +449,7 @@ local function test()
 		testTLC:SetHidden(true)
 		testTLC:SetMouseEnabled(false)
 	end
+
 end
 lib.Test = test
 --	/script LibScrollableMenu.Test()
