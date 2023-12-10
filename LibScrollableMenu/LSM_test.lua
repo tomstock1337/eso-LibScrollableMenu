@@ -489,32 +489,35 @@ local function test()
 				SetCustomScrollableMenuOptions({sortEntries=true})
 
 				ShowCustomScrollableMenu()
-
-
-				--[[
-				ClearCustomScrollableMenu()
-
-				AddCustomScrollableMenu(ZO_PlayerInventoryTabsActive, {
-					{
-						isHeader        = false,
-						name            = "Submenu Entry Test 7",
-						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-							d("Custom scrollable context menu entry test 1")
-						end,
-					},
-					{
-						isHeader        = false,
-						name            = "Submenu Entry Test 8",
-						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-							d("Custom scrollable context menu entry test 1")
-						end,
-					}
-				},
-				nil)
-				ShowCustomScrollableMenu() --ZO_PlayerInventoryTabsActive
-				]]
 			end
 		end)
+
+		ZO_PlayerInventoryMenuBarButton1:SetHandler("OnMouseUp", function(ctrl, button, upInside)
+	d("[LSM]ZO_PlayerInventoryMenuBarButton1 - OnMouseUp")
+			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
+				ClearCustomScrollableMenu()
+
+				local entries = {
+					{
+						name = "Test 2",
+						callback = function()  d("test") end,
+					}
+				}
+				AddCustomScrollableMenu(ctrl, entries, nil)
+
+
+				AddCustomScrollableMenuEntry("Normal entry 2 - 2", function()
+					d('Custom menu Normal entry 2')
+				end)
+
+				AddCustomScrollableMenuEntry("Normal entry 1 - 2", function()
+					d('Custom menu Normal entry 1')
+				end)
+
+				ShowCustomScrollableMenu(nil, nil, nil, nil, nil, {sortEntries=true})
+			end
+		end)
+
 
 	end
 
