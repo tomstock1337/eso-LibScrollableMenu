@@ -1632,9 +1632,17 @@ d("[LSM]InitCustomScrollableMenu-parent: " ..tos(parent:GetName()))
 
 	lib.customContextMenu = customScrollableMenuComboBox
 
-	local scrollHelper = addCustomScrollableComboBoxDropdownMenu(parent, customScrollableMenuComboBox, options or defaultContextMenuOptions)
+	--Always set default context menu values for this menu scrollHelper
+	local scrollHelper = addCustomScrollableComboBoxDropdownMenu(parent, customScrollableMenuComboBox, defaultContextMenuOptions)
 	customScrollableMenuComboBox.scrollHelper = scrollHelper
+
+	--Clear internal tables and variables
 	scrollHelper:InitContextMenuValues()
+
+	--If custom options were provided: Mix them in to defaults
+	if options ~= nil then
+		scrollHelper:UpdateOptions(options)
+	end
 
 	return scrollHelper
 end
@@ -1652,8 +1660,9 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, isNew, entries)
 		isCheckbox		= entryType == ENTRY_TYPE_CHECKBOX,
 		isNew        	= getValueOrCallback(isNew, options) or false,
 		name            = getValueOrCallback(text, options),
+		callback        = callback,							--ZO_ComboBox:SelectItem will call the item.callback(self, item.name, item), where item = { isHeader = ... }
+		--Submenu?
 		entries			= entries, --For submenus
-		callback        = callback,
 	})
 end
 addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry

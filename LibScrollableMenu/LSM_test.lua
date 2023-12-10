@@ -473,7 +473,7 @@ local function test()
 						callback = function()  d("test") end,
 					}
 				}
-				AddCustomScrollableMenu(ctrl, entries, nil)
+				AddCustomScrollableMenu(ctrl, entries, {sortEntries=false})
 
 
 				AddCustomScrollableMenuEntry("Normal entry 2", function()
