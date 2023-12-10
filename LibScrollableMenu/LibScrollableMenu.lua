@@ -1092,19 +1092,33 @@ function ScrollableDropdownHelper:SetSpacing(spacing) -- TODO: remove it not use
 end
 ]]
 
-function ScrollableDropdownHelper:InitMenuValues()
+function ScrollableDropdownHelper:InitContextMenuValues()
 	self.options = defaultContextMenuOptions
 	self.customContextMenuEntries = {}
-	self:ClearEntries()
+	self:ClearDropdownEntries()
+end
+
+function ScrollableDropdownHelper:ClearDropdownEntries()
+	self.dropdown:ClearItems()
+end
+
+function ScrollableDropdownHelper:UpdateDropdownEntries(entries)
+	if ZO_IsTableEmpty(entries) then return end
+	self:ClearDropdownEntries()
+	self.dropdown:AddItems(entries)
+end
+
+function ScrollableDropdownHelper:SetContextMenuItems(entries)
+	self.customContextMenuEntries = entries
+end
+
+function ScrollableDropdownHelper:GetContextMenuItems()
+	return self.customContextMenuEntries
 end
 
 function ScrollableDropdownHelper:AddContextMenuItem(entry)
 	if entry == nil then return end
 	table.insert(self.customContextMenuEntries, entry)
-end
-
-function ScrollableDropdownHelper:GetContextMenuItems()
-	return self.customContextMenuEntries
 end
 
 
@@ -1158,16 +1172,6 @@ function ScrollableDropdownHelper:UpdateOptions(options)
 
 	self.options = options
 	self.control.options = options
-end
-
-function ScrollableDropdownHelper:ClearEntries()
-	self.dropdown:ClearItems()
-end
-
-function ScrollableDropdownHelper:UpdateEntries(entries)
-	if ZO_IsTableEmpty(entries) then return end
-	self:ClearEntries()
-	self.dropdown:AddItems(entries)
 end
 
 
@@ -1591,7 +1595,7 @@ function ClearCustomScrollableMenu()
 d("[LSM]ClearCustomScrollableMenu")
 	if customScrollableMenuComboBox == nil then return end
 	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
-	scrollHelper:InitMenuValues()
+	scrollHelper:InitContextMenuValues()
 end
 
 function InitCustomScrollableMenu(parent)
@@ -1607,7 +1611,7 @@ d("[LSM]InitCustomScrollableMenu-parent: " ..tos(parent:GetName()))
 
 	local scrollHelper = addCustomScrollableComboBoxDropdownMenu(parent, customScrollableMenuComboBox, customScrollableMenuComboBox.options)
 	customScrollableMenuComboBox.scrollHelper = scrollHelper
-	scrollHelper:InitMenuValues()
+	scrollHelper:InitContextMenuValues()
 end
 
 function AddCustomScrollableMenuEntry(text, callback, entryType, isNew, label)
@@ -1627,18 +1631,21 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, isNew, label)
 end
 
 function AddCustomScrollableMenu(parent, entries, options)
+	local entryTableType = type(entries)
+	assert(entryTableType == 'table' , sfor('[LibScrollableMenu:AddCustomScrollableMenu] table expected got entries = %s', tos(entryTableType)))
+
 	-- the menu is only being added to the first parent
 	--parent should be changed every time it's shown. so it can be the correct control even if from another addon
 	initCustomScrollMenuControl(parent)
 	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
-
-	if entries then
-		scrollHelper:UpdateEntries(entries)
+	--Set the passed in entries to the internal tables
+	-->Will be read at ShowCustomScrollableMenu then and add the entries to the dropdown of the ZO_ComboBox dummy
+	if entries ~= nil then
+		scrollHelper:SetContextMenuItems(entries)
 	end
-	if options then
+	if options ~= nil then
 		scrollHelper:UpdateOptions(options)
 	end
-	
 	return customScrollableMenuComboBox
 end
 
@@ -1649,24 +1656,27 @@ d("[LMS]SetCustomScrollableMenuOptions")
 	scrollHelper:UpdateOptions(options)
 end
 
-function ShowCustomScrollableMenu(controlToAnchorTo, point, relativePoint, offsetX, offsetY)
+function ShowCustomScrollableMenu(controlToAnchorTo, point, relativePoint, offsetX, offsetY, options)
 d("[LMS]ShowCustomScrollableMenu", customScrollableMenuComboBox ~= nil)
 	EVENT_MANAGER:UnregisterForEvent(MAJOR .. "_OnGlobalMouseUp")
 	if customScrollableMenuComboBox == nil then return end
 
 	-----------------
-	-- should GuiRoot be default here?
+	--Additional/changed options for this menu show were passed in?
 	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
-	-- I've never gotten into UpdateOptions. Is it needed if options are added on addCustomScrollableComboBoxDropdownMenu?
-	scrollHelper:UpdateOptions(scrollHelper:GetOptions())
-	scrollHelper:UpdateEntries(scrollHelper:GetContextMenuItems())
+	if options ~= nil then
+		scrollHelper:UpdateOptions(options)
+	end
+	--Add the items of internal table to the ZO_ComboBox dropdown's items
+	 scrollHelper:UpdateDropdownEntries(scrollHelper:GetContextMenuItems())
+
 	-----------------
-	
+	--Hide the ZO_ComboBox and only show it's dropdown -> opened. The dropdown is the "menu" then
 	customScrollableMenuComboBox:SetHidden(true)
 	customScrollableMenuComboBox.dropdown:ShowDropdownOnMouseUp()
 
 	local dropdownCtrl = customScrollableMenuComboBox.dropdown.m_dropdown
-	
+	--Anchor to the current control below the mouse, or was a control passed in to anchor & parent to?
 	local parent = controlToAnchorTo or moc()
 d(">parent: " .. parent:GetName())
 	customScrollableMenuComboBox:SetParent(parent)
@@ -1683,7 +1693,7 @@ d(">parent: " .. parent:GetName())
 
 	--Set to 2 so first global click (as the menu shows) will not directly close it again
     mouseUpRefCounts[customScrollableMenuComboBox] = 2
-
+	--Register the event to check for any mouse down click, so the menu will close if anywhere clicked else than on a menu entry
 	EVENT_MANAGER:RegisterForEvent(MAJOR .. "_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_UP, onGlobalMouseUp)
 	return true
 end
@@ -1691,13 +1701,13 @@ end
 function HideCustomScrollableMenu()
 d("[LSM]HideCustomScrollableMenu")
 	EVENT_MANAGER:UnregisterForEvent(MAJOR .. "_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_UP)
-	--todo: Close all open menus and submenus explicitly needed? Or hides with parent hdiding?
 	ClearCustomScrollableMenu()
 	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
 	scrollHelper:DoHide()
 	mouseUpRefCounts[customScrollableMenuComboBox] = nil
 	return true
 end
+
 
 --Custom tooltip function
 --[[
@@ -1712,6 +1722,7 @@ Parameters:
 myAddon.customTooltipFunc(table data, userdata rowControl, boolean showOrHide)
 e.g. data = { name="Test 1", label="Test", customTooltip=function(data, rowControl, showOrHide) ... end, ... }
 ]]
+
 
 --------------------------------------------------------------------
 -- XML functions
