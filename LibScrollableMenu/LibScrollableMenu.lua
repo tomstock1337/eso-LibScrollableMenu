@@ -243,6 +243,10 @@ local function recursiveOverEntries(entry, callback)
 	
 	local result = callback(entry)
 	local submenu = entry.entries or {}
+
+	local submenuType = type(submenu)
+	assert(submenuType == 'table', sfor('[LibScrollableMenu:recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
+
 	if #submenu > 0 then
 		for k, subEntry in pairs(submenu) do
 			local subEntryResult = recursiveOverEntries(subEntry, callback)
@@ -341,7 +345,7 @@ local function mapEntries(entryTable, mapTable, blank)
     end
 	
 	local entryTableType, mapTableType = type(entryTable), type(mapTable)
-	assert(entryTableType == 'table' and mapTableType == 'table' , sfor('[LibScrollableMenu:MapEntries] tables expected got entryTable = %s, mapTable = %s', tos(entryTableType), tos(mapTableType)))
+	assert(entryTableType == 'table' and mapTableType == 'table' , sfor('[LibScrollableMenu:MapEntries] tables expected, got %q = %s, %q = %s', "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
 	
 	-- Splitting these up so the above is not done each iteration
 	doMapEntries(entryTable, mapTable)
@@ -1750,7 +1754,7 @@ function SetCustomScrollableMenuOptions(options, scrollHelper)
 	scrollHelper = scrollHelper or getScrollHelperObjectFromControl(customScrollableMenuComboBox)
 
 	options = options or scrollHelper.options
-	assert(optionsTableType == 'table' , sfor('[LibScrollableMenu:SetCustomScrollableMenuOptions] table expected got options = %s', tos(optionsTableType)))
+	assert(optionsTableType == 'table' , sfor('[LibScrollableMenu:SetCustomScrollableMenuOptions] table expected, got %q = %s', "options", tos(optionsTableType)))
 	scrollHelper.optionsChanged = options ~= scrollHelper.options
 	scrollHelper:UpdateOptions(options)
 end
@@ -1760,7 +1764,7 @@ setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
 --You can add more entries later via AddCustomScrollableMenuEntry function too
 function AddCustomScrollableMenu(parent, entries, options)
 	local entryTableType = type(entries)
-	assert(entryTableType == 'table' , sfor('[LibScrollableMenu:AddCustomScrollableMenu] table expected got entries = %s', tos(entryTableType)))
+	assert(entryTableType == 'table' , sfor('[LibScrollableMenu:AddCustomScrollableMenu] table expected, got %q = %s', "entries", tos(entryTableType)))
 
 	-- the menu is only being added to the first parent
 	--parent should be changed every time it's shown. so it can be the correct control even if from another addon
