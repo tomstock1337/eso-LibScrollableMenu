@@ -244,10 +244,10 @@ local function recursiveOverEntries(entry, callback)
 	local result = callback(entry)
 	local submenu = entry.entries or {}
 
-	local submenuType = type(submenu)
-	assert(submenuType == 'table', sfor('[LibScrollableMenu:recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
+	--local submenuType = type(submenu)
+	--assert(submenuType == 'table', sfor('[LibScrollableMenu:recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
 
-	if #submenu > 0 then
+	if  type(submenu) == "table" and #submenu > 0 then
 		for k, subEntry in pairs(submenu) do
 			local subEntryResult = recursiveOverEntries(subEntry, callback)
 			if subEntryResult then
