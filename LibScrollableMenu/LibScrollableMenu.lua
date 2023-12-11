@@ -1604,18 +1604,22 @@ local function onGlobalMouseDown()
 --d("[LSM]OnGlobalMouseUp-refCount: " ..tos(refCount))
     if refCount ~= nil then
         local moc = moc()
-		local parent = customScrollableMenuComboBox:GetParent()
+		local owningWindowIsNotZO_Menus = moc:GetOwningWindow() ~= ZO_Menus
+		local owner = moc.m_owner
+		local isOwnerNil = owner == nil
+		local container = getContainerFromControl(moc)
 
         --Or the owning window ZO_Menus (the onwer of our DUMMY ZO_ComboBox for the custom scrollable context menu)
 		--or is the m_owner variable provided (tells us we got a ScrollHelper entry here -> main menu or submenu)
-		if moc:GetOwningWindow() ~= ZO_Menus or moc.m_owner == nil then
-            refCount = refCount - 1
-            mouseDownRefCounts[customScrollableMenuComboBox] = refCount
-            if refCount <= 0 then
+		if owningWindowIsNotZO_Menus or isOwnerNil or container ~= customScrollableMenuComboBox then
+			if owningWindowIsNotZO_Menus and not isOwnerNil and owner.m_submenu ~= nil then return end
+			refCount = refCount - 1
+			mouseDownRefCounts[customScrollableMenuComboBox] = refCount
+			if refCount <= 0 then
 				clearCustomScrollableMenu = clearCustomScrollableMenu or ClearCustomScrollableMenu
-                clearCustomScrollableMenu()
-            end
-        end
+				clearCustomScrollableMenu()
+			end
+		end
     end
 end
 
