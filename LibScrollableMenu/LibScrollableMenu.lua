@@ -982,6 +982,9 @@ function ScrollableDropdownHelper:GetMaxWidth(item, maxWidth, dividers, headers)
 end
 
 function ScrollableDropdownHelper:DoHide()
+	--For the scrollable custom context menu
+	EVENT_MANAGER:UnregisterForEvent(MAJOR .. "_OnGlobalMouseDown", EVENT_GLOBAL_MOUSE_DOWN)
+
 	local dropdown = self.dropdown
 	if dropdown:IsDropdownVisible() then
 		dropdown:HideDropdown()
@@ -1611,8 +1614,14 @@ local function onGlobalMouseDown()
 
         --Or the owning window ZO_Menus (the onwer of our DUMMY ZO_ComboBox for the custom scrollable context menu)
 		--or is the m_owner variable provided (tells us we got a ScrollHelper entry here -> main menu or submenu)
-		if owningWindowIsNotZO_Menus or isOwnerNil or container ~= customScrollableMenuComboBox then
-			if owningWindowIsNotZO_Menus and not isOwnerNil and owner.m_submenu ~= nil then return end
+--d("[onGlobalMouseDown]owningWindowIsNotZO_Menus: " ..tos(owningWindowIsNotZO_Menus) .. ", isOwnerNil: " ..tos(isOwnerNil) .. ", container: " .. tos(container ~= nil and container:GetName()) .. ", contextMenuCtrl: " ..tos(customScrollableMenuComboBox:GetName()))
+
+		if owningWindowIsNotZO_Menus or isOwnerNil or (container ~= nil and container ~= customScrollableMenuComboBox) then
+--d(">is no main menu entry, maybe a Submenu entry?")
+			if not owningWindowIsNotZO_Menus and not isOwnerNil and owner.m_submenu ~= nil then
+--d(">>isSubmenu entry")
+				return
+			end
 			refCount = refCount - 1
 			mouseDownRefCounts[customScrollableMenuComboBox] = refCount
 			if refCount <= 0 then
@@ -1692,6 +1701,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
 	local isCheckbox = entryType == lib.LSM_ENTRY_TYPE_CHECKBOX
 	--or just a ---------- divider line?
 	local isDivider = text == libDivider or entryType == lib.LSM_ENTRY_TYPE_DIVIDER
+	if isDivider == true then entryType = lib.LSM_ENTRY_TYPE_DIVIDER end
 
 	--Add the line of the context menu to the internal tables. Will be read as the ZO_ComboBox's dropdown opens and calls
 	--:AddMenuItems() -> Added to internal scroll list then
@@ -1800,14 +1810,14 @@ function ShowCustomScrollableMenu(controlToAnchorTo, point, relativePoint, offse
 	-->Only valid for EVENT_GLOBAL_MOUSE_UP, but not for EVENT_GLOBAL_MOUSE_DOWN
     mouseDownRefCounts[customScrollableMenuComboBox] = 1
 	--Register the event to check for any mouse down click, so the menu will close if anywhere clicked else than on a menu entry
-	EVENT_MANAGER:RegisterForEvent(MAJOR .. "_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_DOWN, onGlobalMouseDown)
+	EVENT_MANAGER:RegisterForEvent(MAJOR .. "_OnGlobalMouseDown", EVENT_GLOBAL_MOUSE_DOWN, onGlobalMouseDown)
 	return true
 end
 
 --Hide the custom scrollable context menu and clear internal variables, mouse clicks etc.
 function ClearCustomScrollableMenu()
 	--d("[LSM]ClearCustomScrollableMenu")
-	EVENT_MANAGER:UnregisterForEvent(MAJOR .. "_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_UP)
+	EVENT_MANAGER:UnregisterForEvent(MAJOR .. "_OnGlobalMouseDown", EVENT_GLOBAL_MOUSE_DOWN)
 	if customScrollableMenuComboBox == nil then return end
 	local scrollHelper = getScrollHelperObjectFromControl(customScrollableMenuComboBox)
 	scrollHelper:DoHide()
