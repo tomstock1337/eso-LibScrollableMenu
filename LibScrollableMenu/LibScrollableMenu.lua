@@ -858,18 +858,20 @@ function ScrollableDropdownHelper:AddMenuItems()
 		item.m_owner = self
 
 		local isHeader = getValueOrCallback(item.isHeader, item)
+		local isDivider = (item.label ~= nil and getValueOrCallback(item.label, item) == libDivider) or getValueOrCallback(item.name, item) == libDivider
 		local isCheckbox = getValueOrCallback(item.isCheckbox, item)
 		--local isCheckboxChecked = GetValueOrCallback(item.checked, item)
 		--local icon = GetValueOrCallback(item.icon, item)
 
 		local hasSubmenu = item.entries ~= nil
 
-		local entryType = (item.name == libDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) or
+		local entryType = (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) or
 				(hasSubmenu and SUBMENU_ENTRY_ID) or (isLast and LAST_ENTRY_ID) or ENTRY_ID
 		if hasSubmenu then
 			item.hasSubmenu = true
 			item.isNew = areAnyEntriesNew(item)
 		end
+		item.isDivider = isDivider
 
 		--Save divider and header entries' indices for later usage at the height calulation
 		if rowIndex[entryType] ~= nil then
@@ -956,17 +958,17 @@ end
 function ScrollableDropdownHelper:GetMaxWidth(item, maxWidth, dividers, headers)
 	local fontObject = _G[item.m_owner.m_font]
 	
-	if item.name == libDivider then
+	local labelStr = getValueOrCallback(item.name, item)
+	if item.label ~= nil then
+		labelStr = getValueOrCallback(item.label, item)
+	end
+
+	if item.isDivider or labelStr == libDivider then
 		dividers = dividers + 1
 	elseif item.isHeader then
 		headers = headers + 1
 	end
-	
-	local labelStr = item.name
-	if item.label ~= nil then
-		labelStr = getValueOrCallback(item.label, item)
-	end
-	
+
 	local submenuEntryPadding = item.hasSubmenu and SCROLLABLE_ENTRY_TEMPLATE_HEIGHT or 0
 	local iconPadding = (item.icon ~= nil or item.isNew == true) and ICON_PADDING or 0 -- NO_ICON_PADDING
 	local width = GetStringWidthScaled(fontObject, labelStr, 1, SPACE_INTERFACE) + iconPadding + submenuEntryPadding
@@ -1700,7 +1702,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
 	--Or a clickable checkbox line?
 	local isCheckbox = entryType == lib.LSM_ENTRY_TYPE_CHECKBOX
 	--or just a ---------- divider line?
-	local isDivider = text == libDivider or entryType == lib.LSM_ENTRY_TYPE_DIVIDER
+	local isDivider = entryType == lib.LSM_ENTRY_TYPE_DIVIDER or text == libDivider
 	if isDivider == true then entryType = lib.LSM_ENTRY_TYPE_DIVIDER end
 
 	--Add the line of the context menu to the internal tables. Will be read as the ZO_ComboBox's dropdown opens and calls
