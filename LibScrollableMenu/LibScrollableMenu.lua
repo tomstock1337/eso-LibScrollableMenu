@@ -1617,12 +1617,17 @@ local function onGlobalMouseDown()
 		local owner = moc.m_owner
 		local isOwnerNil = owner == nil
 		local container = getContainerFromControl(moc)
+		local parent = moc:GetParent()
+		local isScrollbar = moc.scrollbar ~= nil or (parent ~= nil and parent.scrollbar ~= nil)
 
+--d("[onGlobalMouseDown]owningWindowIsNotZO_Menus: " ..tos(owningWindowIsNotZO_Menus) .. ", isOwnerNil: " ..tos(isOwnerNil) .. ", container: " .. tos(container ~= nil and container:GetName()) .. ", contextMenuCtrl: " ..tos(customScrollableMenuComboBox:GetName()))
+		--Scrollbar and the onwing window is ZO_Menus?
+		if isScrollbar and not owningWindowIsNotZO_Menus then
+			return
+		end
         --Or the owning window ZO_Menus (the onwer of our DUMMY ZO_ComboBox for the custom scrollable context menu)
 		--or is the m_owner variable provided (tells us we got a ScrollHelper entry here -> main menu or submenu)
---d("[onGlobalMouseDown]owningWindowIsNotZO_Menus: " ..tos(owningWindowIsNotZO_Menus) .. ", isOwnerNil: " ..tos(isOwnerNil) .. ", container: " .. tos(container ~= nil and container:GetName()) .. ", contextMenuCtrl: " ..tos(customScrollableMenuComboBox:GetName()))
-
-		if owningWindowIsNotZO_Menus or isOwnerNil or (container ~= nil and container ~= customScrollableMenuComboBox) then
+		if (owningWindowIsNotZO_Menus or isOwnerNil or (container ~= nil and container ~= customScrollableMenuComboBox)) then
 --d(">is no main menu entry, maybe a Submenu entry?")
 			if not owningWindowIsNotZO_Menus and not isOwnerNil and owner.m_submenu ~= nil then
 --d(">>isSubmenu entry")
