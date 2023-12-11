@@ -1596,21 +1596,21 @@ local addCustomScrollableComboBoxDropdownMenu = AddCustomScrollableComboBoxDropd
 --Add a scrollable menu to any control (not only a ZO_ComboBox), e.g. to an inventory row
 --by creating a DUMMY ZO_ComboBox, adding the ScrollHelper class to it and use it
 ----------------------------------------------------------------------
---Function to check for global mouse clicks -> to close the custom scrollable context menus if clicked somwhere else
-local mouseUpRefCounts = {}
-local function onGlobalMouseUp()
-    local refCount = mouseUpRefCounts[customScrollableMenuComboBox]
+--Function to check for global mouse down -> to close the custom scrollable context menus if clicked somwhere else
+--> Was changed from mouseUp to mouseDown so holding a mouse down to drag a control will close the menus too
+local mouseDownRefCounts = {}
+local function onGlobalMouseDown()
+    local refCount = mouseDownRefCounts[customScrollableMenuComboBox]
 --d("[LSM]OnGlobalMouseUp-refCount: " ..tos(refCount))
     if refCount ~= nil then
         local moc = moc()
 		local parent = customScrollableMenuComboBox:GetParent()
-		-- moc:GetOwningWindow() ~= ZO_Menus to subtract 1 on click outside of ZO_Menus
-		-- moc == parent to subtract 1 on show.
-		-- moc ~= parent to subtract 1 on click in ZO_Menus but not over same row.
-		
-        if moc:GetOwningWindow() ~= ZO_Menus or moc == parent or moc ~= parent then
+
+        --Or the owning window ZO_Menus (the onwer of our DUMMY ZO_ComboBox for the custom scrollable context menu)
+		--or is the m_owner variable provided (tells us we got a ScrollHelper entry here -> main menu or submenu)
+		if moc:GetOwningWindow() ~= ZO_Menus or moc.m_owner == nil then
             refCount = refCount - 1
-            mouseUpRefCounts[customScrollableMenuComboBox] = refCount
+            mouseDownRefCounts[customScrollableMenuComboBox] = refCount
             if refCount <= 0 then
 				clearCustomScrollableMenu = clearCustomScrollableMenu or ClearCustomScrollableMenu
                 clearCustomScrollableMenu()
@@ -1639,7 +1639,7 @@ local function clearCustomScrollableMenuInternals(scrollHelper)
 	scrollHelper = scrollHelper or getScrollHelperObjectFromControl(customScrollableMenuComboBox)
 	scrollHelper:InitContextMenuValues()
 	--scrollHelper:ResetOptions()
-	mouseUpRefCounts[customScrollableMenuComboBox] = nil
+	mouseDownRefCounts[customScrollableMenuComboBox] = nil
 end
 
 --Initialize the scrollable context menu
@@ -1793,9 +1793,10 @@ function ShowCustomScrollableMenu(controlToAnchorTo, point, relativePoint, offse
 	end
 
 	--Set to 2 so first global click (as the menu shows) will not directly close it again
-    mouseUpRefCounts[customScrollableMenuComboBox] = 2
+	-->Only valid for EVENT_GLOBAL_MOUSE_UP, but not for EVENT_GLOBAL_MOUSE_DOWN
+    mouseDownRefCounts[customScrollableMenuComboBox] = 1
 	--Register the event to check for any mouse down click, so the menu will close if anywhere clicked else than on a menu entry
-	EVENT_MANAGER:RegisterForEvent(MAJOR .. "_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_UP, onGlobalMouseUp)
+	EVENT_MANAGER:RegisterForEvent(MAJOR .. "_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_DOWN, onGlobalMouseDown)
 	return true
 end
 
