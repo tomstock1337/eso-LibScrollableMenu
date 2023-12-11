@@ -1677,7 +1677,9 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
 	if not allowedEntryTypesForContextMenu[entryType] then
 		entryType = lib.LSM_ENTRY_TYPE_NORMAL
 	end
-	assert(((entryType ~= lib.LSM_ENTRY_TYPE_HEADER and entryType ~= lib.LSM_ENTRY_TYPE_DIVIDER) and type(callback) ~= "function"), sfor('[LibScrollableMenu:AddCustomScrollableMenuEntry] Callback function expected, got %q = %s', "callback", tos(callback)))
+	if entryType ~= lib.LSM_ENTRY_TYPE_HEADER and entryType ~= lib.LSM_ENTRY_TYPE_DIVIDER and entries == nil then
+		assert(type(callback) == "function", sfor('[LibScrollableMenu:AddCustomScrollableMenuEntry] Callback function expected, got %q = %s', "callback", tos(callback)))
+	end
 
 	-->Todo: if entryType is not in lib.allowedContextMenuEntryTypes then change to lib.LSM_ENTRY_TYPE_NORMAL
 	--Or is it a header line?
