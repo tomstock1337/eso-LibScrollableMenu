@@ -1704,6 +1704,11 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
 end
 addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 
+--Adds an entry having a submenu (or maybe nested submenues) in the entries table
+function AddCustomScrollableSubMenuEntry(text, entries)
+	addCustomScrollableMenuEntry(text, nil, lib.LSM_ENTRY_TYPE_NORMAL, entries, nil)
+end
+
 --Adds a divider line to the context menu entries
 function AddCustomScrollableMenuDivider()
 	addCustomScrollableMenuEntry(libDivider, nil, lib.LSM_ENTRY_TYPE_DIVIDER, nil, nil)
