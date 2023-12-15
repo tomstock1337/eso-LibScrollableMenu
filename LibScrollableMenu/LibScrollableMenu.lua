@@ -1172,7 +1172,7 @@ function ScrollableDropdownHelper:GetOptions()
 end
 
 function ScrollableDropdownHelper:UpdateOptions(options)
-	d( sfor('optionsChanged %s', tostring(self.optionsChanged)))
+	--d(sfor('[LSM]UpdateOptionsoptionsChanged %s', tostring(self.optionsChanged)))
 
 	if not self.optionsChanged then return end
 
