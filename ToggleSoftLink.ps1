@@ -7,7 +7,7 @@ if (Test-Path $pathAddons\$addonName) {
   if($file.Attributes -band [IO.FileAttributes]::ReparsePoint){
     echo "Removing Softlink"
     (Get-Item "$pathAddons\$addonName").Delete()
-    if (Test-Path $pathAddons\$addonName_minion) {
+    if (Test-Path $pathAddons\${addonName}_minion) {
       echo "Move Directory"
       echo "$pathAddons\${addonName}_minion"
       Move-Item -Path "$pathAddons\${addonName}_minion" -Destination "$pathAddons\$addonName"
@@ -16,10 +16,10 @@ if (Test-Path $pathAddons\$addonName) {
     #move folder to _minion
     Move-Item "$pathAddons\$addonName" "$pathAddons\${addonName}_minion"
     echo "Creating Softlink"
-    New-Item -ItemType SymbolicLink -Path $pathAddons -Name $addonName -Value $develFolder
+    New-Item -ItemType SymbolicLink -Path $pathAddons -Name $addonName -Value "$develFolder\$addonName"
 
   }
 } else {
   echo "Creating Softlink"
-  New-Item -ItemType SymbolicLink -Path $pathAddons -Name $addonName -Value $develFolder
+  New-Item -ItemType SymbolicLink -Path $pathAddons -Name $addonName -Value "$develFolder\$addonName"
 }
