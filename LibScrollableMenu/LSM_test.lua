@@ -217,8 +217,19 @@ local function test()
 		local comboBoxMenuEntries = {
 			{
 				name            = "Normal entry 1",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+			--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				callback        =   function(self)
 					d("Normal entry 1")
+				end,
+				contextMenuCallback =   function(self)
+					d("Normal entry 1")
+					ClearCustomScrollableMenu()
+					
+					AddCustomScrollableMenuEntry("Normal entry 1", function() d('Custom menu Normal entry 1') end)
+					
+					AddCustomScrollableMenuEntry("Normal entry 2", function() d('Custom menu Normal entry 2') end)
+					
+					ShowCustomScrollableMenu()
 				end,
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
 				isNew			= true,
@@ -238,8 +249,17 @@ local function test()
 			},
 			{
 				name            = "Normal entry 2",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+			--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				callback        =   function(self)
 					d("Normal entry 2")
+				end,
+				contextMenuCallback         =   function(self)
+					d("Normal entry 2")
+					ClearCustomScrollableMenu()
+					
+					AddCustomScrollableMenuEntry("Normal entry 2", function() d('Custom menu Normal entry 2') end)
+					
+					ShowCustomScrollableMenu(self)
 				end,
 				isNew			= true,
 				--entries         = submenuEntries,
@@ -438,6 +458,67 @@ local function test()
 				-- Belongs to this addon
 			end
 		end)
+
+
+		--Custom scrollable context menu
+		ZO_PlayerInventoryTabsActive:SetMouseEnabled(true)
+		ZO_PlayerInventoryTabsActive:SetHandler("OnMouseUp", function(ctrl, button, upInside)
+	d("[LSM]ZO_PlayerInventoryTabsActive - OnMouseUp")
+			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
+				ClearCustomScrollableMenu()
+
+				local entries = {
+					{
+						name = "Test",
+						callback = function()  d("test") end,
+					}
+				}
+				AddCustomScrollableMenu(ctrl, entries, {sortEntries=false})
+
+
+				AddCustomScrollableMenuEntry("Normal entry 2", function()
+					d('Custom menu Normal entry 2')
+				end)
+
+				AddCustomScrollableMenuDivider()
+
+				AddCustomScrollableMenuEntry("Normal entry 1", function()
+					d('Custom menu Normal entry 1')
+				end)
+
+				SetCustomScrollableMenuOptions({sortEntries=true})
+
+				ShowCustomScrollableMenu()
+			end
+		end)
+
+		ZO_PlayerInventoryMenuBarButton1:SetHandler("OnMouseUp", function(ctrl, button, upInside)
+	d("[LSM]ZO_PlayerInventoryMenuBarButton1 - OnMouseUp")
+			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
+				ClearCustomScrollableMenu()
+
+				local entries = {
+					{
+						name = "Test 2",
+						callback = function()  d("test") end,
+					}
+				}
+				AddCustomScrollableMenu(ctrl, entries, nil)
+
+
+				AddCustomScrollableMenuEntry("Normal entry 2 - 2", function()
+					d('Custom menu Normal entry 2')
+				end)
+
+				AddCustomScrollableMenuEntry("Normal entry 1 - 2", function()
+					d('Custom menu Normal entry 1')
+				end)
+
+				ShowCustomScrollableMenu(nil, nil, nil, nil, nil, {sortEntries=true})
+			end
+		end)
+
+
 	end
 
 	local dropdown = lib.testDropdown
@@ -449,7 +530,6 @@ local function test()
 		testTLC:SetHidden(true)
 		testTLC:SetMouseEnabled(false)
 	end
-
 end
 lib.Test = test
 --	/script LibScrollableMenu.Test()

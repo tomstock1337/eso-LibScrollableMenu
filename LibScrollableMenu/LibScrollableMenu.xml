@@ -47,6 +47,7 @@
 			</OnInitialized>
 			
 			<OnMouseUp>
+			--	LibScrollableMenu_OnSelected(self, self == WINDOW_MANAGER:GetMouseOverControl())
 				LibScrollableMenu_OnSelected(self, button, upInside)
 			</OnMouseUp>
 			
@@ -133,6 +134,11 @@
 					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" />
 				</Control>
 			</Controls>
+		</Control>
+
+		<Control name="LibScrollableMenu_CustomContextMenu_ComboBox" inherits="ZO_ComboBox" mouseEnabled="false" clampedToScreen="true" hidden="true" virtual="true">
+			<Dimensions x="135"  y="31"/>
+			<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" />
 		</Control>
 	</Controls>
 </GuiXml>
