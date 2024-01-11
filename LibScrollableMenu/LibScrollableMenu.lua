@@ -142,17 +142,18 @@ local initCustomScrollableMenu, clearCustomScrollableMenu, addCustomScrollableMe
 --------------------------------------------------------------------
 
 local function clearTimeout()
-	if (submenuCallLaterHandle ~= nil) then
+	if submenuCallLaterHandle ~= nil then
 		EM:UnregisterForUpdate(submenuCallLaterHandle)
 		submenuCallLaterHandle = nil
 	end
 end
 
 local function setTimeout(callback)
-	if (submenuCallLaterHandle ~= nil) then clearTimeout() end
+	if submenuCallLaterHandle ~= nil then clearTimeout() end
 	submenuCallLaterHandle = MAJOR.."Timeout" .. nextId
 	nextId = nextId + 1
 
+	--Delay the submenu close callback so we can move the mouse above a new submenu control and keep that opened e.g.
 	EM:RegisterForUpdate(submenuCallLaterHandle, SUBMENU_SHOW_TIMEOUT, function()
 		clearTimeout()
 		if callback then callback() end
@@ -719,7 +720,7 @@ function ScrollableDropdownHelper:AddDataTypes()
 	end
 
 	local function hookHandlers(control, data, list)
-			-- This is for the mouse-over tooltips
+		-- This is for the mouse-over tooltips
 		if not control.hookedMouseHandlers then --only do it once per control
 			control.hookedMouseHandlers = true
 			ZO_PreHookHandler(control, "OnMouseEnter", onMouseEnter)
@@ -1818,8 +1819,7 @@ function ShowCustomScrollableMenu(controlToAnchorTo, point, relativePoint, offse
 	end
 
 	--Set to 2 so first global click (as the menu shows) will not directly close it again
-	-->Only valid for EVENT_GLOBAL_MOUSE_UP, but not for EVENT_GLOBAL_MOUSE_DOWN
-    mouseDownRefCounts[customScrollableMenuComboBox] = 1
+    mouseDownRefCounts[customScrollableMenuComboBox] = 1 	-- 2 -->Only valid for EVENT_GLOBAL_MOUSE_UP, but not for EVENT_GLOBAL_MOUSE_DOWN
 	--Register the event to check for any mouse down click, so the menu will close if anywhere clicked else than on a menu entry
 	EVENT_MANAGER:RegisterForEvent(MAJOR .. "_OnGlobalMouseDown", EVENT_GLOBAL_MOUSE_DOWN, onGlobalMouseDown)
 	return true
@@ -1963,12 +1963,16 @@ end
 local libMenuEntryOnMouseEnter = LibScrollableMenu_Entry_OnMouseEnter
 
 local function onMouseExitTimeout()
+--d("[LSM]onMouseExitTimeout")
 	local control = moc()
 	local name = control and control:GetName()
 	if name and zo_strfind(name, ROOT_PREFIX) == 1 then
 		--TODO: check for matching depth??
 	else
-		lib.submenu:Clear()
+		--Are we NOT above the scrollbar of the scrolhelper? Close the submenu then on mouse exit
+		if control.GetType == nil or control:GetType() ~= CT_SLIDER then
+			lib.submenu:Clear()
+		end
 	end
 end
 
