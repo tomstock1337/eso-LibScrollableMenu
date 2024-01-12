@@ -99,7 +99,7 @@ local submenuEntries = {
 
 ## Version 1.7 added context menus at any control
 
-###Syntax
+### Syntax
 ```
 Entry types:
 LSM_ENTRY_TYPE_NORMAL 
