@@ -95,3 +95,43 @@ local submenuEntries = {
                     }
 
 ```
+
+
+## Version 1.7 added context menus at any control
+
+###Syntax
+```
+Entry types:
+LSM_ENTRY_TYPE_NORMAL 
+LSM_ENTRY_TYPE_DIVIDER 
+LSM_ENTRY_TYPE_HEADER
+LSM_ENTRY_TYPE_CHECKBOX 
+
+
+--Adds a new entry to the context menu entries with the shown text, which calls the callback function once clicked.
+--If entries is provided the entry will be a submenu having those entries. The callback can only be used if entries are passed in
+--but normally it should be nil in that case
+function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
+
+--Adds an entry having a submenu (or maybe nested submenues) in the entries table
+function AddCustomScrollableSubMenuEntry(text, entries)
+
+--Adds a divider line to the context menu entries
+function AddCustomScrollableMenuDivider()
+
+--Pass in a table with predefined context menu entries and let them all be added in order of the table's number key
+function AddCustomScrollableMenuEntries(contextMenuEntries)
+
+--Set the options (visible rows max, etc.) for the scrollable context menu
+function SetCustomScrollableMenuOptions(options, scrollHelper)
+
+--Add a new scrollable context menu with the defined entries table.
+--You can add more entries later via AddCustomScrollableMenuEntry function too
+function AddCustomScrollableMenu(parent, entries, options)
+
+--Show the custom scrollable context menu now
+function ShowCustomScrollableMenu(controlToAnchorTo, point, relativePoint, offsetX, offsetY, options)
+
+--Hide the custom scrollable context menu and clear internal variables, mouse clicks etc.
+function ClearCustomScrollableMenu()
+```
