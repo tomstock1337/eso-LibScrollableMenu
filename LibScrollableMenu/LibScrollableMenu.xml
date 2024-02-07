@@ -1,19 +1,20 @@
 <GuiXml>
 	<Controls>
 		<!-- OnMouseUp -->
-		<Control name="LibScrollableMenu_Entry_Base" mouseEnabled="false" layer="CONTROLS" level="1" virtual="true">
+		<Control name="LibScrollableMenu_Entry_Base" mouseEnabled="true" layer="CONTROLS" level="1" virtual="true">
 			<Anchor point="LEFT" offsetX="8" offsetY="0" />
 			<Dimensions y="6" />
 			
-			<OnMouseUp>
+			<!-- <OnMouseUp>
 				LibScrollableMenu_OnSelected(self, button, upInside)
-			</OnMouseUp>
+			</OnMouseUp> -->
 		</Control>
 	
 		<!-- Base row template with Multi-Icon -->
-		<Control name="LibScrollableMenu_IconEntry_Tmplate" inherits="LibScrollableMenu_Entry_Base" virtual="true">
+		<Control name="LibScrollableMenu_IconEntry_Template" inherits="LibScrollableMenu_Entry_Base" virtual="true">
 			<Anchor point="LEFT" offsetX="8" offsetY="0" />
 			<Dimensions y="6" />
+
 			<Controls>
 				<Control name="$(parent)IconContainer" level="1">
 					<Dimensions x="25"  y="25"/>
@@ -33,6 +34,9 @@
 		<!-- Divider -->
 		<Control name="LibScrollableMenu_ComboBoxDividerEntry" inherits="LibScrollableMenu_Entry_Base" virtual="true">
 			<Dimensions y="6" />
+			<OnInitialized>
+				self.isDivider = true
+			</OnInitialized>
 			<Controls>
 				<Texture name="$(parent)Divider" hidden="false" inherits="ZO_BaseTooltipDivider">
 					<Anchor point="LEFT" offsetX="-0" offsetY="-2.5" />
@@ -42,7 +46,7 @@
 		</Control>
 
 		<!-- Header -->
-		<Control name="LibScrollableMenu_ComboBoxHeaderEntry" inherits="LibScrollableMenu_IconEntry_Tmplate" mouseEnabled="true" layer="CONTROLS" level="1" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxHeaderEntry" inherits="LibScrollableMenu_IconEntry_Template" mouseEnabled="true" layer="CONTROLS" level="1" virtual="true">
 			<Dimensions y="25" />
 			<OnInitialized>
 				self.isHeader = true
@@ -63,11 +67,14 @@
 		</Control>
 		
 		<!-- Normal entry -->
-		<Control name="LibScrollableMenu_ComboBoxEntry" inherits="LibScrollableMenu_IconEntry_Tmplate ZO_ComboBoxEntry" resizeToFitDescendents="true" resizeToFitConstrains="X" mouseEnabled="true" layer="CONTROLS" level="1" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxEntry" inherits="LibScrollableMenu_IconEntry_Template ZO_ComboBoxEntry" resizeToFitDescendents="true" resizeToFitConstrains="X" mouseEnabled="true" layer="CONTROLS" level="1" virtual="true">
 			<OnInitialized>
 				self.selectible = true <!-- Denotes this is a selectible entry.   -->
 			</OnInitialized>
-		
+			<OnMouseUp>
+				LibScrollableMenu_OnSelected(self, button, upInside)
+			</OnMouseUp>
+
 			<!--OnMouseEnter>
 			--	LibScrollableMenu_Entry_OnMouseEnter(self)
 				ZO_ComboBox_Entry_OnMouseEnter(self)
@@ -100,9 +107,9 @@
 			</OnMouseUp-->
 			
 			<OnMouseDown>
-				local onMouseUp = self:GetHandler("OnMouseExit")
-				if onMouseUp ~= nil then
-					onMouseUp(self)
+				local onMouseExit = self:GetHandler("OnMouseExit")
+				if onMouseExit ~= nil then
+					onMouseExit(self)
 				end
 			</OnMouseDown>
 			

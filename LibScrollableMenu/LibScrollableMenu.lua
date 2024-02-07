@@ -16,10 +16,6 @@ local libDivider = lib.DIVIDER
 lib.HELPER_MODE_NORMAL = 0
 lib.HELPER_MODE_LAYOUT_ONLY = 1 -- means only the layout of the dropdown will be altered, not the way it handles layering through ZO_Menus
 
---ZO_ComboBox changes with API101041 -> ZO_ComboBox uses a TLC for the dropdown now -> dropdownObject
-local APIVersion = GetAPIVersion()
-local apiVersionUpdate3_8 = 101041
-local isUsingDropdownObject = (APIVersion >= apiVersionUpdate3_8 and true) or false
 
 --------------------------------------------------------------------
 -- Locals
@@ -183,7 +179,6 @@ local function clearTimeout()
 	end
 end
 
-local  nextId = 1
 local function setTimeout(callback , ...)
 	local params = {...}
 	if submenuCallLaterHandle ~= nil then clearTimeout() end
@@ -584,8 +579,6 @@ local function selectEntryAndResetLastSubmenuData(self, control)
 	
 	ZO_ComboBoxDropdown_Keyboard.OnEntrySelected(self, control)
 --	control.m_owner:SetSelected(control.m_data.m_index, ignoreCallback)
-
-	lib.submenu.lastClickedEntryWithSubmenu = nil
 end
 
 --------------------------------------------------------------------
@@ -1243,36 +1236,34 @@ function DropdownObject:ShowSubmenu(parentControl)
 end
 
 function DropdownObject:OnEntrySelected(control, button, upInside)
---	d( 'OnEntrySelected IsUpInside ' .. tostring(self:IsUpInside(control)))
+	d( '[LSM]OnEntrySelected-button: ' ..tos(button) ..", upInside: " .. tos(upInside))
 	
-	local data, dataEntry = getControlData(control)
-	if dataEntry and upInside then
+	local data = getControlData(control)
+	if data and upInside then
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 		--	ZO_ComboBoxDropdown_Keyboard.OnEntrySelected(self, control)
 			
-			local hasSubmenu = dataEntry.hasSubmenu or data.entries ~= nil
+			local hasSubmenu = data.hasSubmenu or data.entries ~= nil
 
 			self:Narrate("OnEntrySelected", control, data, hasSubmenu)
 			--d("lib:FireCallbacks('EntryOnSelected)")
 			lib:FireCallbacks('EntryOnSelected', data, control)
 
 			local mySubmenu = getSubmenuFromControl(control)
-			--	d( dataEntry.entries)
+	d( "dataEntry.entries: " .. tos(data.entries))
 			if hasSubmenu then
 				control.hasSubmenu = true
-				--d(">menu control with submenu - hasSubmenu: " ..tos(control.hasSubmenu))
-				--Save the current control to lib.submenu.lastClickedEntryWithSubmenu
-				lib.submenu.lastClickedEntryWithSubmenu = control
+	d(">menu control with submenu - hasSubmenu: " ..tos(control.hasSubmenu))
 
 				local targetSubmenu = lib.submenu
 				if mySubmenu and mySubmenu.childMenu then
-					--d(">childMenu")
+	d(">childMenu")
 					targetSubmenu = mySubmenu.childMenu
 				end
 
 				if targetSubmenu then
 					if targetSubmenu:IsVisible() then
-						--d(">targetSubMenu:IsVisible")
+	d(">targetSubMenu:IsVisible")
 						targetSubmenu:Clear() -- need to clear it straight away, no timeout
 					else
 						--Has the control a submenu but also a callback function: Do not show the submenu if you click the control
@@ -1302,12 +1293,12 @@ function DropdownObject:OnEntrySelected(control, button, upInside)
 			elseif data.checked ~= nil then
 				playSelectedSoundCheck(control)
 				ZO_CheckButton_OnClicked(control.m_checkbox)
-				lib.submenu.lastClickedEntryWithSubmenu = nil
 				return true
 			else
 				selectEntryAndResetLastSubmenuData(self, control)
 			end
 		else -- right-click
+d(">contextMenu right click callb")
 			if data.contextMenuCallback  then
 				data.contextMenuCallback(control)
 			end
@@ -1692,7 +1683,19 @@ e.g. data = { name="Test 1", label="Test", customTooltip=function(data, rowContr
 -- XML functions
 ------------------------------------------------------------------------------------------------------------------------
 -- Using a custom _OnSelected for button, upInside
+--> Fired as entry in dropdown or submeu's dropdown is clicked (OnMouseUp)
 function LibScrollableMenu_OnSelected(control, button, upInside)
+d("LibScrollableMenu_OnSelected-name: " .. tos(control:GetName()))
+
+LSM_DEBUG =LSM_DEBUG or {}
+LSM_DEBUG.OnSelected = LSM_DEBUG.OnSelected or {}
+LSM_DEBUG.OnSelected[control:GetName()] = {
+	control = control,
+	button = button,
+	upInside = upInside,
+	dropdown = control.m_dropdown,
+	dropdownObject = control.m_dropdownObject,
+}
 	local dropdown = control.m_dropdownObject
 	if dropdown then
 		dropdown:OnEntrySelected(control, button, upInside)
