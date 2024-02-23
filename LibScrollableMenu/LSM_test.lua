@@ -459,7 +459,7 @@ local function test()
 			end
 		end)
 
-
+--[[
 		--Custom scrollable context menu
 		ZO_PlayerInventoryTabsActive:SetMouseEnabled(true)
 		ZO_PlayerInventoryTabsActive:SetHandler("OnMouseUp", function(ctrl, button, upInside)
@@ -517,7 +517,7 @@ local function test()
 				ShowCustomScrollableMenu(nil, nil, nil, nil, nil, {sortEntries=true})
 			end
 		end)
-
+]]
 
 	end
 

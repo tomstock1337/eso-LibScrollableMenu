@@ -3,7 +3,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
-lib.version = "1.7"
+lib.version = "1.8"
 
 lib.data = {}
 
@@ -228,6 +228,18 @@ local function getOptionsForEntry(entry)
 	]]
 		
 	return entrysComboBox ~= nil and entrysComboBox.options
+end
+
+local function callbackAndEnabledCheck(entry, data)
+	data = data or ZO_ScrollList_GetData(entry)
+
+	local gotCallback = (data and data.callback ~= nil and true) or false
+	local isEnabled = true
+	if data and data.enabled ~= nil then
+		isEnabled = getValueOrCallback(data.enabled, data)
+	end
+	if not isEnabled then gotCallback = false end
+	return not gotCallback, isEnabled
 end
 
 local function defaultRecursiveCallback(_entry)
@@ -522,6 +534,12 @@ function ScrollableDropdownHelper:Initialize(parent, control, options, isSubMenu
 
 	local combobox = control.combobox
 	local dropdown = control.dropdown
+
+	--fix for ZO_ComboBox changes -> Using m_dropdownObject since update 9.3 -> API101041 (1 singleton instance of dropdown, and custom ones can be added via SetDropdownObject function)
+	if GetAPIVersion() >= 101041 then
+        dropdown.m_dropdown = dropdown.m_dropdownObject.control
+        dropdown.m_scroll = dropdown.m_dropdownObject.scrollControl
+    end
 
 	self.parent = parent
 	self.control = control
@@ -1363,8 +1381,9 @@ function ScrollableSubmenu:Initialize(submenuDepth)
 	self.dropdown.m_submenu = self
 
 	self.dropdown.SetSelected = function(dropdown, index, ignoreCallback)
+--d("[LSM]self.dropdown.SetSelected-index: " .. tos(index) .. ", ignoreCallback: " ..tos(ignoreCallback))
 		local parentDropdown = lib.submenu.owner.m_comboBox
-		parentDropdown:ItemSelectedClickHelper(dropdown.m_sortedItems[index])
+		parentDropdown:ItemSelectedClickHelper(dropdown.m_sortedItems[index], ignoreCallback)
 		parentDropdown:HideDropdown()
 	end
 
@@ -1915,50 +1934,54 @@ local function clearNewStatus(entry, data)
 end
 
 function LibScrollableMenu_Entry_OnMouseEnter(entry)
-    if entry.m_owner and entry.selectible then
---d("LibScrollableMenu_Entry_OnMouseEnter")
+	if entry.m_owner and entry.selectible then
+		--d("LibScrollableMenu_Entry_OnMouseEnter")
 
 		local data = ZO_ScrollList_GetData(entry)
 		local hasSubmenu = entry.hasSubmenu or data.entries ~= nil
 
---d("lib:FireCallbacks('EntryOnMouseEnter)")
+		--d("lib:FireCallbacks('EntryOnMouseEnter)")
 		local scrollHelper = getScrollHelperObjectFromControl(entry)
 		scrollHelper:Narrate("OnEntryMouseEnter", entry, data, hasSubmenu)
 		lib:FireCallbacks('EntryOnMouseEnter', data, entry)
 
-		-- For submenus
-		local mySubmenu = getSubmenuFromControl(entry)
-		if hasSubmenu then
-			entry.hasSubmenu = true
-			clearTimeout()
-			if mySubmenu then -- open next submenu (nested)
-				local childMenu = mySubmenu:GetChild(true) -- create if needed
-				if childMenu then
-					childMenu:Show(entry)
+
+		local ignoreCallback, isEnabled = callbackAndEnabledCheck(entry, data)
+		if isEnabled == true then
+			-- For submenus
+			local mySubmenu = getSubmenuFromControl(entry)
+			if hasSubmenu then
+				entry.hasSubmenu = true
+				clearTimeout()
+				if mySubmenu then -- open next submenu (nested)
+					local childMenu = mySubmenu:GetChild(true) -- create if needed
+					if childMenu then
+						childMenu:Show(entry)
+					else
+						lib.submenu:Show(entry)
+					end
 				else
 					lib.submenu:Show(entry)
 				end
+			elseif mySubmenu then
+				clearTimeout()
+				mySubmenu:ClearChild()
 			else
-				lib.submenu:Show(entry)
+				lib.submenu:Clear(false)
 			end
-		elseif mySubmenu then
-			clearTimeout()
-			mySubmenu:ClearChild()
-		else
-			lib.submenu:Clear(false)
+
+			-- Original
+			ZO_ScrollList_MouseEnter(entry.m_owner.m_scroll, entry)
+			entry.m_label:SetColor(entry.m_owner.m_highlightColor:UnpackRGBA())
+			if entry.m_owner.onMouseEnterCallback then
+				entry.m_owner:onMouseEnterCallback(entry)
+			end
 		end
-		
-		-- Original
-        ZO_ScrollList_MouseEnter(entry.m_owner.m_scroll, entry)
-        entry.m_label:SetColor(entry.m_owner.m_highlightColor:UnpackRGBA())
-        if entry.m_owner.onMouseEnterCallback then
-            entry.m_owner:onMouseEnterCallback(entry)
-        end
-		
+
 		-- I moved this to the bottom to see if any of the Clear*s had any effect on submenu data.
-	--	d( 'LibScrollableMenu_Entry_OnMouseEnter ' .. tos(data.name))
+		--	d( 'LibScrollableMenu_Entry_OnMouseEnter ' .. tos(data.name))
 		clearNewStatus(entry, data)
-    end
+	end
 end
 local libMenuEntryOnMouseEnter = LibScrollableMenu_Entry_OnMouseEnter
 
@@ -1988,10 +2011,13 @@ function LibScrollableMenu_Entry_OnMouseExit(entry)
 		scrollHelper:Narrate("OnEntryMouseExit", entry, data, hasSubmenu)
 		lib:FireCallbacks('EntryOnMouseExit', data, entry)
 
-		ZO_ScrollList_MouseExit(entry.m_owner.m_scroll, entry)
-		entry.m_label:SetColor(entry.m_owner.m_normalColor:UnpackRGBA())
-		if entry.m_owner.onMouseExitCallback then
-			entry.m_owner:onMouseExitCallback(entry)
+		local ignoreCallback, isEnabled = callbackAndEnabledCheck(entry, data)
+		if isEnabled == true then
+			ZO_ScrollList_MouseExit(entry.m_owner.m_scroll, entry)
+			entry.m_label:SetColor(entry.m_owner.m_normalColor:UnpackRGBA())
+			if entry.m_owner.onMouseExitCallback then
+				entry.m_owner:onMouseExitCallback(entry)
+			end
 		end
 	end
 	
@@ -2001,10 +2027,15 @@ function LibScrollableMenu_Entry_OnMouseExit(entry)
 end
 
 local function selectEntryAndResetLastSubmenuData(entry)
-	playSelectedSoundCheck(entry)
+	local ignoreCallback, isEnabled = callbackAndEnabledCheck(entry)
+	if isEnabled and not ignoreCallback then
+		playSelectedSoundCheck(entry)
+	end
 
-	--Pass the entrie's text to the dropdown control's selectedItemText
-	entry.m_owner:SetSelected(entry.m_data.m_index, ignoreCallback)
+	if isEnabled == true then
+		--Pass the entrie's text to the dropdown control's selectedItemText
+		entry.m_owner:SetSelected(entry.m_data.m_index, ignoreCallback)
+	end
 	lib.submenu.lastClickedEntryWithSubmenu = nil
 end
 
@@ -2016,7 +2047,6 @@ function LibScrollableMenu_OnSelected(entry, button, upInside)
 		if data and upInside then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				--d("LibScrollableMenu_OnSelected")
-				local data = ZO_ScrollList_GetData(entry)
 				local hasSubmenu = entry.hasSubmenu or data.entries ~= nil
 
 				local scrollHelper = getScrollHelperObjectFromControl(entry)
