@@ -1,21 +1,35 @@
 <!-- TODO: this comment will self-destruct in future updates.
-control.selectible is not resent in the lua. Remove it?
+control.selectible is not present in the lua. Remove it?
 I'm removing LibScrollableMenu_OnSelected. There is now a simple way of doing this without globals
 Remove unused virtuals at the bottom?
+
+I learned not to use xml comment blocks in the handlers, since represent lua.
 -->
 <GuiXml>
 	<Controls>
-		<!-- OnMouseUp -->
 		<Control name="LibScrollableMenu_Entry_Behavior" mouseEnabled="true" virtual="true">
+			<OnMouseEnter>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnMouseEnterEntry(self, button, upInside)
+				end
+			</OnMouseEnter>
+			
+			<OnMouseExit>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnMouseExitEntry(self, button, upInside)
+				end
+			</OnMouseExit>
+			
 			<OnMouseUp>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
-					<!-- As long as our class function accepts the parameters, then it's fine. -->
 					dropdown:OnEntrySelected(self, button, upInside)
 				end
 			</OnMouseUp>
 		</Control>
-		
+
 		<!-- Base row template with Multi-Icon -->
 		<Control name="LibScrollableMenu_IconEntry_Template" virtual="true">
 			<Anchor point="LEFT" offsetX="8" offsetY="0" />
@@ -29,17 +43,27 @@ Remove unused virtuals at the bottom?
 						<Texture name="$(parent)Icon" inherits="ZO_MultiIcon">
 							<Dimensions x="25"  y="25"/>
 							<Anchor point="CENTER"/>
+							
+							<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
+							d( 'Icon OnMouseEnter')
+								ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
+							</OnMouseEnter>
+
+							<OnMouseExit name="ZO_PropagateMouseOverBehavior">
+							d( 'Icon OnMouseExit')
+								ZO_PropagateHandlerToNearestAncestor("OnMouseExit", ...)
+							</OnMouseExit>
 						</Texture>
 					</Controls>
 				</Control>
 			</Controls>
 		</Control>
 
-		<Control name="LibScrollableMenu_ComboBoxEntry_Base" inherits="LibScrollableMenu_Entry_Behavior LibScrollableMenu_IconEntry_Template" virtual="true">
-		
+		<Control name="LibScrollableMenu_ComboBoxEntry_Base" inherits="LibScrollableMenu_Entry_Behavior LibScrollableMenu_IconEntry_Template" virtual="true" />
+
 		<!-- Row templates -->
 		<!-- Divider | no icon no handlers -->
-		<Control name="LibScrollableMenu_ComboBoxDividerEntry" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxDividerEntry" inherits="LibScrollableMenu_Entry_Behavior" virtual="true">
 			<Dimensions y="6" />
 			<Controls>
 				<Texture name="$(parent)Divider" hidden="false" inherits="ZO_BaseTooltipDivider">
@@ -50,12 +74,12 @@ Remove unused virtuals at the bottom?
 		</Control>
 
 		<!-- Header | no handlers-->
-		<Control name="LibScrollableMenu_ComboBoxHeaderEntry" inherits="LibScrollableMenu_IconEntry_Template" mouseEnabled="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxHeaderEntry" inherits="LibScrollableMenu_ComboBoxEntry_Base" mouseEnabled="true" virtual="true">
 			<Dimensions y="25" />
 			<OnInitialized>
 				self.isHeader = true
 			</OnInitialized>
-			
+
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="0" />
@@ -68,10 +92,10 @@ Remove unused virtuals at the bottom?
 				</Texture>
 			</Controls>
 		</Control>
-		
+
 		<!-- Normal entry -->
 		<Control name="LibScrollableMenu_ComboBoxEntry" inherits="ZO_ComboBoxEntry LibScrollableMenu_ComboBoxEntry_Base" mouseEnabled="true" virtual="true">
-            <Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
+			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
 			<OnInitialized>
 				<!-- Is this still needed? -->
 				self.selectible = true <!-- Denotes this is a selectible entry.   -->
@@ -84,30 +108,37 @@ Remove unused virtuals at the bottom?
 				</Label>
 			</Controls>
 		</Control>
-		
+
 		<!-- Checkbox -->
 		<Control name="LibScrollableMenu_ComboBoxCheckboxEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
 			<Dimensions y="25" />
-			
+
 			<OnInitialized>
 				self.Checkbox = self:GetNamedChild('Checkbox')
 				self.selectible = true <!-- Denotes this is a selectible entry.   -->
 			</OnInitialized>
-			
+
 			<!--OnMouseUp>
 				ZO_CheckButton_OnClicked(self.Checkbox)
 			</OnMouseUp-->
-			
+
 			<!--OnMouseDown>
 				local onMouseUp = self:GetHandler("OnMouseExit")
 				if onMouseUp ~= nil then
 					onMouseUp(self)
 				end
 			</OnMouseDown-->
-			
+
 			<Controls>
-				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton" level="1">
+				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton" level="2">
 					<!-- Centered on the icon -->
+					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
+						ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
+					</OnMouseEnter>
+
+					<OnMouseExit name="ZO_PropagateMouseOverBehavior">
+						ZO_PropagateHandlerToNearestAncestor("OnMouseExit", ...)
+					</OnMouseExit>
 					<Anchor point="LEFT" relativeTo="$(parent)IconContainer" relativePoint="RIGHT" offsetX="1"/>
 				</Button>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
@@ -116,7 +147,7 @@ Remove unused virtuals at the bottom?
 				</Label>
 			</Controls>
 		</Control>
-		
+
 		<!-- Submenu -->
 		<Control name="LibScrollableMenu_ComboBoxSubmenuEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
 			<Controls>
@@ -131,12 +162,12 @@ Remove unused virtuals at the bottom?
 				</Texture>
 			</Controls>
 		</Control>
-		
-		<!-- The genuine Dropdown control. The scroll list container. 
+
+		<!-- The genuine Dropdown control. The scroll list container.
 			TLC so it can be forced above other dropdowns without having to consider layering
 			Since some UI panels have layering set, we set it as overlay high, so it will be above those
 		-->
-		<TopLevelControl name="LibScrollableMenu_Keyboard_Template" layer="OVERLAY" tier="HIGH" hidden="true" mouseEnabled="true" clampedToScreen="true" virtual="true">
+		<TopLevelControl name="LibScrollableMenu_Keyboard_Template" layer="CONTROL" tier="HIGH" hidden="true" mouseEnabled="true" clampedToScreen="true" virtual="true">
 			<!--Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" /-->
 			<!-- Width will be set programmatically -->
 			<OnEffectivelyShown>
@@ -145,6 +176,12 @@ Remove unused virtuals at the bottom?
 				self:BringWindowToTop()
 			</OnEffectivelyShown>
 
+			<OnEffectivelyHidden>
+				if self.object then
+					self.object:HideDropdown()
+				end
+			</OnEffectivelyHidden>
+			
 			<Controls>
 				<Backdrop name="$(parent)BG" inherits="ZO_DefaultBackdrop">
 					<AnchorFill />
@@ -154,58 +191,14 @@ Remove unused virtuals at the bottom?
 					<Anchor point="TOPLEFT" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
 					<Anchor point="BOTTOMRIGHT" offsetY="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
 				</Control>
-				
-                <!--Label name="$(parent)SelectedItemText" font="ZoFontGame" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" wrapMode="ELLIPSIS" verticalAlignment="CENTER">
-                    <Anchor point="TOPLEFT" offsetX="8" />
-                    <Anchor point="BOTTOMRIGHT" offsetX="-20" />
-                </Label-->
+
+				<!--Label name="$(parent)SelectedItemText" font="ZoFontGame" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" wrapMode="ELLIPSIS" verticalAlignment="CENTER">
+					<Anchor point="TOPLEFT" offsetX="8" />
+					<Anchor point="BOTTOMRIGHT" offsetX="-20" />
+				</Label-->
 
 			</Controls>
 		</TopLevelControl>
-		
-		
-		<!-- Controls not used.
-			I had added these controls for simple virtuals to be used by addons.
-			Such as the ZO_ComboBox with the OnMouseExit, which is not needed anymore.
-		-->
-		
-		<Control name="LibScrollableMenu_ComboBox" inherits="ZO_ComboBox" mouseEnabled="false" clampedToScreen="true" hidden="true" virtual="true">
-			<Dimensions x="135"  y="31"/>
-			<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" />
-			<OnInitialized>
-				self.comboBox = self
-			</OnInitialized>
-			<Controls>
-				<Control name="$(parent)Dropdown" override="true">
-					<!--OnMouseExit>
-						I had added this a while back so that dropdowns would fire OnMouseExit for when one had previously moved off a row, to see if the dropdown should be closed.
-						LibScrollableMenu_Entry_OnMouseExit(self)
-					</OnMouseExit-->
-				</Control>
-			</Controls>
-		</Control>
-		
-		<!--Control name="LibScrollableMenu_ComboBox_Container" mouseEnabled="true" clampedToScreen="true" hidden="false" virtual="true">
-			<Dimensions x="135"  y="31"/>
-			<OnInitialized>
-				self.comboBox = self:GetNamedChild('Dropdown')
-				self.dropdown = ZO_ComboBox_ObjectFromContainer(self:GetNamedChild("Dropdown")) -- m_comboBox
-			</OnInitialized>
-			
-			<Controls>
-				<Control name="$(parent)Dropdown" inherits="ZO_ComboBox">
-					<Dimensions x="135"  y="31"/>
-					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" />
-				</Control>
-			</Controls>
-		</Control-->
-		
-		<!--TopLevelControl name="LibScrollableMenu_ComboBox_TopLevel" inherits="ZO_ComboBox" hidden="false" virtual="true">
-			<OnEffectivelyShown>
-				self:BringWindowToTop()
-			</OnEffectivelyShown>
-		</TopLevelControl-->
-		
 	</Controls>
 </GuiXml>
 
