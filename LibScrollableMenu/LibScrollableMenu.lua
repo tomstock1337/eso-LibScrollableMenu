@@ -253,7 +253,7 @@ local function recursiveOverEntries(entry, callback)
 	local submenu = entry.entries or {}
 
 	--local submenuType = type(submenu)
-	--assert(submenuType == 'table', sfor('[LibScrollableMenu:recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
+	--assert(submenuType == 'table', sfor('['..MAJOR..':recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
 
 	if  type(submenu) == "table" and #submenu > 0 then
 		for k, subEntry in pairs(submenu) do
@@ -328,7 +328,7 @@ local function mapEntries(entryTable, mapTable, blank)
 	end
 	
 	local entryTableType, mapTableType = type(entryTable), type(mapTable)
-	assert(entryTableType == 'table' and mapTableType == 'table' , sfor('[LibScrollableMenu:MapEntries] tables expected, got %q = %s, %q = %s', "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
+	assert(entryTableType == 'table' and mapTableType == 'table' , sfor('['..MAJOR..':MapEntries] tables expected, got %q = %s, %q = %s', "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
 	
 	-- Splitting these up so the above is not done each iteration
 	doMapEntries(entryTable, mapTable)
@@ -1201,7 +1201,7 @@ function DropdownObject_Base:AddCustomEntryTemplates(options)
 	-- all the template stuff wrapped up in here
 	local defaultXMLTemplates  = {
 		[ENTRY_ID] = {
-			template = 'LibScrollableMenu_ComboBoxEntry',
+			template = MAJOR..'_ComboBoxEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
 				control.typeId = ENTRY_ID
@@ -1218,7 +1218,7 @@ function DropdownObject_Base:AddCustomEntryTemplates(options)
 			end,
 		},
 		[SUBMENU_ENTRY_ID] = {
-			template = 'LibScrollableMenu_ComboBoxSubmenuEntry',
+			template = MAJOR..'_ComboBoxSubmenuEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthAdjust = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
@@ -1235,7 +1235,7 @@ function DropdownObject_Base:AddCustomEntryTemplates(options)
 			end,
 		},
 		[DIVIDER_ENTRY_ID] = {
-			template = 'LibScrollableMenu_ComboBoxDividerEntry',
+			template = MAJOR..'_ComboBoxDividerEntry',
 			rowHeight = DIVIDER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
 				control.typeId = DIVIDER_ENTRY_ID
@@ -1245,7 +1245,7 @@ function DropdownObject_Base:AddCustomEntryTemplates(options)
 			end,
 		},
 		[HEADER_ENTRY_ID] = {
-			template = 'LibScrollableMenu_ComboBoxHeaderEntry',
+			template = MAJOR..'_ComboBoxHeaderEntry',
 			rowHeight = HEADER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
 				control.typeId = HEADER_ENTRY_ID
@@ -1258,7 +1258,7 @@ function DropdownObject_Base:AddCustomEntryTemplates(options)
 			end,
 		},
 		[CHECKBOX_ENTRY_ID] = {
-			template = 'LibScrollableMenu_ComboBoxCheckboxEntry',
+			template = MAJOR..'_ComboBoxCheckboxEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
 				control.typeId = CHECKBOX_ENTRY_ID
@@ -2081,17 +2081,14 @@ function DropdownObject:ComboBoxIntegration(comboBox)
 end
 
 function DropdownObject:UpdateItemNames()
-	for k, item in ipairs(self.m_sortedItems) do
-		local name = getValueOrCallback(item.name, data)
-		
-		if item.label ~= nil then
-			name  = getValueOrCallback(item.label, data)
-		end
-		
-		if name ~= 	item.name then
+	for _, item in ipairs(self.m_sortedItems) do
+		--todo 20240229 how to get "data" from the item
+		local data = getControlData(item) or item.data
+		local name = getValueOrCallback((item.label ~= nil and item.label) or item.name, data)
+		if name ~= item.name then
 			item.name = name
 		end
-		d( item.name)
+d( item.name)
 	end
 end
 
@@ -2209,8 +2206,7 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, opti
 	--Add a new scrollable menu helper
 --	comboBoxContainer.dropdown.m_submenu = lib.submenu
 	-- Add
---	local dropdownObject = DropdownObject:New(parent, comboBoxContainer, options, 2, 'Dropdown')
-	local dropdownObject = DropdownObject:New(parent, comboBoxContainer, options)
+	local dropdownObject = DropdownObject:New(parent, comboBoxContainer, options, nil)
 	dropdownObject.isTopLevel = true
 	
 	local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
@@ -2228,8 +2224,6 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, opti
 	
 	return dropdownObject
 end
---TODO: remove or make use of --v
-local addCustomScrollableComboBoxDropdownMenu = AddCustomScrollableComboBoxDropdownMenu
 
 --[Custom scrollable context menu at any control]
 --Add a scrollable menu to any control (not only a ZO_ComboBox), e.g. to an inventory row
@@ -2240,7 +2234,7 @@ local addCustomScrollableComboBoxDropdownMenu = AddCustomScrollableComboBoxDropd
 --If entries is provided the entry will be a submenu having those entries. The callback can only be used if entries are passed in
 --but normally it should be nil in that case
 function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
-	assert(text ~= nil, sfor('[LibScrollableMenu:AddCustomScrollableMenuEntry] String or function returning a string expected, got %q = %s', "text", tos(text)))
+	assert(text ~= nil, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] String or function returning a string expected, got %q = %s', "text", tos(text)))
 --	local scrollHelper = initCustomScrollMenuControl()
 --	scrollHelper = scrollHelper or getScrollHelperObjectFromControl(customScrollableMenuComboBox)
 	local options = g_contextMenu:GetOptions()
@@ -2251,7 +2245,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
 		entryType = lib.LSM_ENTRY_TYPE_NORMAL
 	end
 	if entryType ~= lib.LSM_ENTRY_TYPE_HEADER and entryType ~= lib.LSM_ENTRY_TYPE_DIVIDER and entries == nil then
-		assert(type(callback) == "function", sfor('[LibScrollableMenu:AddCustomScrollableMenuEntry] Callback function expected, got %q = %s', "callback", tos(callback)))
+		assert(type(callback) == "function", sfor('['..MAJOR..':AddCustomScrollableMenuEntry] Callback function expected, got %q = %s', "callback", tos(callback)))
 	end
 
 	-->Todo: if entryType is not in lib.allowedContextMenuEntryTypes then change to lib.LSM_ENTRY_TYPE_NORMAL
@@ -2306,7 +2300,7 @@ end
 --Set the options (visible rows max, etc.) for the scrollable context menu
 function SetCustomScrollableMenuOptions(options)
 	local optionsTableType = type(options)
-	assert(optionsTableType == 'table' , sfor('[LibScrollableMenu:SetCustomScrollableMenuOptions] table expected, got %q = %s', "options", tos(optionsTableType)))
+	assert(optionsTableType == 'table' , sfor('['..MAJOR..':SetCustomScrollableMenuOptions] table expected, got %q = %s', "options", tos(optionsTableType)))
 
 	if options then
 		g_contextMenu:Clear()
@@ -2319,7 +2313,7 @@ end
 --You can add more entries later via AddCustomScrollableMenuEntry function too
 function AddCustomScrollableMenu(parent, entries, options)
 	local entryTableType = type(entries)
-	assert(entryTableType == 'table' , sfor('[LibScrollableMenu:AddCustomScrollableMenu] table expected, got %q = %s', "entries", tos(entryTableType)))
+	assert(entryTableType == 'table' , sfor('['..MAJOR..':AddCustomScrollableMenu] table expected, got %q = %s', "entries", tos(entryTableType)))
 
 	if options then
 		g_contextMenu:Clear()
