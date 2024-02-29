@@ -33,6 +33,7 @@ local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
 local sfor = string.format
 local tins = table.insert
+local trem = table.remove
 
 --LibScrollableMenu XML template names
 local LSM_XML_Template_Keyboard = MAJOR.. "_Keyboard_Template"
@@ -2052,9 +2053,11 @@ function DropdownObject:ComboBoxIntegration(comboBox)
 			return comboBox.m_selectedItemData == item
 		end
 
-		for i, itemData in ipairs(comboBox.m_multiSelectItemData) do
-			if itemData == item then
-				return true
+		if comboBox.m_multiSelectItemData  then
+			for _, itemData in ipairs(comboBox.m_multiSelectItemData) do
+				if itemData == item then
+					return true
+				end
 			end
 		end
 
@@ -2065,11 +2068,13 @@ function DropdownObject:ComboBoxIntegration(comboBox)
 		if not comboBox.m_enableMultiSelect then
 			comboBox.m_selectedItemData = nil
 		end
-		
-		for i, itemData in ipairs(comboBox.m_multiSelectItemData) do
-			if itemData == item then
-				table.remove(comboBox.m_multiSelectItemData, i)
-				return
+
+		if comboBox.m_multiSelectItemData  then
+			for i, itemData in ipairs(comboBox.m_multiSelectItemData) do
+				if itemData == item then
+					trem(comboBox.m_multiSelectItemData, i)
+					return
+				end
 			end
 		end
 	end
