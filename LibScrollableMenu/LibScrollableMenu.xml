@@ -11,14 +11,14 @@ I learned not to use xml comment blocks in the handlers, since represent lua.
 			<OnMouseEnter>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
-					dropdown:OnMouseEnterEntry(self, button, upInside)
+					dropdown:OnMouseEnterEntry(self)
 				end
 			</OnMouseEnter>
 			
 			<OnMouseExit>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
-					dropdown:OnMouseExitEntry(self, button, upInside)
+					dropdown:OnMouseExitEntry(self)
 				end
 			</OnMouseExit>
 			
@@ -45,12 +45,10 @@ I learned not to use xml comment blocks in the handlers, since represent lua.
 							<Anchor point="CENTER"/>
 							
 							<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
-							d( 'Icon OnMouseEnter')
 								ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
 							</OnMouseEnter>
 
 							<OnMouseExit name="ZO_PropagateMouseOverBehavior">
-							d( 'Icon OnMouseExit')
 								ZO_PropagateHandlerToNearestAncestor("OnMouseExit", ...)
 							</OnMouseExit>
 						</Texture>
