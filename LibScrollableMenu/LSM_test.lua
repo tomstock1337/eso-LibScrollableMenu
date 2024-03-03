@@ -13,11 +13,11 @@ local function test()
 		testTLC:SetMovable(true)
 		testTLC:SetMouseEnabled(false)
 
-		local dropdown = WINDOW_MANAGER:CreateControlFromVirtual(MAJOR .. "TestDropdown", testTLC, "ZO_ComboBox")
-		dropdown:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
-		dropdown:SetHeight(24)
-		dropdown:SetWidth(250)
-		dropdown:SetMovable(true)
+		local comboBox = WINDOW_MANAGER:CreateControlFromVirtual(MAJOR .. "TestDropdown", testTLC, "ZO_ComboBox")
+		comboBox:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
+		comboBox:SetHeight(24)
+		comboBox:SetWidth(250)
+		comboBox:SetMovable(true)
 
 		--Define your options for the scrollHelper here
 		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
@@ -25,14 +25,17 @@ local function test()
 		local options = { visibleRowsDropdown = 10, visibleRowsSubmenu = 5, sortEntries=function() return false end, }
 		--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
 		--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
-		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, dropdown, options)
-
+		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBox, options)
+LSM_DEBUG = {
+	scrollHelper = scrollHelper,
+	comboBox = comboBox,
+}
 -- did not work		scrollHelper.OnShow = function() end --don't change parenting
 
-		lib.testDropdown = dropdown
+		lib.testDropdown = comboBox
 
 		--Prepare and add the text entries in the dropdown's comboBox
-		local comboBox = dropdown.m_comboBox
+		local comboBox = comboBox.m_comboBox
 
 		local subEntries = {
 			
@@ -69,7 +72,7 @@ local function test()
 					d("Submenu entry test 1")
 				end,
 				contextMenuCallback =   function(self)
-					d("Normal entry 1 contextMenuCallback")
+					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
 					
 					AddCustomScrollableSubMenuEntry("Submenu entry 1", subEntries)
@@ -79,6 +82,7 @@ local function test()
 					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 					
 					ShowCustomScrollableMenu()
+					d("Submenu entry 1")
 				end,
 				--tooltip         = "Submenu Entry Test 1",
 				--icons 			= nil,
@@ -92,6 +96,32 @@ local function test()
 				tooltip         = "Submenu Entry Test 2",
 				isNew			= true,
 				--icons 			= nil,
+			},
+			{
+				isCheckbox		= function() return true  end,
+				name            = "Checkbox entry 1",
+				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Checkbox entry 1")
+				end,
+			--	tooltip         = function() return "Checkbox entry 1"  end
+				tooltip         = "Checkbox entry 1"
+			},
+			{
+				name            = "-", --Divider
+			},
+			{
+				isCheckbox		= true,
+				name            = "Checkbox entry 2",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Checkbox entry 2")
+				end,
+				checked			= true, -- Confirmed does start checked.
+				--tooltip         = function() return "Checkbox entry 2" end
+				tooltip         = "Checkbox entry 2"
+			},
+			{
+				name            = "-", --Divider
 			},
 			--LibScrollableMenu - LSM entry - Submenu divider
 			{
@@ -260,7 +290,7 @@ local function test()
 					d("Normal entry 1")
 				end,
 				contextMenuCallback =   function(self)
-					d("Normal entry 1 contextMenuCallback")
+					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
 					
 					AddCustomScrollableSubMenuEntry("Submenu entry 1", subEntries)
@@ -270,6 +300,7 @@ local function test()
 					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 					
 					ShowCustomScrollableMenu()
+					d("Normal entry 1")
 				end,
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
 				isNew			= true,
@@ -285,7 +316,7 @@ local function test()
 					d("Entry having submenu 1")
 				end,
 				entries         = submenuEntries,
-				--tooltip         =
+				tooltip         = 'Submenu test tooltip.'
 			},
 			{
 				name            = "Normal entry 2",
@@ -357,9 +388,7 @@ local function test()
 			},
 			{
 				name            = "Submenu entry 6",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry 6")
-				end,
+			--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem) d("Submenu entry 6") end,
 				entries         = {
 					{
 						isHeader        = false,
@@ -470,6 +499,7 @@ local function test()
 		}
 
 		--Add the entries (menu and submenu) to the combobox
+		--comboBox:AddItems(comboBoxMenuEntries)
 		scrollHelper:AddItems(comboBoxMenuEntries)
 
 		local entryMap = {}
@@ -482,7 +512,7 @@ local function test()
 		--}
 		lib:MapEntries(comboBoxMenuEntries, entryMap)
 
-dropdown.entryMap = entryMap
+comboBox.entryMap = entryMap
 		-- This example callback is checking if the data matches a new combobox entry from this addon.
 		lib:RegisterCallback('NewStatusUpdated', function(data, entry)
 			-- Callback is fired on mouse-over previously new entries
@@ -561,10 +591,10 @@ dropdown.entryMap = entryMap
 
 	end
 
-	local dropdown = lib.testDropdown
+	local comboBox = lib.testDropdown
 	
-	local testTLC = dropdown:GetOwningWindow()
-	--local testTLC = dropdown:GetParent()
+	local testTLC = comboBox:GetOwningWindow()
+	--local testTLC = comboBox:GetParent()
 	if testTLC:IsHidden() then
 		testTLC:SetHidden(false)
 		testTLC:SetMouseEnabled(true)

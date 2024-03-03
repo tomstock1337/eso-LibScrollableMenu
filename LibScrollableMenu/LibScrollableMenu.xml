@@ -1,10 +1,3 @@
-<!-- TODO: this comment will self-destruct in future updates.
-control.selectible is not present in the lua. Remove it?
-I'm removing LibScrollableMenu_OnSelected. There is now a simple way of doing this without globals
-Remove unused virtuals at the bottom?
-
-I learned not to use xml comment blocks in the handlers, since represent lua.
--->
 <GuiXml>
 	<Controls>
 		<Control name="LibScrollableMenu_Entry_Behavior" mouseEnabled="true" virtual="true">
@@ -41,8 +34,11 @@ I learned not to use xml comment blocks in the handlers, since represent lua.
 					<Anchor point="BOTTOMLEFT" offsetY="-4" />
 					<Controls>
 						<Texture name="$(parent)Icon" inherits="ZO_MultiIcon">
-							<Dimensions x="25"  y="25"/>
-							<Anchor point="CENTER"/>
+							<!--Dimensions x="25"  y="25"/>
+							<Anchor point="CENTER"/-->
+							
+							<Anchor point="TOPLEFT"/>
+							<Anchor point="BOTTOMRIGHT"/>
 							
 							<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
 								ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
@@ -115,18 +111,7 @@ I learned not to use xml comment blocks in the handlers, since represent lua.
 				self.Checkbox = self:GetNamedChild('Checkbox')
 				self.selectible = true <!-- Denotes this is a selectible entry.   -->
 			</OnInitialized>
-
-			<!--OnMouseUp>
-				ZO_CheckButton_OnClicked(self.Checkbox)
-			</OnMouseUp-->
-
-			<!--OnMouseDown>
-				local onMouseUp = self:GetHandler("OnMouseExit")
-				if onMouseUp ~= nil then
-					onMouseUp(self)
-				end
-			</OnMouseDown-->
-
+			
 			<Controls>
 				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton" level="2">
 					<!-- Centered on the icon -->
@@ -189,15 +174,7 @@ I learned not to use xml comment blocks in the handlers, since represent lua.
 					<Anchor point="TOPLEFT" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
 					<Anchor point="BOTTOMRIGHT" offsetY="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
 				</Control>
-
-				<!--Label name="$(parent)SelectedItemText" font="ZoFontGame" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" wrapMode="ELLIPSIS" verticalAlignment="CENTER">
-					<Anchor point="TOPLEFT" offsetX="8" />
-					<Anchor point="BOTTOMRIGHT" offsetX="-20" />
-				</Label-->
-
 			</Controls>
 		</TopLevelControl>
 	</Controls>
 </GuiXml>
-
-
