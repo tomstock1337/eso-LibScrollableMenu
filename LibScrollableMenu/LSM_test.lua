@@ -532,6 +532,8 @@ comboBox.entryMap = entryMap
 
 
 		--Custom scrollable context menu
+
+		--DOES NOT WORK
 		ZO_PlayerInventoryTabsActive:SetMouseEnabled(true)
 		ZO_PlayerInventoryTabsActive:SetHandler("OnMouseUp", function(ctrl, button, upInside)
 	d("[LSM]ZO_PlayerInventoryTabsActive - OnMouseUp")
@@ -541,6 +543,7 @@ comboBox.entryMap = entryMap
 				local entries = {
 					{
 						name = "Test",
+						label = "Test!!!",
 						callback = function()  d("test") end,
 					}
 				}
@@ -563,6 +566,8 @@ comboBox.entryMap = entryMap
 			end
 		end)
 
+
+		--DOES WORK
 		ZO_PlayerInventoryMenuBarButton1:SetHandler("OnMouseUp", function(ctrl, button, upInside)
 	d("[LSM]ZO_PlayerInventoryMenuBarButton1 - OnMouseUp")
 			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
@@ -608,4 +613,3 @@ lib.Test = test
 --test()
 --	/script LibScrollableMenu.Test()
 SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
-test()
