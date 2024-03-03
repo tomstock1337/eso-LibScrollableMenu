@@ -1453,8 +1453,29 @@ end
 ]]
 
 -- [New functions]
+function comboBoxClass:IsMouseOverScrollbarControl()
+	local mocCtrl = moc()
+	if mocCtrl ~= nil then
+		local parent = mocCtrl:GetParent()
+		if parent ~= nil then
+			local gotScrollbar = parent.scrollbar ~= nil
+			--Clicked the up/down buttons?
+			if not gotScrollbar then
+				parent = parent:GetParent()
+				gotScrollbar = parent and parent.scrollbar ~= nil
+			end
+			return gotScrollbar or false
+		end
+	end
+	return false
+end
+
 function comboBoxClass:BypassOnGlobalMouseUp(button)
---	d( buttonToString[button])
+	--	d( buttonToString[button])
+	if self:IsMouseOverScrollbarControl() then
+		return true
+	end
+
 	if button == MOUSE_BUTTON_INDEX_LEFT then
 		local moc = moc()
 		if moc.typeId then
