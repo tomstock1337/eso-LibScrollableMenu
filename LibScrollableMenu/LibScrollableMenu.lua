@@ -68,7 +68,7 @@ local origSoundComboClicked = SOUNDS.COMBO_CLICK
 local soundComboClickedSilenced = SOUNDS.NONE
 
 --Submenu settings
-local SUBMENU_SHOW_TIMEOUT = 350
+local SUBMENU_SHOW_TIMEOUT = 500 --350 ms before
 local submenuCallLaterHandle
 
 --Custom scrollable menu settings (context menus e.g.)
@@ -186,6 +186,7 @@ local function clearTimeout()
 end
 
 local function setTimeout(callback , ...)
+d("[LSM]setTimeout")
 	local params = {...}
 	if submenuCallLaterHandle ~= nil then clearTimeout() end
 	submenuCallLaterHandle =  libTimeoutPattern .. libTimeoutNextId
@@ -788,7 +789,8 @@ local handlerFunctions  = {
 			-- Return true to skip the default handler.
 			return true
 		end,
-		[SUBMENU_ENTRY_ID] = function(control)
+
+		 [SUBMENU_ENTRY_ID] = function(control)
 			local data = getControlData(control)
 			local dropdown = onMouseExit(control, data, has_submenu)
 
@@ -801,6 +803,7 @@ d("[LSM]SUBMENU_ENTRY_ID-OnMouseExit. mouseIsOverControl: " .. tos(MouseIsOver(c
 			end
 			return false
 		end,
+
 		[CHECKBOX_ENTRY_ID] = function(control, ...)
 			local data = getControlData(control)
 			local dropdown = onMouseExit(control, data, no_submenu)
@@ -954,11 +957,13 @@ function dropdownClass:AnchorToControl(parentControl)
 
 	self.control:ClearAnchors()
 
+	--[[
 	local scrollBar = self:GetScrollbar()
-	local scrollOffsetX = (scrollBar ~= nil and zo_clamp(scrollBar:GetWidth() - 5, 0, ZO_SCROLL_BAR_WIDTH)) or 0
+	--local offsetX = (scrollBar ~= nil and zo_clamp(scrollBar:GetWidth() - 5, 0, ZO_SCROLL_BAR_WIDTH))
+	local offsetX = (scrollBar ~= nil and ZO_SCROLL_BAR_WIDTH) or nil
+	]]
+	local offsetX = ZO_SCROLL_BAR_WIDTH - 4
 
-	local offsetX = 0
-	
 	local right = true
 	
 	if self.m_parentMenu.m_dropdownObject and self.m_parentMenu.m_dropdownObject.anchorRight ~= nil then
@@ -969,12 +974,12 @@ function dropdownClass:AnchorToControl(parentControl)
 		right = false
 	end
 
-d("[LSM]dropdownClass:AnchorToControl-width: " ..tos(width) .. ", height: " ..tos(height) .. ", scrollOffsetX: " ..tos(scrollOffsetX) .. "; right: " ..tos(right))
+--d("[LSM]dropdownClass:AnchorToControl-width: " ..tos(width) .. ", height: " ..tos(height) .. ", scrollOffsetX: " ..tos(scrollOffsetX) .. "; right: " ..tos(right))
 
 	if right then
-		self.control:SetAnchor(TOPLEFT, parentControl, TOPRIGHT, offsetX + scrollOffsetX, 0)
+		self.control:SetAnchor(TOPLEFT, parentControl, TOPRIGHT, offsetX)
 	else
-		self.control:SetAnchor(TOPRIGHT, parentControl, TOPLEFT, offsetX, 0)
+		self.control:SetAnchor(TOPRIGHT, parentControl, TOPLEFT)
 	end
 	
 	self.anchorRight = right
@@ -1029,9 +1034,11 @@ function dropdownClass:GetSubmenu()
 end
 
 function dropdownClass:GetScrollbar()
+d("[LSM]dropdownClass:GetScrollbar")
 	local scrollCtrl = self.scrollControl
 	local scrollBar = scrollCtrl ~= nil and scrollCtrl.scrollbar
-	if scrollBar and scrollCtrl.useScrollbar == true then
+	if scrollBar then ---and scrollCtrl.useScrollbar == true then (does not work for menus where there is no scrollabr active, but used in general!)
+d(">scrollBar found!")
 		return scrollBar
 	end
 	return
@@ -1057,10 +1064,11 @@ local function onMouseExitHelper(comboBox)
 	if comboBox:IsDropdownVisible() then
 		local childMenu = comboBox.m_submenu
 		if not (comboBox:IsMouseOverControl() or childMenu and childMenu:IsDropdownVisible()) then
+d("[LSM]onMouseExitHelper ContextMenu - Hiding dropdown now")
 			comboBox:HideDropdown()
 		end
 	end
-	
+
 	if comboBox ~= g_contextMenu then
 		onMouseExitHelper(g_contextMenu)
 	end
@@ -1084,24 +1092,29 @@ end
 
 function dropdownClass:OnMouseExitTimeout(control)
 --	clearTimeout()
-	
+d("[LSM]dropdownClass:OnMouseExitTimeout-control: " ..tos(control:GetName()))
+
 	setTimeout(function()
-		local moc = moc()
+		local mocCtrl = moc()
 		
-		if moc == GuiRoot then
+		if mocCtrl == GuiRoot then
+d(">Mouse over GuiRoot: Close submenus")
 			-- Need to close all submenus
-		--	local submenu = getSubmenuFromContainer(self)
+			--	local submenu = getSubmenuFromContainer(self)
 			local comboBox = self.m_container.m_comboBox
 			
 			if comboBox and comboBox.m_submenu then
+d(">>submenu found- Closing now")
 				comboBox.m_submenu:HideDropdown()
 			end
 		end
 		
 		local submenu = self:GetSubmenu()
 		if not submenu or not submenu:IsMouseOverControl() then
+d(">>submenu not there - Checking mouse over control")
 			-- This will only close the dropdown if the mouse is not over the dropdown or over the control that opened it.
 			if not (self:IsMouseOverControl() or self:IsMouseOverParent() or MouseIsOver(self.m_container)) then
+d(">>mouse is not over dropdown or container etc. -> owner:HideDropdown")
 				self.owner:HideDropdown()
 			--else Stay opened
 			end
@@ -1263,6 +1276,15 @@ d(">scrollbar found")
 		if MouseIsOver(scrollbar) then
 d(">>is over scrollbar")
 			return true
+		else
+			--scrollbar found but not active: How to detect if the mouse is over it at the moment, because it is SetHidden(true)
+			if scrollbar:IsHidden() then
+				scrollbar:SetHidden(false)
+				local wasMouseOverScrollbar = MouseIsOver(scrollbar)
+				scrollbar:SetHidden(true)
+d(">>scrollbar is hidden. Mouse is over it? " ..tos(wasMouseOverScrollbar))
+				return wasMouseOverScrollbar
+			end
 		end
 	end
 	return false
@@ -1973,6 +1995,7 @@ function contextMenuClass:ShowContextMenu(parentControl)
 end
 
 function contextMenuClass:HideDropdownInternal()
+	--[[
 	self.m_dropdownObject:HideDropdownInternal()
 	if self.m_dropdownObject:IsOwnedByComboBox(self) then
 		self.m_dropdownObject:SetHidden(true)
@@ -1981,6 +2004,9 @@ function contextMenuClass:HideDropdownInternal()
 	if self.onHideDropdownCallback then
 		self.onHideDropdownCallback()
 	end
+	]]
+	--Call parent (inherited from) class's function
+	submenuClass.HideDropdownInternal(self)
 
 	self:ClearItems()
 end
