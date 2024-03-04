@@ -45,6 +45,7 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 --Library internal global locals
 local g_contextMenu -- The contextMenu (like ZO_Menu): Will be created at onAddonLoaded
 
+
 --local speed up variables
 local EM = EVENT_MANAGER
 local SNM = SCREEN_NARRATION_MANAGER
@@ -791,7 +792,9 @@ local handlerFunctions  = {
 			local data = getControlData(control)
 			local dropdown = onMouseExit(control, data, has_submenu)
 
-			if not (MouseIsOver(control) or dropdown:IsEnteringSubmenu()) then
+d("[LSM]SUBMENU_ENTRY_ID-OnMouseExit. mouseIsOverControl: " .. tos(MouseIsOver(control)) .. ", enteringScrollbar: " ..tos(dropdown:IsEnteringScrollbar()) .. ", enteringSubmenu: " ..tos(dropdown:IsEnteringSubmenu()))
+
+			if not (MouseIsOver(control) or dropdown:IsEnteringScrollbar() or dropdown:IsEnteringSubmenu()) then
 				-- Keep open
 				clearTimeout()
 				dropdown:HideSubmenu()
@@ -948,9 +951,12 @@ end
 
 function dropdownClass:AnchorToControl(parentControl)
 	local width, height = GuiRoot:GetDimensions()
-	
+
 	self.control:ClearAnchors()
-	
+
+	local scrollBar = self:GetScrollbar()
+	local scrollOffsetX = (scrollBar ~= nil and zo_clamp(scrollBar:GetWidth() - 5, 0, ZO_SCROLL_BAR_WIDTH)) or 0
+
 	local offsetX = 0
 	
 	local right = true
@@ -962,9 +968,11 @@ function dropdownClass:AnchorToControl(parentControl)
 	if not right or parentControl:GetRight() + self.control:GetWidth() > width then
 		right = false
 	end
-	
+
+d("[LSM]dropdownClass:AnchorToControl-width: " ..tos(width) .. ", height: " ..tos(height) .. ", scrollOffsetX: " ..tos(scrollOffsetX) .. "; right: " ..tos(right))
+
 	if right then
-		self.control:SetAnchor(TOPLEFT, parentControl, TOPRIGHT, offsetX, 0)
+		self.control:SetAnchor(TOPLEFT, parentControl, TOPRIGHT, offsetX + scrollOffsetX, 0)
 	else
 		self.control:SetAnchor(TOPRIGHT, parentControl, TOPLEFT, offsetX, 0)
 	end
@@ -1018,6 +1026,15 @@ function dropdownClass:GetSubmenu()
 	end
 
 	return self.m_submenu
+end
+
+function dropdownClass:GetScrollbar()
+	local scrollCtrl = self.scrollControl
+	local scrollBar = scrollCtrl ~= nil and scrollCtrl.scrollbar
+	if scrollBar and scrollCtrl.useScrollbar == true then
+		return scrollBar
+	end
+	return
 end
 
 function dropdownClass:OnMouseEnterEntry(control)
@@ -1232,6 +1249,19 @@ function dropdownClass:IsEnteringSubmenu()
 	local submenu = self:GetSubmenu()
 	if submenu then
 		if submenu:IsDropdownVisible() and submenu:IsMouseOverControl() then
+			return true
+		end
+	end
+	return false
+end
+
+function dropdownClass:IsEnteringScrollbar()
+d("[LSM]dropdownClass:IsEnteringScrollbar")
+	local scrollbar = self:GetScrollbar()
+	if scrollbar then
+d(">scrollbar found")
+		if MouseIsOver(scrollbar) then
+d(">>is over scrollbar")
 			return true
 		end
 	end
@@ -1555,8 +1585,8 @@ function comboBoxClass:ShowSubmenu(parentControl)
 end
 
 function comboBoxClass:UpdateOptions(options)
-	d( '[LSM]comboBoxClass:UpdateOptions')
-	d( sfor('[LSM]UpdateOptions optionsChanged %s', tos(self.optionsChanged)))
+	--d( '[LSM]comboBoxClass:UpdateOptions')
+	--d( sfor('[LSM]UpdateOptions optionsChanged %s', tos(self.optionsChanged)))
 
 	if not self.optionsChanged then return end
 	self.optionsChanged = false
@@ -1942,6 +1972,19 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	self:ShowDropdownOnMouseUp(parentControl)
 end
 
+function contextMenuClass:HideDropdownInternal()
+	self.m_dropdownObject:HideDropdownInternal()
+	if self.m_dropdownObject:IsOwnedByComboBox(self) then
+		self.m_dropdownObject:SetHidden(true)
+	end
+	self:SetVisible(false)
+	if self.onHideDropdownCallback then
+		self.onHideDropdownCallback()
+	end
+
+	self:ClearItems()
+end
+
 function contextMenuClass:RefreshSortedItems()
 	ZO_ClearNumericallyIndexedTable(self.m_sortedItems)
 
@@ -2036,12 +2079,11 @@ lib.MapEntries = mapEntries
 --  }
 
 function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, options)
-	assert(parent ~= nil and comboBoxContainer ~= nil, MAJOR .. " - AddCustomScrollableComboBoxDropdownMenu ERROR: Parameters parent and comboBoxControl must be provided!")
+	assert(parent ~= nil and comboBoxContainer ~= nil, MAJOR .. " - AddCustomScrollableComboBoxDropdownMenu ERROR: Parameters parent and comboBoxContainer must be provided!")
 
 	local comboBox = applyUpgrade(parent, comboBoxContainer, options)
 	return comboBox.m_dropdownObject
 end
-local addCustomScrollableComboBoxDropdownMenu = AddCustomScrollableComboBoxDropdownMenu
 
 --[Custom scrollable context menu at any control]
 --Add a scrollable menu to any control (not only a ZO_ComboBox), e.g. to an inventory row
@@ -2143,7 +2185,7 @@ end
 --Show the custom scrollable context menu now
 --TODO: remove? point, relativePoint, offsetX, offsetY 
 function ShowCustomScrollableMenu(controlToAnchorTo, point, relativePoint, offsetX, offsetY, options)
-	d("[LSM]ShowCustomScrollableMenu")
+	--d("[LSM]ShowCustomScrollableMenu")
 	if options then
 		setCustomScrollableMenuOptions(options)
 	end
@@ -2155,7 +2197,7 @@ end
 
 --Hide the custom scrollable context menu and clear internal variables, mouse clicks etc.
 function ClearCustomScrollableMenu()
-	d("[LSM]ClearCustomScrollableMenu")
+	--d("[LSM]ClearCustomScrollableMenu")
 	g_contextMenu:ClearItems()
 	
 	setCustomScrollableMenuOptions(defaultContextMenuOptions)
