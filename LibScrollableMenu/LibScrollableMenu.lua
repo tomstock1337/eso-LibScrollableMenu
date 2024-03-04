@@ -1555,8 +1555,8 @@ function comboBoxClass:ShowSubmenu(parentControl)
 end
 
 function comboBoxClass:UpdateOptions(options)
---	d( '[LSM]comboBoxClass:UpdateOptions')
---	d( sfor('[LSM]UpdateOptions optionsChanged %s', tos(self.optionsChanged)))
+	d( '[LSM]comboBoxClass:UpdateOptions')
+	d( sfor('[LSM]UpdateOptions optionsChanged %s', tos(self.optionsChanged)))
 
 	if not self.optionsChanged then return end
 	self.optionsChanged = false
@@ -1582,6 +1582,11 @@ function comboBoxClass:UpdateOptions(options)
 	local preshowDropdownFn = getValueOrCallback(options.preshowDropdownFn, options)
 	local visibleRowsSubmenu = getValueOrCallback(options.visibleRowsSubmenu, options)
 
+	local font = getValueOrCallback(options.font, options)
+	local spacing = getValueOrCallback(options.spacing, options)
+	local sortType = getValueOrCallback(options.sortType, options)
+	local sortOrder = getValueOrCallback(options.sortOrder, options)
+
 --	control.options = options
 	self.options = options
 	
@@ -1595,6 +1600,15 @@ function comboBoxClass:UpdateOptions(options)
 	if sortsItems == nil then sortsItems = DEFAULT_SORTS_ENTRIES end
 	self:SetSortsItems(sortsItems)
 	
+	-- Defaults used if nil
+	self:SetSortOrder(sortOrder, sortType)
+
+	font = font or DEFAULT_FONT
+	self:SetFont(font)
+
+	spacing = spacing or 0
+	self:SetSpacing(spacing)
+
 	self.options = options
 	self.narrateData = narrateData
 --	self.m_container.options = options
@@ -1654,6 +1668,15 @@ function comboBoxClass:AddCustomEntryTemplates(options)
 		-- Remember, labelStr is being handled in processNameString, replacing it with .name
 		-- data.name == data.label() or data.label or data.name() or data.name
 		self:SetupEntry(control, data, list)
+
+		local font = getValueOrCallback(data.font, data)
+		if font then
+			self.m_label:SetFont(font)
+		end
+		local color = getValueOrCallback(data.color, data)
+		if color then
+			self.m_label:SetColor(color)
+		end
 	end
 
 	-- all the template stuff wrapped up in here
@@ -1855,6 +1878,7 @@ function contextMenuClass:Initialize(comboBoxContainer)
 	submenuClass.Initialize(self, nil, comboBoxContainer, nil, 1)
 	self.data = {}
 	self.m_sortedItems = {}
+	self:ClearItems()
 end
 
 function contextMenuClass:AddItem(itemEntry, updateOptions)
@@ -1886,6 +1910,7 @@ end
 function contextMenuClass:ClearItems()
 	ZO_ComboBox_HideDropdown(self:GetContainer())
 	ZO_ClearNumericallyIndexedTable(self.data)
+	self.options = defaultContextMenuOptions
 	self:SetSelectedItemText("")
 	self.m_selectedItemData = nil
 	self:OnClearItems()
@@ -1903,6 +1928,9 @@ function contextMenuClass:GetParentFromControl(control)
 end
 
 function contextMenuClass:ShowContextMenu(parentControl)
+	local options = self.options
+	self:PostUpdateOptions(options)
+
 	self.m_comboBox = self:GetParentFromControl(parentControl)
 	
 	-- Let the caller know that this is about to be shown...
@@ -1927,6 +1955,13 @@ function contextMenuClass:PostUpdateOptions(options)
 	self.optionsChanged = self.options ~= options
 	self:UpdateOptions(options)
 end
+
+function contextMenuClass:SetOptions(options)
+	options = options or defaultContextMenuOptions
+	self.optionsChanged = self.options ~= options
+	self.options = options
+end
+
 
 function contextMenuClass:GetComboBox()
 	return self.m_comboBox
@@ -2085,8 +2120,7 @@ function SetCustomScrollableMenuOptions(options)
 	assert(optionsTableType == 'table' , sfor('['..MAJOR..':SetCustomScrollableMenuOptions] table expected, got %q = %s', "options", tos(optionsTableType)))
 
 	if options then
---		g_contextMenu:ClearItems()
-		g_contextMenu:PostUpdateOptions(options)
+		g_contextMenu:SetOptions(options)
 	end
 end
 setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
@@ -2193,6 +2227,9 @@ LibScrollableMenu = lib
 
 --[[Changes - delete me
 	renamed UpdateItems to RefreshSortedItems on pre-show for sumbenu/contextMenu for populating the m_sortedItems
-	sumbenu is populated from entry.entries. contextMenu is populated by self.data
+		sumbenu is populated from entry.entries. contextMenu is populated by self.data
 	
+	changed how options are added to context menu
+	added options: font, spacing, sortType, sortOrder
+	added option to change individual list label font and color by data.font data.color
 ]]
