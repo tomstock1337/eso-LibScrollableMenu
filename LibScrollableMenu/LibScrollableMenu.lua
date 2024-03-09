@@ -70,7 +70,6 @@ local DEFAULT_SORTS_ENTRIES = true --sort the entries in main- and submenu lists
 local DIVIDER_ENTRY_HEIGHT = 7
 local HEADER_ENTRY_HEIGHT = 30
 local SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT -- same as in zo_comboBox.lua: 25
-local ICON_PADDING = 20
 local DEFAULT_SPACING = 0
 --TODO: remove or make use of --> local PADDING = GetMenuPadding() / 2 -- half the amount looks closer to the regular dropdown
 local WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = 4
@@ -1139,21 +1138,16 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing, m
 		else
 			entryHeight = entryHeight + self.spacing
 		end
+--[[
+		if not maxRows or rowCount < maxRows then
+			allItemsHeight = allItemsHeight + entryHeight
+		end
 
 		if item.name ~= '' and item.name ~= lib.DIVIDER then
 			rowCount = rowCount + 1
 		end
 
-		if rowCount <= maxRows then
-			allItemsHeight = allItemsHeight + entryHeight
-		end
-
---[[
-		if i <= maxRows then
-			allItemsHeight = allItemsHeight + entryHeight
-		end
 ]]
-
 		local entry = createScrollableComboBoxEntry(self, item, i, entryType)
 		tins(dataList, entry)
 
@@ -1189,7 +1183,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing, m
 	self.control:SetHeight(desiredHeight)
 	ZO_ScrollList_SetHeight(self.scrollControl, desiredHeight)
 
-	ZO_Scroll_SetUseFadeGradient(self.scrollControl, desiredHeight >= DEFAULT_HEIGHT)
+--	ZO_Scroll_SetUseFadeGradient(self.scrollControl, desiredHeight >= maxHeight)
 
 	ZO_ScrollList_Commit(self.scrollControl)
 	self.control:BringWindowToTop()
@@ -1330,7 +1324,7 @@ function comboBoxClass:AddMenuItems()
 	self:UpdateItems()
 	self.m_dropdownObject:AnchorToComboBox(self)
 	
-	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing(), self:GetMaxRows())
+	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
 end
 
 -- Changed to hide tooltip and, if available, it's submenu
@@ -1375,6 +1369,7 @@ function comboBoxClass:IsMouseOverScrollbarControl()
 	end
 	return false
 end
+
 --[[
 function comboBoxClass:IsMouseOverScrollbarControl()
 	local moc = moc()
@@ -1384,7 +1379,6 @@ function comboBoxClass:IsMouseOverScrollbarControl()
 	end
 	return false
 end
-
 ]]
 
 function comboBoxClass:BypassOnGlobalMouseUp(button)
@@ -1483,9 +1477,6 @@ function comboBoxClass:ShowSubmenu(parentControl)
 end
 
 function comboBoxClass:UpdateOptions(options)
-	d( '- - - UpdateOptions')
-	
-	d( '- - - self.optionsChanged')
 	if not self.optionsChanged then return end
 	self.optionsChanged = false
 
@@ -1494,7 +1485,6 @@ function comboBoxClass:UpdateOptions(options)
 	-- Backwards compatible
 	if type(options) ~= 'table' then
 		options = {
-			visibleRows = options,
 			visibleRowsDropdown = options
 		}
 	end
@@ -1502,7 +1492,8 @@ function comboBoxClass:UpdateOptions(options)
 --	local defaultOptions = self.options or defaultComboBoxOptions
 	-- We add all previous options to the new table
 --	mixinTableAndSkipExisting(options, defaultOptions)
-	-- We will need to start with a clean table in order to reset options.
+	-- We will need to start with a clean table in order to reset options if they were changed before.
+	-- Otherwise, if options are changed, all previous changes will be applied to undefined entries.
 	mixinTableAndSkipExisting(options, defaultComboBoxOptions)
 	
 	local narrateData = getValueOrCallback(options.narrate, options)
@@ -1523,7 +1514,7 @@ function comboBoxClass:UpdateOptions(options)
 	end
 	
 	self.visibleRows = visibleRows
-	self.visibleRowsSubmenu = visibleRowsSubmenu
+	self.visibleRowsSubmenu = visibleRowsSubmenu or visibleRows
 	
 	self:SetSortsItems(sortEntries)
 	self:SetFont(font)
@@ -1535,6 +1526,9 @@ function comboBoxClass:UpdateOptions(options)
 	
 	-- this will add custom and default templates to self.XMLrowTemplates the same way dataTypes were created before.
 	self:AddCustomEntryTemplates(options)
+	
+	local maxHeight = SCROLLABLE_ENTRY_TEMPLATE_HEIGHT * self:GetMaxRows()
+	self:SetHeight(maxHeight)
 end
 
 -- >> template, height, setupFunction
@@ -1692,7 +1686,6 @@ function comboBoxClass:AddCustomEntryTemplates(options)
 	SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = XMLrowTemplatesToUse[ENTRY_ID].rowHeight
 	DIVIDER_ENTRY_HEIGHT = XMLrowTemplatesToUse[DIVIDER_ENTRY_ID].rowHeight
 	HEADER_ENTRY_HEIGHT = XMLrowTemplatesToUse[HEADER_ENTRY_ID].rowHeight
-	ICON_PADDING = SCROLLABLE_ENTRY_TEMPLATE_HEIGHT
 end
 
 function comboBoxClass:HideOnMouseEnter()
@@ -1740,7 +1733,7 @@ function submenuClass:AddMenuItems(parentControl)
 	self.openingControl = parentControl
 	self:RefreshSortedItems(parentControl)
 	
-	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing(), self:GetMaxRows())
+	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
 
 	self.m_dropdownObject:AnchorToControl(parentControl)
 end
@@ -1762,7 +1755,7 @@ function submenuClass:RefreshSortedItems(parentControl)
 end
 
 function submenuClass:OnGlobalMouseUp(eventCode, ...)
-	if  self:IsDropdownVisible() and not self:BypassOnGlobalMouseUp(...) then
+	if self:IsDropdownVisible() and not self:BypassOnGlobalMouseUp(...) then
 		self:HideDropdown()
 	end
 end
@@ -1843,7 +1836,7 @@ end
 
 function contextMenuClass:AddMenuItems()
 	self:RefreshSortedItems()
-	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing(), self:GetMaxRows())
+	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
 	self.m_dropdownObject:AnchorToMouse()
 	self.m_dropdownObject.control:BringWindowToTop()
 end
@@ -2188,9 +2181,9 @@ Improve setTimeout
 	If the context menu is opened and, mouse travels over a submenu of the parent, the context menu will close before the submenu opens.
 	
 	Included all default options for comboBoxs in defaultComboBoxOptions
-	Adjusted how options are handled. Defaults are applied every time. If tables match then stop updating. Test this for efficiency.
+	Adjusted how options are handled. Defaults are applied every time.
 	
 	Added several TODO:s to keep note on.
 	
-	Implemeted max rows
+	Implemented max rows
 ]]
