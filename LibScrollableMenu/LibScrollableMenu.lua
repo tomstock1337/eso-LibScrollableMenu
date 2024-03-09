@@ -667,11 +667,6 @@ local narrationEventToLibraryNarrateFunction = {
 	["OnCheckboxUpdated"] = 	onSelectedNarrate,
 }
 
-LSM_DEBUG = {
-	init = {},
-	submenu = {},
-	owners = {},
-}
 
 --------------------------------------------------------------------
 -- Dropdown entry/row handlers
@@ -1156,6 +1151,8 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing, m
 		if nameWidth > largestEntryWidth then
 			largestEntryWidth = nameWidth
 		end
+
+		allItemsHeight = allItemsHeight + entryHeight
 	end
 
 	-- using the exact width of the text can leave us with pixel rounding issues
@@ -1803,7 +1800,7 @@ end
 --------------------------------------------------------------------
 -- 
 --------------------------------------------------------------------
-local contextMenuClass = submenuClass:Subclass()
+--local contextMenuClass = submenuClass:Subclass()
 local contextMenuClass = comboBoxClass:Subclass()
 -- LibScrollableMenu.contextMenu
 -- contextMenuClass:New(To simplify locating the beginning of the class
