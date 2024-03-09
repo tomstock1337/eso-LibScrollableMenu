@@ -1218,11 +1218,12 @@ end
 -- These are added here to make use of it's control to register the events too, 
 -- instead of menu using the same control to register the same event for different dropdowns.
 function dropdownClass:ShowDropdownInternal()
-	self.control:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self.owner:OnGlobalMouseUp(...) end)
+	--Use m_container like ZO_ComboBox code does so it properly overwrites and removes the global OnMouseUp handler
+	self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self.owner:OnGlobalMouseUp(...) end)
 end
 
 function dropdownClass:HideDropdownInternal()
-	self.control:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
+	self.m_container:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
 end
 
 --------------------------------------------------------------------
@@ -1870,7 +1871,6 @@ end
 
 function contextMenuClass:HideDropdownInternal()
 	submenuClass.HideDropdownInternal(self)
-
 	self:ClearItems()
 end
 
