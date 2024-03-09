@@ -2033,7 +2033,7 @@ end
 function AddCustomScrollableMenuEntries(contextMenuEntries)
 	if ZO_IsTableEmpty(contextMenuEntries) then return end
 	for _, v in ipairs(contextMenuEntries) do
-		addCustomScrollableMenuEntry(v.label or v.text, v.callback, v.entryType, v.entries, v.isNew)
+		addCustomScrollableMenuEntry(v.label or v.name, v.callback, v.entryType, v.entries, v.isNew)
 	end
 --	g_contextMenu:AddItems(contextMenuEntries)
 	return true
@@ -2143,6 +2143,33 @@ LibScrollableMenu = lib
 ------------------------------------------------------------------------------------------------------------------------
 
 --[[TODO:
+
+Fix bug:
+1. Login
+2. Slash command /lsmtest -> LSM test combobox shows
+3. I - Inventory open
+4. Right click "All" button at the top
+5. Click on any entry of the context menu shown, to close it
+6. Click somewhere on the UI
+7. LSM test combobox shows that weird extra dropdown (small dropdown without any entries, height ~50)
+ Sometimes it even shows somewhere else
+
+Seems an onGlobalMouseUp is still registered then and calls the dropdown:Show on each left click
+user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:1097: in function 'dropdownClass:Show'
+|caaaaaa<Locals> self = [table:2]{nextScrollTypeId = 13, spacing = 0}, comboBox = [table:3]{currentSelectedItemText = "", m_height = 250, visibleRowsSubmenu = 10, m_nextFree = 2, horizontalAlignment = 0, m_isDropdownVisible = F, m_sortOrder = T, m_font = "ZoFontGame", m_spacing = 0, optionsChanged = F, m_enableMultiSelect = F, m_sortsItems = T, m_containerWidth = 135, visibleRows = 10, m_name = "LibScrollableMenu_ContextMenu..."}, itemTable = [table:4]{}, minWidth = 135, maxHeight = 250, spacing = 0 </Locals>|r
+user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:1836: in function 'contextMenuClass:AddMenuItems'
+|caaaaaa<Locals> self = [table:3] </Locals>|r
+/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:137: in function 'ZO_ComboBox:ShowDropdownOnMouseUp'
+|caaaaaa<Locals> self = [table:3] </Locals>|r
+/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:92: in function 'ZO_ComboBox:OnGlobalMouseUp'
+|caaaaaa<Locals> self = [table:3], eventCode = 65546, button = 1 </Locals>|r
+user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:1348: in function 'comboBoxClass:OnGlobalMouseUp'
+|caaaaaa<Locals> self = [table:3], eventCode = 65546 </Locals>|r
+/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:156: in function '(anonymous)'
+
+
+-------------------
+
 	find out why submenu width shrinks slightly when moving back onto it from it's childMenu
 		Does this still happen?
 
