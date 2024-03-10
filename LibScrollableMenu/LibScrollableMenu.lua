@@ -482,8 +482,14 @@ local function processNameString(data)
 	if data.label ~= nil then
 		name = getValueOrCallback(data.label, data)
 	end
-	
+
+	if name == nil then --or name == "" then
+		d(MAJOR .. " - ERROR: processNameString, entry's data.name is nil")
+		return false
+	end
+
 	data.name = name
+	return true
 end
 
 --[[ 2024-03-10 Check if processNameString can add a data.nameFunction to "save" the originally passed in data.name function for later usage once menu was shown and is still open
@@ -1157,41 +1163,41 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	local rowCount = 0
 	for i = 1, numItems do
 		local item = itemTable[i]
-		processNameString(item)
+		if processNameString(item) then
 
-		local isLastEntry = i == numItems
-		local entryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
-		local entryType = ENTRY_ID
-		local widthAdjust = 0
-		if self.customEntryTemplateInfos and item.customEntryTemplate then
-			local templateInfo = self.customEntryTemplateInfos[item.customEntryTemplate]
-			if templateInfo then
-				entryType = templateInfo.typeId
-				entryHeight = templateInfo.entryHeight
-				widthAdjust = templateInfo.widthAdjust or 0
-		
-				-- If the entry has an icon, or isNew, we add the row height to adjust for icon size.
-				widthAdjust = widthAdjust + (item.isNew and entryHeight or 0)
+			local isLastEntry = i == numItems
+			local entryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
+			local entryType = ENTRY_ID
+			local widthAdjust = 0
+			if self.customEntryTemplateInfos and item.customEntryTemplate then
+				local templateInfo = self.customEntryTemplateInfos[item.customEntryTemplate]
+				if templateInfo then
+					entryType = templateInfo.typeId
+					entryHeight = templateInfo.entryHeight
+					widthAdjust = templateInfo.widthAdjust or 0
+
+					-- If the entry has an icon, or isNew, we add the row height to adjust for icon size.
+					widthAdjust = widthAdjust + (item.isNew and entryHeight or 0)
+				end
+			end
+
+			if isLastEntry then
+				entryType = entryType + 1
+			else
+				entryHeight = entryHeight + self.spacing
+			end
+
+			allItemsHeight = allItemsHeight + entryHeight
+
+			local entry = createScrollableComboBoxEntry(self, item, i, entryType)
+			tins(dataList, entry)
+
+			local fontObject = self.owner:GetDropdownFontObject()
+			local nameWidth = GetStringWidthScaled(fontObject, item.name, 1, SPACE_INTERFACE) + widthAdjust
+			if nameWidth > largestEntryWidth then
+				largestEntryWidth = nameWidth
 			end
 		end
-		
-		if isLastEntry then
-			entryType = entryType + 1
-		else
-			entryHeight = entryHeight + self.spacing
-		end
-		
-		allItemsHeight = allItemsHeight + entryHeight
-		
-		local entry = createScrollableComboBoxEntry(self, item, i, entryType)
-		tins(dataList, entry)
-
-		local fontObject = self.owner:GetDropdownFontObject()
-		local nameWidth = GetStringWidthScaled(fontObject, item.name, 1, SPACE_INTERFACE) + widthAdjust
-		if nameWidth > largestEntryWidth then
-			largestEntryWidth = nameWidth
-		end
-
 	end
 
 	-- using the exact width of the text can leave us with pixel rounding issues
@@ -2035,6 +2041,7 @@ end
 --		isCheckbox = false, -- optional boolean or function returning a boolean Is this entry a clickable checkbox control with text?
 --		isNew = false, --  optional booelan or function returning a boolean Is this entry a new entry and thus shows the "New" icon?
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
+--		contextMenuCallback = function(ctrl) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
 -- }
 --}, nil)
 function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)

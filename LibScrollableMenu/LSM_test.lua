@@ -347,17 +347,29 @@ local function test()
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
 					
-					AddCustomScrollableSubMenuEntry("Submenu entry 1", subEntries)
+					AddCustomScrollableSubMenuEntry("Context menu entry 1", subEntries)
 					
-					AddCustomScrollableMenuEntry("Custom menu Normal entry 1", function() d('Custom menu Normal entry 1') end)
+					AddCustomScrollableMenuEntry("Context menu Normal entry 1", function() d('Context menu Normal entry 1') end)
 					
-					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
+					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end)
 					
 					ShowCustomScrollableMenu()
-					d("Normal entry 1")
 				end,
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
 				isNew			= true,
+				--entries         = submenuEntries,
+				--tooltip         =
+			},
+			{
+				name            = "-", --Divider
+			},
+			{
+				name            = "", --no name test
+				--label 			= "", --no label test
+			--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				callback        =   function(self)
+					d("Entry without name!")
+				end,
 				--entries         = submenuEntries,
 				--tooltip         =
 			},
