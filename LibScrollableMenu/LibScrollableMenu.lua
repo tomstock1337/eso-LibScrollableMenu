@@ -946,11 +946,11 @@ function dropdownClass:AnchorToMouse()
 end
 
 function dropdownClass:GetScrollbar()
-d("[LSM]dropdownClass:GetScrollbar")
+--d("[LSM]dropdownClass:GetScrollbar")
 	local scrollCtrl = self.scrollControl
 	local scrollBar = scrollCtrl ~= nil and scrollCtrl.scrollbar
 	if scrollBar then ---and scrollCtrl.useScrollbar == true then (does not work for menus where there is no scrollabr active, but used in general!)
-d(">scrollBar found!")
+--d(">scrollBar found!")
 		return scrollBar
 	end
 	return
@@ -1008,12 +1008,13 @@ function dropdownClass:OnMouseEnterEntry(control)
 	
 	--TODO: Conflicting OnMouseExitTimeout
 	if g_contextMenu:IsDropdownVisible() then
+--d(">contex menu: Dropdown visible = yes")
 		g_contextMenu.m_dropdownObject:OnMouseExitTimeout(control)
 	end
 end
 
 function dropdownClass:OnMouseExitEntry(control)
---	d( '[LSM]dropdownClass:OnMouseExitEntry')
+	d( '[LSM]dropdownClass:OnMouseExitEntry')
 --	d( control:GetName())
 	
 	hideTooltip()
@@ -1657,14 +1658,16 @@ function comboBoxClass:AddCustomEntryTemplates(options)
 end
 
 function comboBoxClass:HideOnMouseEnter()
-	d( 'comboBoxClass:HideOnMouseEnter')
+	--d( 'comboBoxClass:HideOnMouseEnter')
 	if self.m_submenu and not self.m_submenu:IsMouseOverControl() and not self:IsMouseOverControl() then
 		self.m_submenu:HideDropdown()
 	end
 end
 
 function comboBoxClass:HideOnMouseExit(moc)
-	if self.m_submenu and not self.m_submenu:IsMouseOverControl() then
+--d("[LSM]comboBoxClass:HideOnMouseExit")
+	if self.m_submenu and not self.m_submenu:IsMouseOverControl() and not self.m_submenu:IsMouseOverOpeningControl() then
+--d(">submenu found, but mouse not over it! HideDropdown")
 		self.m_submenu:HideDropdown()
 		return true
 	end
@@ -1751,6 +1754,7 @@ function submenuClass:SelectItemByIndex(index, ignoreCallback)
 end
 
 function submenuClass:HideOnMouseExit(moc)
+--d("[LSM]submenuClass:HideOnMouseExit")
 	-- Only begin hiding if we stopped over a dropdown.
 	if moc.m_dropdownObject then
 		if comboBoxClass.HideOnMouseExit(self) then
