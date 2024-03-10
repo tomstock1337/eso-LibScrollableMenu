@@ -841,7 +841,7 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 		scrollCtrl.upButton.owner = 	scrollCtrl
 		scrollCtrl.downButton.owner = 	scrollCtrl
 	else
-d("[LSM]dropdownClass:Initialize -  self.scrollControl is nil")
+--d("[LSM]dropdownClass:Initialize -  self.scrollControl is nil")
 	end
 end
 
@@ -1048,11 +1048,11 @@ function dropdownClass:OnMouseExitTimeout(control)
 end
 
 function dropdownClass:OnEntrySelected(control, button, upInside)
-	d( '[LSM]dropdownClass:OnEntrySelected IsUpInside ' .. tos(upInside) .. ' Button ' .. tos(button))
+	--d( '[LSM]dropdownClass:OnEntrySelected IsUpInside ' .. tos(upInside) .. ' Button ' .. tos(button))
 	
 	local data = getControlData(control)
 	if not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
-d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
+--d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
 		zo_comboBoxDropdown_onEntrySelected(self, control)
 	end
 	
