@@ -556,7 +556,16 @@ comboBox.entryMap = entryMap
 					d('Custom menu Normal entry 1')
 				end)
 
-				SetCustomScrollableMenuOptions({sortEntries=true})
+				local entriesSubmenu = {
+					{
+						label = "Test submenu entry 1",
+						name =  "Test submenu data 1",
+						callback = function()  d("Test submenu entry 1") end,
+					}
+				}
+				AddCustomScrollableMenuEntry("Test submenu", function()  end, lib.LSM_ENTRY_TYPE_NORMAL, entriesSubmenu)
+
+				--SetCustomScrollableMenuOptions({sortEntries=true})
 
 				ShowCustomScrollableMenu()
 			end

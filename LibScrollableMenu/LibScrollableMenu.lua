@@ -969,28 +969,6 @@ function dropdownClass:IsDropdownVisible()
 	return not self:IsHidden()
 end
 
-function dropdownClass:IsEnteringScrollbar()
-d("[LSM]dropdownClass:IsEnteringScrollbar")
-	local scrollbar = self:GetScrollbar()
-	if scrollbar then
-d(">scrollbar found")
-		if MouseIsOver(scrollbar) then
-d(">>is over scrollbar")
-			return true
-		else
-			--scrollbar found but not active: How to detect if the mouse is over it at the moment, because it is SetHidden(true)
-			if scrollbar:IsHidden() then
-				scrollbar:SetHidden(false)
-				local wasMouseOverScrollbar = MouseIsOver(scrollbar)
-				scrollbar:SetHidden(true)
-d(">>scrollbar is hidden. Mouse is over it? " ..tos(wasMouseOverScrollbar))
-				return wasMouseOverScrollbar
-			end
-		end
-	end
-	return false
-end
-
 function dropdownClass:IsEnteringSubmenu()
 	local submenu = self:GetSubmenu()
 	if submenu then
