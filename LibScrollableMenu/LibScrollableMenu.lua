@@ -1073,7 +1073,7 @@ local function createScrollableComboBoxEntry(self, item, index, entryType)
 end
 
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
-	d( sfor('minWidth = %s, maxHeight = %s, spacing = %s', tos(minWidth), tos(maxHeight), tos(spacing)))
+	--d( sfor('minWidth = %s, maxHeight = %s, spacing = %s', tos(minWidth), tos(maxHeight), tos(spacing)))
 	self.owner = comboBox
 	
 	ZO_ScrollList_Clear(self.scrollControl)
