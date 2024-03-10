@@ -45,26 +45,39 @@ local function test()
 ]]
 			narrate = {
 												["OnDropdownMouseEnter"] = 	function(m_dropdownObject, dropdownControl)
-
+													return "Dropdown entered"
 												end,
 												["OnDropdownMouseExit"] =	function(m_dropdownObject, dropdownControl)
-
+													return "Dropdown exit"
 												end,
 												["OnMenuShow"] =			function(m_dropdownObject, dropdownControl)
+													return "Menu show"
 												end,
 												["OnMenuHide"] =			function(m_dropdownObject, dropdownControl)
+													return "Menu hide"
 												end,
 												["OnSubMenuShow"] =			function(m_dropdownObject, parentControl, anchorPoint)
+													return "Submenu show"
 												end,
 												["OnSubMenuHide"] =			function(m_dropdownObject, parentControl)
+													return "Submenu hide"
 												end,
 												["OnEntryMouseEnter"] =		function(m_dropdownObject, entryControl, data, hasSubmenu)
+													local entryName = lib.GetValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
+													return "Entry Mouse entered: " ..entryName .. ", hasSubmenu: " ..tostring(hasSubmenu)
 												end,
 												["OnEntryMouseExit"] =		function(m_dropdownObject, entryControl, data, hasSubmenu)
+													local entryName = lib.GetValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
+													return "Entry Mouse exit: " ..entryName .. ", hasSubmenu: " ..tostring(hasSubmenu)
 												end,
 												["OnEntrySelected"] =		function(m_dropdownObject, entryControl, data, hasSubmenu)
+													local entryName = lib.GetValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
+													return "Entry selected: " ..entryName .. ", hasSubmenu: " ..tostring(hasSubmenu)
 												end,
 												["OnCheckboxUpdated"] =		function(m_dropdownObject, checkboxControl, data)
+													local entryName = lib.GetValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
+													local isChecked = ZO_CheckButton_IsChecked(checkboxControl)
+													return "Checkbox updated: " ..entryName .. ", checked: " ..tostring(isChecked)
 												end,
 			}
 		}

@@ -206,6 +206,7 @@ local function getValueOrCallback(arg, ...)
 		return arg
 	end
 end
+lib.GetValueOrCallback = getValueOrCallback
 
 --Mix in table entries in other table and skip existing entries
 local function mixinTableAndSkipExisting(object, ...)
@@ -484,6 +485,32 @@ local function processNameString(data)
 	
 	data.name = name
 end
+
+--[[ 2024-03-10 Check if processNameString can add a data.nameFunction to "save" the originally passed in data.name function for later usage once menu was shown and is still open
+local function processNameString(data)
+	local name
+	--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
+	if data.label ~= nil then
+		name = getValueOrCallback(data.label, data)
+	end
+
+	if type(data.name) == 'function' then
+		local nameFunc = data.name
+		--Keep the original name function at the data, as we need a "String only" text as data.name for ZO_ComboBox internal functions!
+		data.nameFunction = nameFunc
+		--If no label was provided: Use the data.name
+		name = name or nameFunc(data)
+	else
+		--If no label was provided: Use the data.name
+		name = name or data.name
+	end
+	--Fallback to prevent errors?
+	name = name or "n/a"
+
+	data.name = name
+end
+]]
+
 
 --------------------------------------------------------------------
 -- Local tooltip functions
@@ -2175,4 +2202,6 @@ Improve setTimeout -> 2024-03-10 How ?
 
 
 Can we make "entries" for submenus be a function returning a table too, via GetValueOrCallback(data.entries, data)? -> 2024-03-10
+
+Check if processNameString can add a data.nameFunction to "save" the originally passed in data.name function for later usage once menu was shown and is still open -> 2024-03-10
 ]]
