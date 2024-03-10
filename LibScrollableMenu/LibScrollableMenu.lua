@@ -77,8 +77,15 @@ local WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = 4
 local DEFAULT_FONT = "ZoFontGame"
 local DEFAULT_HEIGHT = 250
 
+--Menu types for the different scrollable menus
+LSM_MENUTYPE_MAINMENU = 1
+LSM_MENUTYPE_SUBMENU = 2
+LSM_MENUTYPE_CONTEXTMENU = 100
+local LSM_MENUTYPE_MAINMENU = LSM_MENUTYPE_MAINMENU
+local LSM_MENUTYPE_SUBMENU = LSM_MENUTYPE_SUBMENU
+local LSM_MENUTYPE_CONTEXTMENU = LSM_MENUTYPE_CONTEXTMENU
+
 --Entry types - For the scroll list's dataType of te menus
-						  
 local ENTRY_ID = 1
 local LAST_ENTRY_ID = 2
 local DIVIDER_ENTRY_ID = 3
@@ -976,6 +983,12 @@ function dropdownClass:AnchorToControl(parentControl)
 	end
 	
 	self.anchorRight = right
+
+	local anchorPoint = (right == true and TOPRIGHT) or TOPLEFT
+	if self:GetMenuType() == LSM_MENUTYPE_SUBMENU then
+		self:Narrate("OnSubMenuShow", parentControl, nil, nil, anchorPoint)
+		lib:FireCallbacks('OnSubMenuShow', parentControl, anchorPoint)
+	end
 end
 
 function dropdownClass:AnchorToComboBox(conboBox)
@@ -1079,7 +1092,7 @@ function dropdownClass:OnMouseEnterEntry(control)
 		self:ShowTooltip(control, data)
 	end
 	
-	--TODO: Conflicting OnMouseExitTimeout
+	--TODO: Conflicting OnMouseExitTimeout -> 20240310 What in detail is conflicting here, with what?
 	if g_contextMenu:IsDropdownVisible() then
 --d(">contex menu: Dropdown visible = yes")
 		g_contextMenu.m_dropdownObject:OnMouseExitTimeout(control)
@@ -1096,10 +1109,12 @@ function dropdownClass:OnMouseExitEntry(control)
 	if not runHandler(handlerFunctions['onMouseExit'], control, data) then
 		zo_comboBoxDropdown_onMouseExitEntry(self, control)
 	end
-	
+
+	--[[
 	if not lib.GetPersistentMenus() then
 --		self:OnMouseExitTimeout(control)
 	end
+	]]
 end
 
 function dropdownClass:OnMouseExitTimeout(control)
@@ -1262,13 +1277,20 @@ end
 
 -- These are added here to make use of it's control to register the events too, 
 -- instead of menu using the same control to register the same event for different dropdowns.
+--> dropdownClass:ShowDropdownInternal() -> Used for submenus only. Main menu will be handled directly at ZO_ComboBox class!
 function dropdownClass:ShowDropdownInternal()
-	--Use m_container like ZO_ComboBox code does so it properly overwrites and removes the global OnMouseUp handler
-	self.control:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self.owner:OnGlobalMouseUp(...) end)
+	local control = self.control
+	control:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self.owner:OnGlobalMouseUp(...) end)
 end
 
+--> dropdownClass:HideDropdownInternal() -> Used for submenus only
 function dropdownClass:HideDropdownInternal()
-	self.control:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
+	local control = self.control
+	control:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
+
+	--(eventName, ctrl, data, hasSubmenu, anchorPoint)
+	self:Narrate("OnSubMenuHide", control)
+	lib:FireCallbacks('OnSubMenuHide', control)
 end
 
 --------------------------------------------------------------------
@@ -1326,6 +1348,10 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth)
 	
 	self.optionsChanged = true
 	self:UpdateOptions(options)
+end
+
+function comboBoxClass:GetMenuType()
+	return LSM_MENUTYPE_MAINMENU
 end
 
 -- [Replaced functions]
@@ -1405,17 +1431,6 @@ function comboBoxClass:IsMouseOverScrollbarControl()
 	end
 	return false
 end
-
---[[
-function comboBoxClass:IsMouseOverScrollbarControl()
-	local moc = moc()
-	local scrollbar = self.m_scroll.scrollbar
-	if scrollbar ~= nil and moc ~= nil then
-		return moc == scrollbar or moc:GetParent() == scrollbar
-	end
-	return false
-end
-]]
 
 function comboBoxClass:BypassOnGlobalMouseUp(button)
 --d("[LSM]comboBoxClass:BypassOnGlobalMouseUp-button: " ..tos(button) .. ", isMouseOverScrollbar: " ..tos(self:IsMouseOverScrollbarControl()))
@@ -1734,7 +1749,7 @@ function comboBoxClass:HideOnMouseEnter()
 	end
 end
 
-function comboBoxClass:HideOnMouseExit(moc)
+function comboBoxClass:HideOnMouseExit(mocCtrl)
 --d("[LSM]comboBoxClass:HideOnMouseExit")
 	if self.m_submenu and not self.m_submenu:IsMouseOverControl() and not self.m_submenu:IsMouseOverOpeningControl() then
 --d(">submenu found, but mouse not over it! HideDropdown")
@@ -1768,6 +1783,10 @@ function submenuClass:Initialize(parent, comboBoxContainer, options, depth)
 	self.m_parentMenu = parent
 	comboBoxClass.Initialize(self, parent, comboBoxContainer, options, depth)
 	self.owner = comboBoxContainer.m_comboBox
+end
+
+function submenuClass:GetMenuType()
+	return LSM_MENUTYPE_SUBMENU
 end
 
 function submenuClass:AddMenuItems(parentControl)
@@ -1824,10 +1843,11 @@ function submenuClass:SelectItemByIndex(index, ignoreCallback)
 	return zo_comboBox_selectItem(self.owner, self.m_sortedItems[index], ignoreCallback)
 end
 
-function submenuClass:HideOnMouseExit(moc)
+function submenuClass:HideOnMouseExit(mocCtrl)
 --d("[LSM]submenuClass:HideOnMouseExit")
 	-- Only begin hiding if we stopped over a dropdown.
-	if moc.m_dropdownObject then
+	mocCtrl = mocCtrl or moc()
+	if mocCtrl.m_dropdownObject then
 		if comboBoxClass.HideOnMouseExit(self) then
 			-- Close all open submenus beyond this point
 			
@@ -1856,6 +1876,10 @@ function contextMenuClass:Initialize(comboBoxContainer)
 	self.m_sortedItems = {}
 	
 	self:ClearItems()
+end
+
+function contextMenuClass:GetMenuType()
+	return LSM_MENUTYPE_CONTEXTMENU
 end
 
 function contextMenuClass:AddItem(itemEntry, updateOptions)
@@ -1966,6 +1990,7 @@ end
 -- Public API functions
 --------------------------------------------------------------------
 lib.persistentMenus = false -- controls if submenus are closed shortly after the mouse exists them
+							-- 2024-03-10 Currently not used anywhere!!!
 function lib.GetPersistentMenus()
 	return lib.persistentMenus
 end
