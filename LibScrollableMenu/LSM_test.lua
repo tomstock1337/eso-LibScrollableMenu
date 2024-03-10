@@ -22,14 +22,10 @@ local function test()
 		--Define your options for the scrollHelper here
 		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
 		-->LibScrollableMenu.lua
-		local options = { visibleRowsDropdown = 10, visibleRowsSubmenu = 5, sortEntries=function() return false end, }
+		local options = { visibleRowsDropdown = 10, visibleRowsSubmenu = 10, sortEntries=function() return false end, }
 		--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
 		--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
 		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBox, options)
-LSM_DEBUG = {
-	scrollHelper = scrollHelper,
-	comboBox = comboBox,
-}
 -- did not work		scrollHelper.OnShow = function() end --don't change parenting
 
 		lib.testDropdown = comboBox

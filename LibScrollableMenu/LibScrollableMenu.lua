@@ -1093,8 +1093,8 @@ local function createScrollableComboBoxEntry(self, item, index, entryType)
 	return entryData
 end
 
-function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing, maxRows)
-	d( sfor('minWidth = %s, maxHeight = %s, spacing = %s, maxRows = %s', tos(minWidth), tos(maxHeight), tos(spacing), tos(maxRows)))
+function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
+	d( sfor('minWidth = %s, maxHeight = %s, spacing = %s', tos(minWidth), tos(maxHeight), tos(spacing)))
 	self.owner = comboBox
 	
 	ZO_ScrollList_Clear(self.scrollControl)
@@ -1133,16 +1133,9 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing, m
 		else
 			entryHeight = entryHeight + self.spacing
 		end
---[[
-		if not maxRows or rowCount < maxRows then
-			allItemsHeight = allItemsHeight + entryHeight
-		end
-
-		if item.name ~= '' and item.name ~= lib.DIVIDER then
-			rowCount = rowCount + 1
-		end
-
-]]
+		
+		allItemsHeight = allItemsHeight + entryHeight
+		
 		local entry = createScrollableComboBoxEntry(self, item, i, entryType)
 		tins(dataList, entry)
 
@@ -1152,7 +1145,6 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing, m
 			largestEntryWidth = nameWidth
 		end
 
-		allItemsHeight = allItemsHeight + entryHeight
 	end
 
 	-- using the exact width of the text can leave us with pixel rounding issues
@@ -1219,11 +1211,11 @@ end
 -- instead of menu using the same control to register the same event for different dropdowns.
 function dropdownClass:ShowDropdownInternal()
 	--Use m_container like ZO_ComboBox code does so it properly overwrites and removes the global OnMouseUp handler
-	self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self.owner:OnGlobalMouseUp(...) end)
+	self.control:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self.owner:OnGlobalMouseUp(...) end)
 end
 
 function dropdownClass:HideDropdownInternal()
-	self.m_container:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
+	self.control:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
 end
 
 --------------------------------------------------------------------
@@ -1870,7 +1862,7 @@ function contextMenuClass:ShowContextMenu(parentControl)
 end
 
 function contextMenuClass:HideDropdownInternal()
-	submenuClass.HideDropdownInternal(self)
+	comboBoxClass.HideDropdownInternal(self)
 	self:ClearItems()
 end
 
