@@ -831,9 +831,18 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	self.owner = parent
 
 	self:SetHidden(true)
-	
+
 	self.m_parentMenu = parent.m_parentMenu
 	self.m_sortedItems = {}
+
+	local scrollCtrl = self.scrollControl
+	if scrollCtrl then
+		scrollCtrl.scrollbar.owner = 	scrollCtrl
+		scrollCtrl.upButton.owner = 	scrollCtrl
+		scrollCtrl.downButton.owner = 	scrollCtrl
+	else
+d("[LSM]dropdownClass:Initialize -  self.scrollControl is nil")
+	end
 end
 
 -- Redundancy functions. These functions redirect back to the comboBox for if "scrollHelper" was used to add items.
@@ -1039,10 +1048,11 @@ function dropdownClass:OnMouseExitTimeout(control)
 end
 
 function dropdownClass:OnEntrySelected(control, button, upInside)
---	d( '[LSM]dropdownClass:OnEntrySelected IsUpInside ' .. tos(upInside) .. ' Button ' .. tos(button))
+	d( '[LSM]dropdownClass:OnEntrySelected IsUpInside ' .. tos(upInside) .. ' Button ' .. tos(button))
 	
 	local data = getControlData(control)
 	if not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
+d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
 		zo_comboBoxDropdown_onEntrySelected(self, control)
 	end
 	
@@ -1315,7 +1325,7 @@ end
 
 -- Changed to bypass if needed.
 function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
-	--d( 'BypassOnGlobalMouseUp ' .. tos(self:BypassOnGlobalMouseUp(...)))
+d("[LSM]comboBoxClass:OnGlobalMouseUp - BypassOnGlobalMouseUp: " ..tos(self:BypassOnGlobalMouseUp(...)))
 	if not self:BypassOnGlobalMouseUp(...) then
 	   zo_comboBox_onGlobalMouseUp(self ,eventCode , ...)
 	end
@@ -1323,18 +1333,11 @@ end
 
 -- [New functions]
 function comboBoxClass:IsMouseOverScrollbarControl()
+d("[LSM]comboBoxClass:IsMouseOverScrollbarControl")
 	local mocCtrl = moc()
 	if mocCtrl ~= nil then
-		local parent = mocCtrl:GetParent()
-		if parent ~= nil then
-			local gotScrollbar = parent.scrollbar ~= nil
-			--Clicked the up/down buttons?
-			if not gotScrollbar then
-				parent = parent:GetParent()
-				gotScrollbar = parent and parent.scrollbar ~= nil
-			end
-			return gotScrollbar or false
-		end
+		local owner = mocCtrl.owner
+		return owner and owner.scrollbar ~= nil
 	end
 	return false
 end
@@ -1351,14 +1354,17 @@ end
 ]]
 
 function comboBoxClass:BypassOnGlobalMouseUp(button)
+d("[LSM]comboBoxClass:BypassOnGlobalMouseUp-button: " ..tos(button) .. ", isMouseOverScrollbar: " ..tos(self:IsMouseOverScrollbarControl()))
 	if self:IsMouseOverScrollbarControl() then
+d(">>mosue is above scrollbar")
 		return true
 	end
 
 	if button == MOUSE_BUTTON_INDEX_LEFT then
-		local moc = moc()
-		if moc.typeId then
-			return moc.typeId ~= ENTRY_ID
+		local mocCtrl = moc()
+d(">moc: " ..tos(mocCtrl ~= nil and mocCtrl:GetName()) .. ", mocTypeId: " ..tos(mocCtrl.typeId))
+		if mocCtrl.typeId then
+			return mocCtrl.typeId ~= ENTRY_ID
 		end
 	end
 
@@ -1726,6 +1732,7 @@ function submenuClass:RefreshSortedItems(parentControl)
 end
 
 function submenuClass:OnGlobalMouseUp(eventCode, ...)
+d("[LSM]submenuClass:OnGlobalMouseUp - DropdownVisible: " ..tos(self:IsDropdownVisible()) ..", BypassOnGlobalMouseUp: " ..tos(self:BypassOnGlobalMouseUp(...)))
 	if self:IsDropdownVisible() and not self:BypassOnGlobalMouseUp(...) then
 		self:HideDropdown()
 	end
@@ -1866,6 +1873,12 @@ end
 function contextMenuClass:SetPreshowDropdownCallback()
 	-- Intentionally blank. This is to prevent abusing the function in the context menu.
 end
+
+function contextMenuClass:OnGlobalMouseUp(eventCode, ...)
+d("[LSM]contextMenuClass:OnGlobalMouseUp")
+	submenuClass.OnGlobalMouseUp(self, eventCode, ...)
+end
+
 
 --------------------------------------------------------------------
 -- 
