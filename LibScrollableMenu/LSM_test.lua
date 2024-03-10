@@ -22,7 +22,52 @@ local function test()
 		--Define your options for the scrollHelper here
 		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
 		-->LibScrollableMenu.lua
-		local options = { visibleRowsDropdown = 10, visibleRowsSubmenu = 10, sortEntries=function() return false end, }
+		local options = {
+			visibleRowsDropdown = 10, visibleRowsSubmenu = 10, sortEntries=function() return false end,
+--[[
+--		table	narrate:optional				Table or function returning a table with key = narration event and value = function called for that narration event.
+--												Each functions signature/parameters is shown below!
+--												-> The function either builds your narrateString and narrates it in your addon.
+--												   Or you must return a string as 1st return param (and optionally a boolean "stopCurrentNarration" as 2nd return param. If this is nil it will be set to false!)
+--													and let the library here narrate it for you via the UI narration
+--												Optional narration events can be:
+--												"OnDropdownMouseEnter" 	function(m_dropdownObject, dropdownControl)  Build your narrateString and narrate it now, or return a string and let the library narrate it for you end
+--												"OnDropdownMouseExit"	function(m_dropdownObject, dropdownControl) end
+--												"OnMenuShow"			function(m_dropdownObject, dropdownControl, nil, nil) end
+--												"OnMenuHide"			function(m_dropdownObject, dropdownControl) end
+--												"OnSubMenuShow"			function(m_dropdownObject, parentControl, anchorPoint) end
+--												"OnSubMenuHide"			function(m_dropdownObject, parentControl) end
+--												"OnEntryMouseEnter"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
+--												"OnEntryMouseExit"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
+--												"OnEntrySelected"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
+--												"OnCheckboxUpdated"		function(m_dropdownObject, checkboxControl, data) end
+--			Example:	narrate = { ["OnDropdownMouseEnter"] = myAddonsNarrateDropdownOnMouseEnter, ... }
+]]
+			narrate = {
+												["OnDropdownMouseEnter"] = 	function(m_dropdownObject, dropdownControl)
+
+												end,
+												["OnDropdownMouseExit"] =	function(m_dropdownObject, dropdownControl)
+
+												end,
+												["OnMenuShow"] =			function(m_dropdownObject, dropdownControl)
+												end,
+												["OnMenuHide"] =			function(m_dropdownObject, dropdownControl)
+												end,
+												["OnSubMenuShow"] =			function(m_dropdownObject, parentControl, anchorPoint)
+												end,
+												["OnSubMenuHide"] =			function(m_dropdownObject, parentControl)
+												end,
+												["OnEntryMouseEnter"] =		function(m_dropdownObject, entryControl, data, hasSubmenu)
+												end,
+												["OnEntryMouseExit"] =		function(m_dropdownObject, entryControl, data, hasSubmenu)
+												end,
+												["OnEntrySelected"] =		function(m_dropdownObject, entryControl, data, hasSubmenu)
+												end,
+												["OnCheckboxUpdated"] =		function(m_dropdownObject, checkboxControl, data)
+												end,
+			}
+		}
 		--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
 		--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
 		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBox, options)
@@ -563,7 +608,7 @@ comboBox.entryMap = entryMap
 						callback = function()  d("Test submenu entry 1") end,
 					}
 				}
-				AddCustomScrollableMenuEntry("Test submenu", function()  end, lib.LSM_ENTRY_TYPE_NORMAL, entriesSubmenu)
+				AddCustomScrollableMenuEntry("Test submenu", nil, lib.LSM_ENTRY_TYPE_NORMAL, entriesSubmenu)
 
 				--SetCustomScrollableMenuOptions({sortEntries=true})
 
@@ -595,7 +640,7 @@ comboBox.entryMap = entryMap
 					d('Custom menu Normal entry 1')
 				end)
 
-				ShowCustomScrollableMenu(nil, nil, nil, nil, nil, {sortEntries=true})
+				ShowCustomScrollableMenu(nil, {sortEntries=true})
 			end
 		end)
 
