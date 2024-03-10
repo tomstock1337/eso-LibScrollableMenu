@@ -1325,7 +1325,7 @@ end
 
 -- Changed to bypass if needed.
 function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
-d("[LSM]comboBoxClass:OnGlobalMouseUp - BypassOnGlobalMouseUp: " ..tos(self:BypassOnGlobalMouseUp(...)))
+--d("[LSM]comboBoxClass:OnGlobalMouseUp - BypassOnGlobalMouseUp: " ..tos(self:BypassOnGlobalMouseUp(...)))
 	if not self:BypassOnGlobalMouseUp(...) then
 	   zo_comboBox_onGlobalMouseUp(self ,eventCode , ...)
 	end
@@ -1333,7 +1333,7 @@ end
 
 -- [New functions]
 function comboBoxClass:IsMouseOverScrollbarControl()
-d("[LSM]comboBoxClass:IsMouseOverScrollbarControl")
+--d("[LSM]comboBoxClass:IsMouseOverScrollbarControl")
 	local mocCtrl = moc()
 	if mocCtrl ~= nil then
 		local owner = mocCtrl.owner
@@ -1354,15 +1354,15 @@ end
 ]]
 
 function comboBoxClass:BypassOnGlobalMouseUp(button)
-d("[LSM]comboBoxClass:BypassOnGlobalMouseUp-button: " ..tos(button) .. ", isMouseOverScrollbar: " ..tos(self:IsMouseOverScrollbarControl()))
+--d("[LSM]comboBoxClass:BypassOnGlobalMouseUp-button: " ..tos(button) .. ", isMouseOverScrollbar: " ..tos(self:IsMouseOverScrollbarControl()))
 	if self:IsMouseOverScrollbarControl() then
-d(">>mosue is above scrollbar")
+--d(">>mouse is above scrollbar")
 		return true
 	end
 
 	if button == MOUSE_BUTTON_INDEX_LEFT then
 		local mocCtrl = moc()
-d(">moc: " ..tos(mocCtrl ~= nil and mocCtrl:GetName()) .. ", mocTypeId: " ..tos(mocCtrl.typeId))
+--d(">moc: " ..tos(mocCtrl ~= nil and mocCtrl:GetName()) .. ", mocTypeId: " ..tos(mocCtrl.typeId))
 		if mocCtrl.typeId then
 			return mocCtrl.typeId ~= ENTRY_ID
 		end
@@ -1732,7 +1732,7 @@ function submenuClass:RefreshSortedItems(parentControl)
 end
 
 function submenuClass:OnGlobalMouseUp(eventCode, ...)
-d("[LSM]submenuClass:OnGlobalMouseUp - DropdownVisible: " ..tos(self:IsDropdownVisible()) ..", BypassOnGlobalMouseUp: " ..tos(self:BypassOnGlobalMouseUp(...)))
+--d("[LSM]submenuClass:OnGlobalMouseUp - DropdownVisible: " ..tos(self:IsDropdownVisible()) ..", BypassOnGlobalMouseUp: " ..tos(self:BypassOnGlobalMouseUp(...)))
 	if self:IsDropdownVisible() and not self:BypassOnGlobalMouseUp(...) then
 		self:HideDropdown()
 	end
@@ -1875,7 +1875,7 @@ function contextMenuClass:SetPreshowDropdownCallback()
 end
 
 function contextMenuClass:OnGlobalMouseUp(eventCode, ...)
-d("[LSM]contextMenuClass:OnGlobalMouseUp")
+--d("[LSM]contextMenuClass:OnGlobalMouseUp")
 	submenuClass.OnGlobalMouseUp(self, eventCode, ...)
 end
 
