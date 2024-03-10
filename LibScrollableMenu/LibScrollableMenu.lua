@@ -718,7 +718,7 @@ local handlerFunctions  = {
 			return true
 		end,
 		[SUBMENU_ENTRY_ID] = function(control, data, ...)
-			d( 'onMouseEnter [SUBMENU_ENTRY_ID]')
+			--d( 'onMouseEnter [SUBMENU_ENTRY_ID]')
 			-- Must clear now. Otherwise, moving onto a submenu will close it from exiting previous row.
 			local dropdown = onMouseEnter(control, data, has_submenu)
 			clearTimeout()
@@ -758,7 +758,7 @@ local handlerFunctions  = {
 	},
 	['onMouseUp'] = {
 		[ENTRY_ID] = function(control, data, button, upInside)
-			d( 'onMouseUp [ENTRY_ID]')
+			--onMouseUp [ENTRY_ID]')
 			local dropdown = onMouseUp(control, data, no_submenu, button, upInside)
 			
 			if upInside then
@@ -791,7 +791,7 @@ local handlerFunctions  = {
 			return true
 		end,
 		[CHECKBOX_ENTRY_ID] = function(control, data, button, upInside)
-			d( 'onMouseUp [CHECKBOX_ENTRY_ID]')
+			--d( 'onMouseUp [CHECKBOX_ENTRY_ID]')
 			local dropdown = control.m_dropdownObject
 			if upInside then
 				if button == MOUSE_BUTTON_INDEX_LEFT then
@@ -1014,7 +1014,7 @@ function dropdownClass:OnMouseEnterEntry(control)
 end
 
 function dropdownClass:OnMouseExitEntry(control)
-	d( '[LSM]dropdownClass:OnMouseExitEntry')
+	--d( '[LSM]dropdownClass:OnMouseExitEntry')
 --	d( control:GetName())
 	
 	hideTooltip()
@@ -1031,7 +1031,7 @@ end
 
 function dropdownClass:OnMouseExitTimeout(control)
 --	clearTimeout()
-	d( "[LSM]dropdownClass:OnMouseExitTimeout-control: " ..tos(control:GetName()))
+	--d( "[LSM]dropdownClass:OnMouseExitTimeout-control: " ..tos(control:GetName()))
 
 	setTimeout(function()
 		self.owner:HideOnMouseExit(moc())
@@ -1309,13 +1309,13 @@ function comboBoxClass:HideDropdown()
 end
 
 function comboBoxClass:SelectItemByIndex(index, ignoreCallback)
-	d( 'SelectItemByIndex ' .. tos(index))
+	--d( 'SelectItemByIndex ' .. tos(index))
 	return zo_comboBox_selectItem(self, self.m_sortedItems[index], ignoreCallback)
 end
 
 -- Changed to bypass if needed.
 function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
-	d( 'BypassOnGlobalMouseUp ' .. tos(self:BypassOnGlobalMouseUp(...)))
+	--d( 'BypassOnGlobalMouseUp ' .. tos(self:BypassOnGlobalMouseUp(...)))
 	if not self:BypassOnGlobalMouseUp(...) then
 	   zo_comboBox_onGlobalMouseUp(self ,eventCode , ...)
 	end
