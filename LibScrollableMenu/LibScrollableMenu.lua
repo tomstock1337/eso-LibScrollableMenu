@@ -3,7 +3,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
-lib.version = "1.9"
+lib.version = "2.0"
 
 lib.data = {}
 
@@ -2105,6 +2105,9 @@ lib.MapEntries = mapEntries
  --		number visibleRowsDropdown:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened dropdown
  --		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
  --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically
+-- 		string font:optional = "FontNameHere" 	String or function returning a string: font to use for the dropdown entries
+-- 		number spacing:optional = 1, 			Number or function returning a Number : Spacing between the entries
+-- 		function preshowDropdownFn:optional 	function function(ctrl) codeHere end to run before the dropdown shows
 --		table	XMLRowTemplates:optional		Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
 --												"template" String = XMLVirtualTemplateName, rowHeight number = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,setupFunc = function(control, data, list) end
 --												-->See local table "defaultXMLTemplates" in LibScrollableMenu
@@ -2221,12 +2224,22 @@ end
 
 --Set the options (visible rows max, etc.) for the scrollable context menu
 -->See possible options above AddCustomScrollableComboBoxDropdownMenu
-function SetCustomScrollableMenuOptions(options)
+function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 	local optionsTableType = type(options)
 	assert(optionsTableType == 'table' , sfor('['..MAJOR..':SetCustomScrollableMenuOptions] table expected, got %q = %s', "options", tos(optionsTableType)))
 
 	if options then
-		g_contextMenu:SetOptions(options)
+		--Use specified comboBoxContainer's dropdown to update the options to
+		if comboBoxContainer ~= nil then
+			local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
+			if comboBox ~= nil and comboBox.UpdateOptions then
+				comboBox.optionsChanged = options ~= comboBox.options
+				comboBox:UpdateOptions(options)
+			end
+		else
+			--Update options to default contextMenu
+			g_contextMenu:SetOptions(options)
+		end
 	end
 end
 local setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
