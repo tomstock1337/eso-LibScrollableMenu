@@ -134,21 +134,24 @@ local possibleLibraryOptions = {
 	["visibleRowsDropdown"] = true,
 	["visibleRowsSubmenu"] = true,
 	["sortEntries"] = true,
-	["preshowDropdownFn"] = true,
 	["XMLRowTemplates"] = true,
 	["narrate"] = true,
+	["font"] = true,
+	["spacing"] = true,
+	["preshowDropdownFn"] = true,
 }
 lib.possibleLibraryOptions = possibleLibraryOptions
 
 --The default values for comboBox options:
 --The default values for the context menu options are:
 local defaultComboBoxOptions  = {
+	["visibleRowsDropdown"] = DEFAULT_VISIBLE_ROWS,
+	["visibleRowsSubmenu"] = DEFAULT_VISIBLE_ROWS,
+	["sortEntries"] = DEFAULT_SORTS_ENTRIES,
 	["font"] = DEFAULT_FONT,
 	["spacing"] = DEFAULT_SPACING,
-	["sortEntries"] = DEFAULT_SORTS_ENTRIES,
 	["preshowDropdownFn"] = nil,
-	["visibleRowsSubmenu"] = DEFAULT_VISIBLE_ROWS,
-	["visibleRowsDropdown"] = DEFAULT_VISIBLE_ROWS,
+	--["XMLRowTemplates"] = table, --Will be set at comboBoxClass:UpdateOptions(options) from options
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
 
@@ -1613,12 +1616,13 @@ function comboBoxClass:UpdateOptions(options)
 	local narrateData = getValueOrCallback(options.narrate, options)
 
 	-- Defaults are predefined in defaultComboBoxOptions
+	local visibleRows = getValueOrCallback(options.visibleRowsDropdown, options)
+	local visibleRowsSubmenu = getValueOrCallback(options.visibleRowsSubmenu, options)
+	local sortEntries = getValueOrCallback(options.sortEntries, options)
 	local font = getValueOrCallback(options.font, options)
 	local spacing = getValueOrCallback(options.spacing, options)
-	local sortEntries = getValueOrCallback(options.sortEntries, options)
-	local visibleRows = getValueOrCallback(options.visibleRowsDropdown, options)
 	local preshowDropdownFn = getValueOrCallback(options.preshowDropdownFn, options)
-	local visibleRowsSubmenu = getValueOrCallback(options.visibleRowsSubmenu, options)
+
 	-- Defaults used if nil
 	local sortType = getValueOrCallback(options.sortType, options)
 	local sortOrder = getValueOrCallback(options.sortOrder, options)
@@ -2101,10 +2105,12 @@ lib.MapEntries = mapEntries
 --Adds a scroll helper to the comboBoxControl dropdown entries, and enables submenus (scollable too) at the entries.
 --	control parent 							Must be the parent control of the comboBox
 --	control comboBoxContainer 				Must be any ZO_ComboBox control (e.g. created from virtual template ZO_ComboBox)
- --  table options:optional = {
- --		number visibleRowsDropdown:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened dropdown
- --		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
- --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically
+--  table options:optional = {
+--		number visibleRowsDropdown:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened dropdown
+--		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
+--		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically: ZO_SORT_ORDER_UP or ZO_SORT_ORDER_DOWN
+--		table sortType:optional					table or function returning table for the sort type, e.g. ZO_SORT_BY_NAME, ZO_SORT_BY_NAME_NUMERIC
+--		boolean sortOrder:optional				Boolean or function returning boolean for the sort order
 -- 		string font:optional = "FontNameHere" 	String or function returning a string: font to use for the dropdown entries
 -- 		number spacing:optional = 1, 			Number or function returning a Number : Spacing between the entries
 -- 		function preshowDropdownFn:optional 	function function(ctrl) codeHere end to run before the dropdown shows
