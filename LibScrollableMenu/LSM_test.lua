@@ -19,36 +19,12 @@ local function test()
 		comboBox:SetWidth(250)
 		comboBox:SetMovable(true)
 
-		--Define your options for the scrollHelper here
-		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
-		-->LibScrollableMenu.lua
-		local options = {
-			visibleRowsDropdown = 10, visibleRowsSubmenu = 10, sortEntries=function() return false end,
---[[
---		table	narrate:optional				Table or function returning a table with key = narration event and value = function called for that narration event.
---												Each functions signature/parameters is shown below!
---												-> The function either builds your narrateString and narrates it in your addon.
---												   Or you must return a string as 1st return param (and optionally a boolean "stopCurrentNarration" as 2nd return param. If this is nil it will be set to false!)
---													and let the library here narrate it for you via the UI narration
---												Optional narration events can be:
---												"OnDropdownMouseEnter" 	function(m_dropdownObject, dropdownControl)  Build your narrateString and narrate it now, or return a string and let the library narrate it for you end
---												"OnDropdownMouseExit"	function(m_dropdownObject, dropdownControl) end
---												"OnMenuShow"			function(m_dropdownObject, dropdownControl, nil, nil) end
---												"OnMenuHide"			function(m_dropdownObject, dropdownControl) end
---												"OnSubMenuShow"			function(m_dropdownObject, parentControl, anchorPoint) end
---												"OnSubMenuHide"			function(m_dropdownObject, parentControl) end
---												"OnEntryMouseEnter"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
---												"OnEntryMouseExit"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
---												"OnEntrySelected"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
---												"OnCheckboxUpdated"		function(m_dropdownObject, checkboxControl, data) end
---			Example:	narrate = { ["OnDropdownMouseEnter"] = myAddonsNarrateDropdownOnMouseEnter, ... }
-]]
-			narrate = {
-												["OnDropdownMouseEnter"] = 	function(m_dropdownObject, dropdownControl)
-													return "Dropdown entered"
+		local narrateOptions = {
+												["OnComboBoxMouseEnter"] = 	function(m_dropdownObject, dropdownControl)
+													return "ComboBox mouse entered"
 												end,
-												["OnDropdownMouseExit"] =	function(m_dropdownObject, dropdownControl)
-													return "Dropdown exit"
+												["OnComboBoxMouseExit"] =	function(m_dropdownObject, dropdownControl)
+													return "ComboBox mouse exit"
 												end,
 												["OnMenuShow"] =			function(m_dropdownObject, dropdownControl)
 													return "Menu show"
@@ -57,7 +33,7 @@ local function test()
 													return "Menu hide"
 												end,
 												["OnSubMenuShow"] =			function(m_dropdownObject, parentControl, anchorPoint)
-													return "Submenu show"
+													return "Submenu show, anchorPoint: " ..tostring(anchorPoint)
 												end,
 												["OnSubMenuHide"] =			function(m_dropdownObject, parentControl)
 													return "Submenu hide"
@@ -80,6 +56,33 @@ local function test()
 													return "Checkbox updated: " ..entryName .. ", checked: " ..tostring(isChecked)
 												end,
 			}
+
+
+		--Define your options for the scrollHelper here
+		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
+		-->LibScrollableMenu.lua
+		local options = {
+			visibleRowsDropdown = 10, visibleRowsSubmenu = 10, sortEntries=function() return false end,
+--[[
+--		table	narrate:optional				Table or function returning a table with key = narration event and value = function called for that narration event.
+--												Each functions signature/parameters is shown below!
+--												-> The function either builds your narrateString and narrates it in your addon.
+--												   Or you must return a string as 1st return param (and optionally a boolean "stopCurrentNarration" as 2nd return param. If this is nil it will be set to false!)
+--													and let the library here narrate it for you via the UI narration
+--												Optional narration events can be:
+--												"OnComboBoxMouseEnter" 	function(m_dropdownObject, dropdownControl)  Build your narrateString and narrate it now, or return a string and let the library narrate it for you end
+--												"OnComboBoxMouseExit"	function(m_dropdownObject, dropdownControl) end
+--												"OnMenuShow"			function(m_dropdownObject, dropdownControl, nil, nil) end
+--												"OnMenuHide"			function(m_dropdownObject, dropdownControl) end
+--												"OnSubMenuShow"			function(m_dropdownObject, parentControl, anchorPoint) end
+--												"OnSubMenuHide"			function(m_dropdownObject, parentControl) end
+--												"OnEntryMouseEnter"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
+--												"OnEntryMouseExit"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
+--												"OnEntrySelected"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
+--												"OnCheckboxUpdated"		function(m_dropdownObject, checkboxControl, data) end
+--			Example:	narrate = { ["OnComboBoxMouseEnter"] = myAddonsNarrateDropdownOnMouseEnter, ... }
+]]
+			narrate = narrateOptions,
 		}
 		--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
 		--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
@@ -135,7 +138,7 @@ local function test()
 					
 					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 					
-					ShowCustomScrollableMenu()
+					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
 					d("Submenu entry 1")
 				end,
 				--tooltip         = "Submenu Entry Test 1",

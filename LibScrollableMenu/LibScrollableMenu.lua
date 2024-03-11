@@ -81,9 +81,11 @@ local DEFAULT_HEIGHT = 250
 LSM_MENUTYPE_MAINMENU = 1
 LSM_MENUTYPE_SUBMENU = 2
 LSM_MENUTYPE_CONTEXTMENU = 100
+LSM_MENUTYPE_CONTEXTMENU_SUBMENU = 101
 local LSM_MENUTYPE_MAINMENU = LSM_MENUTYPE_MAINMENU
 local LSM_MENUTYPE_SUBMENU = LSM_MENUTYPE_SUBMENU
 local LSM_MENUTYPE_CONTEXTMENU = LSM_MENUTYPE_CONTEXTMENU
+local LSM_MENUTYPE_CONTEXTMENU_SUBMENU = LSM_MENUTYPE_CONTEXTMENU_SUBMENU
 
 --Entry types - For the scroll list's dataType of te menus
 local ENTRY_ID = 1
@@ -726,8 +728,8 @@ end
 --by the addon's narrate function, the library will lookup the function to use for the narration event, and narrate it then via the UI narration.
 -->Select the same function if you want to suppress multiple similar messages to be played after another (e.g. OnMouseEnterExitNarrate for similar OnMouseEnter/Exit events)
 local narrationEventToLibraryNarrateFunction = {
-	["OnDropdownMouseEnter"] = 	onMouseEnterOrExitNarrate,
-	["OnDropdownMouseExit"] =	onMouseEnterOrExitNarrate,
+	["OnComboBoxMouseEnter"] = 	onMouseEnterOrExitNarrate,
+	["OnComboBoxMouseExit"] =	onMouseEnterOrExitNarrate,
 	["OnMenuShow"] = 			onMouseEnterOrExitNarrate,
 	["OnMenuHide"] = 			onMouseEnterOrExitNarrate,
 	["OnSubMenuShow"] = 		onMouseMenuOpenOrCloseNarrate,
@@ -763,10 +765,12 @@ end
 
 local function onMouseUp(control, data, hasSubmenu, button, upInside)
 	local dropdown = control.m_dropdownObject
-	
-	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
-	lib:FireCallbacks('EntryOnSelected', data, control)
-	
+
+	if upInside and button == MOUSE_BUTTON_INDEX_LEFT then
+		dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
+		lib:FireCallbacks('EntryOnSelected', data, control)
+	end
+
 	return dropdown
 end
 
@@ -916,6 +920,25 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	end
 end
 
+function dropdownClass:GetMenuType()
+	if self.owner then
+		return self.owner:GetMenuType()
+	end
+end
+
+function dropdownClass:IsContextMenu()
+	if self.owner then
+		return self.owner:IsContextMenu()
+	end
+end
+
+function dropdownClass:IsSubmenu()
+	if self.owner then
+		return self.owner:IsSubmenu()
+	end
+end
+
+
 -- Redundancy functions. These functions redirect back to the comboBox for if "scrollHelper" was used to add items.
 function dropdownClass:AddItems(items)
 	if self.owner then
@@ -961,6 +984,7 @@ function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupF
 end
 
 function dropdownClass:AnchorToControl(parentControl)
+d("dropdownClass:AnchorToControl - parent: " ..tos(parentControl:GetName()))
 	local width, height = GuiRoot:GetDimensions()
 
 	local offsetX = ZO_SCROLL_BAR_WIDTH - 4
@@ -985,6 +1009,7 @@ function dropdownClass:AnchorToControl(parentControl)
 	self.anchorRight = right
 
 	local anchorPoint = (right == true and TOPRIGHT) or TOPLEFT
+d(">menuType: " ..tos(self:GetMenuType()))
 	if self:GetMenuType() == LSM_MENUTYPE_SUBMENU then
 		self:Narrate("OnSubMenuShow", parentControl, nil, nil, anchorPoint)
 		lib:FireCallbacks('OnSubMenuShow', parentControl, anchorPoint)
@@ -1345,12 +1370,48 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth)
 	self:SetDropdownObject(dropdownObject)
 	-- Uncomment below if they ever remove it from SetDropdownObject
 	-- self.m_scroll = dropdownObject.scrollControl
-	
+
 	self.optionsChanged = true
 	self:UpdateOptions(options)
+
+	return self
+end
+
+--[[
+function comboBoxClass:SetHandlers(comboBoxContainer)
+d("[LSM]comboBoxClass:SetHandlers - comboBoxContainer: " ..tos(comboBoxContainer:GetName()))
+	if comboBoxContainer == nil then return end
+
+d(">isContextMenu: " ..tos(self:IsContextMenu()) .. "; isSubMenu: " ..tos(self:IsSubmenu()))
+	if not self:IsContextMenu() and not self:IsSubmenu() then
+		local narrateData = self.narrateData
+		if narrateData ~= nil and (narrateData["OnComboBoxMouseEnter"] or narrateData["OnComboBoxMouseExit"]) then
+d(">>narrateData and OnComboBoxMouseEnter or OnComboBoxMouseExit found!")
+			local function dropdownOnMouseEnter()
+				self:Narrate("OnComboBoxMouseEnter", comboBoxContainer, nil, nil)
+			end
+			local function dropdownOnMouseExit()
+				self:Narrate("OnComboBoxMouseExit", comboBoxContainer, nil, nil)
+			end
+			comboBoxContainer:SetHandler("OnMouseEnter", function() dropdownOnMouseEnter() end)
+			comboBoxContainer:SetHandler("OnMouseExit", function() dropdownOnMouseExit() end)
+		end
+	end
+end
+]]
+
+
+function comboBoxClass:IsContextMenu()
+d("[LSM]submenuClass:IsContextMenu -> false")
+	return false
+end
+
+function comboBoxClass:IsSubmenu()
+	return self.m_parentMenu ~= nil
 end
 
 function comboBoxClass:GetMenuType()
+d("[LSM]comboBoxClass:GetMenuType -> LSM_MENUTYPE_MAINMENU")
 	return LSM_MENUTYPE_MAINMENU
 end
 
@@ -1475,7 +1536,7 @@ end
 
 function comboBoxClass:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	local narrateData = self.narrateData
-d( "[LSM]Narrate-"..tos(eventName) .. ", narrateData: " ..tos(narrateData))
+--d( "[LSM]Narrate-"..tos(eventName) .. ", narrateData: " ..tos(narrateData))
 	if eventName == nil or isAccessibilityUIReaderEnabled() == false or narrateData == nil then return end
 	local narrateCallbackFuncForEvent = narrateData[eventName]
 	if narrateCallbackFuncForEvent == nil or type(narrateCallbackFuncForEvent) ~= "function" then return end
@@ -1489,15 +1550,15 @@ d( "[LSM]Narrate-"..tos(eventName) .. ", narrateData: " ..tos(narrateData))
 		["OnEntryMouseExit"]	= function() return self, ctrl, data, hasSubmenu end,
 		["OnEntryMouseEnter"]	= function() return self, ctrl, data, hasSubmenu end,
 		["OnCheckboxUpdated"]	= function() return self, ctrl, data end,
-		["OnDropdownMouseExit"]	= function() return self, ctrl end,
-		["OnDropdownMouseEnter"] = function() return self, ctrl end,
+		["OnComboBoxMouseExit"] = function() return self, ctrl end,
+		["OnComboBoxMouseEnter"]= function() return self, ctrl end,
 	}
 	--Create a table with the callback functions parameters
 	local callbackParams = { eventCallbackFunctionsSignatures[eventName]() }
 	--Pass in the callback params to the narrateFunction
 	local narrateText, stopCurrent = narrateCallbackFuncForEvent(unpack(callbackParams))
 
-d( ">NarrateText: " ..tos(narrateText) .. ", stopCurrent: " ..tos(stopCurrent))
+--d( ">NarrateText: " ..tos(narrateText) .. ", stopCurrent: " ..tos(stopCurrent))
 	--Didn't the addon take care of the narration itsself? So this library here should narrate the text returned
 	if type(narrateText) == "string" then
 		local narrateFuncOfLibrary = narrationEventToLibraryNarrateFunction[eventName]
@@ -1785,8 +1846,18 @@ function submenuClass:Initialize(parent, comboBoxContainer, options, depth)
 	self.owner = comboBoxContainer.m_comboBox
 end
 
+function submenuClass:IsContextMenu()
+d("[LSM]submenuClass:IsContextMenu -> false")
+	return false
+end
+
 function submenuClass:GetMenuType()
-	return LSM_MENUTYPE_SUBMENU
+d("[LSM]submenuClass:GetMenuType -> IsContextMenu: " ..tos(self:IsContextMenu()))
+	if self:IsContextMenu() then --or maybe if self.m_comboBox:GetMenuType() == LSM_MENUTYPE_CONTEXTMENU then
+		return LSM_MENUTYPE_CONTEXTMENU_SUBMENU
+	else
+		return LSM_MENUTYPE_SUBMENU
+	end
 end
 
 function submenuClass:AddMenuItems(parentControl)
@@ -1878,7 +1949,18 @@ function contextMenuClass:Initialize(comboBoxContainer)
 	self:ClearItems()
 end
 
+function contextMenuClass:IsContextMenu()
+d("[LSM]contextMenuClass:IsContextMenu -> true")
+	--or maybe check if self.m_comboBox:GetMenuType() == LSM_MENUTYPE_CONTEXTMENU then
+
+	if self.m_comboBox and self.m_comboBox:GetMenuType() == LSM_MENUTYPE_CONTEXTMENU then
+d(">found context menu's parent menuType")
+	end
+	return true
+end
+
 function contextMenuClass:GetMenuType()
+d("[LSM]contextMenuClass:GetMenuType - LSM_MENUTYPE_CONTEXTMENU")
 	return LSM_MENUTYPE_CONTEXTMENU
 end
 
@@ -1974,6 +2056,41 @@ end
 -- We need to integrate a supplied ZO_ComboBox with the lib's functionality.
 -- We do this by replacing the m_comboBox with our custom comboBoxClass.
 
+local function setComboBoxHandlers(comboBoxContainer, comboBoxSelf)
+--d("[LSM]setComboBoxHandlers:SetHandlers - comboBoxContainer: " ..tos(comboBoxContainer:GetName()))
+	if comboBoxContainer == nil or comboBoxSelf == nil or comboBoxSelf.Narrate == nil then return end
+
+	local narrateData = comboBoxSelf.narrateData
+	if narrateData ~= nil and (narrateData["OnComboBoxMouseEnter"] or narrateData["OnComboBoxMouseExit"]) then
+--d(">>narrateData and OnComboBoxMouseEnter or OnComboBoxMouseExit found!")
+		local function comboBoxCtrlOnMouseEnter()
+			comboBoxSelf:Narrate("OnComboBoxMouseEnter", comboBoxContainer, nil, nil)
+		end
+		local function comboBoxCtrlOnMouseExit()
+			comboBoxSelf:Narrate("OnComboBoxMouseExit", comboBoxContainer, nil, nil)
+		end
+		ZO_PostHookHandler(comboBoxContainer, "OnMouseEnter", function() comboBoxCtrlOnMouseEnter() end)
+		ZO_PostHookHandler(comboBoxContainer, "OnMouseExit", function() comboBoxCtrlOnMouseExit() end)
+	end
+end
+
+
+local function applyUpgrade(parent, comboBoxContainer, options)
+	local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
+
+	assert(comboBox and comboBox.IsInstanceOf and comboBox:IsInstanceOf(ZO_ComboBox), MAJOR .. ' | The comboBoxContainer you supplied must be a valid ZO_ComboBox container. "comboBoxContainer.m_comboBox:IsInstanceOf(ZO_ComboBox)"')
+
+	zo_mixin(comboBox, comboBoxClass)
+	comboBox.__index = comboBox
+	comboBox:Initialize(parent, comboBoxContainer, options, 1)
+
+	setComboBoxHandlers(comboBoxContainer, comboBox)
+
+	return comboBox
+end
+
+
+--[[
 local function applyUpgrade(parent, comboBoxContainer, options)
 	local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
 
@@ -1985,6 +2102,7 @@ local function applyUpgrade(parent, comboBoxContainer, options)
 	
 	return comboBox
 end
+]]
 
 --------------------------------------------------------------------
 -- Public API functions
@@ -2024,8 +2142,8 @@ lib.MapEntries = mapEntries
 --												   Or you must return a string as 1st return param (and optionally a boolean "stopCurrentNarration" as 2nd return param. If this is nil it will be set to false!)
 --													and let the library here narrate it for you via the UI narration
 --												Optional narration events can be:
---												"OnDropdownMouseEnter" 	function(m_dropdownObject, dropdownControl)  Build your narrateString and narrate it now, or return a string and let the library narrate it for you end
---												"OnDropdownMouseExit"	function(m_dropdownObject, dropdownControl) end
+--												"OnComboBoxMouseEnter" 	function(m_dropdownObject, dropdownControl)  Build your narrateString and narrate it now, or return a string and let the library narrate it for you end
+--												"OnComboBoxMouseExit"	function(m_dropdownObject, dropdownControl) end
 --												"OnMenuShow"			function(m_dropdownObject, dropdownControl, nil, nil) end
 --												"OnMenuHide"			function(m_dropdownObject, dropdownControl) end
 --												"OnSubMenuShow"			function(m_dropdownObject, parentControl, anchorPoint) end
@@ -2034,7 +2152,7 @@ lib.MapEntries = mapEntries
 --												"OnEntryMouseExit"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
 --												"OnEntrySelected"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
 --												"OnCheckboxUpdated"		function(m_dropdownObject, checkboxControl, data) end
---			Example:	narrate = { ["OnDropdownMouseEnter"] = myAddonsNarrateDropdownOnMouseEnter, ... }
+--			Example:	narrate = { ["OnComboBoxMouseEnter"] = myAddonsNarrateComboBoxOnMouseEnter, ... }
 --  }
 function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, options)
 	assert(parent ~= nil and comboBoxContainer ~= nil, MAJOR .. " - AddCustomScrollableComboBoxDropdownMenu ERROR: Parameters parent and comboBoxContainer must be provided!")
