@@ -20,10 +20,11 @@ local function test()
 		comboBox:SetMovable(true)
 
 		local narrateOptions = {
-												["OnComboBoxMouseEnter"] = 	function(m_dropdownObject, dropdownControl)
-													return "ComboBox mouse entered"
+												["OnComboBoxMouseEnter"] = 	function(m_dropdownObject, comboBoxControl)
+													local isOpened = m_dropdownObject:IsDropdownVisible()
+													return "ComboBox mouse entered - opened: " .. tostring(isOpened)
 												end,
-												["OnComboBoxMouseExit"] =	function(m_dropdownObject, dropdownControl)
+												["OnComboBoxMouseExit"] =	function(m_dropdownObject, comboBoxControl)
 													return "ComboBox mouse exit"
 												end,
 												["OnMenuShow"] =			function(m_dropdownObject, dropdownControl)
@@ -70,8 +71,8 @@ local function test()
 --												   Or you must return a string as 1st return param (and optionally a boolean "stopCurrentNarration" as 2nd return param. If this is nil it will be set to false!)
 --													and let the library here narrate it for you via the UI narration
 --												Optional narration events can be:
---												"OnComboBoxMouseEnter" 	function(m_dropdownObject, dropdownControl)  Build your narrateString and narrate it now, or return a string and let the library narrate it for you end
---												"OnComboBoxMouseExit"	function(m_dropdownObject, dropdownControl) end
+--												"OnComboBoxMouseEnter" 	function(m_dropdownObject, comboBoxControl)  Build your narrateString and narrate it now, or return a string and let the library narrate it for you end
+--												"OnComboBoxMouseExit"	function(m_dropdownObject, comboBoxControl) end
 --												"OnMenuShow"			function(m_dropdownObject, dropdownControl, nil, nil) end
 --												"OnMenuHide"			function(m_dropdownObject, dropdownControl) end
 --												"OnSubMenuShow"			function(m_dropdownObject, parentControl, anchorPoint) end
@@ -616,7 +617,7 @@ comboBox.entryMap = entryMap
 						callback = function()  d("test") end,
 					}
 				}
-				AddCustomScrollableMenu(ctrl, entries, {sortEntries=false})
+				AddCustomScrollableMenu(entries, {sortEntries=false})
 
 
 				AddCustomScrollableMenuEntry("Normal entry 2", function()
@@ -657,7 +658,7 @@ comboBox.entryMap = entryMap
 						callback = function()  d("test") end,
 					}
 				}
-				AddCustomScrollableMenu(ctrl, entries, nil)
+				AddCustomScrollableMenu(entries, nil)
 
 
 				AddCustomScrollableMenuEntry("Normal entry 2 - 2", function()
