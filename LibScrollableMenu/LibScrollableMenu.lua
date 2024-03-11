@@ -217,6 +217,11 @@ local function getValueOrCallback(arg, ...)
 end
 lib.GetValueOrCallback = getValueOrCallback
 
+local function updateIsContextMenuAndIsSubmenu(selfVar)
+	selfVar.isContextMenu = g_contextMenu and g_contextMenu.m_container == selfVar.m_container
+	selfVar.isSubmenu = selfVar.m_parentMenu ~= nil
+end
+
 --Mix in table entries in other table and skip existing entries
 local function mixinTableAndSkipExisting(object, ...)
 	for i = 1, select("#", ...) do
@@ -990,10 +995,8 @@ function dropdownClass:AnchorToControl(parentControl)
 	self.anchorRight = right
 
 
-	--Check fo context menu and submenu, and do narration
-	self.isContextMenu = g_contextMenu and g_contextMenu.m_container == self.m_container
-	self.isSubmenu = self.m_parentMenu ~= nil
-
+	--Check for context menu and submenu, and do narration
+	updateIsContextMenuAndIsSubmenu(self)
 	if not self.isContextMenu and self.isSubmenu == true then
 		local anchorPoint = (right == true and TOPRIGHT) or TOPLEFT
 		self:Narrate("OnSubMenuShow", parentControl, nil, nil, anchorPoint)
@@ -1172,7 +1175,7 @@ local function createScrollableComboBoxEntry(self, item, index, entryType)
 end
 
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
-	--d( sfor('minWidth = %s, maxHeight = %s, spacing = %s', tos(minWidth), tos(maxHeight), tos(spacing)))
+	--d( sfor('[LSM]dropdownClass:Show - minWidth = %s, maxHeight = %s, spacing = %s', tos(minWidth), tos(maxHeight), tos(spacing)))
 	self.owner = comboBox
 	
 	ZO_ScrollList_Clear(self.scrollControl)
@@ -1254,6 +1257,13 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 
 	ZO_ScrollList_Commit(self.scrollControl)
 	self.control:BringWindowToTop()
+
+	--Check for context menu and submenu, and do narration
+	updateIsContextMenuAndIsSubmenu(self)
+	if not self.isContextMenu and not self.isSubmenu == true then
+		self:Narrate("OnMenuShow", self.control)
+		lib:FireCallbacks('OnMenuShow', self.control)
+	end
 end
 
 function dropdownClass:ShowSubmenu(control)
@@ -1298,9 +1308,13 @@ function dropdownClass:HideDropdownInternal()
 	local control = self.control
 	control:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
 
-	--(eventName, ctrl, data, hasSubmenu, anchorPoint)
-	self:Narrate("OnSubMenuHide", control)
-	lib:FireCallbacks('OnSubMenuHide', control)
+	updateIsContextMenuAndIsSubmenu(self)
+	if not self.isContextMenu then
+		if self.isSubmenu == true then
+			self:Narrate("OnSubMenuHide", control)
+			lib:FireCallbacks('OnSubMenuHide', control)
+		end
+	end
 end
 
 --------------------------------------------------------------------
@@ -1431,13 +1445,27 @@ end
 -- Changed to hide tooltip and, if available, it's submenu
 -- We hide the tooltip here so it is hidden if the dropdown is hidden OnGlobalMouseUp
 function comboBoxClass:HideDropdown()
+--d("comboBoxClass:HideDropdown()")
 	hideTooltip()
 	-- Recursive through all open submenus and close them starting from last.
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 		self.m_submenu:HideDropdown()
 	end
-	
+
 	zo_comboBox_base_hideDropdown(self)
+
+	--Narrate the OnMenuHide texts
+	local function narrateOnMenuHideButOnlyOnceAsHideDropdownIsCalledTwice()
+		updateIsContextMenuAndIsSubmenu(self)
+		if self.narrateData and self.narrateData["OnMenuHide"] then
+	--d(">narrate OnMenuHide-isContextMenu: " ..tos(self.isContextMenu) .. ", isSubmenu: " .. tos(self.isSubmenu))
+			if not self.isContextMenu and not self.isSubmenu then
+				self:Narrate("OnMenuHide", self.m_container)
+				lib:FireCallbacks('OnMenuHide', self.m_container)
+			end
+		end
+	end
+	onUpdateDoNarrate("OnMenuHide_Start", 25, narrateOnMenuHideButOnlyOnceAsHideDropdownIsCalledTwice)
 end
 
 function comboBoxClass:SelectItemByIndex(index, ignoreCallback)
@@ -2008,16 +2036,19 @@ local function setComboBoxHandlers(comboBoxContainer, comboBoxSelf)
 	if comboBoxContainer == nil or comboBoxSelf == nil or comboBoxSelf.Narrate == nil then return end
 
 	local narrateData = comboBoxSelf.narrateData
-	if narrateData ~= nil and (narrateData["OnComboBoxMouseEnter"] or narrateData["OnComboBoxMouseExit"]) then
---d(">>narrateData and OnComboBoxMouseEnter or OnComboBoxMouseExit found!")
-		local function comboBoxCtrlOnMouseEnter()
-			comboBoxSelf:Narrate("OnComboBoxMouseEnter", comboBoxContainer, nil, nil)
+	if narrateData ~= nil then
+
+		if (narrateData["OnComboBoxMouseEnter"] or narrateData["OnComboBoxMouseExit"]) then
+			--d(">>narrateData and OnComboBoxMouseEnter or OnComboBoxMouseExit found!")
+			local function comboBoxCtrlOnMouseEnter()
+				comboBoxSelf:Narrate("OnComboBoxMouseEnter", comboBoxContainer, nil, nil)
+			end
+			local function comboBoxCtrlOnMouseExit()
+				comboBoxSelf:Narrate("OnComboBoxMouseExit", comboBoxContainer, nil, nil)
+			end
+			ZO_PostHookHandler(comboBoxContainer, "OnMouseEnter", function() comboBoxCtrlOnMouseEnter() end)
+			ZO_PostHookHandler(comboBoxContainer, "OnMouseExit", function() comboBoxCtrlOnMouseExit() end)
 		end
-		local function comboBoxCtrlOnMouseExit()
-			comboBoxSelf:Narrate("OnComboBoxMouseExit", comboBoxContainer, nil, nil)
-		end
-		ZO_PostHookHandler(comboBoxContainer, "OnMouseEnter", function() comboBoxCtrlOnMouseEnter() end)
-		ZO_PostHookHandler(comboBoxContainer, "OnMouseExit", function() comboBoxCtrlOnMouseExit() end)
 	end
 end
 
