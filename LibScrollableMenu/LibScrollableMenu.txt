@@ -1,19 +1,19 @@
-; This Add-on is not created by, affiliated with or sponsored by ZeniMax
+9; This Add-on is not created by, affiliated with or sponsored by ZeniMax
 ; Media Inc. or its affiliates. The Elder Scrolls® and related logos are
 ; registered trademarks or trademarks of ZeniMax Media Inc. in the United
 ; States and/or other countries. All rights reserved.
 
 ## Title: LibScrollableMenu
 ## Description: Adds scrollable menu&nested submenus functionality to combobox. Originally developed by Kyoma's Titlizer
-## Version: 1.8
-## AddOnVersion: 0108
+## Version: 1.9
+## AddOnVersion: 0109
 ## IsLibrary: true
-## Author: tomstock, Baertram, IsJustaGhost (, Kyoma)
-## APIVersion: 101040 101041
+## Author: IsJustaGhost, Baertram, tomstock (, Kyoma)
+## APIVersion: 101041
 
 LibScrollableMenu.lua
 LibScrollableMenu.xml
 
 ## Uncomment this to test the combobox with different menu entryTypes and submenus
 ## Use slash command /lsmtest to show the test UI
-## LSM_test.lua
+LSM_test.lua
