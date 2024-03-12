@@ -45,17 +45,13 @@ local trem = table.remove
 --LibScrollableMenu XML template names
 local LSM_XML_Template_Keyboard = MAJOR.. "_Keyboard_Template"
 
---Timeout data
-local libTimeoutNextId = 1
-local libTimeoutPattern = MAJOR.."Timeout"
-
 --Sound settings
 local origSoundComboClicked = SOUNDS.COMBO_CLICK
 local soundComboClickedSilenced = SOUNDS.NONE
 
---Submenu settings
+--dropdown settings
 local SUBMENU_SHOW_TIMEOUT = 500 --350 ms before
-local submenuCallLaterHandle
+local dropdownCallLaterHandle = MAJOR .. "_Timeout"
 
 --Custom scrollable menu settings (context menus e.g.)
 --TODO: remove or make use of --> local CUSTOM_SCROLLABLE_MENU_NAME = MAJOR.."_CustomContextMenu"
@@ -188,25 +184,15 @@ local function getControlData(control)
 end
 
 local function clearTimeout()
-	if submenuCallLaterHandle ~= nil then
-		EM:UnregisterForUpdate(submenuCallLaterHandle)
-		submenuCallLaterHandle = nil
-	end
+	EM:UnregisterForUpdate(dropdownCallLaterHandle)
 end
 
-local function setTimeout(callback , ...)
-	local params = {...}
-	if submenuCallLaterHandle ~= nil then clearTimeout() end
-	submenuCallLaterHandle =  libTimeoutPattern .. libTimeoutNextId
-	libTimeoutNextId = libTimeoutNextId + 1
-
-	--Delay the submenu close callback so we can move the mouse above a new submenu control and keep that opened e.g.
-	--TODO: This isn't really used for that anymore. It's purpose is to provide a delay 
-	-- if the mouse has moved outside of the dropdown controls. To give time to move back in.
-	EM:RegisterForUpdate(submenuCallLaterHandle, SUBMENU_SHOW_TIMEOUT, function()
+local function setTimeout(callback)
+	--Delay the dropdown close callback so we can move the mouse above a new dropdown control and keep that opened e.g.
+	EM:RegisterForUpdate(dropdownCallLaterHandle, SUBMENU_SHOW_TIMEOUT, function()
 		clearTimeout()
-		if callback then callback(unpack(params)) end
-	end )
+		if callback then callback() end
+	end)
 end
 
 --Run function arg to get the return value (passing in ... as optional params to that function),
@@ -2331,24 +2317,8 @@ LibScrollableMenu = lib
 ------------------------------------------------------------------------------------------------------------------------
 
 --[[
-
 -------------------
 TODO - To check
 -------------------
-setTimeout no longer needs ... param -> 2024-03-10 Still valid?
-
-Change the description of the context menu. -> 2024-03-10 What description, where?
-	
-remove? parent
-AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, options) -> 2024-03-10 Keeping for the moment to be backwards compatible!
-
-We decided to commit to only using these functions from the comboBox. Remove?
-dropdownClass:AddItems, dropdownClass:AddItem -> 2024-03-10 Keep for backwards compatibility and easy error fixes so addon devs do not have to find, fix and upload new versions only for this
-
-Improve setTimeout -> 2024-03-10 How ?
-
-
-Can we make "entries" for submenus be a function returning a table too, via GetValueOrCallback(data.entries, data)? -> 2024-03-10
-
-Check if processNameString can add a data.nameFunction to "save" the originally passed in data.name function for later usage once menu was shown and is still open -> 2024-03-10
+	updated setTimeout to only use a single update id
 ]]
