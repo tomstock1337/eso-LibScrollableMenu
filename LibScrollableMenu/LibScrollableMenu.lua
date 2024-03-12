@@ -188,6 +188,7 @@ local function clearTimeout()
 end
 
 local function setTimeout(callback)
+	clearTimeout()
 	--Delay the dropdown close callback so we can move the mouse above a new dropdown control and keep that opened e.g.
 	EM:RegisterForUpdate(dropdownCallLaterHandle, SUBMENU_SHOW_TIMEOUT, function()
 		clearTimeout()
