@@ -914,18 +914,12 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	end
 end
 
-
--- Redundancy functions. These functions redirect back to the comboBox for if "scrollHelper" was used to add items.
 function dropdownClass:AddItems(items)
-	if self.owner then
-		self.owner:AddItems(items)
-	end
+	error('[LSM] scrollHelper:AddItems is obsolete. You must use m_comboBox:AddItems')
 end
 
 function dropdownClass:AddItem(item)
-	if self.owner then
-		self.owner:AddItem(item)
-	end
+	error('[LSM] scrollHelper:AddItems is obsolete. You must use m_comboBox:AddItem')
 end
 
 --Narration
@@ -2320,5 +2314,5 @@ LibScrollableMenu = lib
 -------------------
 TODO - To check
 -------------------
-	updated setTimeout to only use a single update id
+	Set dropdownClass:AddItems and dropdownClass:AddItem to be prepared to be removed
 ]]
