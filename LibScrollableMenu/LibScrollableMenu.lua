@@ -23,6 +23,7 @@ local zo_comboBox_base_hideDropdown = ZO_ComboBox_Base.HideDropdown
 
 local zo_comboBox_selectItem = ZO_ComboBox.SelectItem
 local zo_comboBox_onGlobalMouseUp = ZO_ComboBox.OnGlobalMouseUp
+local zo_comboBox_hideDropdownInternal = ZO_ComboBox.HideDropdownInternal
 local zo_comboBox_setItemEntryCustomTemplate = ZO_ComboBox.SetItemEntryCustomTemplate
 
 local zo_comboBoxDropdown_onEntrySelected = ZO_ComboBoxDropdown_Keyboard.OnEntrySelected
@@ -1408,7 +1409,6 @@ end
 -- We hide the tooltip here so it is hidden if the dropdown is hidden OnGlobalMouseUp
 function comboBoxClass:HideDropdown()
 --d("comboBoxClass:HideDropdown()")
-	hideTooltip()
 	-- Recursive through all open submenus and close them starting from last.
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 		self.m_submenu:HideDropdown()
@@ -1428,6 +1428,11 @@ function comboBoxClass:HideDropdown()
 		end
 	end
 	onUpdateDoNarrate("OnMenuHide_Start", 25, narrateOnMenuHideButOnlyOnceAsHideDropdownIsCalledTwice)
+end
+
+function comboBoxClass:HideDropdownInternal()
+	zo_comboBox_hideDropdownInternal(self)
+	hideTooltip()
 end
 
 function comboBoxClass:SelectItemByIndex(index, ignoreCallback)
@@ -2293,5 +2298,5 @@ LibScrollableMenu = lib
 -------------------
 TODO - To check
 -------------------
-	Updated processNameString
+	Fixed tooltip hiding on timeout if menu has a submenu.
 ]]
