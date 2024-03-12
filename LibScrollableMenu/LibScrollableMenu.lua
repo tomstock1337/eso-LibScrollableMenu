@@ -480,47 +480,25 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 end
 
 local function processNameString(data)
-	local name = getValueOrCallback(data.name, data)
-
+	local name = data.name
 	--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
 	if data.label ~= nil then
 		name = getValueOrCallback(data.label, data)
-	end
-
-	if name == nil then --or name == "" then
-		d(MAJOR .. " - ERROR: processNameString, entry's data.name is nil")
-		return false
-	end
-
-	data.name = name
-	return true
-end
-
---[[ 2024-03-10 Check if processNameString can add a data.nameFunction to "save" the originally passed in data.name function for later usage once menu was shown and is still open
-local function processNameString(data)
-	local name
-	--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
-	if data.label ~= nil then
-		name = getValueOrCallback(data.label, data)
-	end
-
-	if type(data.name) == 'function' then
-		local nameFunc = data.name
-		--Keep the original name function at the data, as we need a "String only" text as data.name for ZO_ComboBox internal functions!
-		data.nameFunction = nameFunc
-		--If no label was provided: Use the data.name
-		name = name or nameFunc(data)
 	else
-		--If no label was provided: Use the data.name
-		name = name or data.name
+		if type(data.name) == 'function' then
+			--Keep the original name function at the data, as we need a "String only" text as data.name for ZO_ComboBox internal functions!
+			data.nameFunction = data.name
+		end
+		
+		if data.nameFunction then
+			name = data.nameFunction(data)
+		end
 	end
+	
 	--Fallback to prevent errors?
-	name = name or "n/a"
-
-	data.name = name
+	data.name = name or "n/a"
+	return type(data.name) == 'string'
 end
-]]
-
 
 --------------------------------------------------------------------
 -- Local tooltip functions
@@ -2315,5 +2293,5 @@ LibScrollableMenu = lib
 -------------------
 TODO - To check
 -------------------
-	Set dropdownClass:AddItems and dropdownClass:AddItem to be prepared to be removed
+	Updated processNameString
 ]]
