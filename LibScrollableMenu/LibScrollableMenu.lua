@@ -486,9 +486,9 @@ local function processNameString(data)
 	if data.label ~= nil then
 		name = getValueOrCallback(data.label, data)
 	else
-		if type(data.name) == 'function' then
+		if type(name) == 'function' then
 			--Keep the original name function at the data, as we need a "String only" text as data.name for ZO_ComboBox internal functions!
-			data.nameFunction = data.name
+			data.nameFunction = name
 		end
 		
 		if data.nameFunction then
@@ -935,10 +935,8 @@ end
 
 function dropdownClass:AnchorToControl(parentControl)
 	local width, height = GuiRoot:GetDimensions()
-
-	local offsetX = ZO_SCROLL_BAR_WIDTH - 4
-
 	local right = true
+	local point, relativePoint = TOPLEFT, TOPRIGHT
 	
 	if self.m_parentMenu.m_dropdownObject and self.m_parentMenu.m_dropdownObject.anchorRight ~= nil then
 		right = self.m_parentMenu.m_dropdownObject.anchorRight
@@ -946,17 +944,17 @@ function dropdownClass:AnchorToControl(parentControl)
 	
 	if not right or parentControl:GetRight() + self.control:GetWidth() > width then
 		right = false
-	end
-
-	self.control:ClearAnchors()
-	if right then
-		self.control:SetAnchor(TOPLEFT, parentControl, TOPRIGHT, offsetX)
-	else
-		self.control:SetAnchor(TOPRIGHT, parentControl, TOPLEFT)
+		point, relativePoint = TOPRIGHT, TOPLEFT
 	end
 	
-	self.anchorRight = right
+	local relativeTo = parentControl.m_dropdownObject.scrollControl
+	-- Get offsetY in relation to parentControl's top in the scroll container
+    local offsetY = select(6, parentControl:GetAnchor(0))
 
+	self.control:ClearAnchors()
+	self.control:SetAnchor(point, relativeTo, relativePoint, 2, offsetY)
+	
+	self.anchorRight = right
 
 	--Check for context menu and submenu, and do narration
 	updateIsContextMenuAndIsSubmenu(self)
@@ -1155,7 +1153,6 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	for i = 1, numItems do
 		local item = itemTable[i]
 		if processNameString(item) then
-
 			local isLastEntry = i == numItems
 			local entryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
 			local entryType = ENTRY_ID
@@ -1197,16 +1194,17 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 
 	allItemsHeight = allItemsHeight + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 
-	local scroll_bar_padding = ZO_SCROLL_BAR_WIDTH
 	local desiredHeight = maxHeight
 	if allItemsHeight < desiredHeight then
 		desiredHeight = allItemsHeight
-		scroll_bar_padding = 0
+		ApplyTemplateToControl(self.scrollControl.contents, "LibScrollableMenu_Scroll_No_Bar")
+	else
+		ApplyTemplateToControl(self.scrollControl.contents, "LibScrollableMenu_Scroll_Bar")
 	end
 
 	-- Allow the dropdown to automatically widen to fit the widest entry, but
 	-- prevent it from getting any skinnier than the container's initial width
-	local totalDropDownWidth = largestEntryWidth + ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2 + scroll_bar_padding
+	local totalDropDownWidth = largestEntryWidth + ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2 + ZO_SCROLL_BAR_WIDTH
 	if totalDropDownWidth > minWidth then
 		self.control:SetWidth(totalDropDownWidth)
 	else
@@ -1215,8 +1213,6 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 
 	self.control:SetHeight(desiredHeight)
 	ZO_ScrollList_SetHeight(self.scrollControl, desiredHeight)
-
---	ZO_Scroll_SetUseFadeGradient(self.scrollControl, desiredHeight >= maxHeight)
 
 	ZO_ScrollList_Commit(self.scrollControl)
 	self.control:BringWindowToTop()
@@ -1659,8 +1655,6 @@ function comboBoxClass:AddCustomEntryTemplates(options)
 	-- addLabel initializes the entry, both as label and, as a comboBox.m_dropdownObject entry
 	-- All entries besides divider uses this. DIVIDER_ENTRY_ID initializes it's self with SetupEntryBase
 	local function addLabel(control, data, list)
-		-- Remember, labelStr is being handled in processNameString, replacing it with .name
-		-- data.name == data.label() or data.label or data.name() or data.name
 		self:SetupEntry(control, data, list)
 
 		local font = getValueOrCallback(data.font, data)
@@ -1814,7 +1808,6 @@ function submenuClass:Initialize(parent, comboBoxContainer, options, depth)
 	self.isSubmenu = true
 end
 
-
 function submenuClass:AddMenuItems(parentControl)
 	self.openingControl = parentControl
 	self:RefreshSortedItems(parentControl)
@@ -1905,7 +1898,6 @@ function contextMenuClass:Initialize(comboBoxContainer)
 
 	self.isContextMenu = true
 end
-
 
 function contextMenuClass:AddItem(itemEntry, updateOptions)
 	if not itemEntry.customEntryTemplate then
@@ -2298,5 +2290,8 @@ LibScrollableMenu = lib
 -------------------
 TODO - To check
 -------------------
-	Fixed tooltip hiding on timeout if menu has a submenu.
+	Width update
+		Finalized processNameString with nameFunction
+		Created 2 xml templates to use for anchoring based on scrollbar visibility.
+		Adjusted AnchorToControl so submenus sit on edge of previous dropdown. 
 ]]
