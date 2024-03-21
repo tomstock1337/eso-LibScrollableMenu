@@ -173,6 +173,11 @@ local iconNarrationNewValue = GetString(SI_SCREEN_NARRATION_NEW_ICON_NARRATION)
 -- Local functions
 --------------------------------------------------------------------
 
+local function getScrollContentsTemplate(barShown)
+	local baseTemplate = MAJOR .. '_ScrollContents'
+	return barShown and baseTemplate .. '_BarShown' or baseTemplate .. '_BarHidden'
+end
+
 -- >> data, dataEntry
 local function getControlData(control)
 	local data = control.m_sortedItems or control.m_data
@@ -207,11 +212,6 @@ local function getValueOrCallback(arg, ...)
 	end
 end
 lib.GetValueOrCallback = getValueOrCallback
-
-local function updateIsContextMenuAndIsSubmenu(selfVar)
-	selfVar.isContextMenu = g_contextMenu and g_contextMenu.m_container == selfVar.m_container
-	selfVar.isSubmenu = selfVar.m_parentMenu ~= nil
-end
 
 --Mix in table entries in other table and skip existing entries
 local function mixinTableAndSkipExisting(object, ...)
@@ -334,7 +334,7 @@ lib.MapEntries = mapEntries
 -- This works up from the mouse-over entry's submenu up to the dropdown,
 -- as long as it does not run into a submenu still having a new entry.
 local function updateSubmenuNewStatus(control)
---	d("[LSM]updateSubmenuNewStatus")
+--	d( '[LSM]updateSubmenuNewStatus')
 	-- reverse parse
 	local isNew = false
 	
@@ -362,8 +362,8 @@ end
 
 --Remove the new status of a dropdown entry
 local function clearNewStatus(control, data)
---d("[LSM]clearNewStatus")
---d("data.isNew ' .. tostring(data.isNew))
+--d( '[LSM]clearNewStatus')
+--d( 'data.isNew ' .. tostring(data.isNew))
 	if data.isNew then
 		-- Only directly change status on non-submenu entries. The are effected by child entries
 		if data.entries == nil then
@@ -460,8 +460,6 @@ end
 --Set the custom XML virtual template for a dropdown entry
 local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	local isHeader = getValueOrCallback(item.isHeader, item)
-	--We are not going to use processNameString(item) function here to update item.name and item.label here already because at dropdown:Show it's called to react on
-	--actual values -> if item.name or item.label is a function checking values!
 	local isDivider = (item.label ~= nil and getValueOrCallback(item.label, item) == libDivider) or getValueOrCallback(item.name, item) == libDivider
 	local isCheckbox = getValueOrCallback(item.isCheckbox, item)
 	--local isCheckboxChecked = GetValueOrCallback(item.checked, item)
@@ -472,14 +470,29 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	local entryType = (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) or
 			(hasSubmenu and SUBMENU_ENTRY_ID) or ENTRY_ID
 
---	item.hasSubmenu = hasSubmenu
---	item.isDivider = isDivider
 	if entryType then
 		local customEntryTemplate = customEntryTemplates[entryType].template
 		zo_comboBox_setItemEntryCustomTemplate(item, customEntryTemplate)
 	end
+	
+	item.isHeader = isHeader
+	item.isDivider = isDivider
+	item.hasSubmenu = hasSubmenu
+	item.isCheckbox = isCheckbox
+end
 
-	return hasSubmenu
+local function addItem_Base(self, itemEntry)
+	if not itemEntry.customEntryTemplate then
+		setItemEntryCustomTemplate(itemEntry, self.XMLrowTemplates)
+		
+		if itemEntry.hasSubmenu then
+			itemEntry.hasSubmenu = true
+			itemEntry.isNew = areAnyEntriesNew(itemEntry)
+		elseif itemEntry.isHeader then
+			itemEntry.font = self.m_headerFont
+			itemEntry.color = self.m_headerFontColor
+		end
+	end
 end
 
 local function processNameString(data)
@@ -776,7 +789,7 @@ local handlerFunctions  = {
 			return true
 		end,
 		[SUBMENU_ENTRY_ID] = function(control, data, ...)
-			--d("onMouseEnter [SUBMENU_ENTRY_ID]")
+			--d( 'onMouseEnter [SUBMENU_ENTRY_ID]')
 			-- Must clear now. Otherwise, moving onto a submenu will close it from exiting previous row.
 			local dropdown = onMouseEnter(control, data, has_submenu)
 			clearTimeout()
@@ -816,7 +829,7 @@ local handlerFunctions  = {
 	},
 	['onMouseUp'] = {
 		[ENTRY_ID] = function(control, data, button, upInside)
-			--onMouseUp [ENTRY_ID]")
+			--onMouseUp [ENTRY_ID]')
 			local dropdown = onMouseUp(control, data, no_submenu, button, upInside)
 			
 			if upInside then
@@ -849,7 +862,7 @@ local handlerFunctions  = {
 			return true
 		end,
 		[CHECKBOX_ENTRY_ID] = function(control, data, button, upInside)
-			--d("onMouseUp [CHECKBOX_ENTRY_ID]")
+			--d( 'onMouseUp [CHECKBOX_ENTRY_ID]')
 			local dropdown = control.m_dropdownObject
 			if upInside then
 				if button == MOUSE_BUTTON_INDEX_LEFT then
@@ -881,7 +894,7 @@ local dropdownClass = ZO_ComboBoxDropdown_Keyboard:Subclass()
 
 -- dropdownClass:New(To simplify locating the beginning of the class
 function dropdownClass:Initialize(parent, comboBoxContainer, depth)
-	local dropdownControl = CreateControlFromVirtual(comboBoxContainer:GetName(), GuiRoot, "LibScrollableMenu_Keyboard_Template", depth)
+	local dropdownControl = CreateControlFromVirtual(comboBoxContainer:GetName(), GuiRoot, parent.dropdownTemplate, depth)
 	ZO_ComboBoxDropdown_Keyboard.Initialize(self, dropdownControl)
 	dropdownControl.object = self
 	self.m_comboBox = comboBoxContainer.m_comboBox
@@ -901,14 +914,18 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	else
 --d("[LSM]dropdownClass:Initialize -  self.scrollControl is nil")
 	end
+	
+	dropdownControl:SetHandler('OnShow', function()
+		d( 'OnShow overwrite test')
+	end)
 end
 
 function dropdownClass:AddItems(items)
-	error('['..MAJOR..'] scrollHelper:AddItems is obsolete. You must use m_comboBox:AddItems')
+	error('[LSM] scrollHelper:AddItems is obsolete. You must use m_comboBox:AddItems')
 end
 
 function dropdownClass:AddItem(item)
-	error('['..MAJOR..'] scrollHelper:AddItems is obsolete. You must use m_comboBox:AddItem')
+	error('[LSM] scrollHelper:AddItems is obsolete. You must use m_comboBox:AddItem')
 end
 
 --Narration
@@ -946,6 +963,7 @@ function dropdownClass:AnchorToControl(parentControl)
 	local width, height = GuiRoot:GetDimensions()
 	local right = true
 	local point, relativePoint = TOPLEFT, TOPRIGHT
+	local offsetX = -2
 	
 	if self.m_parentMenu.m_dropdownObject and self.m_parentMenu.m_dropdownObject.anchorRight ~= nil then
 		right = self.m_parentMenu.m_dropdownObject.anchorRight
@@ -954,6 +972,7 @@ function dropdownClass:AnchorToControl(parentControl)
 	if not right or parentControl:GetRight() + self.control:GetWidth() > width then
 		right = false
 		point, relativePoint = TOPRIGHT, TOPLEFT
+		offsetX = 2
 	end
 	
 	local relativeTo = parentControl.m_dropdownObject.scrollControl
@@ -961,17 +980,9 @@ function dropdownClass:AnchorToControl(parentControl)
     local offsetY = select(6, parentControl:GetAnchor(0))
 
 	self.control:ClearAnchors()
-	self.control:SetAnchor(point, relativeTo, relativePoint, 2, offsetY)
+	self.control:SetAnchor(point, relativeTo, relativePoint, offsetX, offsetY)
 	
 	self.anchorRight = right
-
-	--Check for context menu and submenu, and do narration
-	updateIsContextMenuAndIsSubmenu(self)
-	if not self.isContextMenu and self.isSubmenu == true then
-		local anchorPoint = (right == true and TOPRIGHT) or TOPLEFT
-		self:Narrate("OnSubMenuShow", parentControl, nil, nil, anchorPoint)
-		lib:FireCallbacks('OnSubMenuShow', parentControl, anchorPoint)
-	end
 end
 
 function dropdownClass:AnchorToComboBox(conboBox)
@@ -1012,6 +1023,18 @@ function dropdownClass:AnchorToMouse()
 			menuToAnchor:SetAnchor(BOTTOMRIGHT, nil, TOPLEFT, x, y)
 		end
 	end
+end
+
+function dropdownClass:GetFormattedDropdownNarrationEvent(suffix)
+	if self.owner then
+		return sfor('On%s%s', self.owner:GetMenuPrfix(), suffix)
+	end
+	return ''
+end
+
+function dropdownClass:GetAnchorPoint(control)
+	local anchorPoint = select(2, control:GetAnchor())
+	return anchorPoint
 end
 
 function dropdownClass:GetScrollbar()
@@ -1060,7 +1083,7 @@ function dropdownClass:IsMouseOverOpeningControl()
 end
 
 function dropdownClass:OnMouseEnterEntry(control)
---	d("[LSM]dropdownClass:OnMouseEnterEntry")
+--	d( '[LSM]dropdownClass:OnMouseEnterEntry')
 --	self.control:BringWindowToTop()
 	
 	-- Added here for when mouse is moved from away from dropdowns over a row, it will know to close specific children
@@ -1083,7 +1106,7 @@ function dropdownClass:OnMouseEnterEntry(control)
 end
 
 function dropdownClass:OnMouseExitEntry(control)
-	--d("[LSM]dropdownClass:OnMouseExitEntry")
+	--d( '[LSM]dropdownClass:OnMouseExitEntry')
 --	d( control:GetName())
 	
 	hideTooltip()
@@ -1110,7 +1133,7 @@ function dropdownClass:OnMouseExitTimeout(control)
 end
 
 function dropdownClass:OnEntrySelected(control, button, upInside)
-	--d("[LSM]dropdownClass:OnEntrySelected IsUpInside ' .. tos(upInside) .. ' Button ' .. tos(button))
+	--d( '[LSM]dropdownClass:OnEntrySelected IsUpInside ' .. tos(upInside) .. ' Button ' .. tos(button))
 	
 	local data = getControlData(control)
 	if not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
@@ -1125,6 +1148,11 @@ function dropdownClass:OnEntrySelected(control, button, upInside)
 			end
 		end
 	end
+end
+
+function dropdownClass:OnShown()
+	lib:FireCallbacks('OnDropdownShown', self)
+	self.control:BringWindowToTop()
 end
 
 function dropdownClass:SelectItemByIndex(index, ignoreCallback)
@@ -1142,14 +1170,6 @@ local function createScrollableComboBoxEntry(self, item, index, entryType)
 	entryData.m_dropdownObject = self
 	entryData:SetupAsScrollListDataEntry(entryType)
 	return entryData
-end
-
-function dropdownClass:SetupEntryLabel(labelControl, data)
-	labelControl:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
-	labelControl:SetFont(self.owner:GetDropdownFont())
-	local color = self.owner:GetItemNormalColor(data)
-	labelControl:SetColor(color:UnpackRGBA())
-	labelControl:SetHorizontalAlignment(self.horizontalAlignment)
 end
 
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
@@ -1212,12 +1232,11 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 
 	allItemsHeight = allItemsHeight + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 
+	
 	local desiredHeight = maxHeight
+	ApplyTemplateToControl(self.scrollControl.contents, getScrollContentsTemplate(allItemsHeight > desiredHeight))
 	if allItemsHeight < desiredHeight then
 		desiredHeight = allItemsHeight
-		ApplyTemplateToControl(self.scrollControl.contents, "LibScrollableMenu_Scroll_No_Bar")
-	else
-		ApplyTemplateToControl(self.scrollControl.contents, "LibScrollableMenu_Scroll_Bar")
 	end
 
 	-- Allow the dropdown to automatically widen to fit the widest entry, but
@@ -1233,14 +1252,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	ZO_ScrollList_SetHeight(self.scrollControl, desiredHeight)
 
 	ZO_ScrollList_Commit(self.scrollControl)
-	self.control:BringWindowToTop()
-
-	--Check for context menu and submenu, and do narration
-	updateIsContextMenuAndIsSubmenu(self)
-	if not self.isContextMenu and not self.isSubmenu == true then
-		self:Narrate("OnMenuShow", self.control)
-		lib:FireCallbacks('OnMenuShow', self.control)
-	end
+	self:OnShown()
 end
 
 function dropdownClass:ShowSubmenu(control)
@@ -1269,28 +1281,6 @@ end
 function dropdownClass:HideSubmenu()
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 		self.m_submenu:HideDropdown()
-	end
-end
-
--- These are added here to make use of it's control to register the events too, 
--- instead of menu using the same control to register the same event for different dropdowns.
---> dropdownClass:ShowDropdownInternal() -> Used for submenus only. Main menu will be handled directly at ZO_ComboBox class!
-function dropdownClass:ShowDropdownInternal()
-	local control = self.control
-	control:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self.owner:OnGlobalMouseUp(...) end)
-end
-
---> dropdownClass:HideDropdownInternal() -> Used for submenus only
-function dropdownClass:HideDropdownInternal()
-	local control = self.control
-	control:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
-
-	updateIsContextMenuAndIsSubmenu(self)
-	if not self.isContextMenu then
-		if self.isSubmenu == true then
-			self:Narrate("OnSubMenuHide", control)
-			lib:FireCallbacks('OnSubMenuHide', control)
-		end
 	end
 end
 
@@ -1342,6 +1332,11 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth)
 	self.m_selectedItemText = comboBoxContainer:GetNamedChild("SelectedItemText")
 	self.m_multiSelectItemData = {}
 	
+	self.m_headerFont = 'ZoFontWinH5'
+	self.m_headerFontColor = HEADER_TEXT_COLOR
+	
+	parent = parent or {}
+	self.dropdownTemplate = parent.dropdownTemplate or 'LibScrollableMenu_Keyboard_Template'
 	local dropdownObject = self:GetDropdownObject(comboBoxContainer, depth)
 	self:SetDropdownObject(dropdownObject)
 	-- Uncomment below if they ever remove it from SetDropdownObject
@@ -1352,6 +1347,29 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth)
 
 	return self
 end
+
+--[[
+function comboBoxClass:SetHandlers(comboBoxContainer)
+d("[LSM]comboBoxClass:SetHandlers - comboBoxContainer: " ..tos(comboBoxContainer:GetName()))
+	if comboBoxContainer == nil then return end
+
+d(">isContextMenu: " ..tos(self:IsContextMenu()) .. "; isSubMenu: " ..tos(self:IsSubmenu()))
+	if not self:IsContextMenu() and not self:IsSubmenu() then
+		local narrateData = self.narrateData
+		if narrateData ~= nil and (narrateData["OnComboBoxMouseEnter"] or narrateData["OnComboBoxMouseExit"]) then
+d(">>narrateData and OnComboBoxMouseEnter or OnComboBoxMouseExit found!")
+			local function dropdownOnMouseEnter()
+				self:Narrate("OnComboBoxMouseEnter", comboBoxContainer, nil, nil)
+			end
+			local function dropdownOnMouseExit()
+				self:Narrate("OnComboBoxMouseExit", comboBoxContainer, nil, nil)
+			end
+			comboBoxContainer:SetHandler("OnMouseEnter", function() dropdownOnMouseEnter() end)
+			comboBoxContainer:SetHandler("OnMouseExit", function() dropdownOnMouseExit() end)
+		end
+	end
+end
+]]
 
 
 -- [Replaced functions]
@@ -1376,15 +1394,7 @@ end
 
 -- Adds the customEntryTemplate to all items added
 function comboBoxClass:AddItem(itemEntry, updateOptions, templates)
-	-- Append
-	if not itemEntry.customEntryTemplate then
-		local hasSubmenu = setItemEntryCustomTemplate(itemEntry, self.XMLrowTemplates)
-
-		if hasSubmenu then
-			itemEntry.hasSubmenu = true
-			itemEntry.isNew = areAnyEntriesNew(itemEntry)
-		end
-	end
+	addItem_Base(self, itemEntry)
 	zo_comboBox_base_addItem(self, itemEntry, updateOptions)
 end
 
@@ -1427,7 +1437,7 @@ function comboBoxClass:HideDropdownInternal()
 end
 
 function comboBoxClass:SelectItemByIndex(index, ignoreCallback)
-	--d("SelectItemByIndex ' .. tos(index))
+	--d( 'SelectItemByIndex ' .. tos(index))
 	return zo_comboBox_selectItem(self, self.m_sortedItems[index], ignoreCallback)
 end
 
@@ -1451,21 +1461,20 @@ function comboBoxClass:IsMouseOverScrollbarControl()
 end
 
 function comboBoxClass:BypassOnGlobalMouseUp(button)
-	--d("[LSM]comboBoxClass:BypassOnGlobalMouseUp-button: " ..tos(button) .. ", isMouseOverScrollbar: " ..tos(self:IsMouseOverScrollbarControl()))
-
+--d("[LSM]comboBoxClass:BypassOnGlobalMouseUp-button: " ..tos(button) .. ", isMouseOverScrollbar: " ..tos(self:IsMouseOverScrollbarControl()))
 	if self:IsMouseOverScrollbarControl() then
-		--d(">>mouse is above scrollbar")
+--d(">>mouse is above scrollbar")
 		return true
 	end
 
 	if button == MOUSE_BUTTON_INDEX_LEFT then
 		local mocCtrl = moc()
-		--d(">moc: " ..tos(mocCtrl ~= nil and mocCtrl:GetName()) .. ", mocTypeId: " ..tos(mocCtrl.typeId))
+--d(">moc: " ..tos(mocCtrl ~= nil and mocCtrl:GetName()) .. ", mocTypeId: " ..tos(mocCtrl.typeId))
 		if mocCtrl.typeId then
 			return mocCtrl.typeId ~= ENTRY_ID
 		end
 	end
-	--Any other right mouse click -> Stay opened!
+
 	return button == MOUSE_BUTTON_INDEX_RIGHT
 end
 
@@ -1490,6 +1499,19 @@ function comboBoxClass:GetSubmenu()
 	end
 	
 	return self.m_submenu
+end
+
+function comboBoxClass:GetMenuPrfix()
+	return 'Menu'
+end
+
+function comboBoxClass:HideOnMouseExit(mocCtrl)
+--d("[LSM]comboBoxClass:HideOnMouseExit")
+	if self.m_submenu and not self.m_submenu:IsMouseOverControl() and not self.m_submenu:IsMouseOverOpeningControl() then
+--d(">submenu found, but mouse not over it! HideDropdown")
+		self.m_submenu:HideDropdown()
+		return true
+	end
 end
 
 function comboBoxClass:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
@@ -1598,6 +1620,11 @@ function comboBoxClass:UpdateOptions(options)
 	self.options = options
 	self.narrateData = narrateData
 	
+	local headerFont = getValueOrCallback(options.headerFont, options)
+	local headerFontColor = getValueOrCallback(options.headerFontColor, options)
+	self.m_headerFont = headerFont or 'ZoFontWinH5'
+	self.m_headerFontColor = headerFontColor or HEADER_TEXT_COLOR
+	
 	-- this will add custom and default templates to self.XMLrowTemplates the same way dataTypes were created before.
 	self:AddCustomEntryTemplates(options)
 	
@@ -1612,67 +1639,12 @@ local function getTemplateData(entryType, template)
 end
 
 function comboBoxClass:AddCustomEntryTemplates(options)
-	-- checkbox wrappers
-	local function setChecked(checkbox, checked)
-		local data = ZO_ScrollList_GetData(checkbox:GetParent())
-		
-		data.checked = checked
-		if data.callback then
-			data.callback(checked, data)
-		end
-		
-		self:Narrate("OnCheckboxUpdated", checkbox, data, nil)
-		lib:FireCallbacks('CheckboxUpdated', checked, data, checkbox)
-	end
-
-	local function addCheckbox(control, data, list)
-		control.m_checkbox = control.m_checkbox or control:GetNamedChild("Checkbox")
-		local checkbox = control.m_checkbox
-		ZO_CheckButton_SetToggleFunction(checkbox, setChecked)
-		ZO_CheckButton_SetCheckState(checkbox, getValueOrCallback(data.checked, data))
-	end
-	
-	local function addIcon(control, data, list)
-		control.m_iconContainer = control.m_iconContainer or control:GetNamedChild("IconContainer")
-		local iconContainer = control.m_iconContainer
-		control.m_icon = control.m_icon or iconContainer:GetNamedChild("Icon")
-		updateIcons(control, data)
-	end
-	
-	local function addArrow(control, data, list)
-		control.m_arrow = control:GetNamedChild("Arrow")
-		data.hasSubmenu = true
-	end
-	
-	local function addDivider(control, data, list)
-		control.m_divider = control:GetNamedChild("Divider")
-	end
-
-	-- addLabel initializes the entry, both as label and, as a comboBox.m_dropdownObject entry
-	-- All entries besides divider uses this. DIVIDER_ENTRY_ID initializes it's self with SetupEntryBase
-	local function addLabel(control, data, list)
-		self:SetupEntry(control, data, list)
-
-		local font = getValueOrCallback(data.font, data)
-		if font then
-			self.m_label:SetFont(font)
-		end
-		local color = getValueOrCallback(data.color, data)
-		if color then
-			self.m_label:SetColor(color)
-		end
-	end
-
-	-- all the template stuff wrapped up in here
 	local defaultXMLTemplates  = {
 		[ENTRY_ID] = {
 			template = 'LibScrollableMenu_ComboBoxEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
-				control.typeId = ENTRY_ID
-				
-				addIcon(control, data, list)
-				addLabel(control, data, list)
+				self:SetupEntryLabel(control, data, list)
 			end,
 		},
 		[SUBMENU_ENTRY_ID] = {
@@ -1680,53 +1652,32 @@ function comboBoxClass:AddCustomEntryTemplates(options)
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthAdjust = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
-				control.typeId = SUBMENU_ENTRY_ID
-				
-				addIcon(control, data, list)
-				addLabel(control, data, list)
-				addArrow(control, data, list)
+				self:SetupEntrySubmenu(control, data, list)
 			end,
 		},
 		[DIVIDER_ENTRY_ID] = {
 			template = 'LibScrollableMenu_ComboBoxDividerEntry',
 			rowHeight = DIVIDER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
-				self:SetupEntryBase(control, data, list)
-				control.typeId = DIVIDER_ENTRY_ID
-				
-				addDivider(control, data, list)
+				self:SetupEntryDivider(control, data, list)
 			end,
 		},
 		[HEADER_ENTRY_ID] = {
 			template = 'LibScrollableMenu_ComboBoxHeaderEntry',
 			rowHeight = HEADER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
-				control.typeId = HEADER_ENTRY_ID
-				
-				control.isHeader = true
-				addDivider(control, data, list)
-				addIcon(control, data, list)
-				addLabel(control, data, list)
-				
-				-- Since the font is being change in addLabel due to SetupEntry...
-				control.m_label:SetFont('ZoFontWinH5')
-				control.m_label:SetColor(HEADER_TEXT_COLOR:UnpackRGBA())
+				self:SetupEntryHeader(control, data, list)
 			end,
 		},
 		[CHECKBOX_ENTRY_ID] = {
 			template = 'LibScrollableMenu_ComboBoxCheckboxEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
-				control.typeId = CHECKBOX_ENTRY_ID
-				
-				control.isCheckbox = true
-				addIcon(control, data, list)
-				addCheckbox(control, data, list)
-				addLabel(control, data, list)
+				self:SetupCheckbox(control, data, list)
 			end,
 		},
 	}
-
+	
 	--Default last entry ID copies from normal entry id
 	defaultXMLTemplates[LAST_ENTRY_ID] = ZO_ShallowTableCopy(defaultXMLTemplates[ENTRY_ID])
 	lib.DefaultXMLTemplates = defaultXMLTemplates
@@ -1760,22 +1711,6 @@ function comboBoxClass:AddCustomEntryTemplates(options)
 	HEADER_ENTRY_HEIGHT = XMLrowTemplatesToUse[HEADER_ENTRY_ID].rowHeight
 end
 
-function comboBoxClass:HideOnMouseEnter()
-	--d("comboBoxClass:HideOnMouseEnter")
-	if self.m_submenu and not self.m_submenu:IsMouseOverControl() and not self:IsMouseOverControl() then
-		self.m_submenu:HideDropdown()
-	end
-end
-
-function comboBoxClass:HideOnMouseExit(mocCtrl)
---d("[LSM]comboBoxClass:HideOnMouseExit")
-	if self.m_submenu and not self.m_submenu:IsMouseOverControl() and not self.m_submenu:IsMouseOverOpeningControl() then
---d(">submenu found, but mouse not over it! HideDropdown")
-		self.m_submenu:HideDropdown()
-		return true
-	end
-end
-
 -- These are part of the m_dropdownObject but, since we now use them from the comboBox, 
 -- they are added here to reference the ones in the m_dropdownObject.
 function comboBoxClass:IsMouseOverControl()
@@ -1783,13 +1718,118 @@ function comboBoxClass:IsMouseOverControl()
 end
 
 function comboBoxClass:SetupEntryBase(control, data, list)
-	-- Used to initialize a basic divider and bypass SetupEntry
 	self.m_dropdownObject:SetupEntryBase(control, data, list)
 end
 
 function comboBoxClass:SetupEntry(control, data, list)
-	-- Used to initialize all entries with labels
 	self.m_dropdownObject:SetupEntry(control, data, list)
+end
+
+do -- Row setup functions
+	local function applyEntryFont(control, font, color, horizontalAlignment)
+		if font then
+			control.m_label:SetFont(font)
+		end
+		
+		if color then
+			control.m_label:SetColor(color:UnpackRGBA())
+		end
+		
+		if horizontalAlignment then
+			control.m_label:SetHorizontalAlignment(horizontalAlignment)
+		end
+	end
+
+	local function addIcon(control, data, list)
+		control.m_iconContainer = control.m_iconContainer or control:GetNamedChild("IconContainer")
+		local iconContainer = control.m_iconContainer
+		control.m_icon = control.m_icon or iconContainer:GetNamedChild("Icon")
+		updateIcons(control, data)
+	end
+
+	local function addArrow(control, data, list)
+		control.m_arrow = control:GetNamedChild("Arrow")
+		data.hasSubmenu = true
+	end
+
+	local function addDivider(control, data, list)
+		control.m_divider = control:GetNamedChild("Divider")
+	end
+
+	local function addLabel(control, data, list)
+		control.m_label = control.m_label or control:GetNamedChild("Label")
+		
+		control.m_label:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
+	end
+	
+	function comboBoxClass:SetupEntryDivider(control, data, list)
+		control.typeId = DIVIDER_ENTRY_ID
+		addDivider(control, data, list)
+		self:SetupEntryBase(control, data, list)
+	end
+
+	function comboBoxClass:SetupEntryLabel(control, data)
+		control.typeId = ENTRY_ID
+		addIcon(control, data, list)
+		addLabel(control, data, list)
+		self:SetupEntryLabelBase(control, data, list)
+	end
+
+	function comboBoxClass:SetupEntryHeader(control, data, list)
+		self:SetupEntryLabel(control, data, list)
+		addArrow(control, data, list)
+		control.isHeader = true
+		control.typeId = HEADER_ENTRY_ID
+	end
+
+	function comboBoxClass:SetupEntrySubmenu(control, data, list)
+		addDivider(control, data, list)
+		addLabel(control, data)
+		self:SetupEntryLabel(control, data, list)
+		control.typeId = SUBMENU_ENTRY_ID
+	end
+	
+	function comboBoxClass:SetupCheckbox(control, data, list)
+		local function setChecked(checkbox, checked)
+			local data = ZO_ScrollList_GetData(checkbox:GetParent())
+			
+			data.checked = checked
+			if data.callback then
+				data.callback(checked, data)
+			end
+			
+			self:Narrate("OnCheckboxUpdated", checkbox, data, nil)
+			lib:FireCallbacks('CheckboxUpdated', checked, data, checkbox)
+		end
+		
+		self:SetupEntryLabel(control, data, list)
+		control.isCheckbox = true
+		control.typeId = CHECKBOX_ENTRY_ID
+		
+		control.m_checkbox = control.m_checkbox or control:GetNamedChild("Checkbox")
+		local checkbox = control.m_checkbox
+		ZO_CheckButton_SetToggleFunction(checkbox, setChecked)
+		ZO_CheckButton_SetCheckState(checkbox, getValueOrCallback(data.checked, data))
+	end
+	
+	function comboBoxClass:SetupEntryLabelBase(control, data, list)
+		local font, color, alignment = self:GetFontOptions(data)
+		applyEntryFont(control, font, color, alignment)
+		self.m_dropdownObject:SetupEntryBase(control, data, list)
+	end
+	
+	function comboBoxClass:GetFontOptions(data)
+		local font = getValueOrCallback(data.font, data)
+		font = font or self:GetDropdownFont()
+		
+		local color = getValueOrCallback(data.color, data)
+		color = color or self:GetItemNormalColor(data)
+		
+		local horizontalAlignment = getValueOrCallback(data.horizontalAlignment, data)
+		horizontalAlignment = horizontalAlignment or self.horizontalAlignment
+		
+		return font, color, horizontalAlignment
+	end
 end
 
 --------------------------------------------------------------------
@@ -1797,7 +1837,7 @@ end
 --------------------------------------------------------------------
 -- submenuClass:New(To simplify locating the beginning of the class
 function submenuClass:Initialize(parent, comboBoxContainer, options, depth)
---	d("[LSM]submenuClass:Initialize")
+--	d( '[LSM]submenuClass:Initialize')
 	self.m_parentMenu = parent
 	comboBoxClass.Initialize(self, parent, comboBoxContainer, options, depth)
 	self.owner = comboBoxContainer.m_comboBox
@@ -1815,6 +1855,10 @@ end
 
 function submenuClass:GetMaxRows()
 	return self.visibleRowsSubmenu or DEFAULT_VISIBLE_ROWS
+end
+
+function submenuClass:GetMenuPrfix()
+	return 'SubMenu'
 end
 
 function submenuClass:RefreshSortedItems(parentControl)
@@ -1837,15 +1881,20 @@ function submenuClass:OnGlobalMouseUp(eventCode, ...)
 end
 
 function submenuClass:ShowDropdownInternal()
-	-- Outsourcing these so the control used to register OnGlobalMouseUp is not the same control for all.
-	self.m_dropdownObject:ShowDropdownInternal()
+	if self.m_dropdownObject then
+		self.m_dropdownObject.control:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
+	end
 end
 
 function submenuClass:HideDropdownInternal()
-	self.m_dropdownObject:HideDropdownInternal()
-	if self.m_dropdownObject:IsOwnedByComboBox(self) then
-		self.m_dropdownObject:SetHidden(true)
+	if self.m_dropdownObject then
+		self.m_dropdownObject.control:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
+	
+		if self.m_dropdownObject:IsOwnedByComboBox(self) then
+			self.m_dropdownObject:SetHidden(true)
+		end
 	end
+	
 	self:SetVisible(false)
 	if self.onHideDropdownCallback then
 		self.onHideDropdownCallback()
@@ -1896,14 +1945,7 @@ function contextMenuClass:Initialize(comboBoxContainer)
 end
 
 function contextMenuClass:AddItem(itemEntry, updateOptions)
-	if not itemEntry.customEntryTemplate then
-		local hasSubmenu = setItemEntryCustomTemplate(itemEntry, self.XMLrowTemplates)
-		
-		if hasSubmenu then
-			itemEntry.hasSubmenu = true
-			itemEntry.isNew = areAnyEntriesNew(itemEntry)
-		end
-	end
+	addItem_Base(self, itemEntry)
 
 	tins(self.data, itemEntry)
 	
@@ -1951,6 +1993,10 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	self:ShowDropdownOnMouseUp(parentControl)
 end
 
+function contextMenuClass:GetMenuPrfix()
+	return 'ContextMenu'
+end
+
 function contextMenuClass:HideDropdownInternal()
 	comboBoxClass.HideDropdownInternal(self)
 	self:ClearItems()
@@ -1980,35 +2026,11 @@ function contextMenuClass:OnGlobalMouseUp(eventCode, ...)
 	submenuClass.OnGlobalMouseUp(self, eventCode, ...)
 end
 
-
 --------------------------------------------------------------------
 -- 
 --------------------------------------------------------------------
 -- We need to integrate a supplied ZO_ComboBox with the lib's functionality.
 -- We do this by replacing the m_comboBox with our custom comboBoxClass.
-
-local function setComboBoxHandlers(comboBoxContainer, comboBoxSelf)
---d("[LSM]setComboBoxHandlers:SetHandlers - comboBoxContainer: " ..tos(comboBoxContainer:GetName()))
-	if comboBoxContainer == nil or comboBoxSelf == nil or comboBoxSelf.Narrate == nil then return end
-
-	local narrateData = comboBoxSelf.narrateData
-	if narrateData ~= nil then
-
-		if (narrateData["OnComboBoxMouseEnter"] or narrateData["OnComboBoxMouseExit"]) then
-			--d(">>narrateData and OnComboBoxMouseEnter or OnComboBoxMouseExit found!")
-			local function comboBoxCtrlOnMouseEnter()
-				comboBoxSelf:Narrate("OnComboBoxMouseEnter", comboBoxContainer, nil, nil)
-			end
-			local function comboBoxCtrlOnMouseExit()
-				comboBoxSelf:Narrate("OnComboBoxMouseExit", comboBoxContainer, nil, nil)
-			end
-			ZO_PostHookHandler(comboBoxContainer, "OnMouseEnter", function() comboBoxCtrlOnMouseEnter() end)
-			ZO_PostHookHandler(comboBoxContainer, "OnMouseExit", function() comboBoxCtrlOnMouseExit() end)
-		end
-	end
-end
-
-
 local function applyUpgrade(parent, comboBoxContainer, options)
 	local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
 
@@ -2027,30 +2049,15 @@ local function applyUpgrade(parent, comboBoxContainer, options)
 		end
 	})
 	comboBox.__parentClasses = parentClasses
-
+	
 	lib:FireCallbacks('OnDropdownMenuAdded', comboBox, options)
-
+	
 	comboBox:Initialize(parent, comboBoxContainer, options, 1)
 
-	setComboBoxHandlers(comboBoxContainer, comboBox)
+	ApplyTemplateToControl(comboBoxContainer, 'LibScrollableMenu_ComboBox_Behavior')
 
 	return comboBox
 end
-
-
---[[
-local function applyUpgrade(parent, comboBoxContainer, options)
-	local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
-
-	assert(comboBox and comboBox.IsInstanceOf and comboBox:IsInstanceOf(ZO_ComboBox), MAJOR .. ' - applyUpgrade | The comboBoxContainer you supplied must be a valid ZO_ComboBox container. "comboBoxContainer.m_comboBox:IsInstanceOf(ZO_ComboBox)"')
-
-	zo_mixin(comboBox, comboBoxClass)
-	comboBox.__index = comboBox
-	comboBox:Initialize(parent, comboBoxContainer, options, 1)
-
-	return comboBox
-end
-]]
 
 --------------------------------------------------------------------
 -- Public API functions
@@ -2063,7 +2070,6 @@ end
 function lib.SetPersistentMenus(persistent)
 	lib.persistentMenus = persistent
 end
-
 lib.MapEntries = mapEntries
 
 --[Custom scrollable ZO_ComboBox menu]
@@ -2277,7 +2283,7 @@ local function onAddonLoaded(event, name)
 	if name:find("^ZO_") then return end
 	EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 
-	local comboBoxContainer = CreateControlFromVirtual(MAJOR .. "_ContextMenu", GuiRoot, "ZO_ComboBox")
+	local comboBoxContainer = CreateControlFromVirtual(MAJOR .. "_ContextMenu", GuiRoot, 'ZO_ComboBox')
 	--Create the local context menu object for the library's context menu API functions
 	g_contextMenu = contextMenuClass:New(comboBoxContainer)
 	lib.contextMenu = g_contextMenu
@@ -2296,32 +2302,8 @@ LibScrollableMenu = lib
 -- Notes: | TODO:
 ------------------------------------------------------------------------------------------------------------------------
 
-
-
 --[[
-
 -------------------
-WORKING ON - Current version:	2.0
+TODO - To check
 -------------------
-	- Fixed: width update of entries (no abbreviated texts)
-	- Fixed: data.label (string or function returning a string)
-	- Fixed: SetTimeout menus opening/closing
-	- Added: Callback for dropdown menu added (pre-init!) "OnDropdownMenuAdded"
-
-
--------------------
-TODO - To check (future versions)
--------------------
-	1. Add comboBoxClass:AddMenuItems -> self:RefreshSortedItems()
-	   Move processNameString to RefreshSortedItems
-	2. Create 2 xml templates to use for anchoring based on scrollbar visibility
-	3. Adjust AnchorToControl so submenus sit on edge of previous dropdown.
-	4. Create new setup functions for each entry type to make them global -> Currently addLabel etc. are local
-	   Check if options.XMLRowTemplates are working properly
-	5. Check if callback OnDropdownMenuAdded can change the options of a dropdown pre-init
-	6. Work on XML templates for dropdown skinning via the options of the dropdown (in general, for e.g. addons like PerfectPixel), e.g. options.XMLDropdownTemplates
-	7. comboBoxClass:OnGlobalMouseUp(eventCode, ...) must close all submenus and the main menu (dropdown) of the ZO_ComboBox if we right click on the main comboBox to show a context menu there,
-	   but it needs to stay opened if right clicking any menu or submenu entry (currently self:BypassOnGlobalMouseUp(...) returns true in that case)
-	   Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
-	8. Add options.disableFadeGradient: ZO_Scroll_SetUseFadeGradient(self.scrollControl,  not self.owner.disableFadeGradient )
 ]]
