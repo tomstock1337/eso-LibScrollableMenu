@@ -95,4 +95,3 @@ local submenuEntries = {
                     }
 
 ```
-
