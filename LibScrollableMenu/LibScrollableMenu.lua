@@ -2251,8 +2251,9 @@ local setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
 
 --Hide the custom scrollable context menu and clear it's entries, clear internal variables, mouse clicks etc.
 function ClearCustomScrollableMenu()
-	--d("[LSM]ClearCustomScrollableMenu")
-	g_contextMenu:ClearItems()
+	d("[LSM]ClearCustomScrollableMenu")
+	--g_contextMenu:ClearItems()
+	g_contextMenu:HideDropdownInternal()
 
 	setCustomScrollableMenuOptions(defaultComboBoxOptions)
 	return true
@@ -2593,7 +2594,8 @@ local function addZO_Menu_ShowMenuHook()
 
 		if not isAnyCustomScrollableInventoryContextMenuRegistered() then return end
 
-		if next(ZO_Menu.items) == nil then
+		local zo_Menu_Items = ZO_Menu.items
+		if next(zo_Menu_Items) == nil then
 			return false
 		end
 		local ownerName = (owner ~= nil and owner.GetName and owner:GetName()) or owner
@@ -2616,7 +2618,7 @@ local function addZO_Menu_ShowMenuHook()
 			return
 		end
 
-		local copyOfMenuItems =  ZO_ShallowTableCopy(ZO_Menu.items)
+		local copyOfMenuItems =  ZO_ShallowTableCopy(zo_Menu_Items)
 		if lib.debugLCM then
 			LSM_Debug._ZO_Menu_Items[ownerName].ZO_MenuItems = copyOfMenuItems
 		end
@@ -2726,6 +2728,14 @@ local function onAddonLoaded(event, name)
 	--Create the local context menu object for the library's context menu API functions
 	g_contextMenu = contextMenuClass:New(comboBoxContainer)
 	lib.contextMenu = g_contextMenu
+
+	--Register a scene manager callback for the SetInUIMode function so any menu opened/closed closes the context menus of LSM too
+	SecurePostHook(SCENE_MANAGER, 'SetInUIMode', function(self, inUIMode, bypassHideSceneConfirmationReason)
+		if not inUIMode then
+			ClearCustomScrollableMenu()
+		end
+	end)
+
 end
 EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
