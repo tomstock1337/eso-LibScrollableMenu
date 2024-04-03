@@ -2362,7 +2362,7 @@ end
 local itemAddedNum = 0
 local errorNr = 0
 local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSubmenu)
-d("[LSM]mapZO_MenuItemToLSMEntry-itemAddedNum: " .. tos(itemAddedNum) .. ", isBuildingSubmenu: " .. tos(isBuildingSubmenu))
+	if lib.debugLCM then d("[LSM]mapZO_MenuItemToLSMEntry-itemAddedNum: " .. tos(itemAddedNum) .. ", isBuildingSubmenu: " .. tos(isBuildingSubmenu)) end
 	isBuildingSubmenu = isBuildingSubmenu or false
 	itemAddedNum = itemAddedNum + 1
 	local lsmEntry
@@ -2413,7 +2413,7 @@ d("[LSM]mapZO_MenuItemToLSMEntry-itemAddedNum: " .. tos(itemAddedNum) .. ", isBu
 			local submenuData = itemCopy.submenuData
 			if submenuData ~= nil and submenuData.entries ~= nil then
 				local submenuItems = submenuData.entries
-d(">LCM  found Submenu items: " ..tos(#submenuItems))
+				if lib.debugLCM then d(">LCM  found Submenu items: " ..tos(#submenuItems)) end
 				processVanillaZO_MenuItem = false
 
 				entryName = 			submenuData.mytext
@@ -2482,13 +2482,13 @@ d(">LCM  found Submenu items: " ..tos(#submenuItems))
 					enabled = entryData.enabled
 				end
 
-	d(">LCM found normal item-processVanillaZO_MenuItem: " .. tos(processVanillaZO_MenuItem))
+				if lib.debugLCM then d(">LCM found normal item-processVanillaZO_MenuItem: " .. tos(processVanillaZO_MenuItem)) end
 			end
 		end
 
 		--Normal ZO_Menu item added via AddMenuItem (without LibCustomMenu)
 		if processVanillaZO_MenuItem then
-d(">LCM process vanilla ZO_Menu item")
+			if lib.debugLCM then d(">LCM process vanilla ZO_Menu item") end
 			entryName = 	entryName or (itemCopy.nameLabel and itemCopy.nameLabel:GetText())
 			callbackFunc = 	callbackFunc or itemCopy.OnSelect
 			isHeader = 		isHeader or itemCopy.isHeader
@@ -2507,7 +2507,9 @@ d(">LCM process vanilla ZO_Menu item")
 		if isHeader then entryType = entryTypeHeader end
 
 
-d(">>LSM entry[" .. tos(itemAddedNum) .. "]-name: " ..tos(entryName) .. ", callbackFunc: " ..tos(callbackFunc) .. ", type: " ..tos(entryType) .. ", hasSubmenu: " .. tos(hasSubmenu) .. ", entries: " .. tos(submenuEntries))
+		if lib.debugLCM then
+			d(">>LSM entry[" .. tos(itemAddedNum) .. "]-name: " ..tos(entryName) .. ", callbackFunc: " ..tos(callbackFunc) .. ", type: " ..tos(entryType) .. ", hasSubmenu: " .. tos(hasSubmenu) .. ", entries: " .. tos(submenuEntries))
+		end
 
 		--Return values for LSM entry
 		if entryName ~= nil then
@@ -2536,85 +2538,101 @@ d(">>LSM entry[" .. tos(itemAddedNum) .. "]-name: " ..tos(entryName) .. ", callb
 			lsmEntry.enabled = 		enabled
 		end
 
-		LSM_Debug = LSM_Debug or {}
-		LSM_Debug._ZO_MenuMappedToLSMEntries = LSM_Debug._ZO_MenuMappedToLSMEntries or {}
-		LSM_Debug._ZO_MenuMappedToLSMEntries[itemAddedNum] = {
-			_itemData = ZO_ShallowTableCopy(ZO_MenuItemData),
-			_item = itemCopy ~= nil and itemCopy or "! ERROR !",
-			_itemCopy = itemCopyCopy,
-			_itemNameLabel = (itemCopy.nameLabel ~= nil and itemCopy.nameLabel) or "! ERROR !",
-			_itemCallback = (itemCopy.OnSelect ~= nil and itemCopy.OnSelect) or "! ERROR !",
-			lsmEntry = lsmEntry ~= nil and ZO_ShallowTableCopy(lsmEntry) or "! ERROR !",
-			isBuildingSubmenu = isBuildingSubmenu,
-			menuIndex = menuIndex,
-		}
-
+		if lib.debugLCM then
+			LSM_Debug = LSM_Debug or {}
+			LSM_Debug._ZO_MenuMappedToLSMEntries = LSM_Debug._ZO_MenuMappedToLSMEntries or {}
+			LSM_Debug._ZO_MenuMappedToLSMEntries[itemAddedNum] = {
+				_itemData = ZO_ShallowTableCopy(ZO_MenuItemData),
+				_item = itemCopy ~= nil and itemCopy or "! ERROR !",
+				_itemCopy = itemCopyCopy,
+				_itemNameLabel = (itemCopy.nameLabel ~= nil and itemCopy.nameLabel) or "! ERROR !",
+				_itemCallback = (itemCopy.OnSelect ~= nil and itemCopy.OnSelect) or "! ERROR !",
+				lsmEntry = lsmEntry ~= nil and ZO_ShallowTableCopy(lsmEntry) or "! ERROR !",
+				isBuildingSubmenu = isBuildingSubmenu,
+				menuIndex = menuIndex,
+			}
+		end
 	else
-		errorNr = errorNr + 1
-d("<[LSM]ERROR " .. tos(errorNr) .."- ZO_Menu.items[".. tos(menuIndex).."].item is NIL!")
-		LSM_Debug = LSM_Debug or {}
-		LSM_Debug._ZO_MenuMappedToLSMEntriesERRORS = LSM_Debug._ZO_MenuMappedToLSMEntriesERRORS or {}
-		LSM_Debug._ZO_MenuMappedToLSMEntriesERRORS[errorNr] = {
-			_itemData = ZO_ShallowTableCopy(ZO_MenuItemData),
-			isBuildingSubmenu = isBuildingSubmenu,
-			menuIndex = menuIndex,
-		}
+		if lib.debugLCM then
+			errorNr = errorNr + 1
+			d("<[LSM]ERROR " .. tos(errorNr) .."- ZO_Menu.items[".. tos(menuIndex).."].item is NIL!")
+			LSM_Debug = LSM_Debug or {}
+			LSM_Debug._ZO_MenuMappedToLSMEntriesERRORS = LSM_Debug._ZO_MenuMappedToLSMEntriesERRORS or {}
+			LSM_Debug._ZO_MenuMappedToLSMEntriesERRORS[errorNr] = {
+				_itemData = ZO_ShallowTableCopy(ZO_MenuItemData),
+				isBuildingSubmenu = isBuildingSubmenu,
+				menuIndex = menuIndex,
+			}
+		end
 	end
 	return lsmEntry
 end
 
 
 SecurePostHook("ShowMenu", function(owner)
-	LSM_Debug = LSM_Debug or {}
-	LSM_Debug._ZO_Menu_Items = LSM_Debug._ZO_Menu_Items or {}
+	if lib.debugLCM then
+		LSM_Debug = LSM_Debug or {}
+		LSM_Debug._ZO_Menu_Items = LSM_Debug._ZO_Menu_Items or {}
+	end
 
 	if next(ZO_Menu.items) == nil then
 		return false
 	end
 	local ownerName = (owner ~= nil and owner.GetName and owner:GetName()) or owner
-d("[LSM]SecurePostHook-ShowMenu-owner: " .. tos(ownerName))
+	if lib.debugLCM then d("[LSM]SecurePostHook-ShowMenu-owner: " .. tos(ownerName)) end
 	if owner == nil then return end
 
 	local parent = owner.GetParent and owner:GetParent()
 	local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
-	LSM_Debug._ZO_Menu_Items[ownerName] = {
-		_owner = owner,
-		_ownerName = ownerName,
-		_parent = parent,
-		_owningWindow = owningWindow,
-	}
+	if lib.debugLCM then
+		LSM_Debug._ZO_Menu_Items[ownerName] = {
+			_owner = owner,
+			_ownerName = ownerName,
+			_parent = parent,
+			_owningWindow = owningWindow,
+		}
+	end
 	local isAllowed, _ = isSupportedInventoryRowPattern(owner, ownerName)
 	if not isAllowed then
-d("<<ABORT! Not supported context menu owner: " ..tos(ownerName))
+		if lib.debugLCM then d("<<ABORT! Not supported context menu owner: " ..tos(ownerName)) end
 		return
 	end
 
 	local copyOfMenuItems =  ZO_ShallowTableCopy(ZO_Menu.items)
-	LSM_Debug._ZO_Menu_Items[ownerName].ZO_MenuItems = copyOfMenuItems
+	if lib.debugLCM then
+		LSM_Debug._ZO_Menu_Items[ownerName].ZO_MenuItems = copyOfMenuItems
+	end
 
 	--Build new LSM context menu now
 	for idx, itemData in ipairs(copyOfMenuItems) do
+		--[[
+		--Do not clear it here as it would prevent usage of multiple addons using LSM!
 		if idx == 1 then
-d("> ~~ clearing LSM! ClearCustomScrollableMenu ~~~")
-			ClearCustomScrollableMenu()
+			--d("> ~~ clearing LSM! ClearCustomScrollableMenu ~~~")
+			--ClearCustomScrollableMenu()
 		end
+		]]
 
 		local lsmEntry = mapZO_MenuItemToLSMEntry(itemData, idx)
-LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items = LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items or {}
-LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items[#LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items+1] = lsmEntry
+		if lib.debugLCM then
+			LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items = LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items or {}
+			LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items[#LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items+1] = lsmEntry
+		end
 
 		if lsmEntry ~= nil and lsmEntry.name ~= nil then
 			--Transfer the menu entry now to LibScrollableMenu instead of ZO_Menu
-			AddCustomScrollableMenuEntry(lsmEntry.name, lsmEntry.callback, lsmEntry.entryType, lsmEntry.entries, lsmEntry) --pass in lsmEntry as additionlData so m_normalColor etc. will be applied
+			--->pass in lsmEntry as additionlData (last parameter) so m_normalColor etc. will be applied properly
+			AddCustomScrollableMenuEntry(lsmEntry.name, lsmEntry.callback, lsmEntry.entryType, lsmEntry.entries, lsmEntry)
 		end
 	end
 
-	--Hide original menu now -> Do this here, else the ZO_Menu.items and sub controls will be emptied!
-d(">> ~~ Clear ZO_Menu ~~~")
+	--Hide original ZO_Menu (and LibCustomMenu added entries) now -> Do this here AFTER preparing LSM entries,
+	-- else the ZO_Menu.items and sub controls will be emptied already (nil)!
+	if lib.debugLCM then d(">> ~~ Clear ZO_Menu ~~~") end
 	ClearMenu()
 
-	--Cler LSM context menu
-d("< ~~ SHOWING LSM! ShowCustomScrollableMenu ~~~")
+	--Show the LSM contetx menu now with the mapped and added ZO_Menu entries
+	if lib.debugLCM then d("< ~~ SHOWING LSM! ShowCustomScrollableMenu ~~~") end
 	local isZOListDialogHidden = zoListDialog:IsHidden()
 	ShowCustomScrollableMenu(owner, {
 		sortEntries = 			false,
