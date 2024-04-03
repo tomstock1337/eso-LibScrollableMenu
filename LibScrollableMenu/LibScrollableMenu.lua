@@ -2673,6 +2673,19 @@ function lib.RegisterCustomScrollableInventoryContextMenu(addonName)
 	addZO_Menu_ShowMenuHook()
 end
 
+--Unregister a before registered custom scrollable invetory context menu again
+--returns true if addon was unregistered, false if addon was not unregstered
+function lib.UnregisterCustomScrollableInventoryContextMenu(addonName)
+	if not isAnyCustomScrollableInventoryContextMenuRegistered() then return end
+	assert(addonName ~= nil, sfor('['..MAJOR..'.UnregisterCustomScrollableInventoryContextMenu] \'addonName\' missing: %q', tos(addonName)))
+	if registeredCustomScrollableInventoryContextMenus[addonName] ~= nil then
+		registeredCustomScrollableInventoryContextMenus[addonName] = nil
+		return true
+	end
+	return false
+end
+
+
 lib.IsAnyCustomScrollableInventoryContextMenuRegistered = isAnyCustomScrollableInventoryContextMenuRegistered
 
 
