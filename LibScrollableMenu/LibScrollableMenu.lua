@@ -2579,8 +2579,9 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 	return lsmEntry
 end
 
+local ZO_Menu_showMenuHooked = false
 local function addZO_Menu_ShowMenuHook()
-	if not isAnyCustomScrollableInventoryContextMenuRegistered() then return end
+	if ZO_Menu_showMenuHooked or not isAnyCustomScrollableInventoryContextMenuRegistered() then return end
 
 	--Secure postHook the ShowMenu function of ZO_Menu in order to map the ZO_Menu.items to the LSM entries
 	--and suppress the ZO_Menu to show -> Instead show LSM context menu
@@ -2657,11 +2658,18 @@ local function addZO_Menu_ShowMenuHook()
 			visibleRowsSubmenu = 	isZOListDialogHidden and 20 or 15,
 		})
 	end)
+	ZO_Menu_showMenuHooked = true
 end
 
 ------------------------------------------------------------------------------------------------------------------------
 -- API functions for custom scrollable inventory context menu
 ------------------------------------------------------------------------------------------------------------------------
+--Hide currently shown context menus
+local function clearZO_MenuAndLSM()
+	ClearMenu()
+	ClearCustomScrollableMenu()
+end
+
 --Similar to LibCustomMenu: Register a hook for your addon to use LibScrollableMenu for the inventory context menus
 -->If ANY CustomScrollableInventoryContextMenu was registered with LibScrollableMenu:
 -->LibCustomMenu and vanilla ZO_Menu inventory context menus will be suppressed then, mapped into LSM entries and
@@ -2670,6 +2678,7 @@ end
 function lib.RegisterCustomScrollableInventoryContextMenu(addonName)
 	assert(addonName ~= nil and registeredCustomScrollableInventoryContextMenus[addonName] == nil, sfor('['..MAJOR..'.RegisterCustomScrollableInventoryContextMenu] \'addonName\' missing or already registered: %q', tos(addonName)))
 	registeredCustomScrollableInventoryContextMenus[addonName] = true
+	clearZO_MenuAndLSM()
 	addZO_Menu_ShowMenuHook()
 end
 
@@ -2680,8 +2689,7 @@ function lib.UnregisterCustomScrollableInventoryContextMenu(addonName)
 	assert(addonName ~= nil, sfor('['..MAJOR..'.UnregisterCustomScrollableInventoryContextMenu] \'addonName\' missing: %q', tos(addonName)))
 	if registeredCustomScrollableInventoryContextMenus[addonName] ~= nil then
 		registeredCustomScrollableInventoryContextMenus[addonName] = nil
-		--Hide currently shown context menu
-		ClearCustomScrollableMenu()
+		clearZO_MenuAndLSM()
 		return true
 	end
 	return false
