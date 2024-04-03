@@ -2680,14 +2680,31 @@ function lib.UnregisterCustomScrollableInventoryContextMenu(addonName)
 	assert(addonName ~= nil, sfor('['..MAJOR..'.UnregisterCustomScrollableInventoryContextMenu] \'addonName\' missing: %q', tos(addonName)))
 	if registeredCustomScrollableInventoryContextMenus[addonName] ~= nil then
 		registeredCustomScrollableInventoryContextMenus[addonName] = nil
+		--Hide currently shown context menu
+		ClearCustomScrollableMenu()
 		return true
 	end
 	return false
 end
 
+function lib.IsCustomScrollableInventoryContextMenuRegistered(addonName)
+	if not isAnyCustomScrollableInventoryContextMenuRegistered() then return false end
+	assert(addonName ~= nil, sfor('['..MAJOR..'.IsCustomScrollableInventoryContextMenuRegistered] \'addonName\' missing: %q', tos(addonName)))
+	return registeredCustomScrollableInventoryContextMenus[addonName] ~= nil
+end
+local isCustomScrollableInventoryContextMenuRegistered = lib.IsCustomScrollableInventoryContextMenuRegistered
 
 lib.IsAnyCustomScrollableInventoryContextMenuRegistered = isAnyCustomScrollableInventoryContextMenuRegistered
 
+
+local function invContextMenuLibCustomMenuRepalcement()
+	if isCustomScrollableInventoryContextMenuRegistered(MAJOR) then
+		lib.UnregisterCustomScrollableInventoryContextMenu(MAJOR)
+	else
+		lib.RegisterCustomScrollableInventoryContextMenu(MAJOR)
+	end
+end
+SLASH_COMMANDS["/lsmuseforinv"] = function() invContextMenuLibCustomMenuRepalcement() end
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Init
