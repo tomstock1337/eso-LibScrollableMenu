@@ -718,8 +718,33 @@ local function HookContextMenu()
 	PreHook(ZO_InventorySlotActions, "GetPrimaryActionName", AppendToMenu)
 end
 
------ Public API -----
+--v- Baertram - 20240403 - For LibScrollableMenu -v-
+--Added for LibScrollableMenu support: Pre-populate the LibCustomMenu added data to ZO_Menu.items[index].entryData or .submenuData tables.
+-->LSM can fetch it on "ShowMenu", suppress any ZO_Menu and show it's scrollable context menu with the same entries
+local zoMenuItemsDataKeys = {
+	[true] 	= "submenuData",
+	[false]	= "entryData"
+}
+local function storeLastAddedZO_MenuItem(lastAddedItem, mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, entries)
+	if lastAddedItem == nil then return end
+	local gotSubmenu = entries ~= nil and true or false
+	local zoMenuItemsDataKey = zoMenuItemsDataKeys[gotSubmenu]
+	lastAddedItem[zoMenuItemsDataKey] = {
+		mytext = mytext,
+		myfunction = myfunction or (not gotSubmenu and function() end),
+		itemType = itemType,
+		myfont = myFont,
+		normalColor = normalColor,
+		highlightColor = highlightColor,
+		itemYPad = itemYPad,
+		horizontalAlignment = horizontalAlignment,
+		entries = entries,
+	}
+end
+--^- Baertram - 20240403 - For LibScrollableMenu -^-
 
+
+----- Public API -----
 function AddCustomMenuItem(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment)
 	local orgItemPool = ZO_Menu.itemPool
 	local orgCheckboxItemPool = ZO_Menu.checkBoxPool
@@ -745,20 +770,7 @@ function AddCustomMenuItem(mytext, myfunction, itemType, myFont, normalColor, hi
 		lastAdded.item:SetAnchor(TOPLEFT, lastAdded.checkbox, TOPLEFT, 0, -4)
 	end
 	lastAdded.isDivider = isDivider
-
-	--Added for LibScrollableMenu support: Pre-populate the entries of menus
-	if lastAdded.item ~= nil then
-		lastAdded.item.entryData = {
-			mytext = mytext,
-			myfunction = myfunction or function() end,
-			itemType = itemType,
-			myfont = myFont,
-			normalColor = normalColor,
-			highlightColor = highlightColor,
-			itemYPad = itemYPad,
-			horizontalAlignment = horizontalAlignment
-		}
-	end
+	storeLastAddedZO_MenuItem(lastAdded.item, mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, nil) --Baertram - 20240403 - For LibScrollableMenu
 
 	ZO_Menu.itemPool = orgItemPool
 	ZO_Menu.checkBoxPool = orgCheckboxItemPool
@@ -800,21 +812,8 @@ function AddCustomSubMenuItem(mytext, entries, myfont, normalColor, highlightCol
 
 	mytext = string.format("%s |u16:0::|u", mytext)
 	local index = AddMenuItem(mytext, CreateSubMenu, MENU_ADD_OPTION_LABEL, myfont, normalColor, highlightColor, itemYPad)
-	--Added for LibScrollableMenu support: Pre-populate the entries of submenus before the OnMouseEnter at the row calls CreateMenu func
-	local lastAddedHavingSubmenu = ZO_Menu.items[index]
-	if lastAddedHavingSubmenu.item ~= nil then
-		lastAddedHavingSubmenu.item.submenuData = {
-			mytext = mytext,
-			myfunction = callback,
-			itemType = MENU_ADD_OPTION_LABEL,
-			myfont = myfont,
-			normalColor = normalColor,
-			highlightColor = highlightColor,
-			itemYPad = itemYPad,
-			--horizontalAlignment = nil,
-			entries = entries,
-		}
-	end
+
+	storeLastAddedZO_MenuItem(ZO_Menu.items[index], mytext, callback, MENU_ADD_OPTION_LABEL, myfont, normalColor, highlightColor, itemYPad, nil, entries) --Baertram - 20240403 - For LibScrollableMenu
 
 	ZO_Menu.itemPool = orgItemPool
 	ZO_Menu.checkBoxPool = orgCheckboxItemPool
@@ -1142,3 +1141,73 @@ EVENT_MANAGER:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 EVENT_MANAGER:RegisterForEvent(identifier, EVENT_ADD_ON_LOADED, OnAddonLoaded)
 
 LibCustomMenu = lib
+
+
+
+--[[
+Hi Votan,
+
+IsJustaGhost und ich versuchen gerade LibScrollableMenu in den Inventar Context Menus kompatibel mit LibCustomMenu zu bekommen.
+Die Idee ist: Wenn jemand ein LibScrollableMenu (LSM) context menu im Inventar registriert (z.B per neuer API lib.RegisterCustomScrollableInventoryMenu(addonName, ...) ), dann wird LSM Daten von ZO_Menu auslesen und die ZO_Menu context menus "unterbinden" -> ClearMenu aufrufen.
+Aber vorher wird es alles was in ZO_Menu per vanilla oder LibCustomMenu eingefügt wurde cachen und dann in das LSM Entry Format mappen und ein LSM Contex Meü ausgeben.
+-> Das geschieht dann bei "ShowMenu" wenn der owner in ShowMenu ein erlaubter Inventar Eintrag ist
+
+Das habe ich soweit auspbiert und es klappt mit FCOItemSaver und anderen Addons bisher ganz gut.
+
+Damit es funktioniert mussten wir aber in LibCustomMenu das Folgende einfügen, damit wir alle benötigten Infos an ZO_Menu,items[i].item als Untertabelle .entryData oder .submenuData haben:
+
+[highlight="Lua"]
+--1)
+--Einfügen In LibCustomMenu.lua oberhalb von: ----- Public API ----- --function AddCustomMenuItem(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment)
+
+
+--v- Baertram - 20240403 - For LibScrollableMenu -v-
+--Added for LibScrollableMenu support: Pre-populate the LibCustomMenu added data to ZO_Menu.items[index].entryData or .submenuData tables.
+-->LSM can fetch it on "ShowMenu", suppress any ZO_Menu and show it's scrollable context menu with the same entries
+local zoMenuItemsDataKeys = {
+	[true] 	= "submenuData",
+	[false]	= "entryData"
+}
+local function storeLastAddedZO_MenuItem(lastAddedItem, mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, entries)
+	if lastAddedItem == nil then return end
+	local gotSubmenu = entries ~= nil and true or false
+	local zoMenuItemsDataKey = zoMenuItemsDataKeys[gotSubmenu]
+	lastAddedItem[zoMenuItemsDataKey] = {
+		mytext = mytext,
+		myfunction = myfunction or (not gotSubmenu and function() end),
+		itemType = itemType,
+		myfont = myFont,
+		normalColor = normalColor,
+		highlightColor = highlightColor,
+		itemYPad = itemYPad,
+		horizontalAlignment = horizontalAlignment,
+		entries = entries,
+	}
+end
+--^- Baertram - 20240403 - For LibScrollableMenu -^-
+
+
+--2)
+--In LibCustomMenu in function AddCustomMenuItem einfügen, nach lastAdded.isDivider = isDivider
+storeLastAddedZO_MenuItem(lastAdded.item, mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, nil) --Baertram - 20240403 - For LibScrollableMenu
+
+
+--3)
+--In LibCustomMenu in function AddCustomSubMenuItem einfügen, nach local index = AddMenuItem(mytext, CreateSubMenu, MENU_ADD_OPTION_LABEL, myfont, normalColor, highlightColor, itemYPad)
+
+	storeLastAddedZO_MenuItem(ZO_Menu.items[index], mytext, callback, MENU_ADD_OPTION_LABEL, myfont, normalColor, highlightColor, itemYPad, nil, entries) --Baertram - 20240403 - For LibScrollableMenu
+
+[/highlight]
+
+Dadurch werden die benötigten Daten aus LCM an ZO_Menu.items mit übergebe und wir können alles benötigte auslesen.
+
+Denkst du das wäre eine mögliche Anpassung oder kommt dir ggf. eine bessere Alternative in den Sinn?
+
+Aktuell würde mit dieser Logik das Inventar Kontext Menü per LSM scrollbar werden und kann verschachtelte Untermenüs bekommen.
+Addons müssten nichts anpassen (zumindest wenn sie nicht noch nachträglich selber irgendwie in ZO_Menus eingegriffen/gehooked haben...) und es würde auch nur dann aktiv wenn ein AddOn das entsprechend anfordert oder wir ggf. per SlashCommand etwas einplanen wie /lsmforinventory on
+
+Danke dir für's drüber Nachdenken.
+
+Gruß
+Baer
+]]

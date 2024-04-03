@@ -2359,6 +2359,17 @@ if libCustomMenuIsLoaded then
 	}
 end
 
+
+--local API func helpers
+local registeredCustomScrollableInventoryContextMenus = {}
+lib.registeredCustomScrollableInventoryContextMenus = registeredCustomScrollableInventoryContextMenus
+
+--Is any custom scrollable inventory context menu addon registered?
+local function isAnyCustomScrollableInventoryContextMenuRegistered()
+	return not ZO_IsTableEmpty(registeredCustomScrollableInventoryContextMenus)
+end
+
+
 local itemAddedNum = 0
 local errorNr = 0
 local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSubmenu)
@@ -2568,78 +2579,101 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 	return lsmEntry
 end
 
+local function addZO_Menu_ShowMenuHook()
+	if not isAnyCustomScrollableInventoryContextMenuRegistered() then return end
 
-SecurePostHook("ShowMenu", function(owner)
-	if lib.debugLCM then
-		LSM_Debug = LSM_Debug or {}
-		LSM_Debug._ZO_Menu_Items = LSM_Debug._ZO_Menu_Items or {}
-	end
-
-	if next(ZO_Menu.items) == nil then
-		return false
-	end
-	local ownerName = (owner ~= nil and owner.GetName and owner:GetName()) or owner
-	if lib.debugLCM then d("[LSM]SecurePostHook-ShowMenu-owner: " .. tos(ownerName)) end
-	if owner == nil then return end
-
-	local parent = owner.GetParent and owner:GetParent()
-	local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
-	if lib.debugLCM then
-		LSM_Debug._ZO_Menu_Items[ownerName] = {
-			_owner = owner,
-			_ownerName = ownerName,
-			_parent = parent,
-			_owningWindow = owningWindow,
-		}
-	end
-	local isAllowed, _ = isSupportedInventoryRowPattern(owner, ownerName)
-	if not isAllowed then
-		if lib.debugLCM then d("<<ABORT! Not supported context menu owner: " ..tos(ownerName)) end
-		return
-	end
-
-	local copyOfMenuItems =  ZO_ShallowTableCopy(ZO_Menu.items)
-	if lib.debugLCM then
-		LSM_Debug._ZO_Menu_Items[ownerName].ZO_MenuItems = copyOfMenuItems
-	end
-
-	--Build new LSM context menu now
-	for idx, itemData in ipairs(copyOfMenuItems) do
-		--[[
-		--Do not clear it here as it would prevent usage of multiple addons using LSM!
-		if idx == 1 then
-			--d("> ~~ clearing LSM! ClearCustomScrollableMenu ~~~")
-			--ClearCustomScrollableMenu()
-		end
-		]]
-
-		local lsmEntry = mapZO_MenuItemToLSMEntry(itemData, idx)
+	--Secure postHook the ShowMenu function of ZO_Menu in order to map the ZO_Menu.items to the LSM entries
+	--and suppress the ZO_Menu to show -> Instead show LSM context menu
+	SecurePostHook("ShowMenu", function(owner)
 		if lib.debugLCM then
-			LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items = LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items or {}
-			LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items[#LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items+1] = lsmEntry
+			LSM_Debug = LSM_Debug or {}
+			LSM_Debug._ZO_Menu_Items = LSM_Debug._ZO_Menu_Items or {}
 		end
 
-		if lsmEntry ~= nil and lsmEntry.name ~= nil then
-			--Transfer the menu entry now to LibScrollableMenu instead of ZO_Menu
-			--->pass in lsmEntry as additionlData (last parameter) so m_normalColor etc. will be applied properly
-			AddCustomScrollableMenuEntry(lsmEntry.name, lsmEntry.callback, lsmEntry.entryType, lsmEntry.entries, lsmEntry)
+		if not isAnyCustomScrollableInventoryContextMenuRegistered() then return end
+
+		if next(ZO_Menu.items) == nil then
+			return false
 		end
-	end
+		local ownerName = (owner ~= nil and owner.GetName and owner:GetName()) or owner
+		if lib.debugLCM then d("[LSM]SecurePostHook-ShowMenu-owner: " .. tos(ownerName)) end
+		if owner == nil then return end
 
-	--Hide original ZO_Menu (and LibCustomMenu added entries) now -> Do this here AFTER preparing LSM entries,
-	-- else the ZO_Menu.items and sub controls will be emptied already (nil)!
-	if lib.debugLCM then d(">> ~~ Clear ZO_Menu ~~~") end
-	ClearMenu()
+		local parent = owner.GetParent and owner:GetParent()
+		local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
+		if lib.debugLCM then
+			LSM_Debug._ZO_Menu_Items[ownerName] = {
+				_owner = owner,
+				_ownerName = ownerName,
+				_parent = parent,
+				_owningWindow = owningWindow,
+			}
+		end
+		local isAllowed, _ = isSupportedInventoryRowPattern(owner, ownerName)
+		if not isAllowed then
+			if lib.debugLCM then d("<<ABORT! Not supported context menu owner: " ..tos(ownerName)) end
+			return
+		end
 
-	--Show the LSM contetx menu now with the mapped and added ZO_Menu entries
-	if lib.debugLCM then d("< ~~ SHOWING LSM! ShowCustomScrollableMenu ~~~") end
-	local isZOListDialogHidden = zoListDialog:IsHidden()
-	ShowCustomScrollableMenu(owner, {
-		sortEntries = 			false,
-		visibleRowsDropdown = 	isZOListDialogHidden and 20 or 15,
-		visibleRowsSubmenu = 	isZOListDialogHidden and 20 or 15,
-	})
-end)
+		local copyOfMenuItems =  ZO_ShallowTableCopy(ZO_Menu.items)
+		if lib.debugLCM then
+			LSM_Debug._ZO_Menu_Items[ownerName].ZO_MenuItems = copyOfMenuItems
+		end
+
+		--Build new LSM context menu now
+		for idx, itemData in ipairs(copyOfMenuItems) do
+			--[[
+			--Do not clear it here as it would prevent usage of multiple addons using LSM!
+			if idx == 1 then
+				--d("> ~~ clearing LSM! ClearCustomScrollableMenu ~~~")
+				--ClearCustomScrollableMenu()
+			end
+			]]
+
+			local lsmEntry = mapZO_MenuItemToLSMEntry(itemData, idx)
+			if lib.debugLCM then
+				LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items = LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items or {}
+				LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items[#LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items+1] = lsmEntry
+			end
+
+			if lsmEntry ~= nil and lsmEntry.name ~= nil then
+				--Transfer the menu entry now to LibScrollableMenu instead of ZO_Menu
+				--->pass in lsmEntry as additionlData (last parameter) so m_normalColor etc. will be applied properly
+				AddCustomScrollableMenuEntry(lsmEntry.name, lsmEntry.callback, lsmEntry.entryType, lsmEntry.entries, lsmEntry)
+			end
+		end
+
+		--Hide original ZO_Menu (and LibCustomMenu added entries) now -> Do this here AFTER preparing LSM entries,
+		-- else the ZO_Menu.items and sub controls will be emptied already (nil)!
+		if lib.debugLCM then d(">> ~~ Clear ZO_Menu ~~~") end
+		ClearMenu()
+
+		--Show the LSM contetx menu now with the mapped and added ZO_Menu entries
+		if lib.debugLCM then d("< ~~ SHOWING LSM! ShowCustomScrollableMenu ~~~") end
+		local isZOListDialogHidden = zoListDialog:IsHidden()
+		ShowCustomScrollableMenu(owner, {
+			sortEntries = 			false,
+			visibleRowsDropdown = 	isZOListDialogHidden and 20 or 15,
+			visibleRowsSubmenu = 	isZOListDialogHidden and 20 or 15,
+		})
+	end)
+end
+
+------------------------------------------------------------------------------------------------------------------------
+-- API functions for custom scrollable inventory context menu
+------------------------------------------------------------------------------------------------------------------------
+--Similar to LibCustomMenu: Register a hook for your addon to use LibScrollableMenu for the inventory context menus
+-->If ANY CustomScrollableInventoryContextMenu was registered with LibScrollableMenu:
+-->LibCustomMenu and vanilla ZO_Menu inventory context menus will be suppressed then, mapped into LSM entries and
+-->LSM context menu will be shown instead
+-->Else: Normal ZO_Menu and LibCustomMenu inventory context menus will be used
+function lib.RegisterCustomScrollableInventoryContextMenu(addonName)
+	assert(addonName ~= nil and registeredCustomScrollableInventoryContextMenus[addonName] == nil, sfor('['..MAJOR..'.RegisterCustomScrollableInventoryContextMenu] \'addonName\' missing or already registered: %q', tos(addonName)))
+	registeredCustomScrollableInventoryContextMenus[addonName] = true
+	addZO_Menu_ShowMenuHook()
+end
+
+lib.IsAnyCustomScrollableInventoryContextMenuRegistered = isAnyCustomScrollableInventoryContextMenuRegistered
 
 
 ------------------------------------------------------------------------------------------------------------------------
