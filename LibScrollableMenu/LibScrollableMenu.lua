@@ -1144,10 +1144,25 @@ local function createScrollableComboBoxEntry(self, item, index, entryType)
 	return entryData
 end
 
+--Called from dropdownClass:SetupEntry(control, data, list)
 function dropdownClass:SetupEntryLabel(labelControl, data)
 	labelControl:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
 	labelControl:SetFont(self.owner:GetDropdownFont())
 	local color = self.owner:GetItemNormalColor(data)
+
+	LSM_Debug = LSM_Debug or {}
+LSM_Debug._dropdownClass_SetupEntryLabel = LSM_Debug._dropdownClass_SetupEntryLabel or {}
+LSM_Debug._dropdownClass_SetupEntryLabel[labelControl] = {
+	control = labelControl,
+	data = data,
+	self = self,
+	owner = self.owner,
+	color = color,
+	text = data.label or data.name,
+	enabled = data.enabled,
+	normalColor = data.m_normalColor,
+}
+
 	labelControl:SetColor(color:UnpackRGBA())
 	labelControl:SetHorizontalAlignment(self.horizontalAlignment)
 end
@@ -2139,8 +2154,8 @@ end
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
 --		contextMenuCallback = function(ctrl) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
 -- }
---}, nil)
-function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
+--}, --[[additionalData]] { isNew = true, m_normalColor = ZO_ColorDef, m_highlightColor = ZO_ColorDef, m_disabledColor = ZO_ColorDef, m_font = "ZO_FontGame" } )
+function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additionalData)
 	assert(text ~= nil, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] String or function returning a string expected, got %q = %s', "text", tos(text)))
 --	local scrollHelper = initCustomScrollMenuControl()
 --	scrollHelper = scrollHelper or getScrollHelperObjectFromControl(customScrollableMenuComboBox)
@@ -2164,9 +2179,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
 	local isDivider = entryType == lib.LSM_ENTRY_TYPE_DIVIDER or text == libDivider
 	if isDivider == true then entryType = lib.LSM_ENTRY_TYPE_DIVIDER end
 
-	--Add the line of the context menu to the internal tables. Will be read as the ZO_ComboBox's dropdown opens and calls
-	--:AddMenuItems() -> Added to internal scroll list then
-	g_contextMenu:AddItem({
+	local newEntry = {
 		isDivider		= isDivider,
 		isHeader		= isHeader,
 		isCheckbox		= isCheckbox,
@@ -2175,9 +2188,29 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
 		name			= getValueOrCallback(text, options),
 		--Callback function as context menu entry get's selected. Will also work for an enry where a submenu is available (but usually is not provided in that case)
 		callback		= not isDivider and callback, --ZO_ComboBox:SelectItem will call the item.callback(self, item.name, item), where item = { isHeader = ... }
+
 		--Any submenu entries (with maybe nested submenus)?
 		entries			= entries,
-	}, ZO_COMBOBOX_SUPPRESS_UPDATE)
+	}
+
+	local addDataType = type(additionalData)
+	if addDataType == "table" then
+		--[[ Will add e.g. the following data:
+			additionalData.m_normalColor
+			additionalData.m_highlightColor
+			additionalData.m_disabledColor
+			additionalData.m_font
+			additionalData.isNew
+		]]
+		mixinTableAndSkipExisting(newEntry, additionalData)
+	--Fallback vor old verions of LSM <2.1 where additionalData table was missing and isNew was used as the same parameter
+	elseif addDataType == "boolean" then
+		newEntry.isNew = addDataType
+	end
+
+	--Add the line of the context menu to the internal tables. Will be read as the ZO_ComboBox's dropdown opens and calls
+	--:AddMenuItems() -> Added to internal scroll list then
+	g_contextMenu:AddItem(newEntry, ZO_COMBOBOX_SUPPRESS_UPDATE)
 end
 local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 
@@ -2267,6 +2300,328 @@ function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	g_contextMenu:ShowContextMenu(controlToAnchorTo)
 	return true
 end
+
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+-- Test - Move LibCustomMenu and normal vanilla ZO_Menu controls to LibScrollableMenu scrollable menus
+------------------------------------------------------------------------------------------------------------------------
+--Only enable for these "owners" (ZO_Menu's owner, or parent or owningWindow)
+local zoListDialog = ZO_ListDialog1
+
+local listRowsAllowedPatterns = {
+	--ZOs
+    "^ZO_%a+Backpack%dRow%d%d*",                                            --Inventory backpack
+    "^ZO_%a+InventoryList%dRow%d%d*",                                       --Inventory backpack
+    "^ZO_CharacterEquipmentSlots.+$",                                       --Character
+    "^ZO_CraftBagList%dRow%d%d*",                                           --CraftBag
+    "^ZO_Smithing%aRefinementPanelInventoryBackpack%dRow%d%d*",             --Smithing refinement
+    "^ZO_RetraitStation_%a+RetraitPanelInventoryBackpack%dRow%d%d*",        --Retrait
+    "^ZO_QuickSlot_Keyboard_TopLevelList%dRow%d%d*",                        --Quickslot
+    "^ZO_RepairWindowList%dRow%d%d*",                                       --Repair at vendor
+    "^ZO_ListDialog1List%dRow%d%d*",                                        --List dialog (Repair, Recharge, Enchant, Research)
+    "^ZO_CompanionEquipment_Panel_.+List%dRow%d%d*",                        --Companion Inventory backpack
+    "^ZO_CompanionCharacterWindow_.+_TopLevelEquipmentSlots.+$",            --Companion character
+    "^ZO_UniversalDeconstructionTopLevel_%a+PanelInventoryBackpack%dRow%d%d*",--Universal deconstruction
+
+	--Other addons
+	"^IIFA_ListItem_%d",													--Inventory Insight from Ashes (IIfA)
+}
+local function isSupportedInventoryRowPattern(ownerCtrl, controlName)
+	--return false --todo: for debugging remve againto enable LSM at inventory row context menus again
+
+	controlName = controlName or (ownerCtrl ~= nil and ownerCtrl.GetName and ownerCtrl:GetName())
+    if not controlName then return false, nil end
+    if not listRowsAllowedPatterns then return false, nil end
+    for _, patternToCheck in ipairs(listRowsAllowedPatterns) do
+        if controlName:find(patternToCheck) ~= nil then
+            return true, patternToCheck
+        end
+    end
+    return false, nil
+end
+
+local entryTypeNormal = lib.LSM_ENTRY_TYPE_NORMAL
+local entryTypeCheckbox = lib.LSM_ENTRY_TYPE_CHECKBOX
+local entryTypeDivider = lib.LSM_ENTRY_TYPE_DIVIDER
+local entryTypeHeader = lib.LSM_ENTRY_TYPE_HEADER
+
+local libCustomMenuIsLoaded = LibCustomMenu ~= nil
+local mapLCMItemtypeToLSMEntryType
+if libCustomMenuIsLoaded then
+	mapLCMItemtypeToLSMEntryType = {
+		[MENU_ADD_OPTION_LABEL]		= entryTypeNormal,
+		[MENU_ADD_OPTION_CHECKBOX]	= entryTypeCheckbox,
+		[MENU_ADD_OPTION_HEADER]	= entryTypeHeader,
+	}
+end
+
+local itemAddedNum = 0
+local errorNr = 0
+local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSubmenu)
+d("[LSM]mapZO_MenuItemToLSMEntry-itemAddedNum: " .. tos(itemAddedNum) .. ", isBuildingSubmenu: " .. tos(isBuildingSubmenu))
+	isBuildingSubmenu = isBuildingSubmenu or false
+	itemAddedNum = itemAddedNum + 1
+	local lsmEntry
+	local itemCopy = ZO_MenuItemData.item --~= nil and ZO_ShallowTableCopy(ZO_MenuItemData.item)
+
+	local itemCopyCopy
+	if itemCopy ~= nil then
+		itemCopyCopy = itemCopy
+
+
+		local entryName
+		local callbackFunc
+		local isCheckbox = ZO_MenuItemData.checkbox ~= nil
+		local isDivider = false
+		local isHeader = false
+		local entryType = isCheckbox and entryTypeCheckbox or entryTypeNormal
+		local hasSubmenu = false
+		local submenuEntries
+		local isNew = nil
+
+		--LibCustomMenu variables - LSM does not support that all yet - TODO?
+		local myfont
+		local normalColor
+		local highlightColor
+		local disabledColor
+		local itemYPad
+		local horizontalAlignment
+		local tooltip
+		local enabled = true
+
+		local processVanillaZO_MenuItem = true
+		if libCustomMenuIsLoaded then
+			--LibCustomMenu values in ZO_Menu.items[i].item.entryData or .submenuData:
+			--[[
+			{
+				mytext = mytext,
+				myfunction = myfunction or function() end,
+				itemType = itemType,
+				myfont = myFont,
+				normalColor = normalColor,
+				highlightColor = highlightColor,
+				itemYPad = itemYPad,
+				horizontalAlignment = horizontalAlignment
+			}
+			]]
+			--Is this an entry opening a submen?
+			local entryData = itemCopy.entryData
+			local submenuData = itemCopy.submenuData
+			if submenuData ~= nil and submenuData.entries ~= nil then
+				local submenuItems = submenuData.entries
+d(">LCM  found Submenu items: " ..tos(#submenuItems))
+				processVanillaZO_MenuItem = false
+
+				entryName = 			submenuData.mytext
+				entryType = 			mapLCMItemtypeToLSMEntryType[submenuData.itemType] or entryTypeNormal
+				callbackFunc = 			submenuData.myfunction
+				myfont =				submenuData.myfont
+				normalColor = 			submenuData.normalColor
+				highlightColor = 		submenuData.highlightColor
+				itemYPad = 				submenuData.itemYPad
+				isHeader = 				false
+				tooltip = 				itemCopy.tooltip
+				--enabled =				submenuData.enabled Not supported in LibCustomMenu
+
+				hasSubmenu = true
+				--Add non-nested (only 1 level) subMenu entries of LibCustomMenu
+				submenuEntries = {}
+				for submenuIdx, submenuEntry in ipairs(submenuItems) do
+					submenuEntry.submenuData = nil
+					--Prepapre the needed data table for the recursive call to mapZO_MenuItemToLSMEntry
+					submenuEntry.entryData = {
+						mytext = 				submenuEntry.label,
+						itemType =				submenuEntry.itemType,
+						myfunction =			submenuEntry.callback,
+						myfont =				submenuEntry.myfont,
+						normalColor =			submenuEntry.normalColor,
+						highlightColor =		submenuEntry.highlightColor,
+						itemYPad =				submenuEntry.itemYPad,
+						--horizontalAlignment =	submenuEntry.horizontalAlignment,
+						tooltip = 				submenuEntry.tooltip,
+
+						enabled =				true
+					}
+					if submenuEntry.disabled ~= nil then
+						local disabledType = type(submenuEntry.disabled)
+						if disabledType == "function" then
+							submenuEntry.entryData.enabled = function(...) return not submenuEntry.disabled(...) end
+						elseif disabledType == "boolean" then
+							submenuEntry.entryData.enabled = not submenuEntry.disabled
+						else
+						end
+					end
+
+					local lsmEntryForSubmenu = mapZO_MenuItemToLSMEntry({ item = submenuEntry }, submenuIdx, true)
+					if lsmEntryForSubmenu ~= nil and lsmEntryForSubmenu.name ~= nil then
+						submenuEntries[#submenuEntries + 1] = lsmEntryForSubmenu
+					end
+				end
+
+			elseif entryData ~= nil then
+				entryName =				entryData.mytext
+				entryType = 			mapLCMItemtypeToLSMEntryType[entryData.itemType] or entryTypeNormal
+				callbackFunc = 			entryData.myfunction
+				myfont =				entryData.myfont
+				normalColor = 			entryData.normalColor
+				highlightColor = 		entryData.highlightColor
+				itemYPad = 				entryData.itemYPad
+				horizontalAlignment = 	entryData.horizontalAlignment
+
+				isHeader = 				isHeader or itemCopy.isHeader
+
+				tooltip = 				itemCopy.tooltip
+
+				processVanillaZO_MenuItem = (entryName == nil or callbackFunc == nil and true) or false
+
+				if entryData.enabled ~= nil then
+					enabled = entryData.enabled
+				end
+
+	d(">LCM found normal item-processVanillaZO_MenuItem: " .. tos(processVanillaZO_MenuItem))
+			end
+		end
+
+		--Normal ZO_Menu item added via AddMenuItem (without LibCustomMenu)
+		if processVanillaZO_MenuItem then
+d(">LCM process vanilla ZO_Menu item")
+			entryName = 	entryName or (itemCopy.nameLabel and itemCopy.nameLabel:GetText())
+			callbackFunc = 	callbackFunc or itemCopy.OnSelect
+			isHeader = 		isHeader or itemCopy.isHeader
+			tooltip = 		itemCopy.tooltip
+
+			if itemCopy.enabled ~= nil then
+				enabled = itemCopy.enabled
+			end
+		end
+
+		--Entry type checks
+		---Is the entry a divider "-"?
+		isDivider = entryName and entryName == libDivider
+		if isDivider then entryType = entryTypeDivider end
+		---Is the entry a header?
+		if isHeader then entryType = entryTypeHeader end
+
+
+d(">>LSM entry[" .. tos(itemAddedNum) .. "]-name: " ..tos(entryName) .. ", callbackFunc: " ..tos(callbackFunc) .. ", type: " ..tos(entryType) .. ", hasSubmenu: " .. tos(hasSubmenu) .. ", entries: " .. tos(submenuEntries))
+
+		--Return values for LSM entry
+		if entryName ~= nil then
+			lsmEntry = {}
+			lsmEntry.name = 		entryName
+			lsmEntry.isDivider = 	isDivider
+			lsmEntry.isHeader = 	isHeader
+
+			lsmEntry.entryType = 	entryType
+
+			lsmEntry.callback = 	callbackFunc
+
+			lsmEntry.hasSubmenu = 	hasSubmenu
+			lsmEntry.entries = 		submenuEntries
+
+			lsmEntry.tooltip = 		tooltip
+
+			lsmEntry.isNew = 		isNew
+
+			--lsmEntry.m_font		= 	myfont or comboBoxDefaults.m_font
+			lsmEntry.m_normalColor = normalColor or comboBoxDefaults.m_normalColor
+			lsmEntry.m_disabledColor = disabledColor or comboBoxDefaults.m_disabledColor
+			lsmEntry.m_highlightColor = highlightColor or comboBoxDefaults.m_highlightColor
+
+			--todo: LSM does not support that yet -> Add it to SetupFunction and use ZO_ComboBox_Base:SetItemEnabled(item, GetValurOrCallback(data.enabled, data)) then
+			lsmEntry.enabled = 		enabled
+		end
+
+		LSM_Debug = LSM_Debug or {}
+		LSM_Debug._ZO_MenuMappedToLSMEntries = LSM_Debug._ZO_MenuMappedToLSMEntries or {}
+		LSM_Debug._ZO_MenuMappedToLSMEntries[itemAddedNum] = {
+			_itemData = ZO_ShallowTableCopy(ZO_MenuItemData),
+			_item = itemCopy ~= nil and itemCopy or "! ERROR !",
+			_itemCopy = itemCopyCopy,
+			_itemNameLabel = (itemCopy.nameLabel ~= nil and itemCopy.nameLabel) or "! ERROR !",
+			_itemCallback = (itemCopy.OnSelect ~= nil and itemCopy.OnSelect) or "! ERROR !",
+			lsmEntry = lsmEntry ~= nil and ZO_ShallowTableCopy(lsmEntry) or "! ERROR !",
+			isBuildingSubmenu = isBuildingSubmenu,
+			menuIndex = menuIndex,
+		}
+
+	else
+		errorNr = errorNr + 1
+d("<[LSM]ERROR " .. tos(errorNr) .."- ZO_Menu.items[".. tos(menuIndex).."].item is NIL!")
+		LSM_Debug = LSM_Debug or {}
+		LSM_Debug._ZO_MenuMappedToLSMEntriesERRORS = LSM_Debug._ZO_MenuMappedToLSMEntriesERRORS or {}
+		LSM_Debug._ZO_MenuMappedToLSMEntriesERRORS[errorNr] = {
+			_itemData = ZO_ShallowTableCopy(ZO_MenuItemData),
+			isBuildingSubmenu = isBuildingSubmenu,
+			menuIndex = menuIndex,
+		}
+	end
+	return lsmEntry
+end
+
+
+SecurePostHook("ShowMenu", function(owner)
+	LSM_Debug = LSM_Debug or {}
+	LSM_Debug._ZO_Menu_Items = LSM_Debug._ZO_Menu_Items or {}
+
+	if next(ZO_Menu.items) == nil then
+		return false
+	end
+	local ownerName = (owner ~= nil and owner.GetName and owner:GetName()) or owner
+d("[LSM]SecurePostHook-ShowMenu-owner: " .. tos(ownerName))
+	if owner == nil then return end
+
+	local parent = owner.GetParent and owner:GetParent()
+	local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
+	LSM_Debug._ZO_Menu_Items[ownerName] = {
+		_owner = owner,
+		_ownerName = ownerName,
+		_parent = parent,
+		_owningWindow = owningWindow,
+	}
+	local isAllowed, _ = isSupportedInventoryRowPattern(owner, ownerName)
+	if not isAllowed then
+d("<<ABORT! Not supported context menu owner: " ..tos(ownerName))
+		return
+	end
+
+	local copyOfMenuItems =  ZO_ShallowTableCopy(ZO_Menu.items)
+	LSM_Debug._ZO_Menu_Items[ownerName].ZO_MenuItems = copyOfMenuItems
+
+	--Build new LSM context menu now
+	for idx, itemData in ipairs(copyOfMenuItems) do
+		if idx == 1 then
+d("> ~~ clearing LSM! ClearCustomScrollableMenu ~~~")
+			ClearCustomScrollableMenu()
+		end
+
+		local lsmEntry = mapZO_MenuItemToLSMEntry(itemData, idx)
+LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items = LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items or {}
+LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items[#LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items+1] = lsmEntry
+
+		if lsmEntry ~= nil and lsmEntry.name ~= nil then
+			--Transfer the menu entry now to LibScrollableMenu instead of ZO_Menu
+			AddCustomScrollableMenuEntry(lsmEntry.name, lsmEntry.callback, lsmEntry.entryType, lsmEntry.entries, lsmEntry) --pass in lsmEntry as additionlData so m_normalColor etc. will be applied
+		end
+	end
+
+	--Hide original menu now -> Do this here, else the ZO_Menu.items and sub controls will be emptied!
+d(">> ~~ Clear ZO_Menu ~~~")
+	ClearMenu()
+
+	--Cler LSM context menu
+d("< ~~ SHOWING LSM! ShowCustomScrollableMenu ~~~")
+	local isZOListDialogHidden = zoListDialog:IsHidden()
+	ShowCustomScrollableMenu(owner, {
+		sortEntries = 			false,
+		visibleRowsDropdown = 	isZOListDialogHidden and 20 or 15,
+		visibleRowsSubmenu = 	isZOListDialogHidden and 20 or 15,
+	})
+end)
 
 
 ------------------------------------------------------------------------------------------------------------------------
