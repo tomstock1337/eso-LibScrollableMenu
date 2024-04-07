@@ -1385,8 +1385,9 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 	self.m_container = comboBoxContainer
 	local dropdownObject = self:GetDropdownObject(comboBoxContainer, depth)
 	self:SetDropdownObject(dropdownObject)
-	self:UpdateOptions(options)
-	
+
+	self:UpdateOptions(options, true)
+
 	local maxHeight = self.baseEntryHeight * self:GetMaxRows()
 	self:SetHeight(maxHeight)
 end
@@ -1768,7 +1769,7 @@ function comboBox_base:GetMaxRows()
 	-- Overwrite at subclasses
 end
 
-function comboBox_base:UpdateOptions()
+function comboBox_base:UpdateOptions(options, onInit)
 	-- Overwrite at subclasses
 end
 
@@ -1780,10 +1781,11 @@ local comboBoxClass = comboBox_base:Subclass()
 -- comboBoxClass:New(To simplify locating the beginning of the class
 function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth)
 	comboBoxContainer.m_comboBox = self
-	
-	-- Add all comboBox defaults not present.
+
+	--Reset to the default ZO_ComboBox variables
 	self:ResetToDefaults()
 
+	-- Add all comboBox defaults not present.
 	self.m_name = comboBoxContainer:GetName()
 	self.m_openDropdown = comboBoxContainer:GetNamedChild("OpenDropdown")
 	self.m_containerWidth = comboBoxContainer:GetWidth()
@@ -1854,65 +1856,127 @@ function comboBoxClass:HideOnMouseExit(mocCtrl)
 	end
 end
 
-function comboBoxClass:UpdateOptions(options)
-	local optionsChanged = self.optionsChanged or ZO_IsTableEmpty(self.options)
-	if not optionsChanged then return end
-	self.optionsChanged = false
+--[[
+--20240407 Baertram
+-Ways to update the options-
+1) combobox:UpdateOptions(options, onInit)
+2) API SetCustomScrollableMenuOptions(options, comboBoxContainer)
+a) 2nd param comboBoxContainer = nil -> Update LSM context menu optionsData internally and use on next OnShow of context menu
+b) 2nd param comboBoxContainer is provided -> Update LSM scrollable menu via comboBoxContainer:UpdateOptions()
 
-	options = options or {}
-	
-	-- Backwards compatible
-	if type(options) ~= 'table' then
-		options = {
-			visibleRowsDropdown = options
-		}
+
+-Possible cases for updated options-
+1) Init of new combobox with LSM:
+a) If options passed in: use those
+-->If parts of options are missing: Should be used internaly from ZO_ComboBox defaults -> So call self:ResetToDefaults()
+b) If no options passed in / options nil: 	Should be used internaly from ZO_ComboBox defaults -> So call self:ResetToDefaults()
+
+
+2) Update of already available combobox with LSM:
+a) If options passed in: use those
+-->If parts of options are missing: Should be used internaly from ZO_ComboBox -> so use self.attribute (e.g. self.m_font)
+b) If no options passed in / options nil: Init with self:ResetToDefaults() and skip UpdateOptions() to AddCustomEntryTemplates
+
+
+3) Init of new LSM context menu:
+a) If options passed in: use those
+-->If parts of options are missing: Should be used internaly from ZO_ComboBox defaults -> So call self:ResetToDefaults()
+b) If no options passed in / options nil: self:ResetToDefaults()
+
+
+4) Update existing contextMenu of LSM:
+a)-If options passed in: use those
+-->If parts of options are missing: Should be used internaly from ZO_ComboBox defaults -> So call self:ResetToDefaults()
+b) If no options passed in / options nil: Init with self:ResetToDefaults() and skip UpdateOptions() to AddCustomEntryTemplates
+]]
+function comboBoxClass:UpdateOptions(options, onInit)
+	onInit = onInit or false
+	local optionsChanged = self.optionsChanged
+
+	--Called from Initialization of the object -> self:ResetToDefaults() was called in comboBoxClass:Initialize() already
+	-->And self:UpdateOptions() is then called via comboBox_base.Initialize(...), from where we get here
+	if onInit == true then
+		--Do not change any other options, just init. the combobox -> call self:AddCustomEntryTemplates(options) ands set
+		--optionsChanged to false (self.options will be nil at that time)
+		optionsChanged = false
+	else
+		--self.optionsChanged might have been set by contextMenuClass:SetOptions(options) already. Check that first and keep that boolean state as we
+		--do not use self.options but self.optionsData here:
+		--->Coming from contextMenuClass:ShowContextMenu() -> self.optionsData was set via contextMenuClass:SetOptions(options) before, and will be passed in here
+		--->to UpdateOptions(options) as options parameter. self.optionsChanged will be true if the options changed at the contex menu (compared to old self.optionsData)
+		---->self.optionsData  is then used at OnShow of the context menu. That's why we cannot compare the self.options here!
+		--
+		--For other "non-context menu" calls: Compare the already stored self.options table to the new passed in options table (both could be nil though)
+		optionsChanged = optionsChanged or options ~= self.options
 	end
 
---	local defaultOptions = self.options or defaultComboBoxOptions
-	-- We add all previous options to the new table
---	mixinTableAndSkipExisting(options, defaultOptions)
-	-- We will need to start with a clean table in order to reset options if they were changed before.
-	-- Otherwise, if options are changed, all previous changes will be applied to undefined entries.
-	mixinTableAndSkipExisting(options, defaultComboBoxOptions)
-	
-	-- Defaults are predefined in defaultComboBoxOptions
-	self.visibleRows = getValueOrCallback(options.visibleRowsDropdown, options) or DEFAULT_VISIBLE_ROWS
-	self.visibleRowsSubmenu = getValueOrCallback(options.visibleRowsSubmenu, options) or self.visibleRows
-	self.m_headerFontColor = getValueOrCallback(options.headerColor, options) or self.m_headerFontColor
 
-	self.narrateData = getValueOrCallback(options.narrate, options)
-	local disableFadeGradient = getValueOrCallback(options.disableFadeGradient, options)
-	disableFadeGradient = disableFadeGradient ~= nil and disableFadeGradient or self.disableFadeGradient
-	self.disableFadeGradient = disableFadeGradient
-	
-	self.options = options
-	
-	-- ZO_ComboBox options
-	local font = getValueOrCallback(options.font, options) or self.m_font
-	local spacing = getValueOrCallback(options.spacing, options) or self.m_spacing
-	local sortEntries = getValueOrCallback(options.sortEntries, options)
-	sortEntries = sortEntries == nil and self.m_sortsItems or sortEntries
-	-- Defaults used if nil
-	local sortType = getValueOrCallback(options.sortType, options) or self.m_sortType
-	local sortOrder = getValueOrCallback(options.sortOrder, options) or self.m_sortOrder
-	
-	local preshowDropdownFn = getValueOrCallback(options.preshowDropdownFn, options)
-	if preshowDropdownFn then
-		self:SetPreshowDropdownCallback(preshowDropdownFn)
+	--Did the options change: Yes / AND Are the new passed in options nil or empty: Yes
+	--> Reset to default ZO_ComboBox variables and just call AddCustomEntryTemplates()
+	if optionsChanged == true and ZO_IsTableEmpty(options) then
+		optionsChanged = false
+		self:ResetToDefaults()
+
+	--Did the options change: Yes / OR Are the already stored options at the object nil or empty (should happen if self:UpdateOptions(options) was not called before): Yes
+	--> Use passed in options, or use the default ZO_ComboBox options added via self:ResetToDefaults() before
+	elseif optionsChanged == true or ZO_IsTableEmpty(self.options) then
+		optionsChanged = false
+
+		--Create empty table options, if nil
+		options = options or {}
+
+		-- Backwards compatiblity for the time when options was no table bu just 1 variable "visibleRowsDropdown"
+		if type(options) ~= 'table' then
+			options = { visibleRowsDropdown = options }
+		end
+
+		--Set the passed in options to the ZO_ComboBox .options table (for future comparison, see above at optionsChanged = optionsChanged or options ~= self.options)
+		self.options = options
+
+		-- Defaults are predefined in defaultComboBoxOptions, but they will be taken from ZO_ComboBox defaults set from table comboBoxDefaults
+		-- at function self:ResetToDefaults().
+		-- If any variable was set to the ZO_ComboBox already (e.g. self.m_font) it will be used again from that internal variable, if nothing
+		-- was overwriting it here from passed in options table
+
+		-- LibScrollableMenu custom options
+		self.visibleRows = getValueOrCallback(options.visibleRowsDropdown, options) or self.visibleRows
+		self.visibleRowsSubmenu = getValueOrCallback(options.visibleRowsSubmenu, options) or self.visibleRowsSubmenu
+		self.m_headerFontColor = getValueOrCallback(options.headerColor, options) or self.m_headerFontColor
+		self.narrateData = getValueOrCallback(options.narrate, options)
+		local disableFadeGradient = getValueOrCallback(options.disableFadeGradient, options)
+		disableFadeGradient = disableFadeGradient ~= nil and disableFadeGradient or self.disableFadeGradient
+		self.disableFadeGradient = disableFadeGradient
+
+		-- ZO_ComboBox options
+		local font = getValueOrCallback(options.font, options) or self.m_font
+		local spacing = getValueOrCallback(options.spacing, options) or self.m_spacing
+		local sortEntries = getValueOrCallback(options.sortEntries, options)
+		sortEntries = sortEntries == nil and self.m_sortsItems or sortEntries
+		local sortType = getValueOrCallback(options.sortType, options) or self.m_sortType
+		local sortOrder = getValueOrCallback(options.sortOrder, options) or self.m_sortOrder
+		local preshowDropdownFn = getValueOrCallback(options.preshowDropdownFn, options)
+		if preshowDropdownFn then
+			self:SetPreshowDropdownCallback(preshowDropdownFn)
+		end
+
+		--Apply ZO_ComboBox options now
+		self:SetSortsItems(sortEntries)
+		self:SetFont(font)
+		self:SetSpacing(spacing)
+		self:SetSortOrder(sortOrder, sortType)
 	end
-	
-	self:SetSortsItems(sortEntries)
-	self:SetFont(font)
-	self:SetSpacing(spacing)
-	self:SetSortOrder(sortOrder, sortType)
-		
+
 	-- this will add custom and default templates to self.XMLrowTemplates the same way dataTypes were created before.
 	self:AddCustomEntryTemplates(options)
 end
 
+
+
 function comboBoxClass:ResetToDefaults()
 	local defaults = ZO_DeepTableCopy(comboBoxDefaults)
 	mixinTableAndSkipExisting(self, defaults)
+
+	self.options = nil
 end
 
 
@@ -2005,7 +2069,7 @@ function submenuClass:Initialize(parent, comboBoxContainer, options, depth)
 	comboBox_base.Initialize(self, parent, comboBoxContainer, options, depth)
 end
 
-function submenuClass:UpdateOptions()
+function submenuClass:UpdateOptions(options, onInit)
 	self:AddCustomEntryTemplates(self.options)
 end
 
@@ -2351,13 +2415,13 @@ function AddCustomScrollableMenuDivider()
 	addCustomScrollableMenuEntry(libDivider, nil, lib.LSM_ENTRY_TYPE_DIVIDER, nil, nil)
 end
 
---Set the options (visible rows max, etc.) for the scrollable context menu
+--Set the options (visible rows max, etc.) for the scrollable context menu, or any passed in 2nd param comboBoxContainer
 -->See possible options above AddCustomScrollableComboBoxDropdownMenu
 function SetCustomScrollableMenuOptions(options, comboBoxContainer)
-	local optionsTableType = type(options)
-	assert(optionsTableType == 'table' , sfor('['..MAJOR..':SetCustomScrollableMenuOptions] table expected, got %q = %s', "options", tos(optionsTableType)))
+	--local optionsTableType = type(options)
+	--assert(optionsTableType == 'table' , sfor('['..MAJOR..':SetCustomScrollableMenuOptions] table expected, got %q = %s', "options", tos(optionsTableType)))
 
-	if options then
+	--if options ~= nil then
 		--Use specified comboBoxContainer's dropdown to update the options to
 		if comboBoxContainer ~= nil then
 			local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
@@ -2369,7 +2433,7 @@ function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 			--Update options to default contextMenu
 			g_contextMenu:SetOptions(options)
 		end
-	end
+	--end
 end
 local setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
 
@@ -2378,7 +2442,7 @@ function ClearCustomScrollableMenu()
 	--d("[LSM]ClearCustomScrollableMenu")
 	g_contextMenu:ClearItems()
 
-	setCustomScrollableMenuOptions(defaultComboBoxOptions)
+	setCustomScrollableMenuOptions(defaultComboBoxOptions, nil)
 	return true
 end
 local clearCustomScrollableMenu = ClearCustomScrollableMenu
