@@ -2639,6 +2639,7 @@ TODO - To check (future versions)
 		- update fade gradient state
 		-
 	6. Check if entries' .tooltip can be a function and then call that function and show it as normal ZO_Tooltips_ShowTextTooltip(control, text) instead of having to use .customTooltip for that
+	7. Check why a context menu opened at an LSM dropdown closes the whole LSM dropdown + context menu if an entry is selected at the context menu AND the mouse (moc()) is not above the owners dropdown anymore
 
 -------------------
 UPCOMING FEATURES  - What will be added in the future?
