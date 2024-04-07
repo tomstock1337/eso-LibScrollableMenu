@@ -1911,9 +1911,9 @@ function comboBoxClass:UpdateOptions(options, onInit)
 	end
 
 
-	--Did the options change: Yes / AND Are the new passed in options nil or empty: Yes
+	--(Did the options change: Yes / OR are we initializing a ZO_ComboBox ) / AND Are the new passed in options nil or empty: Yes
 	--> Reset to default ZO_ComboBox variables and just call AddCustomEntryTemplates()
-	if optionsChanged == true and ZO_IsTableEmpty(options) then
+	if (optionsChanged == true or onInit == true) and ZO_IsTableEmpty(options) then
 		optionsChanged = false
 		self:ResetToDefaults()
 
