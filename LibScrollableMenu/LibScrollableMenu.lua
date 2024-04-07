@@ -84,6 +84,8 @@ local UINarrationName = MAJOR .. "_UINarration_"
 local UINarrationUpdaterName = MAJOR .. "_UINarrationUpdater_"
 
 
+local getValueOrCallback
+
 ------------------------------------------------------------------------------------------------------------------------
 --Menu types for the different scrollable menus
 LSM_MENUTYPE_MAINMENU = 1
@@ -168,7 +170,6 @@ local comboBoxDefaults = {
 	baseEntryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 }
 
-
 --The default values for dropdownHelper options used for non-passed in LSM API functions
 local defaultComboBoxOptions  = {
 	["visibleRowsDropdown"] = DEFAULT_VISIBLE_ROWS,
@@ -183,21 +184,64 @@ local defaultComboBoxOptions  = {
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
 
-
 --Possible options that can be passed in to the options table at the scrollable dropdownObject API functions.
 --If any option name passed in does not match the table entries below, it will be silently ignored.
 local possibleLibraryOptions = {
+	--LSM only
 	["visibleRowsDropdown"] = true,
 	["visibleRowsSubmenu"] = true,
-	["sortEntries"] = true,
 	["narrate"] = true,
+	["XMLRowTemplates"] = true,
+
+	--LSM and ZO_ComboBox
+	["sortEntries"] = true,
 	["font"] = true,
 	["spacing"] = true,
+	["disableFadeGradient"] = true,
 	["preshowDropdownFn"] = true,
-	["XMLRowTemplates"] = true,
 }
 lib.possibleLibraryOptions = possibleLibraryOptions
 
+--The mapping between LibScrollableMenu options key and ZO_ComboBox options key. Used in comboBoxClass:UpdateOptions()
+local LSMOptionsToZO_ComboBoxOptions = {
+	--These callback functions will apply the options directly
+	['sortType'] = function(self, value)
+		local options = self.options
+		if self.orderSet then self.orderSet = false	return	end
+		local newValue = getValueOrCallback(options['sortOrder'], options)
+		if newValue == nil then newValue = self.m_sortOrder end
+		self:SetSortOrder(value, newValue)
+		self.orderSet = true
+	end,
+	['sortOrder'] = function(self, value)
+		local options = self.options
+		if self.orderSet then self.orderSet = false	return	end
+		local newValue = getValueOrCallback(options['sortType'], options)
+		if newValue == nil then newValue = self.m_sortType end
+		self:SetSortOrder(newValue, value)
+		self.orderSet = true
+	end,
+	["sortEntries"] = function(self, value)
+		self:SetSortsItems(value)
+	end,
+	['spacing'] = function(self, value)
+		self:SetSpacing(value)
+	end,
+	['font'] = function(self, value)
+		self:SetSpacing(value)
+	end,
+	["preshowDropdownFn"] = function(self, value)
+		self:SetPreshowDropdownCallback(value)
+	end,
+
+	--These mapping keys just tell via the key where the comboBox object should be updated
+	["disableFadeGradient"] =	"disableFadeGradient",
+	["headerColor"] =			"m_headerFontColor",
+	["visibleRowsDropdown"] =	"visibleRows",
+	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
+	["narrate"] = 				"narrateData",
+}
+lib.LSMOptionsToZO_ComboBoxOptions = LSMOptionsToZO_ComboBoxOptions
 
 --------------------------------------------------------------------
 -- XML template functions
@@ -219,7 +263,7 @@ end
 
 --Run function arg to get the return value (passing in ... as optional params to that function),
 --or directly use non-function return value arg
-local function getValueOrCallback(arg, ...)
+function getValueOrCallback(arg, ...)
 	if type(arg) == "function" then
 		return arg(...)
 	else
@@ -1856,6 +1900,26 @@ function comboBoxClass:HideOnMouseExit(mocCtrl)
 	end
 end
 
+
+function comboBoxClass:SetOption(key)
+	local options = self.options
+	local currentValue = self[key] -- ZO_ComboBox object[key]
+	local newValue = getValueOrCallback(options[key], options) --read nwew value from the options (run function there or get the value)
+	if newValue == false then
+		-- if new value is false, it will stay false
+		currentValue = newValue
+	end
+	newValue = newValue or currentValue
+
+	local setOptionFuncOrKey = LSMOptionsToZO_ComboBoxOptions[key]
+	if type(setOptionFuncOrKey) == "function" then
+		setOptionFuncOrKey(self, newValue)
+	else
+		self[setOptionFuncOrKey] = newValue
+	end
+end
+
+
 --[[
 --20240407 Baertram
 -Ways to update the options-
@@ -1939,6 +2003,11 @@ function comboBoxClass:UpdateOptions(options, onInit)
 		-- was overwriting it here from passed in options table
 
 		-- LibScrollableMenu custom options
+		for key, _ in pairs(options) do
+			self:SetOption(key)
+		end
+
+		--[[
 		self.visibleRows = getValueOrCallback(options.visibleRowsDropdown, options) or self.visibleRows
 		self.visibleRowsSubmenu = getValueOrCallback(options.visibleRowsSubmenu, options) or self.visibleRowsSubmenu
 		self.m_headerFontColor = getValueOrCallback(options.headerColor, options) or self.m_headerFontColor
@@ -1964,6 +2033,7 @@ function comboBoxClass:UpdateOptions(options, onInit)
 		self:SetFont(font)
 		self:SetSpacing(spacing)
 		self:SetSortOrder(sortOrder, sortType)
+		]]
 	end
 
 	-- this will add custom and default templates to self.XMLrowTemplates the same way dataTypes were created before.
