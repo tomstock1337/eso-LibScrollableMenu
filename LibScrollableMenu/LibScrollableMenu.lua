@@ -205,33 +205,32 @@ lib.possibleLibraryOptions = possibleLibraryOptions
 --The mapping between LibScrollableMenu options key and ZO_ComboBox options key. Used in comboBoxClass:UpdateOptions()
 local LSMOptionsToZO_ComboBoxOptions = {
 	--These callback functions will apply the options directly
-	['sortType'] = function(self, value)
+	['sortType'] = function(comboBoxObject, sortType)
+		local options = comboBoxObject.options
+		if comboBoxObject.orderSet then comboBoxObject.orderSet = false return end
+		local sortOrder = getValueOrCallback(options.sortOrder, options)
+		if sortOrder == nil then sortOrder = comboBoxObject.m_sortOrder end
+		comboBoxObject:SetSortOrder(sortType , sortOrder )
+		comboBoxObject.orderSet = true
+	end,
+	['sortOrder'] = function(comboBoxObject, sortOrder)
 		local options = self.options
-		if self.orderSet then self.orderSet = false	return	end
-		local newValue = getValueOrCallback(options['sortOrder'], options)
-		if newValue == nil then newValue = self.m_sortOrder end
-		self:SetSortOrder(value, newValue)
-		self.orderSet = true
+		if comboBoxObject.orderSet then comboBoxObject.orderSet = false return end
+		local sortType = getValueOrCallback(options.sortType, options) or comboBoxObject.m_sortType
+		comboBoxObject:SetSortOrder(sortType , sortOrder )
+		comboBoxObject.orderSet = true
 	end,
-	['sortOrder'] = function(self, value)
-		local options = self.options
-		if self.orderSet then self.orderSet = false	return	end
-		local newValue = getValueOrCallback(options['sortType'], options)
-		if newValue == nil then newValue = self.m_sortType end
-		self:SetSortOrder(newValue, value)
-		self.orderSet = true
+	["sortEntries"] = function(comboBoxObject, sortEntries)
+		comboBoxObject:SetSortsItems(sortEntries) --sets comboBoxObject.m_sortsItems
 	end,
-	["sortEntries"] = function(self, value)
-		self:SetSortsItems(value)
+	['spacing'] = function(comboBoxObject, spacing)
+		comboBoxObject:SetSpacing(spacing) --sets comboBoxObject.m_spacing
 	end,
-	['spacing'] = function(self, value)
-		self:SetSpacing(value)
+	['font'] = function(comboBoxObject, font)
+		comboBoxObject:SetFont(font) --sets comboBoxObject.m_font
 	end,
-	['font'] = function(self, value)
-		self:SetSpacing(value)
-	end,
-	["preshowDropdownFn"] = function(self, value)
-		self:SetPreshowDropdownCallback(value)
+	["preshowDropdownFn"] = function(comboBoxObject, preshowDropdownCallbackFunc)
+		comboBoxObject:SetPreshowDropdownCallback(preshowDropdownCallbackFunc) --sets m_preshowDropdownFn
 	end,
 
 	--These mapping keys just tell via the key where the comboBox object should be updated
@@ -2600,6 +2599,8 @@ WORKING ON - Current version: 2.1
 	- Exposed row setup functions to object to allow addon use.
 	- Isolated submenuClass:ShowDropdownInternal and submenuClass:HideDropdownInternalare also should be set independently based on class
 		There was no need for the extra functions attached to dropdownClass
+	-Added comboBoxClass:SetOption(key) function
+	-Updated comboBoxClass:UpdateOptions() function
 
 -------------------
 TODO - To check (future versions)
