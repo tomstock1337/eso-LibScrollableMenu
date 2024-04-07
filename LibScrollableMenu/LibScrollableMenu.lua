@@ -172,7 +172,7 @@ local comboBoxDefaults = {
 	baseEntryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 }
 
---The default values for dropdownHelper options used for non-passed in LSM API functions
+--The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
 local defaultComboBoxOptions  = {
 	["visibleRowsDropdown"] = DEFAULT_VISIBLE_ROWS,
 	["visibleRowsSubmenu"] = DEFAULT_VISIBLE_ROWS,
@@ -205,7 +205,24 @@ local possibleLibraryOptions = {
 lib.possibleLibraryOptions = possibleLibraryOptions
 
 --The mapping between LibScrollableMenu options key and ZO_ComboBox options key. Used in comboBoxClass:UpdateOptions()
-local LSMOptionsToZO_ComboBoxOptions = {
+local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
+	--These callback functions will apply the options directly
+	['sortType'] = 				"m_sortType",
+	['sortOrder'] = 			"m_sortOrder",
+	['sortEntries'] = 			"m_sortsItems",
+	['spacing'] = 				"m_spacing",
+	['font'] = 					"m_font",
+	["preshowDropdownFn"] = 	"m_preshowDropdownFn",
+	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
+	["headerColor"] =			"m_headerFontColor",
+	["visibleRowsDropdown"] =	"visibleRows",
+	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
+	["narrate"] = 				"narrateData",
+}
+lib.LSMOptionsKeyToZO_ComboBoxOptionsKey = LSMOptionsKeyToZO_ComboBoxOptionsKey
+
+--The callback functions for the mapped LSM option -> ZO_ComboBox options (where any provided/needed)
+local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	--These callback functions will apply the options directly
 	['sortType'] = function(comboBoxObject, sortType)
 		local options = comboBoxObject.options
@@ -234,15 +251,9 @@ local LSMOptionsToZO_ComboBoxOptions = {
 	["preshowDropdownFn"] = function(comboBoxObject, preshowDropdownCallbackFunc)
 		comboBoxObject:SetPreshowDropdownCallback(preshowDropdownCallbackFunc) --sets m_preshowDropdownFn
 	end,
-
-	--These mapping keys just tell via the key where the comboBox object should be updated
-	["disableFadeGradient"] =	"disableFadeGradient",
-	["headerColor"] =			"m_headerFontColor",
-	["visibleRowsDropdown"] =	"visibleRows",
-	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
-	["narrate"] = 				"narrateData",
 }
-lib.LSMOptionsToZO_ComboBoxOptions = LSMOptionsToZO_ComboBoxOptions
+lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCallbacks
+
 
 --------------------------------------------------------------------
 -- XML template functions
@@ -1367,7 +1378,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 		self.control:SetWidth(minWidth)
 	end
 	
-	ZO_Scroll_SetUseFadeGradient(self.scrollControl,  not self.owner.disableFadeGradient ) 
+	ZO_Scroll_SetUseFadeGradient(self.scrollControl, not self.owner.disableFadeGradient )
 	self.control:SetHeight(desiredHeight)
 	ZO_ScrollList_SetHeight(self.scrollControl, desiredHeight)
 
@@ -1910,21 +1921,27 @@ end
 
 --Update the comboBox's attribute/functions with a value returned from the applied custom options of the LSM, or with
 --ZO_ComboBox default options (set at self:ResetToDefaults())
-function comboBoxClass:SetOption(key)
+function comboBoxClass:SetOption(LSMOptionsKey)
 	local options = self.options
-	local currentValue = self[key] -- ZO_ComboBox object[key]
-	local newValue = getValueOrCallback(options[key], options) --read nwew value from the options (run function there or get the value)
-	if newValue == false then
-		-- if new value is false, it will stay false
-		currentValue = newValue
-	end
-	newValue = newValue or currentValue
+	if options[LSMOptionsKey] ~= nil then
+		--Get current value
+		local currentZO_ComboBoxValueKey = LSMOptionsKeyToZO_ComboBoxOptionsKey[LSMOptionsKey]
+		if currentZO_ComboBoxValueKey == nil then return end
+		local currentValue = self[currentZO_ComboBoxValueKey]
+		--Get new value via options passed in
+		local newValue = getValueOrCallback(options[LSMOptionsKey], options) --read nwew value from the options (run function there or get the value)
+		if newValue == nil then
+			newValue = currentValue
+		end
 
-	local setOptionFuncOrKey = LSMOptionsToZO_ComboBoxOptions[key]
-	if type(setOptionFuncOrKey) == "function" then
-		setOptionFuncOrKey(self, newValue)
+		--Do we need to run a callback function to set the updated value?
+		local setOptionFuncOrKey = LSMOptionsToZO_ComboBoxOptionsCallbacks[LSMOptionsKey]
+		if type(setOptionFuncOrKey) == "function" then
+			setOptionFuncOrKey(self, newValue)
+		end
+		d("[LSM]comboBoxClass:SetOption-key: " ..tos(LSMOptionsKey) .. ", current: " ..tos(currentValue) .. ", new: " ..tos(newValue))
 	else
-		self[setOptionFuncOrKey] = newValue
+		d("[LSM]comboBoxClass:SetOption-key: " ..tos(LSMOptionsKey) .. " -> NO OPTION FOUND! Using current")
 	end
 end
 
@@ -1965,6 +1982,7 @@ b) If no options passed in / options nil: Init with self:ResetToDefaults() and s
 function comboBoxClass:UpdateOptions(options, onInit)
 	onInit = onInit or false
 	local optionsChanged = self.optionsChanged
+d("[LSM]comboBoxClass:UpdateOptions-onInit: " ..tos(onInit) .. ", options: " .. tos(options) .. ", optionsChanged: " .. tos(optionsChanged))
 
 	--Called from Initialization of the object -> self:ResetToDefaults() was called in comboBoxClass:Initialize() already
 	-->And self:UpdateOptions() is then called via comboBox_base.Initialize(...), from where we get here
@@ -1982,11 +2000,12 @@ function comboBoxClass:UpdateOptions(options, onInit)
 		--For other "non-context menu" calls: Compare the already stored self.options table to the new passed in options table (both could be nil though)
 		optionsChanged = optionsChanged or options ~= self.options
 	end
-
+d(">optionsChangedNew: " .. tos(optionsChanged))
 
 	--(Did the options change: Yes / OR are we initializing a ZO_ComboBox ) / AND Are the new passed in options nil or empty: Yes
 	--> Reset to default ZO_ComboBox variables and just call AddCustomEntryTemplates()
 	if (optionsChanged == true or onInit == true) and ZO_IsTableEmpty(options) then
+d(">ResetToDefaults()")
 		optionsChanged = false
 		self:ResetToDefaults()
 
@@ -2005,6 +2024,7 @@ function comboBoxClass:UpdateOptions(options, onInit)
 
 		--Set the passed in options to the ZO_ComboBox .options table (for future comparison, see above at optionsChanged = optionsChanged or options ~= self.options)
 		self.options = options
+d(">updated self.options")
 
 		-- Defaults are predefined in defaultComboBoxOptions, but they will be taken from ZO_ComboBox defaults set from table comboBoxDefaults
 		-- at function self:ResetToDefaults().
@@ -2015,34 +2035,6 @@ function comboBoxClass:UpdateOptions(options, onInit)
 		for key, _ in pairs(options) do
 			self:SetOption(key)
 		end
-
-		--[[
-		self.visibleRows = getValueOrCallback(options.visibleRowsDropdown, options) or self.visibleRows
-		self.visibleRowsSubmenu = getValueOrCallback(options.visibleRowsSubmenu, options) or self.visibleRowsSubmenu
-		self.m_headerFontColor = getValueOrCallback(options.headerColor, options) or self.m_headerFontColor
-		self.narrateData = getValueOrCallback(options.narrate, options)
-		local disableFadeGradient = getValueOrCallback(options.disableFadeGradient, options)
-		disableFadeGradient = disableFadeGradient ~= nil and disableFadeGradient or self.disableFadeGradient
-		self.disableFadeGradient = disableFadeGradient
-
-		-- ZO_ComboBox options
-		local font = getValueOrCallback(options.font, options) or self.m_font
-		local spacing = getValueOrCallback(options.spacing, options) or self.m_spacing
-		local sortEntries = getValueOrCallback(options.sortEntries, options)
-		sortEntries = sortEntries == nil and self.m_sortsItems or sortEntries
-		local sortType = getValueOrCallback(options.sortType, options) or self.m_sortType
-		local sortOrder = getValueOrCallback(options.sortOrder, options) or self.m_sortOrder
-		local preshowDropdownFn = getValueOrCallback(options.preshowDropdownFn, options)
-		if preshowDropdownFn then
-			self:SetPreshowDropdownCallback(preshowDropdownFn)
-		end
-
-		--Apply ZO_ComboBox options now
-		self:SetSortsItems(sortEntries)
-		self:SetFont(font)
-		self:SetSpacing(spacing)
-		self:SetSortOrder(sortOrder, sortType)
-		]]
 	end
 
 	-- this will add custom and default templates to self.XMLrowTemplates the same way dataTypes were created before.
@@ -2052,6 +2044,7 @@ end
 
 
 function comboBoxClass:ResetToDefaults()
+d("[LSM]comboBoxClass:ResetToDefaults")
 	local defaults = ZO_DeepTableCopy(comboBoxDefaults)
 	mixinTableAndSkipExisting(self, defaults)
 
@@ -2511,6 +2504,7 @@ function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 			local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
 			if comboBox ~= nil and comboBox.UpdateOptions then
 				comboBox.optionsChanged = options ~= comboBox.options
+d(">SetCustomScrollableMenuOptions - Found UpdateOptions - optionsChanged: " ..tos(comboBox.optionsChanged))
 				comboBox:UpdateOptions(options)
 			end
 		else

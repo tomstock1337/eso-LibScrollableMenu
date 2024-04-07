@@ -63,26 +63,9 @@ local function test()
 		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
 		-->LibScrollableMenu.lua
 		local options = {
-			visibleRowsDropdown = 10, visibleRowsSubmenu = 10, sortEntries=function() return false end,
-			--[[
-            --		table	narrate:optional				Table or function returning a table with key = narration event and value = function called for that narration event.
-            --												Each functions signature/parameters is shown below!
-            --												-> The function either builds your narrateString and narrates it in your addon.
-            --												   Or you must return a string as 1st return param (and optionally a boolean "stopCurrentNarration" as 2nd return param. If this is nil it will be set to false!)
-            --													and let the library here narrate it for you via the UI narration
-            --												Optional narration events can be:
-            --												"OnComboBoxMouseEnter" 	function(m_dropdownObject, comboBoxControl)  Build your narrateString and narrate it now, or return a string and let the library narrate it for you end
-            --												"OnComboBoxMouseExit"	function(m_dropdownObject, comboBoxControl) end
-            --												"OnMenuShow"			function(m_dropdownObject, dropdownControl, nil, nil) end
-            --												"OnMenuHide"			function(m_dropdownObject, dropdownControl) end
-            --												"OnSubMenuShow"			function(m_dropdownObject, parentControl, anchorPoint) end
-            --												"OnSubMenuHide"			function(m_dropdownObject, parentControl) end
-            --												"OnEntryMouseEnter"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
-            --												"OnEntryMouseExit"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
-            --												"OnEntrySelected"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
-            --												"OnCheckboxUpdated"		function(m_dropdownObject, checkboxControl, data) end
-            --			Example:	narrate = { ["OnComboBoxMouseEnter"] = myAddonsNarrateDropdownOnMouseEnter, ... }
-            ]]
+			visibleRowsDropdown = 10,
+			visibleRowsSubmenu = 10,
+			sortEntries=function() return false end,
 			narrate = narrateOptions,
 		}
 
@@ -704,6 +687,28 @@ LSM_DEBUG = {
 end
 lib.Test = test
 
+local function test2()
+	if lib.testDropdown == nil then return end
+	local comboBox = lib.testDropdown
+	if comboBox then
+d("[LSM]Test2 - Updating options")
+		local optionsNew = {
+			visibleRowsDropdown = 15,
+			visibleRowsSubmenu = 15,
+			sortEntries=function() return false end,
+			--narrate = narrateOptions,
+		}
+
+		SetCustomScrollableMenuOptions(optionsNew, comboBox)
+	end
+end
+lib.Test2 = test2
+
 --test()
 --	/script LibScrollableMenu.Test()
+
+--Create LSM test UI and TLC
 SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
+
+--Update LSM test UI combobox with new options
+SLASH_COMMANDS["/lsmtest2"] = function() lib.Test2() end
