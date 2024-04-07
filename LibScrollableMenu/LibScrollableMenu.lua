@@ -1899,7 +1899,8 @@ function comboBoxClass:HideOnMouseExit(mocCtrl)
 	end
 end
 
-
+--Update the comboBox's attribute/functions with a value returned from the applied custom options of the LSM, or with
+--ZO_ComboBox default options (set at self:ResetToDefaults())
 function comboBoxClass:SetOption(key)
 	local options = self.options
 	local currentValue = self[key] -- ZO_ComboBox object[key]
