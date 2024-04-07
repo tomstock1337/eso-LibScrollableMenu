@@ -88,6 +88,7 @@ local getValueOrCallback
 
 ------------------------------------------------------------------------------------------------------------------------
 --Menu types for the different scrollable menus
+--[[
 LSM_MENUTYPE_MAINMENU = 1
 LSM_MENUTYPE_SUBMENU = 2
 LSM_MENUTYPE_CONTEXTMENU = 100
@@ -96,6 +97,7 @@ local LSM_MENUTYPE_MAINMENU = LSM_MENUTYPE_MAINMENU
 local LSM_MENUTYPE_SUBMENU = LSM_MENUTYPE_SUBMENU
 local LSM_MENUTYPE_CONTEXTMENU = LSM_MENUTYPE_CONTEXTMENU
 local LSM_MENUTYPE_CONTEXTMENU_SUBMENU = LSM_MENUTYPE_CONTEXTMENU_SUBMENU
+]]
 
 --Entry types - For the scroll list's dataType of te menus
 local ENTRY_ID = 1
@@ -954,6 +956,7 @@ local handlerFunctions  = {
 			
 			if upInside then
 				if button == MOUSE_BUTTON_INDEX_LEFT then
+--d("[LSM]Entry_ID Handler 'OnMouseUp'")
 					dropdown:SelectItemByIndex(control.m_data.m_index)
 				end
 			end
@@ -973,6 +976,7 @@ local handlerFunctions  = {
 			if upInside then
 				if button == MOUSE_BUTTON_INDEX_LEFT then
 					if data.callback then
+--d("[LSM]SUBMENU_ENTRY_ID Handler 'OnMouseUp'")
 						dropdown:SelectItemByIndex(control.m_data.m_index)
 					end
 				end
@@ -1263,6 +1267,7 @@ function dropdownClass:OnEntrySelected(control, button, upInside)
 end
 
 function dropdownClass:SelectItemByIndex(index, ignoreCallback)
+--d("[LSM]dropdownClass:SelectItemByIndex-index: " .. tos(index) .. ", ignoreCallback: " ..tos(ignoreCallback))
 	if self.owner then
 		self:HideDropdown()
 		playSelectedSoundCheck(self)
@@ -1399,12 +1404,14 @@ function dropdownClass:ShowTooltip(control, data)
 end
 
 function dropdownClass:HideDropdown()
+--d("[LSM]dropdownClass:HideDropdown()")
 	if self.owner then
 		self.owner:HideDropdown()
 	end
 end
 
 function dropdownClass:HideSubmenu()
+--d("[LSM]dropdownClass:HideSubmenu()")
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 		self.m_submenu:HideDropdown()
 	end
@@ -1562,13 +1569,13 @@ function comboBox_base:BypassOnGlobalMouseUp(button)
 	--d("[LSM]comboBox_base:BypassOnGlobalMouseUp-button: " ..tos(button) .. ", isMouseOverScrollbar: " ..tos(self:IsMouseOverScrollbarControl()))
 
 	if self:IsMouseOverScrollbarControl() then
-		--d(">>mouse is above scrollbar")
+--d(">>mouse is above scrollbar")
 		return true
 	end
 
 	if button == MOUSE_BUTTON_INDEX_LEFT then
 		local mocCtrl = moc()
-		--d(">moc: " ..tos(mocCtrl ~= nil and mocCtrl:GetName()) .. ", mocTypeId: " ..tos(mocCtrl.typeId))
+--d(">moc: " ..tos(mocCtrl ~= nil and mocCtrl:GetName()) .. ", mocTypeId: " ..tos(mocCtrl.typeId))
 		if mocCtrl.typeId then
 			return mocCtrl.typeId ~= ENTRY_ID
 		end
@@ -1605,7 +1612,7 @@ end
 -- Changed to hide tooltip and, if available, it's submenu
 -- We hide the tooltip here so it is hidden if the dropdown is hidden OnGlobalMouseUp
 function comboBox_base:HideDropdown()
---d("comboBoxClass:HideDropdown()")
+--d("[LSM]comboBox_base:HideDropdown()")
 	-- Recursive through all open submenus and close them starting from last.
 --	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 	if self.m_submenu then
@@ -1850,6 +1857,7 @@ function comboBoxClass:AddMenuItems()
 end
 
 function comboBoxClass:HideDropdownInternal()
+--d("[LSM]comboBoxClass:HideDropdownInternal()")
 	zo_comboBox_hideDropdownInternal(self)
 	hideTooltip()
 end
@@ -1863,6 +1871,7 @@ function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
 		local mocCtrl = moc()
 		local moc_dropdownObject = mocCtrl.m_dropdownObject -- or mocCtrl.m_comboBox and mocCtrl.m_comboBox.m_dropdownObject
 		if not moc_dropdownObject then
+--d(">No moc_dropdownObject")
 			-- Right-click will close if not over dropdown
 			self:HideDropdown()
 			
@@ -1884,14 +1893,14 @@ function comboBoxClass:GetMenuPrefix()
 end
 
 function comboBoxClass:HideOnMouseEnter()
-	--d( 'comboBoxClass:HideOnMouseEnter')
+--d("[LSM]comboBoxClass:HideOnMouseEnter()")
 	if self.m_submenu and not self.m_submenu:IsMouseOverControl() and not self:IsMouseOverControl() then
 		self.m_submenu:HideDropdown()
 	end
 end
 
 function comboBoxClass:HideOnMouseExit(mocCtrl)
---d("[LSM]comboBoxClass:HideOnMouseExit")
+--d("[LSM]comboBoxClass:HideOnMouseExit()")
 	if self.m_submenu and not self.m_submenu:IsMouseOverControl() and not self.m_submenu:IsMouseOverOpeningControl() then
 --d(">submenu found, but mouse not over it! HideDropdown")
 		self.m_submenu:HideDropdown()
@@ -2188,6 +2197,7 @@ function submenuClass:ShowDropdownInternal()
 end
 
 function submenuClass:HideDropdownInternal()
+--d("[LSM]submenuClass:HideDropdownInternal()")
 	-- m_container for a fallback
 	local control = self.m_container
 	if self.m_dropdownObject then
@@ -2200,7 +2210,9 @@ function submenuClass:HideDropdownInternal()
 	--	self:Narrate("OnSubMenuHide", control)
 		lib:FireCallbacks('OnSubMenuHide', control)
 	end
-	
+
+--d(">m_dropdownObject:IsOwnedByComboBox: " ..tos(self.m_dropdownObject:IsOwnedByComboBox(self)))
+
 	if self.m_dropdownObject:IsOwnedByComboBox(self) then
 		self.m_dropdownObject:SetHidden(true)
 	end
@@ -2227,6 +2239,7 @@ function submenuClass:HideOnMouseExit(mocCtrl)
 end
 
 function submenuClass:IsMouseOverOpeningControl()
+--d("[LSM]submenuClass:IsMouseOverOpeningControl: " .. tos(MouseIsOver(self.openingControl)))
 	return MouseIsOver(self.openingControl)
 end
 
@@ -2263,7 +2276,7 @@ end
 
 function contextMenuClass:ClearItems()
 	self:SetOptions(nil)
-	
+
 	ZO_ComboBox_HideDropdown(self:GetContainer())
 	ZO_ClearNumericallyIndexedTable(self.data)
 	
@@ -2296,6 +2309,7 @@ function contextMenuClass:ShowContextMenu(parentControl)
 end
 
 function contextMenuClass:HideDropdownInternal()
+--d("[LSM]contextMenuClass:HideDropdownInternal")
 	comboBoxClass.HideDropdownInternal(self)
 	self:ClearItems()
 end
