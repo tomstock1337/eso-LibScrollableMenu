@@ -1,21 +1,21 @@
 <GuiXml>
 	<Controls>
 		<Control name="LibScrollableMenu_Entry_Behavior" mouseEnabled="true" virtual="true">
-			<OnMouseEnter>
+			<OnMouseEnter name="BaseHandler">
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnMouseEnterEntry(self)
 				end
 			</OnMouseEnter>
 			
-			<OnMouseExit>
+			<OnMouseExit name="BaseHandler">
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnMouseExitEntry(self)
 				end
 			</OnMouseExit>
 			
-			<OnMouseUp>
+			<OnMouseUp name="BaseHandler">
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnEntrySelected(self, button, upInside)
@@ -150,47 +150,53 @@
 			TLC so it can be forced above other dropdowns without having to consider layering
 			Since some UI panels have layering set, we set it as overlay high, so it will be above those
 		-->
-		<TopLevelControl name="LibScrollableMenu_Keyboard_Template" layer="CONTROL" tier="HIGH" hidden="true" mouseEnabled="true" clampedToScreen="true" virtual="true">
+		<TopLevelControl name="LibScrollableMenu_Keyboard_Template" inherits="ZO_ComboBoxDropdown_Keyboard_Template" virtual="true">
 			<!--Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" /-->
 			<!-- Width will be set programmatically -->
-			<OnEffectivelyShown>
-				<!-- For some reason this is not working for contextmenu. So, I had added it in a couple places in the lua
-				If we are unable to make this work then it can be removed-->
+			<OnInitialized>
+				-- Overwritten to prevent original OnInitialized
+			</OnInitialized>
+			
+			<OnEffectivelyShown name="BringToTop">
 				self:BringWindowToTop()
 			</OnEffectivelyShown>
 
-			<OnEffectivelyHidden>
+			<OnEffectivelyHidden name="HideDropdown" >
 				if self.object then
 					self.object:HideDropdown()
 				end
 			</OnEffectivelyHidden>
 	
-			<OnMouseEnter>
-			--	d( '- - OnMouseEnter LibScrollableMenu_Keyboard_Template')
-			--	d( self:GetName())
+			<OnMouseEnter name="CloseCheck">
 				if self.object then
 					self.object:OnMouseExitTimeout(self)
 				end
 			</OnMouseEnter>
-			
-			<Controls>
-				<Backdrop name="$(parent)BG" inherits="ZO_DefaultBackdrop">
-					<AnchorFill />
-				</Backdrop>
-
-				<Control name="$(parent)Scroll" inherits="ZO_ScrollList">
-					<Anchor point="TOPLEFT" offsetX="1" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
-					<Anchor point="BOTTOMRIGHT" offsetX="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
-				</Control>
-			</Controls>
 		</TopLevelControl>
 		
+		<!-- ZO_ComboBox -->
+		<Control name="LibScrollableMenu_ComboBox_Behavior" virtual="true">
+			<OnMouseEnter name="Narrate">
+				if self.m_comboBox then
+					self.m_comboBox.m_dropdownObject:Narrate("OnComboBoxMouseEnter", self, nil, nil)
+				end
+			</OnMouseEnter>
+			
+			<OnMouseExit name="Narrate">
+				if self.m_comboBox then
+					self.m_comboBox.m_dropdownObject:Narrate("OnComboBoxMouseExit", self, nil, nil)
+				end
+			</OnMouseExit>
+		</Control>
+
 		<!-- Scrollbar padding -->
-		<Control name="LibScrollableMenu_Scroll_No_Bar" virtual="true">
+		<!-- used when scrollbar is hidden -->
+		<Control name="LibScrollableMenu_ScrollContents_BarHidden" virtual="true">
 			<Anchor point="TOPLEFT" />
 			<Anchor point="BOTTOMRIGHT"/>
 		</Control>
-		<Control name="LibScrollableMenu_Scroll_Bar" virtual="true">
+		<!-- used when scrollbar is shown -->
+		<Control name="LibScrollableMenu_ScrollContents_BarShown" virtual="true">
 			<Anchor point="TOPLEFT" />
 			<Anchor point="BOTTOMRIGHT" offsetX="-ZO_SCROLL_BAR_WIDTH" />
 		</Control>
