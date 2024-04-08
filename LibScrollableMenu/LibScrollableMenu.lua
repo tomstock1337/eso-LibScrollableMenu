@@ -240,7 +240,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		if updatedOptions.sortType ~= nil then return end
 
 		local sortType = getValueOrCallback(options.sortType, options) or comboBoxObject.m_sortType
-		comboBoxObject:SetSortOrder(sortType , sortOrder )
+		comboBoxObject:SetSortOrder(sortType , sortOrder)
 	end,
 	["sortEntries"] = function(comboBoxObject, sortEntries)
 		comboBoxObject:SetSortsItems(sortEntries) --sets comboBoxObject.m_sortsItems
@@ -2626,17 +2626,26 @@ LibScrollableMenu = lib
 WORKING ON - Current version: 2.1
 -------------------
 	- Fixed: comboBoxClass:OnGlobalMouseUp(eventCode, ...) must close all submenus and the main menu (dropdown) of the ZO_ComboBox if we right click on the main comboBox to show a context menu there,
+	TESTED: OPEN
 	- Fixed: submenu defaults not inheriting from parent on initialize
+	TESTED: OPEN
 	- Added: function sets to update name/label on AddItem and update on Show
+	TESTED: OPEN
 	- Added: options.disableFadeGradient, options.headerColor
-	
+	TESTED: OPEN
 	- changed ScrollContent XML template names to LibScrollableMenu_ScrollContents_BarHidden, LibScrollableMenu_ScrollContents_BarShown
+	TESTED: OPEN
 	- Adjusted AnchorToControl so submenus sit on edge of previous dropdown. +- 2 pixels to "4, -4", direction dependent.
+	TESTED: OPEN
 	- Exposed row setup functions to object to allow addon use.
+	TESTED: OPEN
 	- Isolated submenuClass:ShowDropdownInternal and submenuClass:HideDropdownInternalare also should be set independently based on class
 		There was no need for the extra functions attached to dropdownClass
+	TESTED: OPEN
 	-Added comboBoxClass:SetOption(key) function
+	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows were tested)
 	-Updated comboBoxClass:UpdateOptions() function
+	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows were tested)
 
 -------------------
 TODO - To check (future versions)
