@@ -69,24 +69,17 @@ local function test()
 			narrate = narrateOptions,
 		}
 
+		--Try to change the options of the scrollhelper as it gets created
+		lib:RegisterCallback('OnDropdownMenuAdded', function(comboBox, optionsPassedIn)
+d("[LSM]TEST - Callback fired: OnDropdownMenuAdded - current visibleRows: " ..tostring(optionsPassedIn.visibleRowsDropdown))
+			optionsPassedIn.visibleRowsDropdown = 5 -- Overwrite the visible rows at the dropdown
+d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
+		end)
+
 		--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
 		--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
 		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBox, options)
 		-- did not work		scrollHelper.OnShow = function() end --don't change parenting
-
---[[
-LSM_DEBUG = {
-	optionsBefore = options
-}
-]]
-
-		--Try to change the options of the scrollhelper as it gets created
-		lib:RegisterCallback('OnDropdownMenuAdded', function(comboBox, optionsPassedIn)
---d("[LSM]TEST: OnDropdownMenuAdded")
-			optionsPassedIn.visibleRowsDropdown = 5 -- Overwrite the visible rows at the dropdown
---LSM_DEBUG.optionsAfter = optionsPassedIn
-			end)
-
 
 		lib.testDropdown = comboBox
 

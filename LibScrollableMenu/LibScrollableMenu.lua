@@ -612,22 +612,26 @@ end
 
 local function processNameString(data)
 	--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
-	if type(data.label) == 'function' then
+	local labelData = data.label
+	if type(labelData) == 'function' then
 		--Keep the original label function at the data, data.label will be used as a string directly updated by data.labelFunction(data).
-		data.labelFunction = data.label
+		data.labelFunction = labelData
 	end
 	
 	--Name: Mandatory! Used interally of ZO_ComboBox and dropdownObject to SetSelectedItemText and run callback on clicked entry with (self, item.name, data, selectionChanged, oldItem)
-	if type(data.name) == 'function' then
+	local nameData = data.name
+	if type(nameData) == 'function' then
 		--Keep the original name function at the data, as we need a "String only" text as data.name for ZO_ComboBox internal functions!
-		data.nameFunction = data.name
+		data.nameFunction = nameData
 	end
 	
 	updateLabelsStrings(data)
 	
+	--[[
 	if type(data.name) ~= 'string' then
 		--TODO: implement logging
 	end
+	]]
 end
 
 -- Prevents errors on the off chance a non-string makes it through into ZO_ComboBox
@@ -2367,6 +2371,8 @@ end
 function comboBoxClass:UpdateMetatable(parent, comboBoxContainer, options)
 	setmetatable(self, comboBoxClass)
 	ApplyTemplateToControl(comboBoxContainer, 'LibScrollableMenu_ComboBox_Behavior')
+
+d("[LSM]FireCallbacks - OnDropdownMenuAdded - current visibleRows: " ..tostring(options.visibleRowsDropdown))
 	lib:FireCallbacks('OnDropdownMenuAdded', self, options)
 	self:Initialize(parent, comboBoxContainer, options, 1)
 end
@@ -2621,12 +2627,13 @@ LibScrollableMenu = lib
 -- Notes: | TODO:
 ------------------------------------------------------------------------------------------------------------------------
 
+
 --[[
 -------------------
 WORKING ON - Current version: 2.1
 -------------------
-	- Fixed: comboBoxClass:OnGlobalMouseUp(eventCode, ...) must close all submenus and the main menu (dropdown) of the ZO_ComboBox if we right click on the main comboBox to show a context menu there,
-	TESTED: OPEN
+	- Fixed: comboBoxClass:OnGlobalMouseUp(eventCode, ...) must close all submenus and the main menu (dropdown) of the ZO_ComboBox if we right click on the main comboBox to show a context menu there
+	TESTED: OK
 	- Fixed: submenu defaults not inheriting from parent on initialize
 	TESTED: OPEN
 	- Added: function sets to update name/label on AddItem and update on Show
@@ -2646,6 +2653,9 @@ WORKING ON - Current version: 2.1
 	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows were tested)
 	-Updated comboBoxClass:UpdateOptions() function
 	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows were tested)
+	-Callback OnDropdownMenuAdded can change the options of a dropdown pre-init
+	TESTED: OK
+
 
 -------------------
 TODO - To check (future versions)
@@ -2677,7 +2687,6 @@ TODO - To check (future versions)
 		-- But, it would add some dificulty, beyond adding a string to a table, if ever there were other functions needing this action.
 		
 	2. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
-	3. Check if callback OnDropdownMenuAdded can change the options of a dropdown pre-init
 	4. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
 	5. consider making a pre-show function to contain common calls prior to dropdownClass:Show(
 		- update fade gradient state
