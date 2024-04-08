@@ -62,19 +62,25 @@ local function test()
 		--Define your options for the scrollHelper here
 		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
 		-->LibScrollableMenu.lua
+		local HEADER_TEXT_COLOR_RED = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_FAILED))
+
 		local options = {
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
 			sortEntries=function() return false end,
 			narrate = narrateOptions,
+			disableFadeGradient = true,
+			headerColor = HEADER_TEXT_COLOR_RED
 		}
 
 		--Try to change the options of the scrollhelper as it gets created
+		--[[
 		lib:RegisterCallback('OnDropdownMenuAdded', function(comboBox, optionsPassedIn)
-d("[LSM]TEST - Callback fired: OnDropdownMenuAdded - current visibleRows: " ..tostring(optionsPassedIn.visibleRowsDropdown))
+--d("[LSM]TEST - Callback fired: OnDropdownMenuAdded - current visibleRows: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 			optionsPassedIn.visibleRowsDropdown = 5 -- Overwrite the visible rows at the dropdown
-d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
+--d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 		end)
+		]]
 
 		--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
 		--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
@@ -89,7 +95,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 		local subEntries = {
 
 			{
-				isHeader        = false,
+				
 				name            = "Submenu entry 1:1",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry 1:1")
@@ -101,7 +107,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				name            = "-",
 			},
 			{
-				isHeader        = false,
+				
 				name            = "Submenu entry 1:2",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry 1:2")
@@ -115,7 +121,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 		--LibScrollableMenu - LSM entry - Submenu normal
 		local submenuEntries = {
 			{
-				isHeader        = false,
+				
 				name            = "Submenu Entry Test 1",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 1")
@@ -137,7 +143,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+				
 				name            = "Submenu Entry Test 2",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 2")
@@ -182,7 +188,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+				
 				name            = "Submenu Entry Test 3",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 3")
@@ -199,7 +205,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+				
 				name            = "Submenu Entry Test 4",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 4")
@@ -208,7 +214,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+				
 				name            = "Submenu Entry Test 5",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 5")
@@ -223,7 +229,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				end,
 				entries         = {
 					{
-						isHeader        = false,
+						
 						name            = "Normal entry 6 1:1",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:1")
@@ -232,7 +238,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 						--icons 			= nil,
 					},
 					{
-						isHeader        = false,
+						
 						name            = "Submenu entry 6 1:2",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:2")
@@ -240,7 +246,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 						tooltip         = "Submenu entry 6 1:2",
 						entries         = {
 							{
-								isHeader        = false,
+								
 								name            = "Submenu entry 6 2:1",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:1")
@@ -249,7 +255,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 								--icons 			= nil,
 							},
 							{
-								isHeader        = false,
+								
 								name            = "Submenu entry 6 2:2",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:2")
@@ -257,7 +263,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 								tooltip         = "Submenu entry 6 2:2",
 								entries         = {
 									{
-										isHeader        = false,
+										
 										name            = "Normal entry 6 2:1",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:1")
@@ -266,7 +272,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 										--icons 			= nil,
 									},
 									{
-										isHeader        = false,
+										
 										name            = "Normal entry 6 2:2",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:2")
@@ -280,7 +286,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 						},
 					},
 					{
-						isHeader        = false,
+						
 						name            = "Normal entry 6 1:2",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Normal entry 6 1:2")
@@ -293,7 +299,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				tooltip         = "Submenu entry 6"
 			},
 			{
-				isHeader        = false,
+				
 				name            = "Submenu Entry Test 7",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 7")
@@ -302,7 +308,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+				
 				name            = "Submenu Entry Test 8",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 8")
@@ -311,7 +317,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+				
 				name            = "Submenu Entry Test 9",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 9")
@@ -320,7 +326,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+				
 				name            = "Submenu Entry Test 10",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 10")
@@ -331,9 +337,19 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 		}
 
 		--Normal entries
+		local wasNameChangedAtEntry = false
+		local wasLabelChangedAtEntry = false
 		local comboBoxMenuEntries = {
 			{
-				name            = "Normal entry 1",
+				name            = function()
+					if not wasNameChangedAtEntry then
+						wasNameChangedAtEntry = true
+						return "Normal entry 1"
+					else
+						wasNameChangedAtEntry = false
+						return "Normal entry 1 - Changed"
+					end
+				end,
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 				callback        =   function(self)
 					d("Normal entry 1")
@@ -341,13 +357,9 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				contextMenuCallback =   function(self)
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
-
 					AddCustomScrollableSubMenuEntry("Context menu entry 1", subEntries)
-
 					AddCustomScrollableMenuEntry("Context menu Normal entry 1", function() d('Context menu Normal entry 1') end)
-
 					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end)
-
 					ShowCustomScrollableMenu()
 				end,
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
@@ -359,11 +371,19 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				name            = "-", --Divider
 			},
 			{
-				name            = "", --no name test
-				--label 			= "", --no label test
+				name            = "Name value", --no name test
+				label           = function()
+					if not wasLabelChangedAtEntry then
+						wasLabelChangedAtEntry = true
+						return "Entry with label 1"
+					else
+						wasLabelChangedAtEntry = false
+						return "Entry with label 1 - Changed"
+					end
+				end,
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 				callback        =   function(self)
-					d("Entry without name!")
+					d("Entry with label 1!")
 				end,
 				--entries         = submenuEntries,
 				--tooltip         =
@@ -452,7 +472,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem) d("Submenu entry 6") end,
 				entries         = {
 					{
-						isHeader        = false,
+						
 						name            = "Normal entry 6 1:1",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:1")
@@ -461,7 +481,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 						--icons 			= nil,
 					},
 					{
-						isHeader        = false,
+						
 						name            = "Submenu entry 6 1:1",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:2")
@@ -469,7 +489,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 						tooltip         = "Submenu entry 6 1:2",
 						entries         = {
 							{
-								isHeader        = false,
+								
 								name            = "Submenu entry 6 2:1",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:1")
@@ -478,7 +498,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 								--icons 			= nil,
 							},
 							{
-								isHeader        = false,
+								
 								name            = "Submenu entry 6 2:2",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:2")
@@ -486,7 +506,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 								tooltip         = "Submenu entry 6 2:2",
 								entries         = {
 									{
-										isHeader        = false,
+										
 										name            = "Normal entry 6 2:1",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:1")
@@ -495,7 +515,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 										--icons 			= nil,
 									},
 									{
-										isHeader        = false,
+										
 										name            = "Normal entry 6 2:2",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:2")
@@ -509,7 +529,7 @@ d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 						},
 					},
 					{
-						isHeader        = false,
+						
 						name            = "Normal entry 6 1:2",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Normal entry 6 1:2")

@@ -2372,7 +2372,7 @@ function comboBoxClass:UpdateMetatable(parent, comboBoxContainer, options)
 	setmetatable(self, comboBoxClass)
 	ApplyTemplateToControl(comboBoxContainer, 'LibScrollableMenu_ComboBox_Behavior')
 
-d("[LSM]FireCallbacks - OnDropdownMenuAdded - current visibleRows: " ..tostring(options.visibleRowsDropdown))
+--d("[LSM]FireCallbacks - OnDropdownMenuAdded - current visibleRows: " ..tostring(options.visibleRowsDropdown))
 	lib:FireCallbacks('OnDropdownMenuAdded', self, options)
 	self:Initialize(parent, comboBoxContainer, options, 1)
 end
@@ -2637,9 +2637,9 @@ WORKING ON - Current version: 2.1
 	- Fixed: submenu defaults not inheriting from parent on initialize
 	TESTED: OPEN
 	- Added: function sets to update name/label on AddItem and update on Show
-	TESTED: OPEN
+	TESTED: OK
 	- Added: options.disableFadeGradient, options.headerColor
-	TESTED: OPEN
+	TESTED: OK
 	- changed ScrollContent XML template names to LibScrollableMenu_ScrollContents_BarHidden, LibScrollableMenu_ScrollContents_BarShown
 	TESTED: OPEN
 	- Adjusted AnchorToControl so submenus sit on edge of previous dropdown. +- 2 pixels to "4, -4", direction dependent.
@@ -2693,6 +2693,7 @@ TODO - To check (future versions)
 		-
 	6. Check if entries' .tooltip can be a function and then call that function and show it as normal ZO_Tooltips_ShowTextTooltip(control, text) instead of having to use .customTooltip for that
 	7. Check why a context menu opened at an LSM dropdown closes the whole LSM dropdown + context menu if an entry is selected at the context menu AND the mouse (moc()) is not above the owners dropdown anymore
+	8. Add options.maxHeight and options.maxSubmenuHeight as number or function returning a number. Set that to self.m_height fixed then instead of calculating the height via entryHeigh * visibleRowsDropdown/visibleRowsSubmenu
 
 -------------------
 UPCOMING FEATURES  - What will be added in the future?
