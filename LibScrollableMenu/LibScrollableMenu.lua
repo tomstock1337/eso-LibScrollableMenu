@@ -164,7 +164,6 @@ local comboBoxDefaults = {
 	horizontalAlignment = TEXT_ALIGN_LEFT,
 
 	--LibScrollableMenu internal (e.g. .options)
-	filterString = '',
 	disableFadeGradient = false,
 	m_headerFontColor = HEADER_TEXT_COLOR,
 	visibleRows = DEFAULT_VISIBLE_ROWS,
@@ -1896,6 +1895,7 @@ end
 
 -- [New functions]
 function comboBoxClass:GetMaxRows()
+d("[LSM]comboBoxClass:GetMaxRows: " .. tos(self.visibleRows))
 	return self.visibleRows or DEFAULT_VISIBLE_ROWS
 end
 
@@ -1923,26 +1923,26 @@ end
 --ZO_ComboBox default options (set at self:ResetToDefaults())
 function comboBoxClass:SetOption(LSMOptionsKey)
 	local options = self.options
-	if options[LSMOptionsKey] ~= nil then
-		--Get current value
-		local currentZO_ComboBoxValueKey = LSMOptionsKeyToZO_ComboBoxOptionsKey[LSMOptionsKey]
-		if currentZO_ComboBoxValueKey == nil then return end
-		local currentValue = self[currentZO_ComboBoxValueKey]
-		--Get new value via options passed in
-		local newValue = getValueOrCallback(options[LSMOptionsKey], options) --read nwew value from the options (run function there or get the value)
-		if newValue == nil then
-			newValue = currentValue
-		end
+	--Get current value
+	local currentZO_ComboBoxValueKey = LSMOptionsKeyToZO_ComboBoxOptionsKey[LSMOptionsKey]
+	if currentZO_ComboBoxValueKey == nil then return end
+	local currentValue = self[currentZO_ComboBoxValueKey]
 
-		--Do we need to run a callback function to set the updated value?
-		local setOptionFuncOrKey = LSMOptionsToZO_ComboBoxOptionsCallbacks[LSMOptionsKey]
-		if type(setOptionFuncOrKey) == "function" then
-			setOptionFuncOrKey(self, newValue)
-		end
-		d("[LSM]comboBoxClass:SetOption-key: " ..tos(LSMOptionsKey) .. ", current: " ..tos(currentValue) .. ", new: " ..tos(newValue))
-	else
-		d("[LSM]comboBoxClass:SetOption-key: " ..tos(LSMOptionsKey) .. " -> NO OPTION FOUND! Using current")
+	--Get new value via options passed in
+	local newValue = getValueOrCallback(options[LSMOptionsKey], options) --read new value from the options (run function there or get the value)
+	if newValue == nil then
+		newValue = currentValue
 	end
+	if newValue == nil then return end
+
+	--Do we need to run a callback function to set the updated value?
+	local setOptionFuncOrKey = LSMOptionsToZO_ComboBoxOptionsCallbacks[LSMOptionsKey]
+	if type(setOptionFuncOrKey) == "function" then
+		setOptionFuncOrKey(self, newValue)
+	else
+		self[currentZO_ComboBoxValueKey] = newValue
+	end
+	d("[LSM]comboBoxClass:SetOption-key: " ..tos(LSMOptionsKey) .. ", current: " ..tos(currentValue) .. ", new: " ..tos(newValue))
 end
 
 
@@ -2088,7 +2088,6 @@ submenuClass.exposedVariables = {
 	-- LibScrollableMenu
 	['options'] = true,
 	['narrateData'] = true,
-	['filterString'] = true,
 	['m_headerFont'] = true,
 	['XMLrowTemplates'] = true, --TODO: is this being overwritten?
 	['m_headerFontColor'] = true,
@@ -2156,6 +2155,7 @@ function submenuClass:AddMenuItems(parentControl)
 end
 
 function submenuClass:GetMaxRows()
+d("[LSM]submenuClass:GetMaxRows: " .. tos(self.visibleRowsSubmenu))
 	return self.visibleRowsSubmenu or DEFAULT_VISIBLE_ROWS
 end
 
@@ -2504,7 +2504,7 @@ function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 			local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
 			if comboBox ~= nil and comboBox.UpdateOptions then
 				comboBox.optionsChanged = options ~= comboBox.options
-d(">SetCustomScrollableMenuOptions - Found UpdateOptions - optionsChanged: " ..tos(comboBox.optionsChanged))
+--d(">SetCustomScrollableMenuOptions - Found UpdateOptions - optionsChanged: " ..tos(comboBox.optionsChanged))
 				comboBox:UpdateOptions(options)
 			end
 		else
