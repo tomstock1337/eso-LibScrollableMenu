@@ -225,18 +225,22 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	--These callback functions will apply the options directly
 	['sortType'] = function(comboBoxObject, sortType)
 		local options = comboBoxObject.options
-		if comboBoxObject.orderSet then comboBoxObject.orderSet = false return end
+		local updatedOptions = comboBoxObject.updatedOptions
+		if updatedOptions.sortOrder then return end
+
 		local sortOrder = getValueOrCallback(options.sortOrder, options)
 		if sortOrder == nil then sortOrder = comboBoxObject.m_sortOrder end
 		comboBoxObject:SetSortOrder(sortType , sortOrder )
-		comboBoxObject.orderSet = true
 	end,
 	['sortOrder'] = function(comboBoxObject, sortOrder)
 		local options = self.options
-		if comboBoxObject.orderSet then comboBoxObject.orderSet = false return end
+		local updatedOptions = comboBoxObject.updatedOptions
+		--SortType was updated already during current comboBoxObject:UpdateOptions(options) -> SetOption() loop? No need to
+		--update the sort order again here
+		if updatedOptions.sortType ~= nil then return end
+
 		local sortType = getValueOrCallback(options.sortType, options) or comboBoxObject.m_sortType
 		comboBoxObject:SetSortOrder(sortType , sortOrder )
-		comboBoxObject.orderSet = true
 	end,
 	["sortEntries"] = function(comboBoxObject, sortEntries)
 		comboBoxObject:SetSortsItems(sortEntries) --sets comboBoxObject.m_sortsItems
@@ -1935,6 +1939,7 @@ end
 --Update the comboBox's attribute/functions with a value returned from the applied custom options of the LSM, or with
 --ZO_ComboBox default options (set at self:ResetToDefaults())
 function comboBoxClass:SetOption(LSMOptionsKey)
+	--Old code: Updating comboBox[key] with the newValue
 	local options = self.options
 	--Get current value
 	local currentZO_ComboBoxValueKey = LSMOptionsKeyToZO_ComboBoxOptionsKey[LSMOptionsKey]
@@ -1947,6 +1952,9 @@ function comboBoxClass:SetOption(LSMOptionsKey)
 		newValue = currentValue
 	end
 	if newValue == nil then return end
+
+	--Filling the self.updatedOptions table with values so they can be used in the callback functions (if any is given)
+	self.updatedOptions[LSMOptionsKey] = newValue
 
 	--Do we need to run a callback function to set the updated value?
 	local setOptionFuncOrKey = LSMOptionsToZO_ComboBoxOptionsCallbacks[LSMOptionsKey]
@@ -2039,6 +2047,9 @@ d(">ResetToDefaults()")
 		self.options = options
 d(">updated self.options")
 
+		--Clear the table with options which got updated. Will be filled in self:SetOption(key) method
+		self.updatedOptions = {}
+
 		-- Defaults are predefined in defaultComboBoxOptions, but they will be taken from ZO_ComboBox defaults set from table comboBoxDefaults
 		-- at function self:ResetToDefaults().
 		-- If any variable was set to the ZO_ComboBox already (e.g. self.m_font) it will be used again from that internal variable, if nothing
@@ -2048,6 +2059,9 @@ d(">updated self.options")
 		for key, _ in pairs(options) do
 			self:SetOption(key)
 		end
+
+		--Reset the table with options which got updated
+		self.updatedOptions = nil
 	end
 
 	-- this will add custom and default templates to self.XMLrowTemplates the same way dataTypes were created before.
