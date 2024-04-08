@@ -1382,13 +1382,12 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 
 
 	ZO_ScrollList_SetHeight(self.scrollControl, desiredHeight)
-	self:UpdateHeight()
 	ZO_ScrollList_Commit(self.scrollControl)
 	self:OnShown()
 end
 
 function dropdownClass:UpdateHeight()
-d("[LSM]dropdownClass:UpdateHeight")
+--d("[LSM]dropdownClass:UpdateHeight")
 	if self.owner then
 		self.owner:UpdateHeight()
 	end
@@ -1874,6 +1873,7 @@ end
 -- Changed to force updating items and, to set anchor since anchoring was removed from :Show( due to separate anchoring based on comboBox type. (comboBox to self /submenu to row/contextMenu to mouse)
 function comboBoxClass:AddMenuItems()
 	self:UpdateItems()
+	self:UpdateHeight()
 	self.m_dropdownObject:AnchorToComboBox(self)
 	
 	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
