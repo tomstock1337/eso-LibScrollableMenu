@@ -687,14 +687,21 @@ LSM_DEBUG = {
 end
 lib.Test = test
 
+local optionsVisibleRowsCurrent = 10
 local function test2()
 	if lib.testDropdown == nil then return end
 	local comboBox = lib.testDropdown
 	if comboBox then
-d("[LSM]Test2 - Updating options")
+		if optionsVisibleRowsCurrent == 10 then
+			optionsVisibleRowsCurrent = 15
+		else
+			optionsVisibleRowsCurrent = 10
+		end
+d("[LSM]Test2 - Updating options- toggling to: " ..tostring(optionsVisibleRowsCurrent))
+
 		local optionsNew = {
-			visibleRowsDropdown = 15,
-			visibleRowsSubmenu = 15,
+			visibleRowsDropdown = optionsVisibleRowsCurrent,
+			visibleRowsSubmenu = optionsVisibleRowsCurrent,
 			sortEntries=function() return false end,
 			--narrate = narrateOptions,
 		}

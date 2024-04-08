@@ -1303,7 +1303,7 @@ function dropdownClass:SetupEntryLabel(labelControl, data)
 end
 
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
-	--d( sfor('[LSM]dropdownClass:Show - minWidth = %s, maxHeight = %s, spacing = %s', tos(minWidth), tos(maxHeight), tos(spacing)))
+	d( sfor('[LSM]dropdownClass:Show - minWidth = %s, maxHeight = %s, spacing = %s', tos(minWidth), tos(maxHeight), tos(spacing)))
 	self.owner = comboBox
 	
 	ZO_ScrollList_Clear(self.scrollControl)
@@ -1379,10 +1379,19 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	
 	ZO_Scroll_SetUseFadeGradient(self.scrollControl, not self.owner.disableFadeGradient )
 	self.control:SetHeight(desiredHeight)
-	ZO_ScrollList_SetHeight(self.scrollControl, desiredHeight)
 
+
+	ZO_ScrollList_SetHeight(self.scrollControl, desiredHeight)
+	self:UpdateHeight()
 	ZO_ScrollList_Commit(self.scrollControl)
 	self:OnShown()
+end
+
+function dropdownClass:UpdateHeight()
+d("[LSM]dropdownClass:UpdateHeight")
+	if self.owner then
+		self.owner:UpdateHeight()
+	end
 end
 
 function dropdownClass:OnShown()
@@ -1447,7 +1456,11 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 	self:SetDropdownObject(dropdownObject)
 
 	self:UpdateOptions(options, true)
+	self:UpdateHeight()
+end
 
+function comboBox_base:UpdateHeight()
+d("[LSM]comboBox_base:UpdateHeight")
 	local maxHeight = self.baseEntryHeight * self:GetMaxRows()
 	self:SetHeight(maxHeight)
 end
