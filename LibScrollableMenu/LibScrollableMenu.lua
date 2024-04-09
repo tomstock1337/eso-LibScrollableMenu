@@ -2412,6 +2412,7 @@ lib.MapEntries = mapEntries
 --												"template" String = XMLVirtualTemplateName,
 --												rowHeight number = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 --												setupFunc = function(control, data, list)
+--													local m_comboBox = ZO_ComboBox_ObjectFromContainer(yourComboBoxControl)
 --													m_comboBox:SetupEntryLabel(control, data, list)
 --												end
 --												-->See local table "defaultXMLTemplates" in LibScrollableMenu
