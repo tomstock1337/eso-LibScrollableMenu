@@ -198,6 +198,7 @@ local possibleLibraryOptions = {
 	["sortEntries"] = true,
 	["font"] = true,
 	["spacing"] = true,
+	["headerColor"] = true,
 	["disableFadeGradient"] = true,
 	["preshowDropdownFn"] = true,
 }
@@ -2408,7 +2409,11 @@ lib.MapEntries = mapEntries
 --		table headerColor						table or function returning a color table with r, g, b, a keys and their values
 -- 		function preshowDropdownFn:optional 	function function(ctrl) codeHere end to run before the dropdown shows
 --		table	XMLRowTemplates:optional		Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
---												"template" String = XMLVirtualTemplateName, rowHeight number = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,setupFunc = function(control, data, list) end
+--												"template" String = XMLVirtualTemplateName,
+--												rowHeight number = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+--												setupFunc = function(control, data, list)
+--													m_comboBox:SetupEntryLabel(control, data, list)
+--												end
 --												-->See local table "defaultXMLTemplates" in LibScrollableMenu
 --												-->Attention: If you do not specify all template attributes, the non-specified will be mixedIn from defaultXMLTemplates[entryType_ID] again!
 --		{
@@ -2641,11 +2646,11 @@ WORKING ON - Current version: 2.1
 	- Added: options.disableFadeGradient, options.headerColor
 	TESTED: OK
 	- changed ScrollContent XML template names to LibScrollableMenu_ScrollContents_BarHidden, LibScrollableMenu_ScrollContents_BarShown
-	TESTED: OPEN
+	TESTED: OK
 	- Adjusted AnchorToControl so submenus sit on edge of previous dropdown. +- 2 pixels to "4, -4", direction dependent.
-	TESTED: OPEN
-	- Exposed row setup functions to object to allow addon use.
-	TESTED: OPEN
+	TESTED: OK
+	- Exposed row setup functions to object to allow addon use in custom setupFunction of custom virtual XML template
+	TESTED: OK
 	- Isolated submenuClass:ShowDropdownInternal and submenuClass:HideDropdownInternalare also should be set independently based on class
 		There was no need for the extra functions attached to dropdownClass
 	TESTED: OPEN

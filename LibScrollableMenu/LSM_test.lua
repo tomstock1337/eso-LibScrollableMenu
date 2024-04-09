@@ -58,6 +58,7 @@ local function test()
 			end,
 		}
 
+		local m_comboBox = comboBox.m_comboBox
 
 		--Define your options for the scrollHelper here
 		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
@@ -70,7 +71,36 @@ local function test()
 			sortEntries=function() return false end,
 			narrate = narrateOptions,
 			disableFadeGradient = true,
-			headerColor = HEADER_TEXT_COLOR_RED
+			headerColor = HEADER_TEXT_COLOR_RED,
+			--[[ Define in XML:
+				<!-- Normal entry for Custom options.XMLRowTemplates test  -->
+				<Control name="LibScrollableMenu_ComboBoxEntry_TestXMLRowTemplates" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
+					<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
+					<OnInitialized>
+						<!-- Is this still needed? -->
+						self.selectible = true <!-- Denotes this is a selectible entry.   -->
+					</OnInitialized>
+
+					<Controls>
+						<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
+							<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
+							<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+						</Label>
+					</Controls>
+				</Control>
+				
+			--Afterwards enable this custom enryType's setupFunction
+			XMLRowTemplates = {
+				[lib.scrollListRowTypes.ENTRY_ID] = {
+					template = "LibScrollableMenu_ComboBoxEntry_TestXMLRowTemplates",
+					rowHeight = 40,
+					setupFunc = function(control, data, list)
+						m_comboBox:SetupEntryLabel(control, data, list)
+					end,
+				}
+			}
+
+			]]
 		}
 
 		--Try to change the options of the scrollhelper as it gets created
