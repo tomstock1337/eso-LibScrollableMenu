@@ -5,7 +5,7 @@ local MAJOR = lib.name
 -- For testing - Combobox with all kind of entry types (test offsets, etc.)
 ------------------------------------------------------------------------------------------------------------------------
 local function test()
-	if lib.testDropdown == nil then
+	if lib.testComboBoxContainer == nil then
 		local testTLC = CreateTopLevelWindow(MAJOR .. "TestTLC")
 		testTLC:SetHidden(true)
 		testTLC:SetDimensions(1, 1)
@@ -13,11 +13,14 @@ local function test()
 		testTLC:SetMovable(true)
 		testTLC:SetMouseEnabled(false)
 
-		local comboBox = WINDOW_MANAGER:CreateControlFromVirtual(MAJOR .. "TestDropdown", testTLC, "ZO_ComboBox")
-		comboBox:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
-		comboBox:SetHeight(24)
-		comboBox:SetWidth(250)
-		comboBox:SetMovable(true)
+		local comboBoxContainer = WINDOW_MANAGER:CreateControlFromVirtual(MAJOR .. "TestDropdown", testTLC, "ZO_ComboBox")
+		local comboBox          = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
+		lib.testComboBoxContainer = comboBoxContainer
+
+		comboBoxContainer:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
+		comboBoxContainer:SetHeight(24)
+		comboBoxContainer:SetWidth(250)
+		comboBoxContainer:SetMovable(true)
 
 		local narrateOptions = {
 			["OnComboBoxMouseEnter"] = 	function(m_dropdownObject, comboBoxControl)
@@ -58,7 +61,6 @@ local function test()
 			end,
 		}
 
-		local m_comboBox = comboBox.m_comboBox
 
 		--Define your options for the scrollHelper here
 		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
@@ -70,7 +72,7 @@ local function test()
 			visibleRowsSubmenu = 10,
 			sortEntries=function() return false end,
 			narrate = narrateOptions,
-			disableFadeGradient = true,
+			disableFadeGradient = false,
 			headerColor = HEADER_TEXT_COLOR_RED,
 			--[[ Define in XML:
 				<!-- Normal entry for Custom options.XMLRowTemplates test  -->
@@ -88,14 +90,15 @@ local function test()
 						</Label>
 					</Controls>
 				</Control>
-				
+
 			--Afterwards enable this custom enryType's setupFunction
 			XMLRowTemplates = {
 				[lib.scrollListRowTypes.ENTRY_ID] = {
 					template = "LibScrollableMenu_ComboBoxEntry_TestXMLRowTemplates",
 					rowHeight = 40,
 					setupFunc = function(control, data, list)
-						m_comboBox:SetupEntryLabel(control, data, list)
+						local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer) -- comboBoxContainer = The ZO_ComboBox control you created via WINDOW_MANAGER:CreateControlFromVirtual("NameHere", yourTopLevelControlToAddAsAChild, "ZO_ComboBox")
+						comboBox:SetupEntryLabel(control, data, list)
 					end,
 				}
 			}
@@ -114,13 +117,11 @@ local function test()
 
 		--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
 		--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
-		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBox, options)
+		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBoxContainer, options)
 		-- did not work		scrollHelper.OnShow = function() end --don't change parenting
 
-		lib.testDropdown = comboBox
 
 		--Prepare and add the text entries in the dropdown's comboBox
-		local comboBox = comboBox.m_comboBox
 
 		local subEntries = {
 
@@ -716,9 +717,8 @@ local function test()
 
 	end
 
-	local comboBox = lib.testDropdown
-	
-	local testTLC = comboBox:GetOwningWindow()
+
+	local testTLC = lib.testComboBoxContainer:GetOwningWindow()
 	--local testTLC = comboBox:GetParent()
 	if testTLC:IsHidden() then
 		testTLC:SetHidden(false)
@@ -730,21 +730,29 @@ local function test()
 end
 lib.Test = test
 
+
 local optionsVisibleRowsCurrent = 10
+local optionsDisableFadeGradient = false
 local function test2()
-	if lib.testDropdown == nil then return end
-	local comboBox = lib.testDropdown
+	if lib.testComboBoxContainer == nil then return end
+	local comboBox = lib.testComboBoxContainer
 	if comboBox then
 		if optionsVisibleRowsCurrent == 10 then
 			optionsVisibleRowsCurrent = 15
 		else
 			optionsVisibleRowsCurrent = 10
 		end
-d("[LSM]Test2 - Updating options- toggling to: " ..tostring(optionsVisibleRowsCurrent))
+d("[LSM]Test2 - Updating options- toggling visibleRows to: " ..tostring(optionsVisibleRowsCurrent) .. ", disableFadeGradient to: " ..tostring(optionsDisableFadeGradient))
 
+		if optionsDisableFadeGradient then
+			optionsDisableFadeGradient = false
+		else
+			optionsDisableFadeGradient = true
+		end
 		local optionsNew = {
 			visibleRowsDropdown = optionsVisibleRowsCurrent,
 			visibleRowsSubmenu = optionsVisibleRowsCurrent,
+			disableFadeGradient = optionsDisableFadeGradient,
 			sortEntries=function() return false end,
 			--narrate = narrateOptions,
 		}

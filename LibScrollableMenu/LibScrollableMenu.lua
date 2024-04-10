@@ -2412,8 +2412,8 @@ lib.MapEntries = mapEntries
 --												"template" String = XMLVirtualTemplateName,
 --												rowHeight number = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 --												setupFunc = function(control, data, list)
---													local m_comboBox = ZO_ComboBox_ObjectFromContainer(yourComboBoxControl)
---													m_comboBox:SetupEntryLabel(control, data, list)
+--													local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer) -- comboBoxContainer = The ZO_ComboBox control you created via WINDOW_MANAGER:CreateControlFromVirtual("NameHere", yourTopLevelControlToAddAsAChild, "ZO_ComboBox")
+--													comboBox:SetupEntryLabel(control, data, list)
 --												end
 --												-->See local table "defaultXMLTemplates" in LibScrollableMenu
 --												-->Attention: If you do not specify all template attributes, the non-specified will be mixedIn from defaultXMLTemplates[entryType_ID] again!
@@ -2652,9 +2652,9 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	- Exposed row setup functions to object to allow addon use in custom setupFunction of custom virtual XML template
 	TESTED: OK
-	- Isolated submenuClass:ShowDropdownInternal and submenuClass:HideDropdownInternalare also should be set independently based on class
+	- Isolated submenuClass:ShowDropdownInternal and submenuClass:HideDropdownInternal also should be set independently based on class
 		There was no need for the extra functions attached to dropdownClass
-	TESTED: OPEN
+	TESTED: OK
 	-Added comboBoxClass:SetOption(key) function
 	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows were tested)
 	-Updated comboBoxClass:UpdateOptions() function
@@ -2687,7 +2687,7 @@ TODO - To check (future versions)
 			-- All changes to any variable in exposedVariables, from the comboBox, will automatically be reflected in all child menus
 		4. intercept variables in submenu metatable as shared with parent comboBox. 
 			-- done
-		5. clean up submenuClass:ShowDropdownInternal and submenuClass:HideDropdownInternalare, if needed.
+		5. clean up submenuClass:ShowDropdownInternal and submenuClass:HideDropdownInternal, if needed.
 		
 		-- Since "SelectItem" is the only funcition currently using this metatable trick, we could just make a custom version of the function that does the same thing. 
 		-- But, it would add some dificulty, beyond adding a string to a table, if ever there were other functions needing this action.
