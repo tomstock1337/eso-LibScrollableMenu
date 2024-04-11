@@ -347,8 +347,13 @@ end
 --------------------------------------------------------------------
 -- Local functions
 --------------------------------------------------------------------
-local function getControlName(control)
-	return (control ~= nil and (control.name or (control.GetName ~= nil and control:GetName()))) or "n/a"
+local function getControlName(control, alternativeControl)
+	local ctrlName = control ~= nil and (control.name or (control.GetName ~= nil and control:GetName()))
+	if ctrlName == nil and alternativeControl ~= nil then
+		ctrlName = (alternativeControl.name or (alternativeControl.GetName ~= nil and alternativeControl:GetName()))
+	end
+	ctrlName = ctrlName or "n/a"
+	return ctrlName
 end
 
 
@@ -1196,7 +1201,7 @@ local dropdownClass = ZO_ComboBoxDropdown_Keyboard:Subclass()
 
 -- dropdownClass:New(To simplify locating the beginning of the class
 function dropdownClass:Initialize(parent, comboBoxContainer, depth)
-	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
 
 	local dropdownControl = CreateControlFromVirtual(comboBoxContainer:GetName(), GuiRoot, "LibScrollableMenu_Keyboard_Template", depth)
 	ZO_ComboBoxDropdown_Keyboard.Initialize(self, dropdownControl)
@@ -1228,12 +1233,12 @@ end
 
 --Narration
 function dropdownClass:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
-	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:Narrate - eventName: %s, ctrl: %s, hasSubmenu: %s, anchorPoint: %s", tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint))
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Narrate - eventName: %s, ctrl: %s, hasSubmenu: %s, anchorPoint: %s", tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint))
 	self.owner:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 end
 
 function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
-	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:AddCustomEntryTemplate - entryTemplate: %s, entryHeight: %s, setupFunction: %s, widthPadding: %s", tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding))
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AddCustomEntryTemplate - entryTemplate: %s, entryHeight: %s, setupFunction: %s, widthPadding: %s", tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding))
 	if not self.customEntryTemplateInfos then
 		self.customEntryTemplateInfos = {}
 	end
@@ -1279,7 +1284,7 @@ function dropdownClass:AnchorToControl(parentControl)
 	-- Get offsetY in relation to parentControl's top in the scroll container
     local offsetY = select(6, parentControl:GetAnchor(0))
 
-	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:AnchorToControl - point: %s, relativeTo: %s, relativePoint: %s offsetX: %s, offsetY: %s", tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(offsetX), tos(offsetY))
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AnchorToControl - point: %s, relativeTo: %s, relativePoint: %s offsetX: %s, offsetY: %s", tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(offsetX), tos(offsetY))
 
 	self.control:ClearAnchors()
 	self.control:SetAnchor(point, relativeTo, relativePoint, offsetX, offsetY)
@@ -1297,7 +1302,7 @@ end
 
 function dropdownClass:AnchorToComboBox(comboBox)
 	local parentControl = comboBox:GetContainer()
-	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:AnchorToComboBox - comboBox container: %s", tos(getControlName(parentControl)))
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AnchorToComboBox - comboBox container: %s", tos(getControlName(parentControl)))
 	self.control:ClearAnchors()
 	self.control:SetAnchor(TOPLEFT, parentControl, BOTTOMLEFT)
 end
@@ -1343,16 +1348,16 @@ function dropdownClass:AnchorToMouse()
 			relativePoint = TOPLEFT
 		end
 	end
-	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:AnchorToMouse - point: %s, relativeTo: %s, relativePoint: %s offsetX: %s, offsetY: %s", tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(x), tos(y))
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AnchorToMouse - point: %s, relativeTo: %s, relativePoint: %s offsetX: %s, offsetY: %s", tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(x), tos(y))
 	if point and relativePoint then
 		menuToAnchor:SetAnchor(point, relativeTo, relativePoint, x, y)
 	end
 end
 
 function dropdownClass:GetScrollbar()
---d("[LSM]dropdownClass:GetScrollbar")
 	local scrollCtrl = self.scrollControl
 	local scrollBar = scrollCtrl ~= nil and scrollCtrl.scrollbar
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:GetScrollbar - scrollbar: " ..tos(getControlName(scrollBar, scrollCtrl)))
 	if scrollBar then ---and scrollCtrl.useScrollbar == true then (does not work for menus where there is no scrollabr active, but used in general!)
 --d(">scrollBar found!")
 		return scrollBar
@@ -1364,12 +1369,14 @@ function dropdownClass:GetSubmenu()
 	if self.owner then
 		self.m_submenu = self.owner.m_submenu
 	end
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:GetSubmenu - submenu: " ..tos(self.m_submenu))
 
 	return self.m_submenu
 end
 
 function dropdownClass:IsDropdownVisible()
 	-- inherited ZO_ComboBoxDropdown_Keyboard:IsHidden
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsDropdownVisible: " ..tos(not self:IsHidden()))
 	return not self:IsHidden()
 end
 
@@ -1377,27 +1384,31 @@ function dropdownClass:IsEnteringSubmenu()
 	local submenu = self:GetSubmenu()
 	if submenu then
 		if submenu:IsDropdownVisible() and submenu:IsMouseOverControl() then
+			dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsEnteringSubmenu -> Yes")
 			return true
 		end
 	end
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsEnteringSubmenu -> No")
 	return false
 end
 
 function dropdownClass:IsItemSelected(item)
 	if self.owner and self.owner.IsItemSelected then
+		dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsItemSelected -> " ..tos(self.owner:IsItemSelected(item)))
 		return self.owner:IsItemSelected(item)
 	end
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsItemSelected -> No")
 	return false
 end
 
 function dropdownClass:IsMouseOverOpeningControl()
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsMouseOverOpeningControl -> No")
 	return false
 end
 
 function dropdownClass:OnMouseEnterEntry(control)
---	d( '[LSM]dropdownClass:OnMouseEnterEntry')
---	self.control:BringWindowToTop()
-	
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnMouseEnterEntry - control: " .. tos(getControlName(control)))
+
 	-- Added here for when mouse is moved from away from dropdowns over a row, it will know to close specific children
 	self:OnMouseExitTimeout(control)
 
@@ -1418,9 +1429,8 @@ function dropdownClass:OnMouseEnterEntry(control)
 end
 
 function dropdownClass:OnMouseExitEntry(control)
-	--d( '[LSM]dropdownClass:OnMouseExitEntry')
---	d( control:GetName())
-	
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnMouseExitEntry - control: " .. tos(getControlName(control)))
+
 	hideTooltip(control)
 	local data = getControlData(control)
 	self:OnMouseExitTimeout(control)
@@ -1436,17 +1446,15 @@ function dropdownClass:OnMouseExitEntry(control)
 end
 
 function dropdownClass:OnMouseExitTimeout(control)
---	clearTimeout()
-	--d( "[LSM]dropdownClass:OnMouseExitTimeout-control: " ..tos(control:GetName()))
-
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnMouseExitTimeout - control: " .. tos(getControlName(control)))
 	setTimeout(function()
 		self.owner:HideOnMouseExit(moc())
 	end)
 end
 
 function dropdownClass:OnEntrySelected(control, button, upInside)
-	--d( '[LSM]dropdownClass:OnEntrySelected IsUpInside ' .. tos(upInside) .. ' Button ' .. tos(button))
-	
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntrySelected - control: %s, button: %s, upInside: %s", tos(getControlName(control)), tos(button), tos(upInside))
+
 	local data = getControlData(control)
 	if not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
 --d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
@@ -1456,6 +1464,7 @@ function dropdownClass:OnEntrySelected(control, button, upInside)
 	if upInside then
 		if button == MOUSE_BUTTON_INDEX_RIGHT then
 			if data.contextMenuCallback then
+				dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntrySelected - contextMenuCallback!")
 				data.contextMenuCallback(control)
 			end
 		end
@@ -1463,7 +1472,7 @@ function dropdownClass:OnEntrySelected(control, button, upInside)
 end
 
 function dropdownClass:SelectItemByIndex(index, ignoreCallback)
---d("[LSM]dropdownClass:SelectItemByIndex-index: " .. tos(index) .. ", ignoreCallback: " ..tos(ignoreCallback))
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:SelectItemByIndex - index: %s, ignoreCallback: %s,", tos(index), tos(ignoreCallback))
 	if self.owner then
 		self:HideDropdown()
 		playSelectedSoundCheck(self)
@@ -1472,6 +1481,7 @@ function dropdownClass:SelectItemByIndex(index, ignoreCallback)
 end
 
 local function createScrollableComboBoxEntry(self, item, index, entryType)
+	dLog(LSM_LOGTYPE_VERBOSE, "createScrollableComboBoxEntry - index: %s, entryType: %s,", tos(index), tos(entryType))
 	local entryData = ZO_EntryData:New(item)
 	entryData.m_index = index
 	entryData.m_owner = self.owner
@@ -1481,6 +1491,7 @@ local function createScrollableComboBoxEntry(self, item, index, entryType)
 end
 
 function dropdownClass:SetupEntryLabel(labelControl, data)
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:SetupEntryLabel - labelControl: %s", tos(getControlName(labelControl)))
 	labelControl:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
 	labelControl:SetFont(self.owner:GetDropdownFont())
 	local color = self.owner:GetItemNormalColor(data)
@@ -1489,7 +1500,7 @@ function dropdownClass:SetupEntryLabel(labelControl, data)
 end
 
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
-	d( sfor('[LSM]dropdownClass:Show - minWidth = %s, maxHeight = %s, spacing = %s', tos(minWidth), tos(maxHeight), tos(spacing)))
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
 	self.owner = comboBox
 	
 	ZO_ScrollList_Clear(self.scrollControl)
@@ -1562,10 +1573,12 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	else
 		self.control:SetWidth(minWidth)
 	end
-	
+
+	dLog(LSM_LOGTYPE_VERBOSE, ">totalDropDownWidth: %s, allItemsHeight: %s, desiredHeight: %s", tos(totalDropDownWidth), tos(allItemsHeight), tos(desiredHeight))
+
+
 	ZO_Scroll_SetUseFadeGradient(self.scrollControl, not self.owner.disableFadeGradient )
 	self.control:SetHeight(desiredHeight)
-
 
 	ZO_ScrollList_SetHeight(self.scrollControl, desiredHeight)
 	ZO_ScrollList_Commit(self.scrollControl)
@@ -1573,42 +1586,47 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 end
 
 function dropdownClass:UpdateHeight()
---d("[LSM]dropdownClass:UpdateHeight")
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:UpdateHeight")
 	if self.owner then
 		self.owner:UpdateHeight()
 	end
 end
 
 function dropdownClass:OnShown()
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnShown")
 	self.control:BringWindowToTop()
 
 	--Check for context menu and submenu, and do narration
 	updateIsContextMenuAndIsSubmenu(self)
 	if not self.isContextMenu and not self.isSubmenu == true then
-		self:Narrate("OnMenuShow", self.control)
-		lib:FireCallbacks('OnMenuShow', self.control)
+		local control = self.control
+		self:Narrate("OnMenuShow", control)
+		lib:FireCallbacks('OnMenuShow', control)
+		dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnMenuShow - control: " ..tos(getControlName(control)))
 	end
 end
 
 function dropdownClass:ShowSubmenu(control)
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:ShowSubmenu - control: " ..tos(getControlName(control)))
 	if self.owner then
 		self.owner:ShowSubmenu(control)
 	end
 end
 
 function dropdownClass:ShowTooltip(control, data)
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:ShowTooltip - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(data.hasSubmenu))
 	showTooltip(self, control, data, data.hasSubmenu)
 end
 
 function dropdownClass:HideDropdown()
---d("[LSM]dropdownClass:HideDropdown()")
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:HideDropdown")
 	if self.owner then
 		self.owner:HideDropdown()
 	end
 end
 
 function dropdownClass:HideSubmenu()
---d("[LSM]dropdownClass:HideSubmenu()")
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:HideSubmenu")
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 		self.m_submenu:HideDropdown()
 	end
@@ -1627,6 +1645,7 @@ local comboBox_base = ZO_ComboBox:Subclass()
 local submenuClass = comboBox_base:Subclass()
 
 function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
 	self.m_sortedItems = {}
 	self.m_unsortedItems = {}
 	self.m_container = comboBoxContainer
@@ -1638,8 +1657,9 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 end
 
 function comboBox_base:UpdateHeight()
-d("[LSM]comboBox_base:UpdateHeight")
-	local maxHeight = self.baseEntryHeight * self:GetMaxRows()
+	local maxRows = self:GetMaxRows()
+	local maxHeight = self.baseEntryHeight * maxRows
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - maxHeight: %s, baseEntryHeight: %s, maxRows: %s", tos(maxHeight), tos(self.baseEntryHeight), tos(maxRows))
 	self:SetHeight(maxHeight)
 end
 
