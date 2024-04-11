@@ -287,20 +287,21 @@ local function loadLogger()
         lib.logger = logger
     end
 end
---Early try to load libs (done again in EVENT_ADD_ON_LOADED)
+--Early try to load libs and to create logger (done again in EVENT_ADD_ON_LOADED)
 loadLogger()
 
 --Debug log function
 local function dLog(debugType, text, ...)
+	if not lib.doDebug then return end
+
 	debugType = debugType or LSM_LOGTYPE_DEBUG
 
 	local unpackParams = false
 	local debugText = text
 	if select({...}, 1) ~= nil then
-		if unpackParams then
-			debugText = string.format(text, unpack(...))
-		end
+		debugText = string.format(text, unpack(...))
 	end
+	if debugText == nil or debugText == "" then return end
 
 	--LibDebugLogger
 	if LDL then
@@ -318,11 +319,10 @@ local function dLog(debugType, text, ...)
 		elseif debugType == LSM_LOGTYPE_ERROR then
 			LDL:Error(debugText)
 		end
-	--Normal debugging
+
+		--Normal debugging
 	else
-		if lib.doDebug then
-			d(debugPrefix .. debugText)
-		end
+		d(debugPrefix .. debugText)
 	end
 end
 
