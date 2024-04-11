@@ -671,62 +671,37 @@ end
 
 --Hide the tooltip of a dropdown entry
 local function hideTooltip()
-	if lib.lastCustomTooltipFunction then
-		lib.lastCustomTooltipFunction()
+	if lib.onHideCustomTooltipFunc then
+		lib.onHideCustomTooltipFunc()
 	else
 		ClearTooltip(InformationTooltip)
 	end
 end
 
---Show the tooltip of a dropdown entry. First check for any custom tooltip function that handles the control show/hide
---and if none is provided use default InformationTooltip
---> For a custom tooltip example see line below:
---[[
---Custom tooltip function example
-Function to show or hide a custom tooltip control. Pass that in to the data table of any entry, via data.customTooltip!
+local function getTooltipAnchor(self, control, tooltipText, hasSubmenu)
+	local relativeTo = control
 
-Your function needs to create and show/hide that control, and populate the text etc to the control too!
-Parameters:
--data The table with the current data of the rowControl
--rowControl The userdata of the control the tooltip should show about
--point, offsetX, offsetY, relativePoint: Suggested anchoring points
-
-myAddon.customTooltipFunc(table data, userdata rowControl, Int point, Int offsetX, Int offsetY, Int relativePoint)
-e.g. data = { name="Test 1", label="Test", customTooltip=function(data, rowControl, point, offsetX, offsetY, relativePoint) ... end, ... }
-
-customTooltipFunc = function(data, rowControl, point, offsetX, offsetY, relativePoint)
-	if data == nil then
-		self.myTooltipControl:SetHidden(true)
+	local submenu = self:GetSubmenu()
+	if hasSubmenu then
+		if submenu and not submenu:IsDropdownVisible() then
+			return getTooltipAnchor(self, control, tooltipText, hasSubmenu)
+		end
+		relativeTo = submenu.m_dropdownObject.control
 	else
-		self.myTooltipControl:ClearAnchors()
-		self.myTooltipControl:SetAnchor(point, rowControl, relativePoint, offsetX, offsetY)
-		self.myTooltipControl:SetText(data.tooltip)
-		self.myTooltipControl:SetHidden(false)
+		if submenu and submenu:IsDropdownVisible() then
+			submenu:HideDropdown()
+		end
 	end
-end
-]]
-local function showTooltip(control, data, hasSubmenu)
-	local tooltipData = getValueOrCallback(data.tooltip, data)
-	local tooltipText = getValueOrCallback(tooltipData, data)
-	
-	--To prevent empty tooltips from opening.
-	if tooltipText == nil then return end
-	
+
 	local point, offsetX, offsetY, relativePoint = BOTTOMLEFT, 0, 0, TOPRIGHT
-	
-	local parentControl = control
-	if control.m_dropdownObject then
-		-- Lets get the dropdown control if called from another type of dropdown.
-		parentControl = control.m_dropdownObject.control
-	end
-		
-	local anchorPoint = select(2,parentControl:GetAnchor())
+
+	local anchorPoint = select(2, relativeTo:GetAnchor())
 	local right = anchorPoint ~= 3
 	if not right then
 		local width, height = GuiRoot:GetDimensions()
 		local fontObject = _G[DEFAULT_FONT]
 		local nameWidth = GetStringWidthScaled(fontObject, tooltipText, 1, SPACE_INTERFACE)
-		
+
 		if control:GetRight() + nameWidth > width then
 			right = true
 		end
@@ -745,18 +720,77 @@ local function showTooltip(control, data, hasSubmenu)
 			point, relativePoint = LEFT, RIGHT
 		end
 	end
-	
-	lib.lastCustomTooltipFunction = nil
-	
-	local customTooltipFunc = data.customTooltip
-	if type(customTooltipFunc) == "function" then
-		lib.lastCustomTooltipFunction = customTooltipFunc(data, control, point, offsetX, offsetY, relativePoint)
-	else
-		InitializeTooltip(InformationTooltip, control, point, offsetX, offsetY, relativePoint)
-		SetTooltipText(InformationTooltip, tooltipText)
-		InformationTooltipTopLevel:BringWindowToTop()
+	-- In the order used in InitializeTooltip
+	return relativeTo, point, offsetX, offsetY, relativePoint
+end
+
+--Show the tooltip of a dropdown entry. First check for any custom tooltip function that handles the control show/hide
+--and if none is provided use default InformationTooltip
+--> For a custom tooltip example see line below:
+--[[
+--Custom tooltip function example
+Function to show and hide a custom tooltip control. Pass that in to the data table of any entry, via data.customTooltip!
+Your function needs to create and show/hide that control, and populate the text etc to the control too!
+Parameters:
+-data The table with the current data of the rowControl
+	-> To distinguish if the tooltip should be hidden or shown:	If 1st param data is missing the tooltip will be hidden! If data is provided the tooltip wil be shown
+-rowControl The userdata of the control the tooltip should show about
+-point, offsetX, offsetY, relativePoint: Suggested anchoring points
+
+Example - Show an item tooltip of an inventory item
+data.customTooltip = function(data, relativeTo, point, offsetX, offsetY, relativePoint)
+    ClearTooltip(ItemTooltip)
+	if data then
+		InitializeTooltip(ItemTooltip, relativeTo, point, offsetX, offsetY, relativePoint)
+        ItemTooltip:SetBagItem(data.bagId, data.slotIndex)
+		ItemTooltipTopLevel:BringWindowToTop()
 	end
 end
+
+Another example using a custom control of your addon to show the tooltip:
+customTooltipFunc = function(data, rowControl, point, offsetX, offsetY, relativePoint)
+	if data == nil then
+		myAddon.myTooltipControl:SetHidden(true)
+	else
+		myAddon.myTooltipControl:ClearAnchors()
+		myAddon.myTooltipControl:SetAnchor(point, rowControl, relativePoint, offsetX, offsetY)
+		myAddon.myTooltipControl:SetText(data.tooltip)
+		myAddon.myTooltipControl:SetHidden(false)
+	end
+end
+]]
+local function showTooltip(self, control, data, hasSubmenu)
+	lib.lastCustomTooltipFunction = nil
+	lib.onHideCustomTooltipFunc = nil
+
+	local tooltipData = getValueOrCallback(data.tooltip, data)
+	local tooltipText = getValueOrCallback(tooltipData, data)
+
+	--To prevent empty tooltips from opening.
+	if tooltipText == nil then return end
+
+	local relativeTo, point, offsetX, offsetY, relativePoint = getTooltipAnchor(self, control, tooltipText, hasSubmenu)
+
+	--RelativeTo is a control?
+	if type(relativeTo) == "userdata" and type(relativeTo.IsControlHidden) == "function" then
+		local customTooltipFunc = data.customTooltip
+		if type(customTooltipFunc) == "function" then
+			lib.lastCustomTooltipFunction = customTooltipFunc
+
+			local onHideCustomTooltipFunc = function()
+				customTooltipFunc(nil, control) --leave 1st param data empty so the calling func knows we are hiding
+			end
+			lib.onHideCustomTooltipFunc = onHideCustomTooltipFunc
+
+			customTooltipFunc(data, relativeTo, point, offsetX, offsetY, relativePoint)
+		else
+			InitializeTooltip(InformationTooltip, relativeTo, point, offsetX, offsetY, relativePoint)
+			SetTooltipText(InformationTooltip, tooltipText)
+			InformationTooltipTopLevel:BringWindowToTop()
+		end
+	end
+end
+
 
 --------------------------------------------------------------------
 -- Local narration functions
@@ -1244,7 +1278,7 @@ function dropdownClass:OnMouseExitEntry(control)
 	--d( '[LSM]dropdownClass:OnMouseExitEntry')
 --	d( control:GetName())
 	
-	hideTooltip()
+	hideTooltip(control)
 	local data = getControlData(control)
 	self:OnMouseExitTimeout(control)
 	if not runHandler(handlerFunctions['onMouseExit'], control, data) then
@@ -2661,6 +2695,8 @@ WORKING ON - Current version: 2.1
 	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows were tested)
 	-Callback OnDropdownMenuAdded can change the options of a dropdown pre-init
 	TESTED: OK
+	-data.tooltip and data.customTooltip function with show & hide
+	TESTED: TODO
 
 
 -------------------
