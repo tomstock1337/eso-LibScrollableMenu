@@ -131,19 +131,19 @@ local function test()
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry 1:1")
 				end,
-				--tooltip         = "Submenu Entry Test 1",
+				tooltip         = "Submenu Entry Test 1:1",
 				--icons 			= nil,
 			},
 			{
 				name            = "-",
 			},
 			{
-				
+
 				name            = "Submenu entry 1:2",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry 1:2")
 				end,
-				tooltip         = "Submenu entry 1:2",
+				tooltip         = function() return "Submenu Entry Test 1:2" end,
 				isNew			= true,
 				--icons 			= nil,
 			}
@@ -179,7 +179,6 @@ local function test()
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 2")
 				end,
-				tooltip         = "Submenu Entry Test 2",
 				isNew			= true,
 				--icons 			= nil,
 			},
@@ -397,6 +396,13 @@ local function test()
 				isNew			= true,
 				--entries         = submenuEntries,
 				--tooltip         =
+				customTooltip   = function(data, rowControl, point, offsetX, offsetY, relativePoint)
+					if data ~= nil then
+						ZO_Tooltips_ShowTextTooltip(rowControl, point or TOP, "Test custom tooltip")
+					else
+						ZO_Tooltips_HideTextTooltip()
+					end
+				end,
 			},
 			{
 				name            = "-", --Divider
@@ -770,3 +776,52 @@ SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
 
 --Update LSM test UI combobox with new options
 SLASH_COMMANDS["/lsmtest2"] = function() lib.Test2() end
+
+
+
+--[[
+What should happen if a combobox's dropdown entry / submenu entry / nested submenu entry, or a context menu at any of these entries,
+is selected:
+
+[ Comobox ]
+
+Dropdown 1
+ _________________		Submenu dropdown 1
+| 1 Normal entry |	 _____________________
+| 2 Submenu    > |	| 4 Submenu Entry    |	 Nested submenu dropdown 1
+|_3 Submenu_____|   |_5 Nested Submenu_ >|   ________________________
+											| 6 Nested Submenu Entry |
+											__________________________
+
+
+1)  OnSelected: Close Dropdown 1
+	OnContextMenu:
+Cntxt. Dropdown 1
+ _________________		Cntxt. Submenu dropdown 1
+| 7 Normal entry |	 _____________________
+| 8 Submenu    > |	| 10 Submenu Entry    |	 Cntxt. Nested submenu dropdown 1
+|_9 Submenu_____|   |_11 Nested Submenu_ >|  ________________________
+											| 12 Nested Submenu Entry |
+											__________________________
+ OnContextEntrySelected (7-12): Close Cntxt [(Nested) submenu] dropdown 1
+ Keep Dropdown 1 opened (no matter if moc() == Dropdown 1 control or not)
+ Keep all other (nested) submenus and dropdowns opened too.
+
+2) OnSelected: If entry got a callback: Close Dropdown 1
+3) OnSelected: If entry got a callback: Close Dropdown 1
+4) OnSelected: Close Submenu dropdown 1, close Dropdown 1
+5) OnSelected: If entry got a callback: Close Submenu dropdown 1, close Dropdown 1
+6) OnSelected: Close Nested submenu dropdown, close Submenu dropdown 1, close Dropdown 1
+	OnContextMenu:
+Cntxt. Dropdown 2
+ _________________		Cntxt. Submenu dropdown 2
+| 13 Normal entry |	 _____________________
+| 14 Submenu    > |	| 16 Submenu Entry    |	 Cntxt. Nested submenu dropdown 2
+|_15 Submenu_____|  |_17 Nested Submenu_ >|  ________________________
+											| 18 Nested Submenu Entry |
+											__________________________
+ OnContextEntrySelected (13-18): Close Cntxt [(Nested) submenu] dropdown 2
+ Keep Nested Submenu dropdown 1 opened (no matter if moc() == Nested submenu dropdown 1 or not.
+ Keep all other (nested) submenus and dropdowns opened too.
+
+]]

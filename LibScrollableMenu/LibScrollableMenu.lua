@@ -24,6 +24,11 @@ local tos = tostring
 local sfor = string.format
 local tins = table.insert
 
+--------------------------------------------------------------------
+-- Libraries
+--------------------------------------------------------------------
+local LDL = LibDebugLogger
+
 ------------------------------------------------------------------------------------------------------------------------
 --ZO_ComboBox function references
 local zo_comboBox_base_addItem = ZO_ComboBox_Base.AddItem
@@ -670,13 +675,16 @@ end
 --------------------------------------------------------------------
 
 local function resetCustomTooltipFuncVars()
+d("[LSM]resetCustomTooltipFuncVars")
 	lib.lastCustomTooltipFunction = nil
 	lib.onHideCustomTooltipFunc = nil
 end
 
 --Hide the tooltip of a dropdown entry
 local function hideTooltip()
+d("[LSM]hideTooltip")
 	if lib.onHideCustomTooltipFunc then
+d(">found custom tooltip onHide function")
 		lib.onHideCustomTooltipFunc()
 	else
 		ClearTooltip(InformationTooltip)
@@ -770,16 +778,17 @@ local function showTooltip(self, control, data, hasSubmenu)
 
 	local tooltipData = getValueOrCallback(data.tooltip, data)
 	local tooltipText = getValueOrCallback(tooltipData, data)
+	local customTooltipFunc = data.customTooltip
+	if type(customTooltipFunc) ~= "function" then customTooltipFunc = nil end
 
 	--To prevent empty tooltips from opening.
-	if tooltipText == nil then return end
+	if tooltipText == nil and customTooltipFunc == nil then return end
 
 	local relativeTo, point, offsetX, offsetY, relativePoint = getTooltipAnchor(self, control, tooltipText, hasSubmenu)
 
 	--RelativeTo is a control?
 	if type(relativeTo) == "userdata" and type(relativeTo.IsControlHidden) == "function" then
-		local customTooltipFunc = data.customTooltip
-		if type(customTooltipFunc) == "function" then
+		if customTooltipFunc ~= nil then
 			lib.lastCustomTooltipFunction = customTooltipFunc
 
 			local onHideCustomTooltipFunc = function()
@@ -2688,13 +2697,13 @@ WORKING ON - Current version: 2.1
 		There was no need for the extra functions attached to dropdownClass
 	TESTED: OK
 	-Added comboBoxClass:SetOption(key) function
-	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows wered tested, disableFadeGradient TODO)
+	TESTED: OK (visibleDropdownRows, visibleSubmenuRows, disableFadeGradient)
 	-Updated comboBoxClass:UpdateOptions() function
-	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows were tested, disableFadeGradient TODO)
+	TESTED: OK (visibleDropdownRows, visibleSubmenuRows, disableFadeGradient)
 	-Callback OnDropdownMenuAdded can change the options of a dropdown pre-init
 	TESTED: OK
 	-data.tooltip and data.customTooltip function with show & hide
-	TESTED: TODO
+	TESTED: OK
 
 
 -------------------
