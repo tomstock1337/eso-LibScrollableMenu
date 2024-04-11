@@ -2655,6 +2655,7 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, opti
 	local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
 	assert(comboBox and comboBox.IsInstanceOf and comboBox:IsInstanceOf(ZO_ComboBox), MAJOR .. ' | The comboBoxContainer you supplied must be a valid ZO_ComboBox container. "comboBoxContainer.m_comboBox:IsInstanceOf(ZO_ComboBox)"')
 	
+	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableComboBoxDropdownMenu - parent: %s, comboBoxContainer: %s, options: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(options))
 	comboBoxClass.UpdateMetatable(comboBox, parent, comboBoxContainer, options)
 	
 	return comboBox.m_dropdownObject
@@ -2685,8 +2686,8 @@ end
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
 --		contextMenuCallback = function(ctrl) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
 -- }
---}, nil)
-function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
+--}, --[[additionalData]] { isNew = true, m_normalColor = ZO_ColorDef, m_highlightColor = ZO_ColorDef, m_disabledColor = ZO_ColorDef, m_font = "ZO_FontGame" } )
+function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additionalData)
 	assert(text ~= nil, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] String or function returning a string expected, got %q = %s', "text", tos(text)))
 --	local scrollHelper = initCustomScrollMenuControl()
 --	scrollHelper = scrollHelper or getScrollHelperObjectFromControl(customScrollableMenuComboBox)
@@ -2710,20 +2711,42 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, isNew)
 	local isDivider = entryType == lib.LSM_ENTRY_TYPE_DIVIDER or text == libDivider
 	if isDivider == true then entryType = lib.LSM_ENTRY_TYPE_DIVIDER end
 
-	--Add the line of the context menu to the internal tables. Will be read as the ZO_ComboBox's dropdown opens and calls
-	--:AddMenuItems() -> Added to internal scroll list then
-	g_contextMenu:AddContextMenuItem({
+	local newEntry = {
 		isDivider		= isDivider,
 		isHeader		= isHeader,
 		isCheckbox		= isCheckbox,
-		isNew			= getValueOrCallback(isNew, options) or false,
+		isNew			= getValueOrCallback(additionalData.isNew, additionalData or options) or false,
 		--The shown text line of the entry
-		name			= getValueOrCallback(text, options),
+		label			= getValueOrCallback(additionalData.label, additionalData or options),
+		name			= getValueOrCallback(text, additionalData or options),
 		--Callback function as context menu entry get's selected. Will also work for an enry where a submenu is available (but usually is not provided in that case)
 		callback		= not isDivider and callback, --ZO_ComboBox:SelectItem will call the item.callback(self, item.name, item), where item = { isHeader = ... }
+
 		--Any submenu entries (with maybe nested submenus)?
 		entries			= entries,
-	}, ZO_COMBOBOX_SUPPRESS_UPDATE)
+	}
+
+	local addDataType = type(additionalData)
+	if addDataType == "table" then
+		--[[ Will add e.g. the following data, if missing in newEntry
+			additionalData.m_normalColor
+			additionalData.m_highlightColor
+			additionalData.m_disabledColor
+			additionalData.m_font
+			additionalData.isNew
+			--> and other custom values
+		]]
+		mixinTableAndSkipExisting(newEntry, additionalData)
+	--Fallback vor old verions of LSM <2.1 where additionalData table was missing and isNew was used as the same parameter
+	elseif addDataType == "boolean" then
+		newEntry.isNew = addDataType
+	end
+
+	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuEntry - text: %s, callback: %s, entryType: %s, entries: %s", tos(text), tos(callback), tos(entryType), tos(entries))
+
+	--Add the line of the context menu to the internal tables. Will be read as the ZO_ComboBox's dropdown opens and calls
+	--:AddMenuItems() -> Added to internal scroll list then
+	g_contextMenu:AddItem(newEntry, ZO_COMBOBOX_SUPPRESS_UPDATE)
 end
 local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 
@@ -2731,12 +2754,14 @@ local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 --> See examples for the table "entries" values above AddCustomScrollableMenuEntry
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function AddCustomScrollableSubMenuEntry(text, entries)
+	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableSubMenuEntry - text: %s, entries: %s", tos(text), tos(entries))
 	addCustomScrollableMenuEntry(text, nil, lib.LSM_ENTRY_TYPE_NORMAL, entries, nil)
 end
 
 --Adds a divider line to the context menu entries
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function AddCustomScrollableMenuDivider()
+	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuDivider")
 	addCustomScrollableMenuEntry(libDivider, nil, lib.LSM_ENTRY_TYPE_DIVIDER, nil, nil)
 end
 
@@ -2746,26 +2771,26 @@ function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 	--local optionsTableType = type(options)
 	--assert(optionsTableType == 'table' , sfor('['..MAJOR..':SetCustomScrollableMenuOptions] table expected, got %q = %s', "options", tos(optionsTableType)))
 
-	--if options ~= nil then
-		--Use specified comboBoxContainer's dropdown to update the options to
-		if comboBoxContainer ~= nil then
-			local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
-			if comboBox ~= nil and comboBox.UpdateOptions then
-				comboBox.optionsChanged = options ~= comboBox.options
+	dLog(LSM_LOGTYPE_DEBUG, "SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
+
+	--Use specified comboBoxContainer's dropdown to update the options to
+	if comboBoxContainer ~= nil then
+		local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
+		if comboBox ~= nil and comboBox.UpdateOptions then
+			comboBox.optionsChanged = options ~= comboBox.options
 --d(">SetCustomScrollableMenuOptions - Found UpdateOptions - optionsChanged: " ..tos(comboBox.optionsChanged))
-				comboBox:UpdateOptions(options)
-			end
-		else
-			--Update options to default contextMenu
-			g_contextMenu:SetOptions(options)
+			comboBox:UpdateOptions(options)
 		end
-	--end
+	else
+		--Update options to default contextMenu
+		g_contextMenu:SetOptions(options)
+	end
 end
 local setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
 
 --Hide the custom scrollable context menu and clear it's entries, clear internal variables, mouse clicks etc.
 function ClearCustomScrollableMenu()
-	--d("[LSM]ClearCustomScrollableMenu")
+	dLog(LSM_LOGTYPE_DEBUG, "ClearCustomScrollableMenu")
 	g_contextMenu:ClearItems()
 
 	setCustomScrollableMenuOptions(defaultComboBoxOptions, nil)
@@ -2776,6 +2801,7 @@ local clearCustomScrollableMenu = ClearCustomScrollableMenu
 --Pass in a table with predefined context menu entries and let them all be added in order of the table's number key
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function AddCustomScrollableMenuEntries(contextMenuEntries)
+	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuEntries - contextMenuEntries: %s", tos(contextMenuEntries))
 	if ZO_IsTableEmpty(contextMenuEntries) then return end
 	for _, v in ipairs(contextMenuEntries) do
 		addCustomScrollableMenuEntry(v.label or v.name, v.callback, v.entryType, v.entries, v.isNew)
@@ -2788,6 +2814,7 @@ local addCustomScrollableMenuEntries = AddCustomScrollableMenuEntries
 --Existing context menu entries will be reset, because ClearCustomScrollableMenu will be called!
 --You can add more entries later, prior to showing, via AddCustomScrollableMenuEntry / AddCustomScrollableMenuEntries functions too
 function AddCustomScrollableMenu(entries, options)
+	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenu - entries: %s, options: %s", tos(entries), tos(options))
 	--Clear the existing menu entries
 	clearCustomScrollableMenu()
 
@@ -2805,7 +2832,7 @@ end
 --If controlToAnchorTo is nil it will be anchored to the current control's position below the mouse, like ZO_Menu does
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function ShowCustomScrollableMenu(controlToAnchorTo, options)
-	--d("[LSM]ShowCustomScrollableMenu")
+	dLog(LSM_LOGTYPE_DEBUG, "ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
 	if options then
 		setCustomScrollableMenuOptions(options)
 	end
@@ -2823,6 +2850,7 @@ local function onAddonLoaded(event, name)
 	if name:find("^ZO_") then return end
 	EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 	loadLogger()
+	dLog(LSM_LOGTYPE_DEBUG, "~~~~~ onAddonLoaded ~~~~~")
 
 	local comboBoxContainer = CreateControlFromVirtual(MAJOR .. "_ContextMenu", GuiRoot, "ZO_ComboBox")
 	--Create the local context menu object for the library's context menu API functions
@@ -2886,6 +2914,11 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	-data.tooltip and data.customTooltip function with show & hide
 	TESTED: OK
+
+	-Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
+	TESTED: OPEN
+	-Added LibDebugLogger and function dLog for logging with and w/o LDL
+	TESTED: OPEN
 
 
 -------------------
