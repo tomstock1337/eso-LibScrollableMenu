@@ -1459,14 +1459,7 @@ function dropdownClass:ShowSubmenu(control)
 end
 
 function dropdownClass:ShowTooltip(control, data)
-	if data.hasSubmenu then
-		local submenu = self:GetSubmenu()
-		zo_callLater(function()
-			showTooltip(submenu.m_dropdownObject.control, data, data.hasSubmenu)
-		end, 10)
-	else
-		showTooltip(control, data, data.hasSubmenu)
-	end
+	showTooltip(self, control, data, data.hasSubmenu)
 end
 
 function dropdownClass:HideDropdown()
@@ -2680,7 +2673,7 @@ WORKING ON - Current version: 2.1
 	- Fixed: comboBoxClass:OnGlobalMouseUp(eventCode, ...) must close all submenus and the main menu (dropdown) of the ZO_ComboBox if we right click on the main comboBox to show a context menu there
 	TESTED: OK
 	- Fixed: submenu defaults not inheriting from parent on initialize
-	TESTED: OPEN
+	TESTED: OK
 	- Added: function sets to update name/label on AddItem and update on Show
 	TESTED: OK
 	- Added: options.disableFadeGradient, options.headerColor
@@ -2695,9 +2688,9 @@ WORKING ON - Current version: 2.1
 		There was no need for the extra functions attached to dropdownClass
 	TESTED: OK
 	-Added comboBoxClass:SetOption(key) function
-	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows were tested)
+	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows wered tested, disableFadeGradient TODO)
 	-Updated comboBoxClass:UpdateOptions() function
-	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows were tested)
+	TESTED: AT WORK (visibleDropdownRows, visibleSubmenuRows were tested, disableFadeGradient TODO)
 	-Callback OnDropdownMenuAdded can change the options of a dropdown pre-init
 	TESTED: OK
 	-data.tooltip and data.customTooltip function with show & hide
