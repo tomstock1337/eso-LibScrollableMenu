@@ -786,6 +786,7 @@ end
 
 local function getTooltipAnchor(self, control, tooltipText, hasSubmenu)
 	local relativeTo = control
+	dLog(LSM_LOGTYPE_VERBOSE, "getTooltipAnchor - control: %s, tooltipText: %s, hasSubmenu: %s", tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu))
 
 	local submenu = self:GetSubmenu()
 	if hasSubmenu then
@@ -873,6 +874,8 @@ local function showTooltip(self, control, data, hasSubmenu)
 	local customTooltipFunc = data.customTooltip
 	if type(customTooltipFunc) ~= "function" then customTooltipFunc = nil end
 
+	dLog(LSM_LOGTYPE_VERBOSE, "showTooltip - control: %s, tooltipText: %s, hasSubmenu: %s, customTooltipFunc: %s", tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu), tos(customTooltipFunc))
+
 	--To prevent empty tooltips from opening.
 	if tooltipText == nil and customTooltipFunc == nil then return end
 
@@ -903,14 +906,18 @@ end
 --------------------------------------------------------------------
 
 local function isAccessibilitySettingEnabled(settingId)
-	return GetSetting_Bool(SETTING_TYPE_ACCESSIBILITY, settingId)
+	local isSettingEnabled = GetSetting_Bool(SETTING_TYPE_ACCESSIBILITY, settingId)
+	dLog(LSM_LOGTYPE_VERBOSE, "isAccessibilitySettingEnabled - settingId: %s, isSettingEnabled: %s", tos(settingId), tos(isSettingEnabled))
+	return isSettingEnabled
 end
 
 local function isAccessibilityModeEnabled()
+	dLog(LSM_LOGTYPE_VERBOSE, "isAccessibilityModeEnabled")
 	return isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_ACCESSIBILITY_MODE)
 end
 
 local function isAccessibilityUIReaderEnabled()
+	dLog(LSM_LOGTYPE_VERBOSE, "isAccessibilityUIReaderEnabled")
 	return isAccessibilityModeEnabled() and isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_SCREEN_NARRATION)
 end
 
@@ -925,6 +932,7 @@ end
 local function addNewUINarrationText(newText, stopCurrent)
 	if isAccessibilityUIReaderEnabled() == false then return end
 	stopCurrent = stopCurrent or false
+	dLog(LSM_LOGTYPE_VERBOSE, "addNewUINarrationText - newText: %s, stopCurrent: %s", tos(newText), tos(stopCurrent))
 --d( "["..MAJOR.."]AddNewChatNarrationText-stopCurrent: " ..tostring(stopCurrent) ..", text: " ..tostring(newText))
 	--Stop the current UI narration before adding a new?
 	if stopCurrent == true then
@@ -978,13 +986,14 @@ end
 -->Only the last entry will be narrated then, where the mouse stops
 local function onUpdateDoNarrate(uniqueId, delay, callbackFunc)
 	local updaterName = UINarrationUpdaterName ..tos(uniqueId)
---d( "[LSM]onUpdateDoNarrate-updaterName: " ..tos(updaterName))
+	dLog(LSM_LOGTYPE_VERBOSE, "onUpdateDoNarrate - updName: %s, delay: %s", tos(updaterName), tos(delay))
+
 	EM:UnregisterForUpdate(updaterName)
 	if isAccessibilityUIReaderEnabled() == false or callbackFunc == nil then return end
 	delay = delay or 1000
 	EM:RegisterForUpdate(updaterName, delay, function()
+		dLog(LSM_LOGTYPE_VERBOSE, "onUpdateDoNarrate - Delayed call: updName: %s", tos(updaterName))
 		if isAccessibilityUIReaderEnabled() == false then EM:UnregisterForUpdate(updaterName) return end
---d( ">>>calling func delayed now!")
 		callbackFunc()
 		EM:UnregisterForUpdate(updaterName)
 	end)
@@ -992,14 +1001,17 @@ end
 
 --Own narration functions, if ever needed -> Currently the addons pass in their narration functions
 local function onMouseEnterOrExitNarrate(narrateText, stopCurrent)
+	dLog(LSM_LOGTYPE_VERBOSE, "onMouseEnterOrExitNarrate - narrateText: %s, stopCurrent: %s", tos(narrateText), tos(stopCurrent))
 	onUpdateDoNarrate("OnMouseEnterExit", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
 end
 
 local function onSelectedNarrate(narrateText, stopCurrent)
+	dLog(LSM_LOGTYPE_VERBOSE, "onSelectedNarrate - narrateText: %s, stopCurrent: %s", tos(narrateText), tos(stopCurrent))
 	onUpdateDoNarrate("OnEntryOrCheckboxSelected", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
 end
 
 local function onMouseMenuOpenOrCloseNarrate(narrateText, stopCurrent)
+	dLog(LSM_LOGTYPE_VERBOSE, "onMouseMenuOpenOrCloseNarrate - narrateText: %s, stopCurrent: %s", tos(narrateText), tos(stopCurrent))
 	onUpdateDoNarrate("OnMenuOpenOrClose", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
 end
 --Lookup table for ScrollableHelper:Narrate() function -> If a string will be returned as 1st return parameter (and optionally a boolean as 2nd, for stopCurrent)
@@ -1025,27 +1037,33 @@ local narrationEventToLibraryNarrateFunction = {
 local function onMouseEnter(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
 	
+	dLog(LSM_LOGTYPE_VERBOSE, "onMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseEnter', data, control)
-	
+	dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: EntryOnMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
+
 	return dropdown
 end
 
 local function onMouseExit(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
-	
+
+	dLog(LSM_LOGTYPE_VERBOSE, "onMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseExit', data, control)
-	
+	dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: EntryOnMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
+
 	return dropdown
 end
 
 local function onMouseUp(control, data, hasSubmenu, button, upInside)
 	local dropdown = control.m_dropdownObject
 
+	dLog(LSM_LOGTYPE_VERBOSE, "onMouseUp - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
 	if upInside and button == MOUSE_BUTTON_INDEX_LEFT then
 		dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
 		lib:FireCallbacks('EntryOnSelected', data, control)
+		dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
 	end
 
 	return dropdown
@@ -1139,7 +1157,7 @@ local handlerFunctions  = {
 						dropdown:SelectItemByIndex(control.m_data.m_index)
 					end
 				end
-			else
+			--else
 				--TODO: Do we want to close dropdowns on mouse up not upInside?
 			end
 			return true
@@ -1153,6 +1171,7 @@ local handlerFunctions  = {
 					playSelectedSoundCheck(dropdown)
 					ZO_CheckButton_OnClicked(control.m_checkbox)
 					data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
+					dLog(LSM_LOGTYPE_VERBOSE, "Checkbox onMouseUp - control: %s, button: %s, upInside: %s, isChecked: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(data.checked))
 				end
 			end
 			return true
@@ -1161,11 +1180,11 @@ local handlerFunctions  = {
 }
 
 local function runHandler(handlerTable, control, ...)
+	dLog(LSM_LOGTYPE_VERBOSE, "runHandler - control: %s, handlerTable: %s, typeId: %s", tos(getControlName(control)), tos(handlerTable), tos(control.typeId))
 	local handler = handlerTable[control.typeId]
 	if handler then
 		return handler(control, ...)
 	end
-
 	return false
 end
 
@@ -1177,6 +1196,8 @@ local dropdownClass = ZO_ComboBoxDropdown_Keyboard:Subclass()
 
 -- dropdownClass:New(To simplify locating the beginning of the class
 function dropdownClass:Initialize(parent, comboBoxContainer, depth)
+	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+
 	local dropdownControl = CreateControlFromVirtual(comboBoxContainer:GetName(), GuiRoot, "LibScrollableMenu_Keyboard_Template", depth)
 	ZO_ComboBoxDropdown_Keyboard.Initialize(self, dropdownControl)
 	dropdownControl.object = self
@@ -1194,8 +1215,6 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 		scrollCtrl.scrollbar.owner = 	scrollCtrl
 		scrollCtrl.upButton.owner = 	scrollCtrl
 		scrollCtrl.downButton.owner = 	scrollCtrl
-	else
---d("[LSM]dropdownClass:Initialize -  self.scrollControl is nil")
 	end
 end
 
@@ -1209,10 +1228,12 @@ end
 
 --Narration
 function dropdownClass:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
+	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:Narrate - eventName: %s, ctrl: %s, hasSubmenu: %s, anchorPoint: %s", tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint))
 	self.owner:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 end
 
 function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
+	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:AddCustomEntryTemplate - entryTemplate: %s, entryHeight: %s, setupFunction: %s, widthPadding: %s", tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding))
 	if not self.customEntryTemplateInfos then
 		self.customEntryTemplateInfos = {}
 	end
@@ -1258,6 +1279,8 @@ function dropdownClass:AnchorToControl(parentControl)
 	-- Get offsetY in relation to parentControl's top in the scroll container
     local offsetY = select(6, parentControl:GetAnchor(0))
 
+	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:AnchorToControl - point: %s, relativeTo: %s, relativePoint: %s offsetX: %s, offsetY: %s", tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(offsetX), tos(offsetY))
+
 	self.control:ClearAnchors()
 	self.control:SetAnchor(point, relativeTo, relativePoint, offsetX, offsetY)
 	
@@ -1272,8 +1295,9 @@ function dropdownClass:AnchorToControl(parentControl)
 	end
 end
 
-function dropdownClass:AnchorToComboBox(conboBox)
-	local parentControl = conboBox:GetContainer()
+function dropdownClass:AnchorToComboBox(comboBox)
+	local parentControl = comboBox:GetContainer()
+	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:AnchorToComboBox - comboBox container: %s", tos(getControlName(parentControl)))
 	self.control:ClearAnchors()
 	self.control:SetAnchor(TOPLEFT, parentControl, BOTTOMLEFT)
 end
@@ -1295,20 +1319,33 @@ function dropdownClass:AnchorToMouse()
 		bottom = false
 	end
 
+	local point, relativeTo, relativePoint
 	if right then
 		x = x + 10
 		if bottom then
-			menuToAnchor:SetAnchor(TOPLEFT, nil, TOPLEFT, x, y)
+			point = TOPLEFT
+			relativeTo = nil
+			relativePoint = TOPLEFT
 		else
-			menuToAnchor:SetAnchor(BOTTOMLEFT, nil, TOPLEFT, x, y)
+			point = BOTTOMLEFT
+			relativeTo = nil
+			relativePoint = TOPLEFT
 		end
 	else
 		x = x - 10
 		if bottom then
-			menuToAnchor:SetAnchor(TOPRIGHT, nil, TOPLEFT, x, y)
+			point = TOPRIGHT
+			relativeTo = nil
+			relativePoint = TOPLEFT
 		else
-			menuToAnchor:SetAnchor(BOTTOMRIGHT, nil, TOPLEFT, x, y)
+			point = BOTTOMRIGHT
+			relativeTo = nil
+			relativePoint = TOPLEFT
 		end
+	end
+	dLog(LSM_LOGTYPE_VERBOSE, " dropdownClass:AnchorToMouse - point: %s, relativeTo: %s, relativePoint: %s offsetX: %s, offsetY: %s", tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(x), tos(y))
+	if point and relativePoint then
+		menuToAnchor:SetAnchor(point, relativeTo, relativePoint, x, y)
 	end
 end
 
