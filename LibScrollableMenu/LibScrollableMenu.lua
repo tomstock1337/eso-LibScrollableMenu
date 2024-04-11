@@ -48,6 +48,14 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 --Library internal global locals
 local g_contextMenu -- The contextMenu (like ZO_Menu): Will be created at onAddonLoaded
 
+--Logging
+lib.doDebug = false
+local logger
+local debugPrefix = "[" .. MAJOR .. "]"
+local LSM_LOGTYPE_DEBUG = 1
+local LSM_LOGTYPE_VERBOSE = 2
+local LSM_LOGTYPE_INFO = 10
+local LSM_LOGTYPE_ERROR = 99
 
 ------------------------------------------------------------------------------------------------------------------------
 --Menu settings (main and submenu)
@@ -265,15 +273,73 @@ lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCall
 
 
 --------------------------------------------------------------------
+-- Debug logging
+--------------------------------------------------------------------
+local function loadLogger()
+    --LibDebugLogger
+	LDL = LDL or LibDebugLogger
+    if not lib.logger and LDL then
+        logger = LDL(MAJOR)
+		logger:SetEnabled(true)
+        logger:Debug("Library loaded")
+        logger.verbose = logger:Create("Verbose")
+        logger.verbose:SetEnabled(false)
+        lib.logger = logger
+    end
+end
+--Early try to load libs (done again in EVENT_ADD_ON_LOADED)
+loadLogger()
+
+--Debug log function
+local function dLog(debugType, text, ...)
+	debugType = debugType or LSM_LOGTYPE_DEBUG
+
+	local unpackParams = false
+	local debugText = text
+	if select({...}, 1) ~= nil then
+		if unpackParams then
+			debugText = string.format(text, unpack(...))
+		end
+	end
+
+	--LibDebugLogger
+	if LDL then
+		if debugType == LSM_LOGTYPE_DEBUG then
+			LDL:Debug(debugText)
+
+		elseif debugType == LSM_LOGTYPE_VERBOSE then
+			if logger.verbose and logger.verbose.isEnabled == true then
+				LDL:Verbose(debugText)
+			end
+
+		elseif debugType == LSM_LOGTYPE_INFO then
+			LDL:Info(debugText)
+
+		elseif debugType == LSM_LOGTYPE_ERROR then
+			LDL:Error(debugText)
+		end
+	--Normal debugging
+	else
+		if lib.doDebug then
+			d(debugPrefix .. debugText)
+		end
+	end
+end
+
+
+--------------------------------------------------------------------
 -- XML template functions
 --------------------------------------------------------------------
 
 local function getDropdownTemplate(enabled, baseTemplate, alternate, default)
 	baseTemplate = MAJOR .. baseTemplate
-	return sfor('%s%s', baseTemplate, (enabled and alternate or default))
+	local templateName = sfor('%s%s', baseTemplate, (enabled and alternate or default))
+	dLog(LSM_LOGTYPE_VERBOSE, "getDropdownTemplate - templateName: " ..tos(templateName))
+	return templateName
 end
 
 local function getScrollContentsTemplate(barHidden)
+	dLog(LSM_LOGTYPE_VERBOSE, "getScrollContentsTemplate - barHidden: " ..tos(barHidden))
 	return getDropdownTemplate(barHidden, '_ScrollContents', '_BarHidden', '_BarShown')
 end
 
@@ -281,10 +347,15 @@ end
 --------------------------------------------------------------------
 -- Local functions
 --------------------------------------------------------------------
+local function getControlName(control)
+	return (control ~= nil and (control.name or (control.GetName ~= nil and control:GetName()))) or "n/a"
+end
+
 
 --Run function arg to get the return value (passing in ... as optional params to that function),
 --or directly use non-function return value arg
 function getValueOrCallback(arg, ...)
+	dLog(LSM_LOGTYPE_VERBOSE, "getValueOrCallback - arg: " ..tos(arg))
 	if type(arg) == "function" then
 		return arg(...)
 	else
@@ -294,25 +365,30 @@ end
 lib.GetValueOrCallback = getValueOrCallback
 
 local function clearTimeout()
+	dLog(LSM_LOGTYPE_VERBOSE, "ClearTimeout")
 	EM:UnregisterForUpdate(dropdownCallLaterHandle)
 end
 
 local function setTimeout(callback)
+	dLog(LSM_LOGTYPE_VERBOSE, "setTimeout")
 	clearTimeout()
 	--Delay the dropdown close callback so we can move the mouse above a new dropdown control and keep that opened e.g.
 	EM:RegisterForUpdate(dropdownCallLaterHandle, SUBMENU_SHOW_TIMEOUT, function()
+		dLog(LSM_LOGTYPE_VERBOSE, "setTimeout -> delayed by: " ..tos(SUBMENU_SHOW_TIMEOUT))
 		clearTimeout()
 		if callback then callback() end
 	end)
 end
 
 local function updateIsContextMenuAndIsSubmenu(selfVar)
+	dLog(LSM_LOGTYPE_VERBOSE, "updateIsContextMenuAndIsSubmenu")
 	selfVar.isContextMenu = g_contextMenu and g_contextMenu.m_container == selfVar.m_container
 	selfVar.isSubmenu = selfVar.m_parentMenu ~= nil
 end
 
 --Mix in table entries in other table and skip existing entries
 local function mixinTableAndSkipExisting(object, ...)
+	dLog(LSM_LOGTYPE_VERBOSE, "mixinTableAndSkipExisting")
 	for i = 1, select("#", ...) do
 		local source = select(i, ...)
 		for k,v in pairs(source) do
@@ -326,6 +402,7 @@ end
 
 --The default callback for the recursiveOverEntries function
 local function defaultRecursiveCallback(_entry)
+	dLog(LSM_LOGTYPE_VERBOSE, "defaultRecursiveCallback")
 	return false
 end
 
@@ -338,7 +415,6 @@ local function recursiveOverEntries(entry, callback)
 
 	--local submenuType = type(submenu)
 	--assert(submenuType == 'table', sfor('['..MAJOR..':recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
-
 	if  type(submenu) == "table" and #submenu > 0 then
 		for k, subEntry in pairs(submenu) do
 			local subEntryResult = recursiveOverEntries(subEntry, callback)
@@ -347,12 +423,14 @@ local function recursiveOverEntries(entry, callback)
 			end
 		end
 	end
+	dLog(LSM_LOGTYPE_VERBOSE, "recursiveOverEntries - #submenu: %s, result: %s", tos(#submenu), tos(result))
 	return result
 end
 
 --(Un)Silence the OnClicked sound of a selected dropdown
 local function silenceComboBoxClickedSound(doSilence)
 	doSilence = doSilence or false
+	dLog(LSM_LOGTYPE_VERBOSE, "silenceComboBoxClickedSound - doSilence: " .. tos(doSilence))
 	if doSilence == true then
 		--Silence the "selected comboBox sound"
 		SOUNDS.COMBO_CLICK = soundComboClickedSilenced
@@ -364,11 +442,13 @@ end
 
 --Get the options of the scrollable dropdownObject
 local function getOptionsForDropdown(dropdown)
+	dLog(LSM_LOGTYPE_VERBOSE, "getOptionsForDropdown")
 	return dropdown.owner.options or {}
 end
 
 --Check if a sound should be played if a dropdown entry was selected
 local function playSelectedSoundCheck(dropdown)
+	dLog(LSM_LOGTYPE_VERBOSE, "playSelectedSoundCheck")
 	silenceComboBoxClickedSound(false)
 
 	local soundToPlay = origSoundComboClicked
@@ -390,6 +470,7 @@ end
 --Recursivley map the entries of a submenu and add them to the mapTable
 --used for the callback "NewStatusUpdated" to provide the mapTable with the entries
 local function doMapEntries(entryTable, mapTable)
+	dLog(LSM_LOGTYPE_VERBOSE, "doMapEntries")
 	for k, entry in pairs(entryTable) do
 		if entry.entries then
 			doMapEntries(entry.entries, mapTable)
@@ -405,6 +486,7 @@ end
 -- This function will create a map of all entries recursively. Useful when there are submenu entries
 -- and you want to use them for comparing in the callbacks, NewStatusUpdated, CheckboxUpdated
 local function mapEntries(entryTable, mapTable, blank)
+	dLog(LSM_LOGTYPE_VERBOSE, "mapEntries")
 	if blank ~= nil then
 		entryTable = mapTable
 		mapTable = blank
@@ -440,6 +522,8 @@ local function updateIcons(control, data)
 	local iconHeight = parentHeight
 	-- This leaves a padding to keep the label from being too close to the edge
 	local iconWidth = visible and iconHeight or WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
+
+	dLog(LSM_LOGTYPE_VERBOSE, "updateIcons - iconValue: %s, visible: %s, isNew: %s, tooltip: %s, narration: %s", tos(iconValue), tos(visible), tos(isNewValue), tos(tooltipForIcon), tos(iconNarration))
 
 	multiIconCtrl:ClearIcons()
 	if visible == true then
@@ -501,6 +585,7 @@ end
 
 -- >> data, dataEntry
 local function getControlData(control)
+	dLog(LSM_LOGTYPE_VERBOSE, "getControlData - name: " ..tos(getControlName(control)))
 	local data = control.m_sortedItems or control.m_data
 	
 	if data.dataSource then
@@ -512,11 +597,13 @@ end
 
 --Check if an entry got the isNew set
 local function getIsNew(_entry)
+	dLog(LSM_LOGTYPE_VERBOSE, "getIsNew")
 	return getValueOrCallback(_entry.isNew, _entry) or false
 end
 
 -- Recursively check for new entries.
 local function areAnyEntriesNew(entry)
+	dLog(LSM_LOGTYPE_VERBOSE, "areAnyEntriesNew")
 	return recursiveOverEntries(entry, getIsNew)
 end
 
@@ -524,7 +611,7 @@ end
 -- This works up from the mouse-over entry's submenu up to the dropdown,
 -- as long as it does not run into a submenu still having a new entry.
 local function updateSubmenuNewStatus(control)
---	d( '[LSM]updateSubmenuNewStatus')
+	dLog(LSM_LOGTYPE_VERBOSE, "updateSubmenuNewStatus")
 	-- reverse parse
 	local isNew = false
 	
@@ -552,15 +639,15 @@ end
 
 --Remove the new status of a dropdown entry
 local function clearNewStatus(control, data)
---d( '[LSM]clearNewStatus')
---d( 'data.isNew ' .. tostring(data.isNew))
+	dLog(LSM_LOGTYPE_VERBOSE, "clearNewStatus")
 	if data.isNew then
 		-- Only directly change status on non-submenu entries. The are effected by child entries
 		if data.entries == nil then
 			data.isNew = false
 			
 			lib:FireCallbacks('NewStatusUpdated', data, control)
-			
+			dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: NewStatusUpdated - control: " ..tos(getControlName(control)))
+
 			control.m_dropdownObject:Refresh(data)
 			
 			local parent = data.m_parentControl
@@ -590,7 +677,9 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	item.isDivider = isDivider
 	item.hasSubmenu = hasSubmenu
 	item.isCheckbox = isCheckbox
-	
+
+	dLog(LSM_LOGTYPE_VERBOSE, "setItemEntryCustomTemplate - entryType: %s", tos(entryType))
+
 	if entryType then
 		local customEntryTemplate = customEntryTemplates[entryType].template
 		zo_comboBox_setItemEntryCustomTemplate(item, customEntryTemplate)
@@ -607,6 +696,7 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 end
 
 local function updateLabelsStrings(data)
+	dLog(LSM_LOGTYPE_VERBOSE, "updateLabelsStrings - labelFunc: %s, nameFunc: %s", tos(data.labelFunction), tos(data.nameFunction))
 	if data.labelFunction then
 		data.label = data.labelFunction(data)
 	end
@@ -630,7 +720,8 @@ local function processNameString(data)
 		--Keep the original name function at the data, as we need a "String only" text as data.name for ZO_ComboBox internal functions!
 		data.nameFunction = nameData
 	end
-	
+	dLog(LSM_LOGTYPE_VERBOSE, "processNameString - label: %s, name: %s", tos(labelData), tos(nameData))
+
 	updateLabelsStrings(data)
 	
 	--[[
@@ -642,6 +733,7 @@ end
 
 -- Prevents errors on the off chance a non-string makes it through into ZO_ComboBox
 local function verifyLabelString(data)
+	dLog(LSM_LOGTYPE_VERBOSE, "verifyLabelString")
 	updateLabelsStrings(data)
 	
 	return type(data.name) == 'string'
@@ -649,6 +741,7 @@ end
 
 -- We can add any row-type post checks and update dateEntry with static values.
 local function addItem_Base(self, itemEntry)
+	dLog(LSM_LOGTYPE_VERBOSE, "addItem_Base - itemEntry: " ..tos(itemEntry))
 	processNameString(itemEntry)
 	
 	if not itemEntry.customEntryTemplate then
@@ -675,16 +768,15 @@ end
 --------------------------------------------------------------------
 
 local function resetCustomTooltipFuncVars()
-d("[LSM]resetCustomTooltipFuncVars")
+	dLog(LSM_LOGTYPE_VERBOSE, "resetCustomTooltipFuncVars")
 	lib.lastCustomTooltipFunction = nil
 	lib.onHideCustomTooltipFunc = nil
 end
 
 --Hide the tooltip of a dropdown entry
 local function hideTooltip()
-d("[LSM]hideTooltip")
+	dLog(LSM_LOGTYPE_VERBOSE, "hideTooltip - custom onHide func: " ..tos(lib.onHideCustomTooltipFunc))
 	if lib.onHideCustomTooltipFunc then
-d(">found custom tooltip onHide function")
 		lib.onHideCustomTooltipFunc()
 	else
 		ClearTooltip(InformationTooltip)
@@ -2654,11 +2746,25 @@ end
 local function onAddonLoaded(event, name)
 	if name:find("^ZO_") then return end
 	EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
+	loadLogger()
 
 	local comboBoxContainer = CreateControlFromVirtual(MAJOR .. "_ContextMenu", GuiRoot, "ZO_ComboBox")
 	--Create the local context menu object for the library's context menu API functions
 	g_contextMenu = contextMenuClass:New(comboBoxContainer)
 	lib.contextMenu = g_contextMenu
+
+	SLASH_COMMANDS["/lsmdebug"] = function()
+		loadLogger()
+		lib.doDebug = not lib.doDebug
+		if logger then logger:SetEnabled(lib.doDebug) end
+	end
+	SLASH_COMMANDS["/lsmdebugverbose"] = function()
+		loadLogger()
+		lib.doDebug = not lib.doDebug
+		if logger and logger.verbose then
+			logger.verbose:SetEnabled(lib.doDebug)
+		end
+	end
 end
 EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
