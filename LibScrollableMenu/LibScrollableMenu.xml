@@ -81,7 +81,7 @@
 				</Label>
 				<!-- ZoFontWinH5 inherits="ZO_HorizontalDivider" inherits="ZO_WideHorizontalDivider" offsetY="4" -->
 				<Texture name="$(parent)Divider" inherits="ZO_Options_Divider">
-					<Anchor point="BOTTOMLEFT" offsetX="0" offsetY="-5"/>
+					<Anchor point="BOTTOMLEFT" offsetX="3" offsetY="-5"/>
 					<Anchor point="BOTTOMRIGHT" offsetX="0" offsetY="0" />
 				</Texture>
 			</Controls>
