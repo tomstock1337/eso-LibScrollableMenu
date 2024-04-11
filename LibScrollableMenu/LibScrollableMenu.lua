@@ -669,6 +669,11 @@ end
 -- Local tooltip functions
 --------------------------------------------------------------------
 
+local function resetCustomTooltipFuncVars()
+	lib.lastCustomTooltipFunction = nil
+	lib.onHideCustomTooltipFunc = nil
+end
+
 --Hide the tooltip of a dropdown entry
 local function hideTooltip()
 	if lib.onHideCustomTooltipFunc then
@@ -676,6 +681,7 @@ local function hideTooltip()
 	else
 		ClearTooltip(InformationTooltip)
 	end
+	resetCustomTooltipFuncVars()
 end
 
 local function getTooltipAnchor(self, control, tooltipText, hasSubmenu)
@@ -760,8 +766,7 @@ customTooltipFunc = function(data, rowControl, point, offsetX, offsetY, relative
 end
 ]]
 local function showTooltip(self, control, data, hasSubmenu)
-	lib.lastCustomTooltipFunction = nil
-	lib.onHideCustomTooltipFunc = nil
+	resetCustomTooltipFuncVars()
 
 	local tooltipData = getValueOrCallback(data.tooltip, data)
 	local tooltipText = getValueOrCallback(tooltipData, data)
