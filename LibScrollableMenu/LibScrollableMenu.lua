@@ -298,7 +298,7 @@ local function dLog(debugType, text, ...)
 
 	local unpackParams = false
 	local debugText = text
-	if select({...}, 1) ~= nil then
+	if select(1, {...}) ~= nil then
 		debugText = string.format(text, unpack(...))
 	end
 	if debugText == nil or debugText == "" then return end
