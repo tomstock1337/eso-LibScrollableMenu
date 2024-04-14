@@ -3110,7 +3110,7 @@ WORKING ON - Current version: 2.1
 	TESTED: OPEN
 
 	--Changed all API functions for context menus to accept entries as function returning a table too
-	TESTED: OPEN
+	TESTED: OK
 
 	-Added API function RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFunc, onlyCheckboxes, ...)
 	TESTED: AT WORK

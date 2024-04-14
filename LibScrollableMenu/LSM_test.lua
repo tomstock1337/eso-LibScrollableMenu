@@ -153,7 +153,7 @@ local function test()
 		local submenuEntries = {
 			{
 				
-				name            = "Submenu Entry Test 1",
+				name            = "Submenu Entry Test 1 (contexMenu)",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 1")
 				end,
@@ -457,7 +457,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuCallback: WAS EXEC
 				tooltip         = 'Submenu test tooltip.'
 			},
 			{
-				name            = "Normal entry 2 (context menu)",
+				name            = "Normal entry 2 (contextMenu)",
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 				callback        =   function(self)
 					d("Normal entry 2")
