@@ -633,11 +633,11 @@ local function updateSubmenuNewStatus(control)
 	local isNew = false
 	
 	local data = getControlData(control)
-	local submenuEntries = data.entries or {}
+	local submenuEntries = getValueOrCallback(data.entries, data) or {}
 	
 	-- We are only going to check the current submenu's entries, not recursively
 	-- down from here since we are working our way up until we find a new entry.
-	for k, subentry in ipairs(submenuEntries) do
+	for _, subentry in ipairs(submenuEntries) do
 		if getIsNew(subentry) then
 			isNew = true
 		end
@@ -682,7 +682,7 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	local isHeader = getValueOrCallback(item.isHeader, item)
 	local isCheckbox = getValueOrCallback(item.isCheckbox, item)
 
-	local hasSubmenu = item.entries ~= nil
+	local hasSubmenu = getValueOrCallback(item.entries, item) ~= nil
 
 	local entryType = getValueOrCallback(item.entryType, item)
 			or ( (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) or (hasSubmenu and SUBMENU_ENTRY_ID) )
@@ -2630,7 +2630,6 @@ function lib.SetPersistentMenus(persistent)
 	lib.persistentMenus = persistent
 end
 
-lib.MapEntries = mapEntries
 
 --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --[API - Custom scrollable ZO_ComboBox menu]
@@ -2718,7 +2717,7 @@ local function validateContextMenuSubmenuEntries(entries, options, calledByStr)
 	local entryTableType = type(entries)
 	if entryTableType == 'function' then
 		options = options or g_contextMenu:GetOptions()
-		--Run teh function -> Get the results table
+		--Run the function -> Get the results table
 		local entriesOfPassedInEntriesFunc = entries(options)
 		--Check if the result is a table
 		entryTableType = type(entriesOfPassedInEntriesFunc)
@@ -2906,8 +2905,8 @@ function AddCustomScrollableMenuEntries(contextMenuEntries)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuEntries - contextMenuEntries: %s", tos(contextMenuEntries))
 
 	contextMenuEntries = validateContextMenuSubmenuEntries(contextMenuEntries, nil, "AddCustomScrollableMenuEntries")
-
 	if ZO_IsTableEmpty(contextMenuEntries) then return end
+
 	for _, v in ipairs(contextMenuEntries) do
 		addCustomScrollableMenuEntry(v.label or v.name, v.callback, v.entryType, v.entries, v.additionalData)
 	end
