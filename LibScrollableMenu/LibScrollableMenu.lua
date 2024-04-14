@@ -2426,7 +2426,8 @@ function submenuClass:RefreshSortedItems(parentControl)
 	ZO_ClearNumericallyIndexedTable(self.m_sortedItems)
 	local data = getControlData(parentControl)
 
-	for k, item in ipairs(data.entries) do
+	local entries = getValueOrCallback(data.entries, data)
+	for _, item in ipairs(entries) do
 		item.m_parentControl = parentControl
 		-- update strings by functions will be done in AddItem
 		self:AddItem(item, ZO_COMBOBOX_SUPPRESS_UPDATE)
