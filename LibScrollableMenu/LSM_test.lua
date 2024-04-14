@@ -374,10 +374,10 @@ local function test()
 				name            = function()
 					if not wasNameChangedAtEntry then
 						wasNameChangedAtEntry = true
-						return "Normal entry 1"
+						return "Normal entry 1 (contextMenu)"
 					else
 						wasNameChangedAtEntry = false
-						return "Normal entry 1 - Changed"
+						return "Normal entry 1 - Changed (contextMenu)"
 					end
 				end,
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
@@ -449,15 +449,15 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuCallback: WAS EXEC
 				name            = "-", --Divider
 			},
 			{
-				name            = "Entry having submenu 1",
+				name            = "Entry having submenu 1 (function)",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Entry having submenu 1")
 				end,
-				entries         = submenuEntries,
+				entries         = function() return submenuEntries end,
 				tooltip         = 'Submenu test tooltip.'
 			},
 			{
-				name            = "Normal entry 2",
+				name            = "Normal entry 2 (context menu)",
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 				callback        =   function(self)
 					d("Normal entry 2")
