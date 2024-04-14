@@ -161,9 +161,24 @@ local function test()
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
 
-					AddCustomScrollableSubMenuEntry("Submenu entry 1", subEntries)
+					AddCustomScrollableSubMenuEntry("Submenu entry 1 (function)", function() return subEntries end)
 
-					AddCustomScrollableMenuEntry("Custom menu Normal entry 1", function() d('Custom menu Normal entry 1') end)
+					AddCustomScrollableMenuEntry("Custom menu Normal entry 1", function(comboBox, itemName, item, selectionChanged, oldItem)
+						d('Custom menu Normal entry 1')
+
+						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
+							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
+d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMenuCallback: WAS EXECUTED!")
+							for k, v in ipairs(entriesFound) do
+								local name = v.label or v.name
+								d(">name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
+							end
+
+						end
+
+						--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
+						RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFuncSubmenu, false)
+					end)
 
 					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 
