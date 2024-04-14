@@ -387,8 +387,26 @@ local function test()
 				contextMenuCallback =   function(self)
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
-					AddCustomScrollableSubMenuEntry("Context menu entry 1", subEntries)
-					AddCustomScrollableMenuEntry("Context menu Normal entry 1", function() d('Context menu Normal entry 1') end)
+					--AddCustomScrollableSubMenuEntry("Context menu entry 1", subEntries)
+
+					AddCustomScrollableMenuEntry("Context menu Normal entry 1", function(comboBox, itemName, item, selectionChanged, oldItem)
+						d('Context menu Normal entry 1')
+
+
+						local function myAddonCallbackFunc(p_comboBox, p_item, entriesFound, ...) --... will be filled with customParams
+							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
+d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuCallback: WAS EXECUTED!")
+							for k, v in ipairs(entriesFound) do
+								local name = v.label or v.name
+								d(">name of checkbox: " .. tostring(name).. ", checked: " .. tostring(v.checked))
+							end
+
+						end
+
+						--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
+						RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFunc, true, "customParam1", "customParam2")
+					end)
+
 					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end)
 					ShowCustomScrollableMenu()
 				end,
@@ -403,6 +421,7 @@ local function test()
 						ZO_Tooltips_HideTextTooltip()
 					end
 				end,
+				type = lib.LSM_ENTRY_TYPE_CHECKBOX
 			},
 			{
 				name            = "-", --Divider
@@ -424,6 +443,7 @@ local function test()
 				end,
 				--entries         = submenuEntries,
 				--tooltip         =
+				type = lib.LSM_ENTRY_TYPE_CHECKBOX
 			},
 			{
 				name            = "-", --Divider

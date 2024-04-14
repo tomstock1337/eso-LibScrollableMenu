@@ -129,17 +129,21 @@ LSM_ENTRY_TYPE_NORMAL = 		lib.LSM_ENTRY_TYPE_NORMAL
 LSM_ENTRY_TYPE_DIVIDER = 		lib.LSM_ENTRY_TYPE_DIVIDER
 LSM_ENTRY_TYPE_HEADER = 		lib.LSM_ENTRY_TYPE_HEADER
 LSM_ENTRY_TYPE_CHECKBOX = 		lib.LSM_ENTRY_TYPE_CHECKBOX
+local LSM_ENTRY_TYPE_NORMAL = 	LSM_ENTRY_TYPE_NORMAL
+local LSM_ENTRY_TYPE_DIVIDER = 	LSM_ENTRY_TYPE_DIVIDER
+local LSM_ENTRY_TYPE_HEADER = 	LSM_ENTRY_TYPE_HEADER
+local LSM_ENTRY_TYPE_CHECKBOX = LSM_ENTRY_TYPE_CHECKBOX
 
 local allowedEntryTypesForContextMenu = {
-	[lib.LSM_ENTRY_TYPE_NORMAL] = true,
-	[lib.LSM_ENTRY_TYPE_DIVIDER] = true,
-	[lib.LSM_ENTRY_TYPE_HEADER] = true,
-	[lib.LSM_ENTRY_TYPE_CHECKBOX] = true,
+	[LSM_ENTRY_TYPE_NORMAL] = true,
+	[LSM_ENTRY_TYPE_DIVIDER] = true,
+	[LSM_ENTRY_TYPE_HEADER] = true,
+	[LSM_ENTRY_TYPE_CHECKBOX] = true,
 }
 
 local entryTypesForContextMenuWithoutMandatoryCallback = {
-	[lib.LSM_ENTRY_TYPE_DIVIDER] = true,
-	[lib.LSM_ENTRY_TYPE_HEADER] = true,
+	[LSM_ENTRY_TYPE_DIVIDER] = true,
+	[LSM_ENTRY_TYPE_HEADER] = true,
 }
 
 
@@ -391,15 +395,16 @@ local function updateIsContextMenuAndIsSubmenu(selfVar)
 	selfVar.isSubmenu = selfVar.m_parentMenu ~= nil
 end
 
---Mix in table entries in other table and skip existing entries
-local function mixinTableAndSkipExisting(object, ...)
-	dLog(LSM_LOGTYPE_VERBOSE, "mixinTableAndSkipExisting")
-	for i = 1, select("#", ...) do
-		local source = select(i, ...)
+--Mix in table entries in other table and skip existing entries. Optionally run a callback function on each entry
+--e.g. getValueOrCallback(...)
+local function mixinTableAndSkipExisting(targetData, sourceData, callbackFunc, ...)
+	dLog(LSM_LOGTYPE_VERBOSE, "mixinTableAndSkipExisting - callbackFunc: %s", tos(callbackFunc))
+	for i = 1, select("#", sourceData) do
+		local source = select(i, sourceData)
 		for k,v in pairs(source) do
-			--Skip existing entries in
-			if object[k] == nil then
-				object[k] = v
+			--Skip existing entries in target table
+			if targetData[k] == nil then
+				targetData[k] = (callbackFunc ~= nil and callbackFunc(v, ...)) or v
 			end
 		end
 	end
@@ -665,27 +670,26 @@ end
 
 --Set the custom XML virtual template for a dropdown entry
 local function setItemEntryCustomTemplate(item, customEntryTemplates)
+
+	local isDivider = (item.label ~= nil and item.label == libDivider) or item.name == libDivider
 	local isHeader = getValueOrCallback(item.isHeader, item)
-	--We are not going to use processNameString(item) function here to update item.name and item.label here already because at dropdown:Show it's called to react on
-	--actual values -> if item.name or item.label is a function checking values!
-	-- processNameString create the functions
-	-- updateLabelsStrings updates the strings based on the functions.
-	local isDivider = item.label == libDivider or item.name == libDivider
 	local isCheckbox = getValueOrCallback(item.isCheckbox, item)
 
 	local hasSubmenu = item.entries ~= nil
 
-	local entryType = (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) or
-			(hasSubmenu and SUBMENU_ENTRY_ID) or ENTRY_ID
+	local entryType = getValueOrCallback(item.entryType, item)
+			or ( (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) or (hasSubmenu and SUBMENU_ENTRY_ID) )
+			or ENTRY_ID
 
 	item.isHeader = isHeader
 	item.isDivider = isDivider
-	item.hasSubmenu = hasSubmenu
 	item.isCheckbox = isCheckbox
+	item.hasSubmenu = hasSubmenu
 
 	dLog(LSM_LOGTYPE_VERBOSE, "setItemEntryCustomTemplate - entryType: %s", tos(entryType))
 
 	if entryType then
+		item.entryType = entryType
 		local customEntryTemplate = customEntryTemplates[entryType].template
 		zo_comboBox_setItemEntryCustomTemplate(item, customEntryTemplate)
 	end
@@ -747,6 +751,7 @@ end
 -- We can add any row-type post checks and update dateEntry with static values.
 local function addItem_Base(self, itemEntry)
 	dLog(LSM_LOGTYPE_VERBOSE, "addItem_Base - itemEntry: " ..tos(itemEntry))
+	--Get/build data.label and/or data.name values
 	processNameString(itemEntry)
 	
 	if not itemEntry.customEntryTemplate then
@@ -758,11 +763,11 @@ local function addItem_Base(self, itemEntry)
 			itemEntry.font = self.m_headerFont
 			itemEntry.color = self.m_headerFontColor
 		elseif itemEntry.isDivider then
-			-- Placeholder
+			-- Placeholder: Divider
 		elseif itemEntry.isCheckbox then
-			-- Placeholder
+			-- Placeholder: Checkbox
 		elseif itemEntry.isNew then
-			-- Placeholder
+			-- Placeholder: Is new
 		end
 	end
 	
@@ -1131,6 +1136,10 @@ local handlerFunctions  = {
 			return false
 		end,
 	},
+	--The onMouseUp will be used to select an entry in the menu/submenu/nested submenu/context menu
+	---> It will call the ZO_ComboBoxDropdown_Keyboard.OnEntrySelected and via that ZO_ComboBox_Base:ItemSelectedClickHelper(item, ignoreCallback)
+	---> which will then call the item.callback(comboBox, itemName, item, selectionChanged, oldItem) function
+	---> So the parameters for the LibScrollableMenu entry.callback functions will be the same:  (comboBox, itemName, item, selectionChanged, oldItem)
 	['onMouseUp'] = {
 		[ENTRY_ID] = function(control, data, button, upInside)
 			--onMouseUp [ENTRY_ID]')
@@ -1416,11 +1425,11 @@ function dropdownClass:OnMouseEnterEntry(control)
 	if not runHandler(handlerFunctions['onMouseEnter'], control, data) then
 		zo_comboBoxDropdown_onMouseEnterEntry(self, control)
 	end
-	
+
 	if data.tooltip or data.customTooltip then
 		self:ShowTooltip(control, data)
 	end
-	
+
 	--TODO: Conflicting OnMouseExitTimeout -> 20240310 What in detail is conflicting here, with what?
 	if g_contextMenu:IsDropdownVisible() then
 --d(">contex menu: Dropdown visible = yes")
@@ -1456,18 +1465,27 @@ function dropdownClass:OnEntrySelected(control, button, upInside)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntrySelected - control: %s, button: %s, upInside: %s", tos(getControlName(control)), tos(button), tos(upInside))
 
 	local data = getControlData(control)
-	if not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
---d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
-		zo_comboBoxDropdown_onEntrySelected(self, control)
-	end
-	
-	if upInside then
-		if button == MOUSE_BUTTON_INDEX_RIGHT then
-			if data.contextMenuCallback then
-				dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntrySelected - contextMenuCallback!")
-				data.contextMenuCallback(control)
+	local isEnabled = getValueOrCallback(data.enabled)
+	if isEnabled == nil then isEnabled = true end
+
+	if isEnabled == true then
+		if not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
+			--d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
+			zo_comboBoxDropdown_onEntrySelected(self, control)
+		end
+
+		if upInside then
+			if button == MOUSE_BUTTON_INDEX_RIGHT then
+				if data.contextMenuCallback then
+					dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntrySelected - contextMenuCallback!")
+					data.contextMenuCallback(control)
+				end
 			end
 		end
+	--else
+		--d("[LSM]dropdownClass:OnEntrySelected-name: ".. getControlName(control) .. " NOT ENABLED!")
+		--todo: Still fires the dropdown hide then via global on mouse down/up handler?
+		--todo header entryType does not do that!
 	end
 end
 
@@ -2601,9 +2619,10 @@ end
 
 lib.MapEntries = mapEntries
 
---[Custom scrollable ZO_ComboBox menu]
-----------------------------------------------------------------------
---Adds a scroll helper to the comboBoxControl dropdown entries, and enables submenus (scollable too) at the entries.
+--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--[API - Custom scrollable ZO_ComboBox menu]
+--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--Adds a scrollable dropdown to the comboBoxControl, replacing the original dropdown, and enabling scrollable submenus (even with nested scrolable submenus)
 --	control parent 							Must be the parent control of the comboBox
 --	control comboBoxContainer 				Must be any ZO_ComboBox control (e.g. created from virtual template ZO_ComboBox)
 --  table options:optional = {
@@ -2661,11 +2680,53 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, opti
 	return comboBox.m_dropdownObject
 end
 																					   
+--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--[API - Custom scrollable context menu at any control]
+--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--Add a scrollable context (right click) menu at any control (not only a ZO_ComboBox), e.g. to any custom control of your
+--addon or even any entry of a LibScrollableMenu combobox dropdown
+--
+--The context menu syntax is similar to the ZO_Menu usage:
+--A new context menu should be using ClearCustomScrollableMenu() before it adds the first entries (to hide other contextmenus and clear the new one).
+--After that use either AddCustomScrollableMenuEntry to add single entries, AddCustomScrollableMenuEntries to add a whole entries table/function
+--returning a table, or even directly use AddCustomScrollableMenu and pass in the entrie/function to get entries.
+--And after adding all entries, call ShowCustomScrollableContextMenu(parentControl) to show the menu at the parentControl. If no control is provided
+--moc() (control below mouse cursor) will be used
+-->Attention: ClearCustomScrollableMenu() will clear and hide ALL LSM contextmenus at any time! So we cannot have an LSM context menu to show at another
+--LSM context menu entry (similar to ZO_Menu).
 
---[Custom scrollable context menu at any control]
---Add a scrollable menu to any control (not only a ZO_ComboBox), e.g. to an inventory row
---by creating a DUMMY ZO_ComboBox, adding the ScrollHelper class to it and use it
 ----------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------
+--Local context menu helper functions
+------------------------------------------------------------------------------------------------------------------------
+local function validateContextMenuSubmenuEntries(entries, options, calledByStr)
+	--Passed in contextMenuEntries are a function -> Must return a table then
+	local entryTableType = type(entries)
+	if entryTableType == 'function' then
+		options = options or g_contextMenu:GetOptions()
+		--Run teh function -> Get the results table
+		local entriesOfPassedInEntriesFunc = entries(options)
+		--Check if the result is a table
+		entryTableType = type(entriesOfPassedInEntriesFunc)
+		assert(entryTableType == 'table', sfor('['..MAJOR.. calledByStr .. '] table expected, got %q', tos(entryTableType)))
+		entries = entriesOfPassedInEntriesFunc
+	end
+	return entries
+end
+
+local function getSortedItems(comboBox)
+	local sortedItems
+	local openingControl = comboBox.openingControl
+	if openingControl ~= nil then
+		sortedItems = openingControl.m_owner ~= nil and openingControl.m_owner.m_sortedItems
+	else
+		sortedItems = comboBox.m_sortedItems
+	end
+	return sortedItems
+end
+lib.getSortedItems = getSortedItems
+
 
 --Adds a new entry to the context menu entries with the shown text, where the callback function is called once the entry is clicked.
 --If entries is provided the entry will be a submenu having those entries. The callback can be used, if entries are passed in, too (to select a special entry and not an enry of the opening submenu).
@@ -2688,81 +2749,108 @@ end
 -- }
 --}, --[[additionalData]] { isNew = true, m_normalColor = ZO_ColorDef, m_highlightColor = ZO_ColorDef, m_disabledColor = ZO_ColorDef, m_font = "ZO_FontGame" } )
 function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additionalData)
-	assert(text ~= nil, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] String or function returning a string expected, got %q = %s', "text", tos(text)))
---	local scrollHelper = initCustomScrollMenuControl()
---	scrollHelper = scrollHelper or getScrollHelperObjectFromControl(customScrollableMenuComboBox)
+	entryType = entryType or LSM_ENTRY_TYPE_NORMAL
 	local options = g_contextMenu:GetOptions()
+	local generatedText
 
-	--If no entryType was passed in: Use normal text line type
-	entryType = entryType or lib.LSM_ENTRY_TYPE_NORMAL
-	if not allowedEntryTypesForContextMenu[entryType] then
-		entryType = lib.LSM_ENTRY_TYPE_NORMAL
-	end
-	--If an entry type is used which does need a callback, and no submenu entries were passed in additionally: error the missing callback
-	if entries == nil and not entryTypesForContextMenuWithoutMandatoryCallback[entryType] then
-		assert(type(callback) == "function", sfor('['..MAJOR..':AddCustomScrollableMenuEntry] Callback function expected, got %q = %s', "callback", tos(callback)))
+	--Additional data table was passed in? e.g. containing  gotAdditionalData.isNew = function or boolean
+	local gotAdditionalData = (additionalData ~= nil and true) or false
+	local addDataType = gotAdditionalData and type(additionalData)
+	local isAddDataTypeTable = (addDataType ~= nil and addDataType == "table" and true) or false
+
+	--Generate the entryType from passed in function, or use passed in value
+	local generatedEntryType = getValueOrCallback(entryType, isAddDataTypeTable and additionalData or options)
+
+	--Additional data was passed in as a table, and a label text/function was provided?
+	if isAddDataTypeTable == true and additionalData.label ~= nil then
+		--If "text" param and additionalData.name both were provided: text param wins and overwites the additionalData.name!
+		additionalData.name = text
+		--Get/build additionalData.label and/or additionalData.name values (and store additionalData.labelFunc and/or additionalData.nameFunc -> if needed)
+		processNameString(additionalData)
+		generatedText = additionalData.label or additionalData.name
+	else
+		generatedText = getValueOrCallback(text, options)
 	end
 
-	--Or is it a header line?
-	local isHeader = entryType == lib.LSM_ENTRY_TYPE_HEADER
-	--Or a clickable checkbox line?
-	local isCheckbox = entryType == lib.LSM_ENTRY_TYPE_CHECKBOX
-	--or just a ---------- divider line?
-	local isDivider = entryType == lib.LSM_ENTRY_TYPE_DIVIDER or text == libDivider
-	if isDivider == true then entryType = lib.LSM_ENTRY_TYPE_DIVIDER end
+	--Text, or label, checks
+	assert(generatedText ~= nil and generatedText ~= "" and generatedEntryType ~= nil, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] text: String or function returning a string, got %q; entryType: number LSM_ENTRY_TYPE_* or functon returning the entryType expected, got %q', tos(generatedText), tos(generatedEntryType)))
+	--EntryType checks: Allowed entryType for context menu?
+	assert(allowedEntryTypesForContextMenu[generatedEntryType] == true, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] entryType %q is not allowed', tos(generatedEntryType)))
+
+	--If no entry type is used which does need a callback, and no callback was given, and we did not pass in entries for a submenu: error the missing callback
+	if generatedEntryType ~= nil and not entryTypesForContextMenuWithoutMandatoryCallback[generatedEntryType] and entries == nil then
+		local callbackFuncType = type(callback)
+		assert(callbackFuncType == "function", sfor('['..MAJOR..':AddCustomScrollableMenuEntry] Callback function expected for entryType %q, callback\'s type: %s, name: %q', tos(generatedEntryType), tos(callbackFuncType), tos(generatedText)))
+	end
+
+	--Is the text a ---------- divider line, or entryType is divider?
+	local isDivider = generatedEntryType == LSM_ENTRY_TYPE_DIVIDER or generatedText == libDivider
+	if isDivider then callback = nil end
+
+	--Fallback vor old verions of LSM <2.1 where additionalData table was missing and isNew was used as the same parameter
+	local isNew = (isAddDataTypeTable and additionalData.isNew) or (not isAddDataTypeTable and additionalData) or false
 
 	local newEntry = {
-		isDivider		= isDivider,
-		isHeader		= isHeader,
-		isCheckbox		= isCheckbox,
-		isNew			= getValueOrCallback(additionalData.isNew, additionalData or options) or false,
+		--The entry type
+		entryType 		= entryType,
 		--The shown text line of the entry
-		label			= getValueOrCallback(additionalData.label, additionalData or options),
-		name			= getValueOrCallback(text, additionalData or options),
-		--Callback function as context menu entry get's selected. Will also work for an enry where a submenu is available (but usually is not provided in that case)
-		callback		= not isDivider and callback, --ZO_ComboBox:SelectItem will call the item.callback(self, item.name, item), where item = { isHeader = ... }
+		label			= (isAddDataTypeTable and additionalData.label) or nil,
+		--The value line of the entry (or shown text too, if label is missing)
+		name			= text,
 
-		--Any submenu entries (with maybe nested submenus)?
+		--Callback function as context menu entry get's selected. Will also work for an entry where a submenu is available (but usually is not provided in that case)
+		--Parameters for the callback function are:
+		--comboBox, itemName, item, selectionChanged, oldItem
+		--> LSM's 'onMouseUp' handler will call -> ZO_ComboBoxDropdown_Keyboard.OnEntrySelected -> will call ZO_ComboBox_Base:ItemSelectedClickHelper(item, ignoreCallback) -> will call item.callback(comboBox, itemName, item, selectionChanged, oldItem)
+		callback		= callback,
+
+		--Any submenu entries (with maybe nested submenus)
 		entries			= entries,
+
+		--Is a new item?
+		isNew			= isNew,
 	}
 
-	local addDataType = type(additionalData)
-	if addDataType == "table" then
+	--Any other custom params passed in? Mix in missing ones and skip existing (e.g. isNew)
+	if isAddDataTypeTable then
 		--[[ Will add e.g. the following data, if missing in newEntry
 			additionalData.m_normalColor
 			additionalData.m_highlightColor
 			additionalData.m_disabledColor
 			additionalData.m_font
-			additionalData.isNew
-			--> and other custom values
+			additionalData.label
+			...
+			--> and other custom values for your addons
+
+			--Info: The call to processNameString has updated addiitonalData with nameFunc and labelFunc already, if
+			--additionalData.label was provided
+			additionalData.labelFunc
+			additionalData.nameFunc
 		]]
-		mixinTableAndSkipExisting(newEntry, additionalData)
-	--Fallback vor old verions of LSM <2.1 where additionalData table was missing and isNew was used as the same parameter
-	elseif addDataType == "boolean" then
-		newEntry.isNew = addDataType
+		--mixinTableAndSkipExisting(newEntry, additionalData)
 	end
 
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuEntry - text: %s, callback: %s, entryType: %s, entries: %s", tos(text), tos(callback), tos(entryType), tos(entries))
 
 	--Add the line of the context menu to the internal tables. Will be read as the ZO_ComboBox's dropdown opens and calls
 	--:AddMenuItems() -> Added to internal scroll list then
-	g_contextMenu:AddItem(newEntry, ZO_COMBOBOX_SUPPRESS_UPDATE)
+	g_contextMenu:AddContextMenuItem(newEntry, ZO_COMBOBOX_SUPPRESS_UPDATE)
 end
 local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 
---Adds an entry having a submenu (or maybe nested submenues) in the entries table
+--Adds an entry having a submenu (or maybe nested submenues) in the entries table/entries function whch returns a table
 --> See examples for the table "entries" values above AddCustomScrollableMenuEntry
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function AddCustomScrollableSubMenuEntry(text, entries)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableSubMenuEntry - text: %s, entries: %s", tos(text), tos(entries))
-	addCustomScrollableMenuEntry(text, nil, lib.LSM_ENTRY_TYPE_NORMAL, entries, nil)
+	addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_NORMAL, entries, nil)
 end
 
 --Adds a divider line to the context menu entries
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function AddCustomScrollableMenuDivider()
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuDivider")
-	addCustomScrollableMenuEntry(libDivider, nil, lib.LSM_ENTRY_TYPE_DIVIDER, nil, nil)
+	addCustomScrollableMenuEntry(libDivider, nil, LSM_ENTRY_TYPE_DIVIDER, nil, nil)
 end
 
 --Set the options (visible rows max, etc.) for the scrollable context menu, or any passed in 2nd param comboBoxContainer
@@ -2798,19 +2886,23 @@ function ClearCustomScrollableMenu()
 end
 local clearCustomScrollableMenu = ClearCustomScrollableMenu
 
---Pass in a table with predefined context menu entries and let them all be added in order of the table's number key
+
+--Pass in a table/function returning a table with predefined context menu entries and let them all be added in order of the table's number key
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function AddCustomScrollableMenuEntries(contextMenuEntries)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuEntries - contextMenuEntries: %s", tos(contextMenuEntries))
+
+	contextMenuEntries = validateContextMenuSubmenuEntries(contextMenuEntries, nil, "AddCustomScrollableMenuEntries")
+
 	if ZO_IsTableEmpty(contextMenuEntries) then return end
 	for _, v in ipairs(contextMenuEntries) do
-		addCustomScrollableMenuEntry(v.label or v.name, v.callback, v.entryType, v.entries, v.isNew)
+		addCustomScrollableMenuEntry(v.label or v.name, v.callback, v.entryType, v.entries, v.additionalData)
 	end
 	return true
 end
 local addCustomScrollableMenuEntries = AddCustomScrollableMenuEntries
 
---Populate a new scrollable context menu with the defined entries table.
+--Populate a new scrollable context menu with the defined entries table/a functinon returning the entries.
 --Existing context menu entries will be reset, because ClearCustomScrollableMenu will be called!
 --You can add more entries later, prior to showing, via AddCustomScrollableMenuEntry / AddCustomScrollableMenuEntries functions too
 function AddCustomScrollableMenu(entries, options)
@@ -2818,10 +2910,12 @@ function AddCustomScrollableMenu(entries, options)
 	--Clear the existing menu entries
 	clearCustomScrollableMenu()
 
-	local entryTableType = type(entries)
-	assert(entryTableType == 'table' , sfor('['..MAJOR..':AddCustomScrollableMenu] table expected, got %q = %s', "entries", tos(entryTableType)))
+	entries = validateContextMenuSubmenuEntries(entries, options, "AddCustomScrollableMenu")
 
-	if options then
+	--Any options provided? Update the options for the context menu now
+	-->Do not pass in if nil als else existing options will be overwritten with defaults again.
+	---> For that explicitly call SetCustomScrollableMenuOptions
+	if options ~= nil then
 		setCustomScrollableMenuOptions(options)
 	end
 	
@@ -2840,6 +2934,84 @@ function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	controlToAnchorTo = controlToAnchorTo or moc()
 	g_contextMenu:ShowContextMenu(controlToAnchorTo)
 	return true
+end
+
+
+--Run a callback function myAddonCallbackFunc passing in the entries of the opening menu/submneu of a clicked LSM context menu item
+-->Parameters of your function myAddonCallbackFunc must be:
+-->function myAddonCallbackFunc(userdata LSM_comboBox, userdata selectedContextMenuItem, table openingMenusEntries, ...)
+-->... can be any additional params that your function needs, and must be passed in to the ... of calling API function RunCustomScrollableMenuCallback too!
+--->e.g. use this function in your LSM contextMenu entry's callback function, to call a function of your addon to update your SavedVariables
+-->based on the currently selected checkboxEntries of the opening LSM dropdown:
+--[[
+	AddCustomScrollableMenuEntry("Context menu Normal entry 1", function(comboBox, itemName, item, selectionChanged, oldItem)
+		d('Context menu Normal entry 1')
+
+
+		local function myAddonCallbackFunc(LSM_comboBox, selectedContextMenuItem, openingMenusEntries, customParam1, customParam2)
+				--Loop at openingMenusEntries, get it's .dataSource, and if it's a checked checkbox then update SavedVariables of your addon accordingly
+				--or do oher things
+				--> Attention: Updating the entries in openingMenusEntries won't work as it's a copy of the data as the contextMenu was shown, and no reference!
+				--> Updating the data directly would make the menus break, and sometimes the data would be even gone due to your mouse moving above any other entry
+				--> wile the callbackFunc here runs
+		end
+		--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
+		RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFunc, true, "customParam1", "customParam2")
+	end)
+]]
+--If boolean/function returning a boolean parameter onlyCheckboxes is true, the determined entries of the opening menu/submenu will be filtered
+--to only pass in the entries where the enryType == LSM_ENTRY_TYPE_CHECKBOX to myAddonCallbackFunc
+function RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFunc, onlyCheckboxes, ...)
+	local addonCallbackFuncType = type(myAddonCallbackFunc)
+	assert(addonCallbackFuncType == "function", sfor('['..MAJOR..':RunCustomScrollableMenuCallback] myAddonCallbackFunc: function expected, got %q', tos(addonCallbackFuncType)))
+	local options = g_contextMenu:GetOptions()
+	local doFilterToCheckboxesOnly = getValueOrCallback(onlyCheckboxes, options)
+	doFilterToCheckboxesOnly = doFilterToCheckboxesOnly or false
+d("[LSM]RunCustomScrollableMenuCallback - onlyCheckboxes: " ..tos(doFilterToCheckboxesOnly))
+
+	--Find out via comboBox and item -> What was the "opening menu" and "how do I get openingMenu m_sortedItems"?
+	--comboBox would be the comboBox or dropdown of the context menu -> if RunCustomScrollableMenuCheckboxCallback was called from the callback of a contex menu entry
+	--item could have a control or something like that from where we can get the owner and then check if the owner got a openingControl or similar?
+
+	--[[
+	for row's, m_owner is the comboBox/menu the entry belongs to
+	for k, v in pars(m_sortedItems) do v.m_owner = self
+		oh. no, sort of. it gets added by the setup functions
+	]]
+
+	local sortedItems = getSortedItems(comboBox)
+	if ZO_IsTableEmpty(sortedItems) then return end
+
+	--Unlink the copied items so we can pass them to the addon's calling, without fearing they will change the actual's
+	--control data and invalidate any opend LSM menus
+	local itemsForCallbackFunc = ZO_ShallowTableCopy(sortedItems)
+
+	if doFilterToCheckboxesOnly == true then
+d(">filtering sortedItems to only checkbox entry type!")
+		local filteredTabOnlyCheckboxes = {}
+		for k, v in ipairs(itemsForCallbackFunc) do
+			if v.isCheckbox ~= nil and v.isCheckbox == true then
+				filteredTabOnlyCheckboxes[#filteredTabOnlyCheckboxes + 1] = v
+			end
+		end
+		itemsForCallbackFunc = filteredTabOnlyCheckboxes
+	else
+d(">returning all sortedItems")
+	end
+
+	LSM_Debug = LSM_Debug or {}
+	LSM_Debug.RunCustomScrollableMenuCheckboxCallback_Data = {
+		comboBox = 	comboBox,
+		item = 		item,
+		myAddonCallbackFunc = myAddonCallbackFunc,
+		customParams = {...},
+		openingControl = comboBox.openingControl,
+		sortedItems = sortedItems,
+		doFilterToCheckboxesOnly = doFilterToCheckboxesOnly,
+	}
+
+	local gotAnyCustomParams = (select(1, {...}) ~= nil and true) or false
+	myAddonCallbackFunc(comboBox, item, itemsForCallbackFunc, (gotAnyCustomParams and unpack({...})) or nil)
 end
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -2919,6 +3091,12 @@ WORKING ON - Current version: 2.1
 	TESTED: OPEN
 	-Added LibDebugLogger and function dLog for logging with and w/o LDL
 	TESTED: OPEN
+
+	--Changed all API functions for context menus to accept entries as function returning a table too
+	TESTED: OPEN
+
+	-Added API function RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFunc, onlyCheckboxes, ...)
+	TESTED: AT WORK
 
 
 -------------------
