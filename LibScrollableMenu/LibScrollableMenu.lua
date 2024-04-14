@@ -479,8 +479,12 @@ end
 
 --Recursivley map the entries of a submenu and add them to the mapTable
 --used for the callback "NewStatusUpdated" to provide the mapTable with the entries
-local function doMapEntries(entryTable, mapTable)
+local function doMapEntries(entryTable, mapTable, entryTableType)
 	dLog(LSM_LOGTYPE_VERBOSE, "doMapEntries")
+	if entryTableType == nil then
+		entryTable = getValueOrCallback(entryTable)
+	end
+
 	for _, entry in pairs(entryTable) do
 		if entry.entries then
 			doMapEntries(entry.entries, mapTable)
@@ -514,7 +518,7 @@ local function mapEntries(entryTable, mapTable, blank)
 	assert(entryTableType == 'table' and mapTableType == 'table' , sfor('['..MAJOR..':MapEntries] tables expected, got %q = %s, %q = %s', "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
 	
 	-- Splitting these up so the above is not done each iteration
-	doMapEntries(entryTableToMap, mapTable)
+	doMapEntries(entryTableToMap, mapTable, entryTableType)
 end
 lib.MapEntries = mapEntries
 
