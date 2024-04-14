@@ -421,12 +421,12 @@ local function recursiveOverEntries(entry, callback)
 	callback = callback or defaultRecursiveCallback
 	
 	local result = callback(entry)
-	local submenu = entry.entries or {}
+	local submenu = (entry.entries ~= nil and getValueOrCallback(entry.entries, entry)) or {}
 
 	--local submenuType = type(submenu)
 	--assert(submenuType == 'table', sfor('['..MAJOR..':recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
 	if  type(submenu) == "table" and #submenu > 0 then
-		for k, subEntry in pairs(submenu) do
+		for _, subEntry in pairs(submenu) do
 			local subEntryResult = recursiveOverEntries(subEntry, callback)
 			if subEntryResult then
 				result = subEntryResult
@@ -481,7 +481,7 @@ end
 --used for the callback "NewStatusUpdated" to provide the mapTable with the entries
 local function doMapEntries(entryTable, mapTable)
 	dLog(LSM_LOGTYPE_VERBOSE, "doMapEntries")
-	for k, entry in pairs(entryTable) do
+	for _, entry in pairs(entryTable) do
 		if entry.entries then
 			doMapEntries(entry.entries, mapTable)
 		end
@@ -497,6 +497,7 @@ end
 -- and you want to use them for comparing in the callbacks, NewStatusUpdated, CheckboxUpdated
 local function mapEntries(entryTable, mapTable, blank)
 	dLog(LSM_LOGTYPE_VERBOSE, "mapEntries")
+
 	if blank ~= nil then
 		entryTable = mapTable
 		mapTable = blank
@@ -504,10 +505,16 @@ local function mapEntries(entryTable, mapTable, blank)
 	end
 	
 	local entryTableType, mapTableType = type(entryTable), type(mapTable)
+	local entryTableToMap = entryTable
+	if entryTableType == "function" then
+		entryTableToMap = getValueOrCallback(entryTable)
+		entryTableType = type(entryTableToMap)
+	end
+
 	assert(entryTableType == 'table' and mapTableType == 'table' , sfor('['..MAJOR..':MapEntries] tables expected, got %q = %s, %q = %s', "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
 	
 	-- Splitting these up so the above is not done each iteration
-	doMapEntries(entryTable, mapTable)
+	doMapEntries(entryTableToMap, mapTable)
 end
 lib.MapEntries = mapEntries
 
@@ -2098,12 +2105,12 @@ end
 local comboBoxClass = comboBox_base:Subclass()
 
 -- comboBoxClass:New(To simplify locating the beginning of the class
-function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth)
+function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth, initExistingComboBox)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
 	comboBoxContainer.m_comboBox = self
 
 	--Reset to the default ZO_ComboBox variables
-	self:ResetToDefaults()
+	self:ResetToDefaults(initExistingComboBox)
 
 	-- Add all comboBox defaults not present.
 	self.m_name = comboBoxContainer:GetName()
@@ -2239,7 +2246,7 @@ function comboBoxClass:UpdateOptions(options, onInit)
 	--> Reset to default ZO_ComboBox variables and just call AddCustomEntryTemplates()
 	if (optionsChanged == true or onInit == true) and ZO_IsTableEmpty(options) then
 		optionsChanged = false
-		self:ResetToDefaults()
+		self:ResetToDefaults() -- Reset comboBox internal variables of ZO_ComboBox, e.g. m_font, and LSM defaults like visibleRowsDropdown
 
 	--Did the options change: Yes / OR Are the already stored options at the object nil or empty (should happen if self:UpdateOptions(options) was not called before): Yes
 	--> Use passed in options, or use the default ZO_ComboBox options added via self:ResetToDefaults() before
@@ -2279,12 +2286,18 @@ function comboBoxClass:UpdateOptions(options, onInit)
 end
 
 
-
-function comboBoxClass:ResetToDefaults()
+--Reset internal default values like m_font or LSM defaults liek visibleRowsDropdown
+-->If called from init function of API AddCustomScrollableComboBoxDropdownMenu: Keep existing ZO default (or changed by addons) entries of the ZO_ComboBox and only reset missing ones
+-->If called later from e.g. UpdateOptions function where options passed in are nil or empty: Reset all to LSM default values
+--->In all cases the function comboBoxClass:UpdateOptions should update the options needed!
+function comboBoxClass:ResetToDefaults(keepExisting)
 	dLog(LSM_LOGTYPE_DEBUG, "comboBoxClass:ResetToDefaults")
 	local defaults = ZO_DeepTableCopy(comboBoxDefaults)
-	mixinTableAndSkipExisting(self, defaults)
-
+	if keepExisting then
+		mixinTableAndSkipExisting(self, defaults) --keep existing ZO_ComboBox default (or addon changed) values -> e.g. add a LSM helper to an exisitng ZO_ComboBox via AddCustomScrollableComboBoxDropdownMenu
+	else
+		zo_mixin(self, defaults) -- overwrite existing ZO_ComboBox default values with LSM defaults
+	end
 	self.options = nil
 end
 
@@ -2600,7 +2613,7 @@ function comboBoxClass:UpdateMetatable(parent, comboBoxContainer, options)
 --d("[LSM]FireCallbacks - OnDropdownMenuAdded - current visibleRows: " ..tostring(options.visibleRowsDropdown))
 	lib:FireCallbacks('OnDropdownMenuAdded', self, options)
 	dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(self.m_container)), tos(options))
-	self:Initialize(parent, comboBoxContainer, options, 1)
+	self:Initialize(parent, comboBoxContainer, options, 1, true)
 end
 
 --------------------------------------------------------------------
