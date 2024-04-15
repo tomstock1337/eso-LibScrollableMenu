@@ -134,6 +134,14 @@ local LSM_ENTRY_TYPE_DIVIDER = 	LSM_ENTRY_TYPE_DIVIDER
 local LSM_ENTRY_TYPE_HEADER = 	LSM_ENTRY_TYPE_HEADER
 local LSM_ENTRY_TYPE_CHECKBOX = LSM_ENTRY_TYPE_CHECKBOX
 
+local libraryAllowedEntryTypes = {
+	[LSM_ENTRY_TYPE_NORMAL] = 	true,
+	[LSM_ENTRY_TYPE_DIVIDER] = 	true,
+	[LSM_ENTRY_TYPE_HEADER] = 	true,
+	[LSM_ENTRY_TYPE_CHECKBOX] =	true,
+}
+lib.allowedEntryTypes = libraryAllowedEntryTypes
+
 local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_NORMAL] = true,
 	[LSM_ENTRY_TYPE_DIVIDER] = true,
@@ -2732,17 +2740,20 @@ local function validateContextMenuSubmenuEntries(entries, options, calledByStr)
 	return entries
 end
 
-local function getSortedItems(comboBox)
+local function getComboBoxsSortedItems(comboBox, fromOpeningControl, onlyOpeningControl)
+	fromOpeningControl = fromOpeningControl or false
+	onlyOpeningControl = onlyOpeningControl or false
 	local sortedItems
-	local openingControl = comboBox.openingControl
-	if openingControl ~= nil then
-		sortedItems = openingControl.m_owner ~= nil and openingControl.m_owner.m_sortedItems
-	else
-		sortedItems = comboBox.m_sortedItems
+	if fromOpeningControl == true then
+		local openingControl = comboBox.openingControl
+		if openingControl ~= nil then
+			sortedItems = openingControl.m_owner ~= nil and openingControl.m_owner.m_sortedItems
+		end
+		if onlyOpeningControl then return sortedItems end
 	end
-	return sortedItems
+	return sortedItems or comboBox.m_sortedItems
 end
-lib.getSortedItems = getSortedItems
+lib.getComboBoxsSortedItems = getComboBoxsSortedItems
 
 
 --Adds a new entry to the context menu entries with the shown text, where the callback function is called once the entry is clicked.
@@ -2957,7 +2968,7 @@ end
 --Run a callback function myAddonCallbackFunc passing in the entries of the opening menu/submneu of a clicked LSM context menu item
 -->Parameters of your function myAddonCallbackFunc must be:
 -->function myAddonCallbackFunc(userdata LSM_comboBox, userdata selectedContextMenuItem, table openingMenusEntries, ...)
--->... can be any additional params that your function needs, and must be passed in to the ... of calling API function RunCustomScrollableMenuCallback too!
+-->... can be any additional params that your function needs, and must be passed in to the ... of calling API function RunCustomScrollableMenuItemsCallback too!
 --->e.g. use this function in your LSM contextMenu entry's callback function, to call a function of your addon to update your SavedVariables
 -->based on the currently selected checkboxEntries of the opening LSM dropdown:
 --[[
@@ -2973,47 +2984,70 @@ end
 				--> wile the callbackFunc here runs
 		end
 		--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
-		RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFunc, true, "customParam1", "customParam2")
+		RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, { LSM_ENTRY_TYPE_CHECKBOX }, true, "customParam1", "customParam2")
 	end)
 ]]
---If boolean/function returning a boolean parameter onlyCheckboxes is true, the determined entries of the opening menu/submenu will be filtered
---to only pass in the entries where the enryType == LSM_ENTRY_TYPE_CHECKBOX to myAddonCallbackFunc
-function RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFunc, onlyCheckboxes, ...)
+--If table/function returning a table parameter filterEntryTypes is not nil:
+--The table needs to have a number key and a LibScrollableMenu entryType constants e.g. LSM_ENTRY_TYPE_CHECKBOX as value. Only the provided entryTypes will be selected
+--from the m_sortedItems list of the parent dropdown! All others will be filtered out. Only the selected entries will be passed to the myAddonCallbackFunc's param openingMenusEntries.
+--If the param filterEntryTypes is nil: All entries will be selected and passed to the myAddonCallbackFunc's param openingMenusEntries.
+--
+--If the boolean/function returning a boolean parameter fromParentMenu is true: The menu items of the opening (parent) menu will be returned. If false: The currently shown menu's items will be returned
+function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
+	local assertFuncName = "RunCustomScrollableMenuItemsCallback"
 	local addonCallbackFuncType = type(myAddonCallbackFunc)
-	assert(addonCallbackFuncType == "function", sfor('['..MAJOR..':RunCustomScrollableMenuCallback] myAddonCallbackFunc: function expected, got %q', tos(addonCallbackFuncType)))
+	assert(addonCallbackFuncType == "function", sfor('['..MAJOR..':'..assertFuncName..'] myAddonCallbackFunc: function expected, got %q', tos(addonCallbackFuncType)))
+
 	local options = g_contextMenu:GetOptions()
-	local doFilterToCheckboxesOnly = getValueOrCallback(onlyCheckboxes, options)
-	doFilterToCheckboxesOnly = doFilterToCheckboxesOnly or false
-d("[LSM]RunCustomScrollableMenuCallback - onlyCheckboxes: " ..tos(doFilterToCheckboxesOnly))
+
+	local gotFilterEntryTypes = filterEntryTypes ~= nil and true or false
+	local filterEntryTypesTable = gotFilterEntryTypes and getValueOrCallback(filterEntryTypes, options)
+	local filterEntryTypesTableType = filterEntryTypesTable ~= nil and type(filterEntryTypesTable)
+	assert(gotFilterEntryTypes == true and filterEntryTypesTable == "table", sfor('['..MAJOR..':'..assertFuncName..'] filterEntryTypes: table or function returning a table expected, got %q', tos(addonCallbackFuncType)))
+
+	local fromParentMenuValue
+	if fromParentMenu == nil then
+		fromParentMenuValue = false
+	else
+		fromParentMenuValue = getValueOrCallback(fromParentMenu, options)
+		assert(type(fromParentMenuValue) == "boolean", sfor('['..MAJOR..':'..assertFuncName..'] fromParentMenu: boolean expected, got %q', tos(type(fromParentMenu))))
+	end
+
+d("[LSM]"..assertFuncName.." - filterEntryTypes: " ..tos(gotFilterEntryTypes) .. ", type: " ..tos(filterEntryTypesTableType) ..", fromParentMenu: " ..tos(fromParentMenuValue))
 
 	--Find out via comboBox and item -> What was the "opening menu" and "how do I get openingMenu m_sortedItems"?
 	--comboBox would be the comboBox or dropdown of the context menu -> if RunCustomScrollableMenuCheckboxCallback was called from the callback of a contex menu entry
 	--item could have a control or something like that from where we can get the owner and then check if the owner got a openingControl or similar?
-
-	--[[
-	for row's, m_owner is the comboBox/menu the entry belongs to
-	for k, v in pars(m_sortedItems) do v.m_owner = self
-		oh. no, sort of. it gets added by the setup functions
-	]]
-
-	local sortedItems = getSortedItems(comboBox)
+	local sortedItems = getComboBoxsSortedItems(comboBox, fromParentMenu, false)
 	if ZO_IsTableEmpty(sortedItems) then return end
 
 	--Unlink the copied items so we can pass them to the addon's calling, without fearing they will change the actual's
 	--control data and invalidate any opend LSM menus
 	local itemsForCallbackFunc = ZO_ShallowTableCopy(sortedItems)
 
-	if doFilterToCheckboxesOnly == true then
-d(">filtering sortedItems to only checkbox entry type!")
-		local filteredTabOnlyCheckboxes = {}
-		for k, v in ipairs(itemsForCallbackFunc) do
-			if v.isCheckbox ~= nil and v.isCheckbox == true then
-				filteredTabOnlyCheckboxes[#filteredTabOnlyCheckboxes + 1] = v
+	--Any entryTypes to filter passed in?
+	if gotFilterEntryTypes == true and not ZO_IsTableEmpty(filterEntryTypesTable) then
+		local allowedEntryTypes = {}
+		--Build lookup table for allowed entry types
+		for _, entryTypeToFilter in ipairs(filterEntryTypesTable) do
+			--Is the entryType passed in a library's known and allowed one?
+			if libraryAllowedEntryTypes[entryTypeToFilter] then
+				allowedEntryTypes[entryTypeToFilter] = true
 			end
 		end
-		itemsForCallbackFunc = filteredTabOnlyCheckboxes
-	else
-d(">returning all sortedItems")
+
+		--Any entryType to filter left now ?
+		if not ZO_IsTableEmpty(allowedEntryTypes) then
+			local filteredTab = {}
+			--Check the determined items' entryType and only add the matching (non filtered) ones
+			for _, v in ipairs(itemsForCallbackFunc) do
+				local itemsEntryType = v.entryType
+					if itemsEntryType ~= nil and allowedEntryTypes[itemsEntryType] then
+						filteredTab[#filteredTab + 1] = v
+					end
+				end
+			itemsForCallbackFunc = filteredTab
+		end
 	end
 
 	LSM_Debug = LSM_Debug or {}
@@ -3024,7 +3058,8 @@ d(">returning all sortedItems")
 		customParams = {...},
 		openingControl = comboBox.openingControl,
 		sortedItems = sortedItems,
-		doFilterToCheckboxesOnly = doFilterToCheckboxesOnly,
+		filterEntryTypes = filterEntryTypes,
+		fromParentMenu = fromParentMenu,
 	}
 
 	local gotAnyCustomParams = (select(1, {...}) ~= nil and true) or false
@@ -3103,17 +3138,16 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	-data.tooltip and data.customTooltip function with show & hide
 	TESTED: OK
+	--Changed all API functions for context menus to accept entries as function returning a table too
+	TESTED: OK
 
+
+	-Added API function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
+	TESTED: OPEN
 	-Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
 	TESTED: OPEN
 	-Added LibDebugLogger and function dLog for logging with and w/o LDL
 	TESTED: OPEN
-
-	--Changed all API functions for context menus to accept entries as function returning a table too
-	TESTED: OK
-
-	-Added API function RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFunc, onlyCheckboxes, ...)
-	TESTED: Normal menu entry -> context menu OK / Submenu entry -> context menus: OK
 
 
 -------------------
