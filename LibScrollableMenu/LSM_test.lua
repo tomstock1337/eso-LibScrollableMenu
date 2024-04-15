@@ -164,7 +164,7 @@ local function test()
 
 					AddCustomScrollableSubMenuEntry("Submenu entry 1 (function)", subEntries) -- function() return subEntries end --todo: ERROR both do not remove the isNew onMouseEnter at a contextmenu
 
-					AddCustomScrollableMenuEntry("Custom menu Normal entry 1", function(comboBox, itemName, item, selectionChanged, oldItem)
+					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Parent, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Custom menu Normal entry 1')
 
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
@@ -199,7 +199,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
 
-					AddCustomScrollableMenuEntry("Custom menu 2 Normal entry 1 - Same menu", function(comboBox, itemName, item, selectionChanged, oldItem)
+					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Same, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Custom menu Normal entry 1')
 
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
@@ -433,7 +433,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 
 					AddCustomScrollableSubMenuEntry("Context menu entry1 opening a submenu", subEntries)
 
-					AddCustomScrollableMenuEntry("Context menu Normal entry 1", function(comboBox, itemName, item, selectionChanged, oldItem)
+					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Parent, Checkboxes)", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Context menu Normal entry 1')
 
 

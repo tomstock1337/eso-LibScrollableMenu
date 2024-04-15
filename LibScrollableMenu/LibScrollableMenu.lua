@@ -3003,7 +3003,7 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	local gotFilterEntryTypes = filterEntryTypes ~= nil and true or false
 	local filterEntryTypesTable = gotFilterEntryTypes and getValueOrCallback(filterEntryTypes, options)
 	local filterEntryTypesTableType = filterEntryTypesTable ~= nil and type(filterEntryTypesTable)
-	assert(gotFilterEntryTypes == true and filterEntryTypesTable == "table", sfor('['..MAJOR..':'..assertFuncName..'] filterEntryTypes: table or function returning a table expected, got %q', tos(addonCallbackFuncType)))
+	assert(gotFilterEntryTypes == true and filterEntryTypesTableType == "table", sfor('['..MAJOR..':'..assertFuncName..'] filterEntryTypes: table or function returning a table expected, got %q', tos(filterEntryTypesTableType)))
 
 	local fromParentMenuValue
 	if fromParentMenu == nil then
