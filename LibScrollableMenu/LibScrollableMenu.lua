@@ -3001,8 +3001,8 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	local options = g_contextMenu:GetOptions()
 
 	local gotFilterEntryTypes = filterEntryTypes ~= nil and true or false
-	local filterEntryTypesTable = gotFilterEntryTypes and getValueOrCallback(filterEntryTypes, options)
-	local filterEntryTypesTableType = filterEntryTypesTable ~= nil and type(filterEntryTypesTable)
+	local filterEntryTypesTable = (gotFilterEntryTypes == true and getValueOrCallback(filterEntryTypes, options)) or nil
+	local filterEntryTypesTableType = (filterEntryTypesTable ~= nil and type(filterEntryTypesTable)) or nil
 	assert(gotFilterEntryTypes == true and filterEntryTypesTableType == "table", sfor('['..MAJOR..':'..assertFuncName..'] filterEntryTypes: table or function returning a table expected, got %q', tos(filterEntryTypesTableType)))
 
 	local fromParentMenuValue
@@ -3013,7 +3013,7 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 		assert(type(fromParentMenuValue) == "boolean", sfor('['..MAJOR..':'..assertFuncName..'] fromParentMenu: boolean expected, got %q', tos(type(fromParentMenu))))
 	end
 
-d("[LSM]"..assertFuncName.." - filterEntryTypes: " ..tos(gotFilterEntryTypes) .. ", type: " ..tos(filterEntryTypesTableType) ..", fromParentMenu: " ..tos(fromParentMenuValue))
+--d("[LSM]"..assertFuncName.." - filterEntryTypes: " ..tos(gotFilterEntryTypes) .. ", type: " ..tos(filterEntryTypesTableType) ..", fromParentMenu: " ..tos(fromParentMenuValue))
 
 	--Find out via comboBox and item -> What was the "opening menu" and "how do I get openingMenu m_sortedItems"?
 	--comboBox would be the comboBox or dropdown of the context menu -> if RunCustomScrollableMenuCheckboxCallback was called from the callback of a contex menu entry

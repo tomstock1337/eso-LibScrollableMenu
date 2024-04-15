@@ -759,7 +759,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 
 
 		--DOES WORK
-		ZO_PlayerInventoryMenuBarButton1:SetHandler("OnMouseUp", function(ctrl, button, upInside)
+		ZO_PreHookHandler(ZO_PlayerInventoryMenuBarButton1, "OnMouseUp", function(ctrl, button, upInside)
 			d("[LSM]ZO_PlayerInventoryMenuBarButton1 - OnMouseUp")
 			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
 				ClearCustomScrollableMenu()
