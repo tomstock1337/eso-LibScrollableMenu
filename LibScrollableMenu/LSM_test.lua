@@ -146,13 +146,14 @@ local function test()
 				tooltip         = function() return "Submenu Entry Test 1:2" end,
 				isNew			= true,
 				--icons 			= nil,
-			}
+			},
+
 		}
 
 		--LibScrollableMenu - LSM entry - Submenu normal
 		local submenuEntries = {
 			{
-				
+
 				name            = "Submenu Entry Test 1 (contexMenu)",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 1")
@@ -189,7 +190,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				--icons 			= nil,
 			},
 			{
-				
+
 				name            = "Submenu Entry Test 2",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 2")
@@ -233,7 +234,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				--icons 			= nil,
 			},
 			{
-				
+
 				name            = "Submenu Entry Test 3",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 3")
@@ -250,7 +251,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				--icons 			= nil,
 			},
 			{
-				
+
 				name            = "Submenu Entry Test 4",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 4")
@@ -259,7 +260,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				--icons 			= nil,
 			},
 			{
-				
+
 				name            = "Submenu Entry Test 5",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 5")
@@ -274,7 +275,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				end,
 				entries         = {
 					{
-						
+
 						name            = "Normal entry 6 1:1",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:1")
@@ -283,7 +284,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 						--icons 			= nil,
 					},
 					{
-						
+
 						name            = "Submenu entry 6 1:2",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:2")
@@ -291,7 +292,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 						tooltip         = "Submenu entry 6 1:2",
 						entries         = {
 							{
-								
+
 								name            = "Submenu entry 6 2:1",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:1")
@@ -300,7 +301,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 								--icons 			= nil,
 							},
 							{
-								
+
 								name            = "Submenu entry 6 2:2",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:2")
@@ -308,7 +309,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 								tooltip         = "Submenu entry 6 2:2",
 								entries         = {
 									{
-										
+
 										name            = "Normal entry 6 2:1",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:1")
@@ -317,7 +318,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 										--icons 			= nil,
 									},
 									{
-										
+
 										name            = "Normal entry 6 2:2",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:2")
@@ -331,7 +332,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 						},
 					},
 					{
-						
+
 						name            = "Normal entry 6 1:2",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Normal entry 6 1:2")
@@ -344,7 +345,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				tooltip         = "Submenu entry 6"
 			},
 			{
-				
+
 				name            = "Submenu Entry Test 7",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 7")
@@ -353,7 +354,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				--icons 			= nil,
 			},
 			{
-				
+
 				name            = "Submenu Entry Test 8",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 8")
@@ -362,7 +363,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				--icons 			= nil,
 			},
 			{
-				
+
 				name            = "Submenu Entry Test 9",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 9")
@@ -371,7 +372,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				--icons 			= nil,
 			},
 			{
-				
+
 				name            = "Submenu Entry Test 10",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 10")
@@ -546,7 +547,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuCallback: WAS EXEC
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem) d("Submenu entry 6") end,
 				entries         = {
 					{
-						
+
 						name            = "Normal entry 6 1:1",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:1")
@@ -555,7 +556,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuCallback: WAS EXEC
 						--icons 			= nil,
 					},
 					{
-						
+
 						name            = "Submenu entry 6 1:1",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:2")
@@ -563,7 +564,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuCallback: WAS EXEC
 						tooltip         = "Submenu entry 6 1:2",
 						entries         = {
 							{
-								
+
 								name            = "Submenu entry 6 2:1",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:1")
@@ -572,7 +573,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuCallback: WAS EXEC
 								--icons 			= nil,
 							},
 							{
-								
+
 								name            = "Submenu entry 6 2:2",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:2")
@@ -580,7 +581,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuCallback: WAS EXEC
 								tooltip         = "Submenu entry 6 2:2",
 								entries         = {
 									{
-										
+
 										name            = "Normal entry 6 2:1",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:1")
@@ -589,7 +590,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuCallback: WAS EXEC
 										--icons 			= nil,
 									},
 									{
-										
+
 										name            = "Normal entry 6 2:2",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:2")
@@ -603,7 +604,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuCallback: WAS EXEC
 						},
 					},
 					{
-						
+
 						name            = "Normal entry 6 1:2",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Normal entry 6 1:2")

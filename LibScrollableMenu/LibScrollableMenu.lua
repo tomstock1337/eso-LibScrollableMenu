@@ -3110,10 +3110,10 @@ WORKING ON - Current version: 2.1
 	TESTED: OPEN
 
 	--Changed all API functions for context menus to accept entries as function returning a table too
-	TESTED: AT WORK: ERROR for context menu entries the isNew does not updated onMouseEnter!
+	TESTED: OK
 
 	-Added API function RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFunc, onlyCheckboxes, ...)
-	TESTED: AT WORK: Tested OK normal menu contetx menu / OPEN: Submenu context menus
+	TESTED: Normal menu entry -> context menu OK / Submenu entry -> context menus: OK
 
 
 -------------------
