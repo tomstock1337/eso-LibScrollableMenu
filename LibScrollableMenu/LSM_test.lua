@@ -191,9 +191,35 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 			},
 			{
 
-				name            = "Submenu Entry Test 2",
+				name            = "Submenu Entry Test 2 (contextMenu)",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 2")
+				end,
+				contextMenuCallback =   function(self)
+					d("contextMenuCallback")
+					ClearCustomScrollableMenu()
+
+					AddCustomScrollableMenuEntry("Custom menu 2 Normal entry 1 - Same menu", function(comboBox, itemName, item, selectionChanged, oldItem)
+						d('Custom menu Normal entry 1')
+
+						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
+							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
+d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+							for k, v in ipairs(entriesFound) do
+								local name = v.label or v.name
+								d(">[Same menu]name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
+							end
+
+						end
+
+						--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
+						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenu, nil, false)
+					end)
+
+					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
+
+					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
+					d("Submenu entry 1")
 				end,
 				isNew			= true,
 				--icons 			= nil,
