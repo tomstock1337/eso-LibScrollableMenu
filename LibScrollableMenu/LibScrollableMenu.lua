@@ -3050,18 +3050,6 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 		end
 	end
 
-	LSM_Debug = LSM_Debug or {}
-	LSM_Debug.RunCustomScrollableMenuCheckboxCallback_Data = {
-		comboBox = 	comboBox,
-		item = 		item,
-		myAddonCallbackFunc = myAddonCallbackFunc,
-		customParams = {...},
-		openingControl = comboBox.openingControl,
-		sortedItems = sortedItems,
-		filterEntryTypes = filterEntryTypes,
-		fromParentMenu = fromParentMenu,
-	}
-
 	local gotAnyCustomParams = (select(1, {...}) ~= nil and true) or false
 	myAddonCallbackFunc(comboBox, item, itemsForCallbackFunc, (gotAnyCustomParams and unpack({...})) or nil)
 end
@@ -3140,10 +3128,9 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	--Changed all API functions for context menus to accept entries as function returning a table too
 	TESTED: OK
-
-
 	-Added API function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
-	TESTED: OPEN
+	TESTED: OK
+
 	-Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
 	TESTED: OPEN
 	-Added LibDebugLogger and function dLog for logging with and w/o LDL
