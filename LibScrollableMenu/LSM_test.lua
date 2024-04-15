@@ -161,7 +161,7 @@ local function test()
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
 
-					AddCustomScrollableSubMenuEntry("Submenu entry 1 (function)", function() return subEntries end)
+					AddCustomScrollableSubMenuEntry("Submenu entry 1 (function)", subEntries) -- function() return subEntries end --todo: ERROR both do not remove the isNew onMouseEnter at a contextmenu
 
 					AddCustomScrollableMenuEntry("Custom menu Normal entry 1", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Custom menu Normal entry 1')
@@ -403,6 +403,8 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
 					--AddCustomScrollableSubMenuEntry("Context menu entry 1", subEntries)
+
+					AddCustomScrollableSubMenuEntry("Context menu entry1 opening a submenu", subEntries)
 
 					AddCustomScrollableMenuEntry("Context menu Normal entry 1", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Context menu Normal entry 1')

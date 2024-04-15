@@ -688,16 +688,16 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 
 	local hasSubmenu = getValueOrCallback(item.entries, item) ~= nil
 
-	local entryType = getValueOrCallback(item.entryType, item)
-			or ( (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) or (hasSubmenu and SUBMENU_ENTRY_ID) )
-			or ENTRY_ID
+	local entryType = ( (hasSubmenu and SUBMENU_ENTRY_ID) or getValueOrCallback(item.entryType, item) )
+					or ( (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) )
+					or ENTRY_ID
 
 	item.isHeader = isHeader
 	item.isDivider = isDivider
 	item.isCheckbox = isCheckbox
 	item.hasSubmenu = hasSubmenu
 
-	dLog(LSM_LOGTYPE_VERBOSE, "setItemEntryCustomTemplate - entryType: %s", tos(entryType))
+	dLog(LSM_LOGTYPE_VERBOSE, "setItemEntryCustomTemplate - name: %q, entryType: %s", tos(item.label or item.name), tos(entryType))
 
 	if entryType then
 		item.entryType = entryType
@@ -3110,10 +3110,10 @@ WORKING ON - Current version: 2.1
 	TESTED: OPEN
 
 	--Changed all API functions for context menus to accept entries as function returning a table too
-	TESTED: OK
+	TESTED: AT WORK: ERROR for context menu entries the isNew does not updated onMouseEnter!
 
 	-Added API function RunCustomScrollableMenuCallback(comboBox, item, myAddonCallbackFunc, onlyCheckboxes, ...)
-	TESTED: AT WORK
+	TESTED: AT WORK: Tested OK normal menu contetx menu / OPEN: Submenu context menus
 
 
 -------------------
