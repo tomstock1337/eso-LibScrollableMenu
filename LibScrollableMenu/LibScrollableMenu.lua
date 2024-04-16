@@ -3392,12 +3392,12 @@ local function addZO_Menu_ShowMenuHook()
 		end
 
 		--LibCustomMenu.AddMenuItem(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
-		SecurePostHook(LibCustomMenu.AddMenuItem, function(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
+		SecurePostHook(LibCustomMenu, "AddMenuItem", function(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
 			local isDivider = itemType ~= MENU_ADD_OPTION_HEADER and mytext == lib.DIVIDER
 			storeLCMEntryDataToLSM(ZO_Menu.currentIndex, mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled, nil, isDivider)
 		end)
 		--LibCustomMenu.AddSubMenuItem(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, entries, isDivider)
-		SecurePostHook(LibCustomMenu.AddSubMenuItem, function(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, entries, isDivider)
+		SecurePostHook(LibCustomMenu, "AddSubMenuItem", function(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, entries, isDivider)
 			storeLCMEntryDataToLSM(ZO_Menu.currentIndex, mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, nil, nil, nil, nil, nil, entries, isDivider)
 		end)
 
