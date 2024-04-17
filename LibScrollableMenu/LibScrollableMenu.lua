@@ -623,6 +623,7 @@ local function getControlData(control)
 	return data
 end
 
+
 --Check if an entry got the isNew set
 local function getIsNew(_entry)
 	dLog(LSM_LOGTYPE_VERBOSE, "getIsNew")
@@ -2163,16 +2164,18 @@ function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
 		local moc_dropdownObject = mocCtrl.m_dropdownObject -- or mocCtrl.m_comboBox and mocCtrl.m_comboBox.m_dropdownObject
 		if not moc_dropdownObject then
 			dLog(LSM_LOGTYPE_VERBOSE, ">no moc() dropdownObject")
-			-- Right-click will close if not over dropdown
-			self:HideDropdown()
-			
+
 			-- Without this, right-clicking outside will close dropdown but not context menu
 			if g_contextMenu:IsDropdownVisible() then
 				g_contextMenu:HideDropdown()
+			else
+				-- Right-click will close if not over dropdown
+				self:HideDropdown()
 			end
 		end
 	end
 end
+
 
 -- [New functions]
 function comboBoxClass:GetMaxRows()
@@ -2855,7 +2858,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 			additionalData.labelFunc
 			additionalData.nameFunc
 		]]
-		--mixinTableAndSkipExisting(newEntry, additionalData)
+		mixinTableAndSkipExisting(newEntry, additionalData)
 	end
 
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuEntry - text: %s, callback: %s, entryType: %s, entries: %s", tos(text), tos(callback), tos(entryType), tos(entries))
@@ -3184,7 +3187,7 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 			--Normal entry?
 			local entryData = ZO_MenuItemData.entryData
 			--Is this an entry opening a submenu?
-			local submenuData = ZO_MenuItemData.subMenuData
+			local submenuData = ZO_MenuItemData.submenuData
 			local submenuItems = submenuData ~= nil and submenuData.entries
 
 			-->LCM Submenu
@@ -3356,6 +3359,8 @@ local function addZO_Menu_ShowMenuHook()
 
 		--Store LibCustomMenu data at the ZO_Menu entry so the function mapZO_MenuItemToLSMEntry can read it again at ShowMenu hook
 		local function storeLCMEntryDataToLSM(index, mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled, entries, isDivider)
+d("[LSM]storeLCMEntryDataToLSM-index: " ..tos(index) .."; mytext: " ..tos(mytext) .. "; entries: " .. tos(entries))
+
 			if index == nil or mytext == nil then return end
 
 			local lastAddedZO_MenuItem = ZO_Menu.items[index]
@@ -3423,6 +3428,8 @@ local function addZO_Menu_ShowMenuHook()
 		end
 
 		if not isAnyCustomScrollableInventoryContextMenuRegistered() then return false end
+		--Clear any currently opened LSM context menu
+		clearCustomScrollableMenu()
 
 		--Check ZO_Menu items and get tehm, then map them to LSM -> And hide the original ZO_Menu
 		-->Afterwards show LSM context menu instead
@@ -3561,6 +3568,13 @@ local function onAddonLoaded(event, name)
 	--Create the local context menu object for the library's context menu API functions
 	g_contextMenu = contextMenuClass:New(comboBoxContainer)
 	lib.contextMenu = g_contextMenu
+
+	--Register a scene manager callback for the SetInUIMode function so any menu opened/closed closes the context menus of LSM too
+	SecurePostHook(SCENE_MANAGER, 'SetInUIMode', function(self, inUIMode, bypassHideSceneConfirmationReason)
+		if not inUIMode then
+			ClearCustomScrollableMenu()
+		end
+	end)
 
 	SLASH_COMMANDS["/lsmdebug"] = function()
 		loadLogger()
