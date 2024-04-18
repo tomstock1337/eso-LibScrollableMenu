@@ -1320,10 +1320,10 @@ function dropdownClass:AnchorToControl(parentControl)
 
 	--Check for context menu and submenu, and do narration
 	updateIsContextMenuAndIsSubmenu(self)
-	dLog(LSM_LOGTYPE_DEBUG, "dropdownClass:AnchorToControl - isContextMenu: %s, isSubmenu: %s", tos(self.isContextMenu), tos(self.isSubmenu))
 	if not self.isContextMenu and self.isSubmenu == true then
 		local anchorPoint = (right == true and TOPRIGHT) or TOPLEFT
 		self:Narrate("OnSubMenuShow", parentControl, nil, nil, anchorPoint)
+		dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnSubMenuShow - control: %s, anchorPoint: %s", tos(getControlName(parentControl)), tos(anchorPoint))
 		lib:FireCallbacks('OnSubMenuShow', parentControl, anchorPoint)
 	end
 end
