@@ -307,28 +307,27 @@ local function dLog(debugType, text, ...)
 
 	debugType = debugType or LSM_LOGTYPE_DEBUG
 
-	local unpackParams = false
 	local debugText = text
-	if select(1, {...}) ~= nil then
-		debugText = string.format(text, unpack(...))
+	if ... ~= nil and select(1, {...}) ~= nil then
+		debugText = string.format(text, ...)
 	end
 	if debugText == nil or debugText == "" then return end
 
 	--LibDebugLogger
 	if LDL then
 		if debugType == LSM_LOGTYPE_DEBUG then
-			LDL:Debug(debugText)
+			logger:Debug(debugText)
 
 		elseif debugType == LSM_LOGTYPE_VERBOSE then
 			if logger.verbose and logger.verbose.isEnabled == true then
-				LDL:Verbose(debugText)
+				logger:Verbose(debugText)
 			end
 
 		elseif debugType == LSM_LOGTYPE_INFO then
-			LDL:Info(debugText)
+			logger:Info(debugText)
 
 		elseif debugType == LSM_LOGTYPE_ERROR then
-			LDL:Error(debugText)
+			logger:Error(debugText)
 		end
 
 		--Normal debugging
@@ -2406,7 +2405,7 @@ function submenuClass:Initialize(parent, comboBoxContainer, options, depth)
 end
 
 function submenuClass:UpdateOptions(options, onInit)
-	dLog(LSM_LOGTYPE_DEBUG, "submenuClass:UpdateOptions . options: %s, onInit: %s, optionsChanged: %s", tos(options), tos(onInit))
+	dLog(LSM_LOGTYPE_DEBUG, "submenuClass:UpdateOptions - options: %s, onInit: %s", tos(options), tos(onInit))
 	self:AddCustomEntryTemplates(self.options)
 end
 
@@ -2861,9 +2860,6 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 		mixinTableAndSkipExisting(newEntry, additionalData)
 	end
 
-	d(string.format("AddCustomScrollableMenuEntry - text: %s, callback: %s, entryType: %s, entries: %s", tos(text), tos(callback), tos(entryType), tos(entries)))
-
-
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuEntry - text: %s, callback: %s, entryType: %s, entries: %s", tos(text), tos(callback), tos(entryType), tos(entries))
 
 	--Add the line of the context menu to the internal tables. Will be read as the ZO_ComboBox's dropdown opens and calls
@@ -3144,12 +3140,12 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	-Added API function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
 	TESTED: OK
+	-Fixed an issue where dropdowns could display a scroll bar when not necessary
+	TESTED: OK
 
 	-Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
 	TESTED: OPEN
 	-Added LibDebugLogger and function dLog for logging with and w/o LDL
-	TESTED: OPEN
-	-Fixed an issue where dropdowns could display a scroll bar when not necessary
 	TESTED: OPEN
 
 
