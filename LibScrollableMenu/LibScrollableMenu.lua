@@ -397,7 +397,7 @@ end
 
 local function updateIsContextMenuAndIsSubmenu(selfVar)
 	dLog(LSM_LOGTYPE_VERBOSE, "updateIsContextMenuAndIsSubmenu")
-	selfVar.isContextMenu = g_contextMenu and g_contextMenu.m_container == selfVar.m_container
+	selfVar.isContextMenu = g_contextMenu ~= nil and g_contextMenu.m_container == selfVar.m_container
 	selfVar.isSubmenu = selfVar.m_parentMenu ~= nil
 end
 
@@ -1320,6 +1320,7 @@ function dropdownClass:AnchorToControl(parentControl)
 
 	--Check for context menu and submenu, and do narration
 	updateIsContextMenuAndIsSubmenu(self)
+	dLog(LSM_LOGTYPE_DEBUG, "dropdownClass:AnchorToControl - isContextMenu: %s, isSubmenu: %s", tos(self.isContextMenu), tos(self.isSubmenu))
 	if not self.isContextMenu and self.isSubmenu == true then
 		local anchorPoint = (right == true and TOPRIGHT) or TOPLEFT
 		self:Narrate("OnSubMenuShow", parentControl, nil, nil, anchorPoint)
@@ -1894,9 +1895,9 @@ function comboBox_base:HideDropdown()
 	--d(">narrate OnMenuHide-isContextMenu: " ..tos(self.isContextMenu) .. ", isSubmenu: " .. tos(self.isSubmenu))
 			if not self.isContextMenu and not self.isSubmenu then
 				local containerCtrl = self.m_container
-				--		self:Narrate("OnMenuHide", containerCtrl)
-				lib:FireCallbacks('OnMenuHide', containerCtrl)
-				dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnMenuHide - control: " ..tos(getControlName(containerCtrl)))
+				self:Narrate("OnMenuHide", containerCtrl)
+				--lib:FireCallbacks('OnMenuHide', containerCtrl)
+				--dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnMenuHide - control: " ..tos(getControlName(containerCtrl)))
 			end
 		end
 	end
@@ -2150,6 +2151,12 @@ end
 function comboBoxClass:HideDropdownInternal()
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:HideDropdownInternal")
 	zo_comboBox_hideDropdownInternal(self)
+
+	if not self.isContextMenu then
+		self:Narrate("OnMenuHide", control)
+		lib:FireCallbacks('OnMenuHide', self.m_container)
+		dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnMenuHide - control: " ..tos(getControlName(self.m_container)))
+	end
 	hideTooltip()
 end
 
@@ -2460,7 +2467,6 @@ function submenuClass:ShowDropdownInternal()
 end
 
 function submenuClass:HideDropdownInternal()
-	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:HideDropdownInternal")
 	-- m_container for a fallback
 	local control = self.m_container
 	if self.m_dropdownObject then
@@ -2469,8 +2475,10 @@ function submenuClass:HideDropdownInternal()
 	end
 	
 	updateIsContextMenuAndIsSubmenu(self)
+	dLog(LSM_LOGTYPE_DEBUG, "submenuClass:HideDropdownInternal-isContextMenu: " .. tos(self.isContextMenu))
+
 	if not self.isContextMenu then
-	--	self:Narrate("OnSubMenuHide", control)
+		self:Narrate("OnSubMenuHide", control)
 		lib:FireCallbacks('OnSubMenuHide', control)
 		dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnSubMenuHide - control: " ..tos(getControlName(control)))
 	end
