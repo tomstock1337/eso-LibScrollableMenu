@@ -10,7 +10,7 @@
 ## IsLibrary: true
 ## Author: IsJustaGhost, Baertram, tomstock (, Kyoma)
 ## APIVersion: 101041 101042
-## OptionalDependsOn: LibDebugLogger>=263 LibCustomMenu>=722
+## OptionalDependsOn: LibDebugLogger>=263
 
 LibScrollableMenu.lua
 LibScrollableMenu.xml
