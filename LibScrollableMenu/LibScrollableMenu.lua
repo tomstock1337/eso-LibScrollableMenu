@@ -57,6 +57,14 @@ local LSM_LOGTYPE_VERBOSE = 2
 local LSM_LOGTYPE_DEBUG_CALLBACK = 3
 local LSM_LOGTYPE_INFO = 10
 local LSM_LOGTYPE_ERROR = 99
+local loggerTypeToName = {
+	[LSM_LOGTYPE_DEBUG] = " -DEBUG- ",
+	[LSM_LOGTYPE_VERBOSE] = " -VERBOSE- ",
+	[LSM_LOGTYPE_DEBUG_CALLBACK] = "-CALLBACK- ",
+	[LSM_LOGTYPE_INFO] = " -INFO- ",
+	[LSM_LOGTYPE_ERROR] = " -ERROR- ",
+}
+
 
 ------------------------------------------------------------------------------------------------------------------------
 --Menu settings (main and submenu)
@@ -340,7 +348,11 @@ local function dLog(debugType, text, ...)
 
 		--Normal debugging
 	else
-		d(debugPrefix .. debugText)
+		--No verbose debuglos in normal chat!
+		if debugType ~= LSM_LOGTYPE_VERBOSE then
+			local debugTypePrefix = loggerTypeToName[debugType] or ""
+			d(debugPrefix .. debugTypePrefix .. debugText)
+		end
 	end
 end
 
