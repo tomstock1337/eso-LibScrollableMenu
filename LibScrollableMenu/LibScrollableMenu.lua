@@ -3171,10 +3171,11 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	-Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
 	TESTED: OK
-
 	-Added LibDebugLogger and function dLog for logging with and w/o LDL
 	TESTED: OPEN
 
+	--Callbacks for OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
+	TESTED: OPEN
 
 -------------------
 TODO - To check (future versions)
