@@ -54,6 +54,7 @@ local logger
 local debugPrefix = "[" .. MAJOR .. "]"
 local LSM_LOGTYPE_DEBUG = 1
 local LSM_LOGTYPE_VERBOSE = 2
+local LSM_LOGTYPE_DEBUG_CALLBACK = 3
 local LSM_LOGTYPE_INFO = 10
 local LSM_LOGTYPE_ERROR = 99
 
@@ -295,11 +296,15 @@ local function loadLogger()
         logger:Debug("Library loaded")
         logger.verbose = logger:Create("Verbose")
         logger.verbose:SetEnabled(false)
+
+        logger.callbacksFired = logger:Create("Callbacks")
+
         lib.logger = logger
     end
 end
 --Early try to load libs and to create logger (done again in EVENT_ADD_ON_LOADED)
 loadLogger()
+
 
 --Debug log function
 local function dLog(debugType, text, ...)
@@ -315,7 +320,10 @@ local function dLog(debugType, text, ...)
 
 	--LibDebugLogger
 	if LDL then
-		if debugType == LSM_LOGTYPE_DEBUG then
+		if debugType == LSM_LOGTYPE_DEBUG_CALLBACK then
+			logger.callbacksFired:Debug(debugText)
+
+		elseif debugType == LSM_LOGTYPE_DEBUG then
 			logger:Debug(debugText)
 
 		elseif debugType == LSM_LOGTYPE_VERBOSE then
@@ -335,7 +343,6 @@ local function dLog(debugType, text, ...)
 		d(debugPrefix .. debugText)
 	end
 end
-
 
 --------------------------------------------------------------------
 -- XML template functions
@@ -674,7 +681,7 @@ local function clearNewStatus(control, data)
 			data.isNew = false
 			
 			lib:FireCallbacks('NewStatusUpdated', data, control)
-			dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: NewStatusUpdated - control: " ..tos(getControlName(control)))
+			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: NewStatusUpdated - control: " ..tos(getControlName(control)))
 
 			control.m_dropdownObject:Refresh(data)
 			
@@ -1068,7 +1075,7 @@ local function onMouseEnter(control, data, hasSubmenu)
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseEnter', data, control)
-	dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: EntryOnMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
+	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 
 	return dropdown
 end
@@ -1079,7 +1086,7 @@ local function onMouseExit(control, data, hasSubmenu)
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseExit', data, control)
-	dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: EntryOnMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
+	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 
 	return dropdown
 end
@@ -1091,7 +1098,7 @@ local function onMouseUp(control, data, hasSubmenu, button, upInside)
 	if upInside and button == MOUSE_BUTTON_INDEX_LEFT then
 		dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
 		lib:FireCallbacks('EntryOnSelected', data, control)
-		dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
+		dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
 	end
 
 	return dropdown
@@ -1323,7 +1330,7 @@ function dropdownClass:AnchorToControl(parentControl)
 	if not self.isContextMenu and self.isSubmenu == true then
 		local anchorPoint = (right == true and TOPRIGHT) or TOPLEFT
 		self:Narrate("OnSubMenuShow", parentControl, nil, nil, anchorPoint)
-		dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnSubMenuShow - control: %s, anchorPoint: %s", tos(getControlName(parentControl)), tos(anchorPoint))
+		dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnSubMenuShow - control: %s, anchorPoint: %s", tos(getControlName(parentControl)), tos(anchorPoint))
 		lib:FireCallbacks('OnSubMenuShow', parentControl, anchorPoint)
 	end
 end
@@ -1640,7 +1647,7 @@ function dropdownClass:OnShown()
 		local control = self.control
 		self:Narrate("OnMenuShow", control)
 		lib:FireCallbacks('OnMenuShow', control)
-		dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnMenuShow - control: " ..tos(getControlName(control)))
+		dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnMenuShow - control: " ..tos(getControlName(control)))
 	end
 end
 
@@ -1897,7 +1904,7 @@ function comboBox_base:HideDropdown()
 				local containerCtrl = self.m_container
 				self:Narrate("OnMenuHide", containerCtrl)
 				--lib:FireCallbacks('OnMenuHide', containerCtrl)
-				--dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnMenuHide - control: " ..tos(getControlName(containerCtrl)))
+				--dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnMenuHide - control: " ..tos(getControlName(containerCtrl)))
 			end
 		end
 	end
@@ -2086,7 +2093,7 @@ do -- Row setup functions
 			
 			self:Narrate("OnCheckboxUpdated", checkbox, checkedData, nil)
 			lib:FireCallbacks('CheckboxUpdated', checked, checkedData, checkbox)
-			dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: CheckboxUpdated - control: " ..tos(getControlName(checkbox)))
+			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: CheckboxUpdated - control: " ..tos(getControlName(checkbox)))
 		end
 		
 		self:SetupEntryLabel(control, data, list)
@@ -2155,7 +2162,7 @@ function comboBoxClass:HideDropdownInternal()
 	if not self.isContextMenu then
 		self:Narrate("OnMenuHide", control)
 		lib:FireCallbacks('OnMenuHide', self.m_container)
-		dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnMenuHide - control: " ..tos(getControlName(self.m_container)))
+		dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnMenuHide - control: " ..tos(getControlName(self.m_container)))
 	end
 	hideTooltip()
 end
@@ -2480,7 +2487,7 @@ function submenuClass:HideDropdownInternal()
 	if not self.isContextMenu then
 		self:Narrate("OnSubMenuHide", control)
 		lib:FireCallbacks('OnSubMenuHide', control)
-		dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnSubMenuHide - control: " ..tos(getControlName(control)))
+		dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnSubMenuHide - control: " ..tos(getControlName(control)))
 	end
 
 --d(">m_dropdownObject:IsOwnedByComboBox: " ..tos(self.m_dropdownObject:IsOwnedByComboBox(self)))
@@ -2635,7 +2642,7 @@ function comboBoxClass:UpdateMetatable(parent, comboBoxContainer, options)
 
 --d("[LSM]FireCallbacks - OnDropdownMenuAdded - current visibleRows: " ..tostring(options.visibleRowsDropdown))
 	lib:FireCallbacks('OnDropdownMenuAdded', self, options)
-	dLog(LSM_LOGTYPE_DEBUG, "FireCallbacks: OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(self.m_container)), tos(options))
+	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(self.m_container)), tos(options))
 	self:Initialize(parent, comboBoxContainer, options, 1, true)
 end
 
@@ -3150,9 +3157,9 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	-Fixed an issue where dropdowns could display a scroll bar when not necessary
 	TESTED: OK
-
 	-Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
-	TESTED: OPEN
+	TESTED: OK
+
 	-Added LibDebugLogger and function dLog for logging with and w/o LDL
 	TESTED: OPEN
 
