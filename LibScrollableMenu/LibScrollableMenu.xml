@@ -2,6 +2,7 @@
 	<Controls>
 		<Control name="LibScrollableMenu_Entry_Behavior" mouseEnabled="true" virtual="true">
 			<OnMouseEnter>
+			d( 'OnMouseEnter')
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnMouseEnterEntry(self)
@@ -9,6 +10,7 @@
 			</OnMouseEnter>
 			
 			<OnMouseExit>
+			d( 'OnMouseExit')
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnMouseExitEntry(self)
@@ -57,7 +59,7 @@
 
 		<!-- Row templates -->
 		<!-- Divider | no icon no handlers -->
-		<Control name="LibScrollableMenu_ComboBoxDividerEntry" inherits="LibScrollableMenu_Entry_Behavior" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxDividerEntry" virtual="true">
 			<Dimensions y="6" />
 			<Controls>
 				<Texture name="$(parent)Divider" hidden="false" inherits="ZO_BaseTooltipDivider">
@@ -81,7 +83,7 @@
 				</Label>
 				<!-- ZoFontWinH5 inherits="ZO_HorizontalDivider" inherits="ZO_WideHorizontalDivider" offsetY="4" -->
 				<Texture name="$(parent)Divider" inherits="ZO_Options_Divider">
-					<Anchor point="BOTTOMLEFT" offsetX="0" offsetY="-5"/>
+					<Anchor point="BOTTOMLEFT" offsetX="5" offsetY="-5"/>
 					<Anchor point="BOTTOMRIGHT" offsetX="0" offsetY="0" />
 				</Texture>
 			</Controls>
@@ -92,7 +94,7 @@
 			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
 			<OnInitialized>
 				<!-- Is this still needed? -->
-				self.selectible = true <!-- Denotes this is a selectible entry.   -->
+				self.selectable = true <!-- Denotes this can highlight if entry has a callback.   -->
 			</OnInitialized>
 
 			<Controls>
@@ -109,7 +111,6 @@
 
 			<OnInitialized>
 				self.Checkbox = self:GetNamedChild('Checkbox')
-				self.selectible = true <!-- Denotes this is a selectible entry.   -->
 			</OnInitialized>
 			
 			<Controls>
@@ -134,6 +135,10 @@
 		<!-- Submenu -->
 		<Control name="LibScrollableMenu_ComboBoxSubmenuEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
 			<Controls>
+				<Texture name="$(parent)OpenedHighlight" textureFile="esoui/art/contacts/social_list_bgstrip_highlight.dds" alpha="0">
+					<AnchorFill />
+                    <TextureCoords left="1" right="0" top="0" bottom="0" />
+				</Texture>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 					<Anchor point="RIGHT" offsetX="-25" />
@@ -149,57 +154,270 @@
 		<!-- The genuine Dropdown control. The scroll list container.
 			TLC so it can be forced above other dropdowns without having to consider layering
 			Since some UI panels have layering set, we set it as overlay high, so it will be above those
+			We give Scroll an offsetX to allow detection of on enter/exit. Otherwise, that detection is only done per rows
 		-->
-		<TopLevelControl name="LibScrollableMenu_Keyboard_Template" inherits="ZO_ComboBoxDropdown_Keyboard_Template" virtual="true">
-			<!--Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" /-->
-			<!-- Width will be set programmatically -->
-			<OnInitialized>
-			</OnInitialized>
-			
+		<!-- The template used for initializing all dropdowns -->
+		<TopLevelControl name="LibScrollableMenu_Dropdown_Behavior" virtual="true">
 			<OnEffectivelyShown name="BringToTop">
 				self:BringWindowToTop()
 			</OnEffectivelyShown>
 
-			<OnEffectivelyHidden name="BaseClose" >
+			<OnEffectivelyHidden name="HideDropdown" >
+				-- Handler set normally in ZO_ComboBox:Initialize
 				if self.object then
 					self.object:HideDropdown()
 				end
 			</OnEffectivelyHidden>
 	
 			<OnMouseEnter name="CloseCheck">
+				-- Do we need to close any submenus on dropdown enter?
 				if self.object then
 					self.object:OnMouseExitTimeout(self)
 				end
 			</OnMouseEnter>
-\
+			
 			<OnShow name="Narrate">
 				if self.object then
-					self.object:Narrate(self.object:GetFormattedDropdownNarrationEvent('Show'), self, nil, self.object.GetOffsetX(self))
+					self.object:OnShow(self.object:GetFormattedNarrateEvent('Show'))
 				end
 			</OnShow>
-	
+			
 			<OnHide name="Narrate">
 				if self.object then
-					self.object:Narrate(self.object:GetFormattedDropdownNarrationEvent('Hide'), self)
+					self.object:OnHide(self.object:GetFormattedNarrateEvent('Hide'))
 				end
 			</OnHide>
+			
+			<OnHide name="TEST">
+				if self.object then
+					-- Only effect the original comboBox
+					local comboBox = self.object.owner
+					if comboBox and self.object.m_comboBox == comboBox then
+						d( 'LibScrollableMenu_Dropdown_Template OnHide name="TEST" adjust settings for enableFilter and sort')
+						
+					--	comboBox.enableFilter = not comboBox.enableFilter
+					--	comboBox:SetDropdownTextFilterTemplate()
+					
+						comboBox.options.enableFilter = not comboBox.options.enableFilter
+						
+						d( 'LibScrollableMenu_Dropdown_Template OnHide m_sortsItems ' .. tostring(comboBox.m_sortsItems))
+					--	comboBox:SetSortsItems(not comboBox.m_sortsItems)
+						
+					--	comboBox.sortByHeaders = not comboBox.m_sortsItems
+					--	comboBox.sortByHeaders = comboBox.m_sortsItems
+						
+					end
+				end
+			</OnHide>
+		</TopLevelControl>
+		
+		<TopLevelControl name="LibScrollableMenu_Dropdown_Template" inherits="ZO_ComboBoxDropdown_Keyboard_Template LibScrollableMenu_Dropdown_Behavior" virtual="true">
+			<OnInitialized>
+				-- Overwritten to prevent original OnInitialized
+			</OnInitialized>
+		</TopLevelControl>
+		
+		<TopLevelControl name="LibScrollableMenu_Dropdown_Template_WithHeader"inherits="LibScrollableMenu_Dropdown_Behavior" virtual="true">
+			<OnInitialized>
+			</OnInitialized>
+			<Controls>
+				<Control name="$(parent)Header" hidden="true">
+					<OnInitialized>
+						local headerControls = LibScrollableMenu.headerControls
+						local titleContainer = self:GetNamedChild("TitleContainer")
+						self.controls = {
+							[headerControls.PARENT] = self,
+							[headerControls.TITLE] = titleContainer:GetNamedChild("Title"),
+							[headerControls.SUBTITLE] = titleContainer:GetNamedChild("SubTitle"),
+							[headerControls.CENTER_BASELINE] = self:GetNamedChild("CenterAnchor"),
+							[headerControls.TITLE_BASELINE] = titleContainer,
+							[headerControls.DIVIDER_SIMPLE] = self:GetNamedChild("DividerSimple"),
+							[headerControls.FILTER_CONTAINER] = self:GetNamedChild("FilterContrainer"),
+							[headerControls.CUSTOM_CONTROL] = self:GetNamedChild("CustomControl"),
+						}
+						self:GetParent().header = self
+					</OnInitialized>
+					
+					<!-- These anchors set it to span from left to right -->
+					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />
+					<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
+
+					<Controls>
+						<!-- Provides an area that clearly shows the border of the header -->
+						<Backdrop name="$(parent)BG" inherits="ZO_DefaultBackdrop">
+							<AnchorFill />
+						</Backdrop>
+
+						<!-- Used to anchor the first control to the header -->
+						<Control name="$(parent)CenterAnchor" resizeToFitDescendents="true" hidden="true">
+							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />
+							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
+						</Control>
+						<Control name="$(parent)TitleContainer" inherits="ZO_GamepadHeaderTitleAnchors">
+							<Controls>
+								<!--Label name="$(parent)Title" inherits="ZO_GamepadScreenHeaderTitleTextTemplate" excludeFromResizeToFitExtents="true" -->
+								<Label name="$(parent)Title" excludeFromResizeToFitExtents="true" >
+									<Anchor point="BOTTOMLEFT" />
+									<Anchor point="BOTTOMRIGHT" />
+								</Label>
+								<!--Label name="$(parent)SubTitle" inherits="ZO_GamepadHeaderLabelTextTemplate" horizontalAlignment="CENTER" excludeFromResizeToFitExtents="true" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"-->
+								<Label name="$(parent)SubTitle" horizontalAlignment="CENTER" excludeFromResizeToFitExtents="true" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true">
+									<Anchor point="TOPLEFT" relativeTo="$(parent)Title" relativePoint="BOTTOMLEFT" offsetY="-10" />
+									<Anchor point="TOPRIGHT" relativeTo="$(parent)Title" relativePoint="BOTTOMRIGHT" offsetY="-10" />
+								</Label>
+							</Controls>
+						</Control>
+
+						<!--This control fakes the area of where a divider would go so that content header is at least as tall as a header would normally be
+							With a divider.  This ensures controls anchoring to the header begin where the Datas would be if there is no data -->
+						<Control name="$(parent)DividerSimple" inherits="LibScrollableMenu_ComboBoxDividerEntry">
+							<Dimensions y="0" />
+							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="BOTTOMLEFT" />
+							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetY="ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y" />
+						</Control>
+						
+						<Control name="$(parent)FilterContrainer" resizeToFitDescendents="false" hidden="true">
+							<Dimensions y="36" />
+							<Controls>
+								<Button name="$(parent)Reset" inherits="ZO_ButtonBehaviorClickSound">
+									<Dimensions x="32" y="32" />
+									<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="0" />
+							
+									<Textures
+										normal="EsoUI/Art/Help/help_tabIcon_feedback_up.dds"
+										pressed="EsoUI/Art/Help/help_tabIcon_feedback_down.dds"
+										mouseOver="EsoUI/Art/Help/help_tabIcon_feedback_over.dds"
+									/>
+
+									<OnMouseEnter>
+										InitializeTooltip(InformationTooltip, self, BOTTOM, 0, 0)
+										SetTooltipText(InformationTooltip, GetString(SI_HOOK_POINT_STORE_RESET))
+									--	InformationTooltip:AddVerticalPadding(10)
+										InformationTooltipTopLevel:BringWindowToTop()
+									</OnMouseEnter>
+
+									<OnMouseExit>
+										ClearTooltip(InformationTooltip)
+									</OnMouseExit>
+									
+									<OnClicked>
+										self:GetParent():GetNamedChild('FilterBox'):SetText('')
+									</OnClicked>
+								</Button>
+								
+								<Backdrop name="$(parent)Filter" hidden="false" tier="HIGH" inherits="ZO_SingleLineEditBackdrop_Keyboard">
+									<OnInitialized>
+										-- Add the filter contrls to the dropdown control.
+										local owningWindow = self:GetOwningWindow()
+										owningWindow.filter = self
+										owningWindow.filterBox = self:GetNamedChild('Box')
+										
+										owningWindow.filterBox.m_dropdownObject = owningWindow.object
+									</OnInitialized>
+					
+									<Anchor point="LEFT" relativeTo="$(parent)Reset" relativePoint="RIGHT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
+									<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="-25"/>
+									
+									<Controls>
+										<EditBox name="$(parent)Box" verticalAlignment="CENTER" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
+											<OnTextChanged>
+												local owningWindow = self:GetOwningWindow()
+												if owningWindow.object then
+													owningWindow.object:SetFilterString(self)
+												end
+											</OnTextChanged>
+										</EditBox>
+									</Controls>
+								</Backdrop>
+								
+								<!--Button name="$(parent)Include" inherits="ZO_DefaultTextButton" text="S">
+									<Dimensions x="32" y="32" />
+									<Anchor point="LEFT" relativeTo="$(parent)Filter" relativePoint="RIGHT" offsetX="-8" offsetY="0" />
+									
+									<OnInitialized>
+										self.uncheckedText = 'S'
+										self.checkedText = 'l'
+										
+										self.toggleFunction = function(button, checked)
+											local owningWindow = self:GetOwningWindow()
+											if owningWindow.object then
+												owningWindow.object:SetFilterIgnore(checked)
+											end
+										end
+										
+									</OnInitialized>
+									
+									<OnClicked>
+										ZO_CheckButton_OnClicked(self, button)
+										
+										-- Show updated tooltip on click
+										ClearTooltip(InformationTooltip)
+										InitializeTooltip(InformationTooltip, self, BOTTOM, 0, 0)
+										SetTooltipText(InformationTooltip, GetString('LIBSCROLLABLEMENU_SI_MATCHTOOLTIP', self:GetState()))
+										InformationTooltipTopLevel:BringWindowToTop()
+									</OnClicked>
+									
+									<OnEffectivelyShown>
+										local bState = self:GetState()
+										local checked = bState == BSTATE_PRESSED
+										-- get saved button state
+										ZO_CheckButton_SetCheckState(self, checked)
+									</OnEffectivelyShown>
+									
+									<OnMouseEnter>
+										InitializeTooltip(InformationTooltip, self, BOTTOM, 0, 0)
+										SetTooltipText(InformationTooltip, GetString('LIBSCROLLABLEMENU_SI_MATCHTOOLTIP', self:GetState()))
+										InformationTooltipTopLevel:BringWindowToTop()
+									</OnMouseEnter>
+
+									<OnMouseExit>
+										ClearTooltip(InformationTooltip)
+									</OnMouseExit>
+								</Button-->
+							</Controls>
+						</Control>
+						
+						<Control name="$(parent)CustomControl" resizeToFitDescendents="false" hidden="true">
+							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />
+							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
+						</Control>
+					</Controls>
+				</Control>
+				
+				<Control name="$(parent)Scroll" override="true">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)Header" relativePoint="BOTTOMLEFT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
+				</Control>
+			</Controls>
 		</TopLevelControl>
 		
 		<!-- ZO_ComboBox -->
 		<Control name="LibScrollableMenu_ComboBox_Behavior" virtual="true">
 			<OnMouseEnter name="Narrate">
 				if self.m_comboBox then
-					self.m_comboBox.m_dropdownObject:Narrate("OnComboBoxMouseEnter", self, nil, nil)
+					self.m_comboBox:Narrate("OnComboBoxMouseEnter", self, nil, nil, nil)
 				end
 			</OnMouseEnter>
 			
 			<OnMouseExit name="Narrate">
 				if self.m_comboBox then
-					self.m_comboBox.m_dropdownObject:Narrate("OnComboBoxMouseExit", self, nil, nil)
+					self.m_comboBox:Narrate("OnComboBoxMouseExit", self, nil, nil, nil)
 				end
 			</OnMouseExit>
+			
+			<OnMouseUp name="Narrate">
+			--	d( 'OnMouseUp name="Narrate"')
+			</OnMouseUp>
+
+			<Controls>
+				<Button name="$(parent)OpenDropdown" override="true">
+					<OnClicked name="Narrate">
+					--	d( 'OnClicked name="Narrate"')
+					</OnClicked>
+				</Button>
+			</Controls>
 		</Control>
-		
+
 		<!-- Scrollbar padding -->
 		<!-- used when scrollbar is hidden -->
 		<Control name="LibScrollableMenu_ScrollContents_BarHidden" virtual="true">
