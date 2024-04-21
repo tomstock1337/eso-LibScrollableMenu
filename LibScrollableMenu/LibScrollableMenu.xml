@@ -1,14 +1,11 @@
 <GuiXml>
 	<Controls>
 		<!-- LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback -->
-        <Backdrop name="LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback" virtual="true" blendMode="ADD">
+        <Backdrop name="LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00">
             <AnchorFill/>
             <Edge file="EsoUI/Art/Miscellaneous/highlightOverlay_edge_8.dds" edgeFileWidth="64" edgeFileHeight="8" />
             <Center file="EsoUI/Art/Miscellaneous/highlightOverlay_center.dds" />
-            <Insets left="20" top="8" right="-20" bottom="-8" />
-			<OnInitialized>
-                self:SetCenterColor(0, 0, 0.8, 0)
-            </OnInitialized>
+            <Insets left="8" top="8" right="-8" bottom="-8" />
         </Backdrop>
 
 
