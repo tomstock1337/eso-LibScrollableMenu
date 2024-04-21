@@ -3255,6 +3255,10 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	-Added disabledColor and normalColor to options
 	TESTED: OK
+	-Added item.enabled to processNameString and updateLabelsStrings, for if it is a function, it is updated the same as name and label.
+	TESTED: OK
+	-Added dynamic selectable item based on control.selectable and has callback
+	TESTED: OK
 
 
 	-Callbacks for OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
@@ -3262,11 +3266,7 @@ WORKING ON - Current version: 2.1
 	-Callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
 	TESTED: OPEN
 
-	-Added item.enabled to processNameString and updateLabelsStrings, for if it is a function, it is updated the same as name and label.
-	TESTED: OPEN
 
-	-Added dynamic selectable item based on control.selectable and has callback
-	TESTED: OPEN
 
 
 -------------------
