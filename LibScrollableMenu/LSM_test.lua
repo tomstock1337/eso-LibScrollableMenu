@@ -74,6 +74,7 @@ local function test()
 			narrate = narrateOptions,
 			disableFadeGradient = false,
 			headerColor = HEADER_TEXT_COLOR_RED,
+			disabledColor = ZO_WHITE,
 			--spacing = 12,
 			--[[ Define in XML:
 				<!-- Normal entry for Custom options.XMLRowTemplates test  -->

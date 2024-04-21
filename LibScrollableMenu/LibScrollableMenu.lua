@@ -219,25 +219,6 @@ local defaultComboBoxOptions  = {
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
 
---Possible options that can be passed in to the options table at the scrollable dropdownObject API functions.
---If any option name passed in does not match the table entries below, it will be silently ignored.
-local possibleLibraryOptions = {
-	--LSM only
-	["visibleRowsDropdown"] = true,
-	["visibleRowsSubmenu"] = true,
-	["narrate"] = true,
-	["XMLRowTemplates"] = true,
-
-	--LSM and ZO_ComboBox
-	["sortEntries"] = true,
-	["font"] = true,
-	["spacing"] = true,
-	["headerColor"] = true,
-	["disableFadeGradient"] = true,
-	["preshowDropdownFn"] = true,
-}
-lib.possibleLibraryOptions = possibleLibraryOptions
-
 --The mapping between LibScrollableMenu options key and ZO_ComboBox options key. Used in comboBoxClass:UpdateOptions()
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	--These callback functions will apply the options directly
@@ -249,6 +230,8 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["preshowDropdownFn"] = 	"m_preshowDropdownFn",
 	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
 	["headerColor"] =			"m_headerFontColor",
+	["normalColor"] = 			"m_normalColor",
+	["disabledColor"] =			"m_disabledColor",
 	["visibleRowsDropdown"] =	"visibleRows",
 	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
 	["narrate"] = 				"narrateData",
@@ -2669,20 +2652,25 @@ function contextMenuClass:SetPreshowDropdownCallback()
 	-- Intentionally blank. This is to prevent abusing the function in the context menu.
 end
 
+
 function contextMenuClass:BypassOnGlobalMouseUp(button, ...)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:BypassOnGlobalMouseUp - button: %s, isMouseOverScrollbar: %s", tos(button), tos(self:IsMouseOverScrollbarControl()))
+
+	if not self:IsDropdownVisible() and button == MOUSE_BUTTON_INDEX_RIGHT then
+		-- Needed to open the context menu
+		return false
+	end
 
 	if onGlobalMouseLeftUp(self, button, ...) then
 		return true
 	end
-
 	--Any other right mouse click -> Stay opened!
 	return button == MOUSE_BUTTON_INDEX_RIGHT
 end
 
 function contextMenuClass:OnGlobalMouseUp(eventCode, ...)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:OnGlobalMouseUp - eventCode: %s", tos(eventCode))
-	if self:BypassOnGlobalMouseUp(...) then
+	if not self:BypassOnGlobalMouseUp(...) then
 		if self:IsDropdownVisible() then
 			self:HideDropdown()
 		else
@@ -2694,10 +2682,10 @@ function contextMenuClass:OnGlobalMouseUp(eventCode, ...)
 				self:ShowDropdownOnMouseUp()
 			end
 		end
-	else
-		self:HideDropdown()
 	end
 end
+
+
 
 --[[
 function contextMenuClass:ShowDropdownOnMouseUp()
@@ -2877,7 +2865,7 @@ lib.getComboBoxsSortedItems = getComboBoxsSortedItems
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
 --		contextMenuCallback = function(ctrl) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
 -- }
---}, --[[additionalData]] { isNew = true, m_normalColor = ZO_ColorDef, m_highlightColor = ZO_ColorDef, m_disabledColor = ZO_ColorDef, m_font = "ZO_FontGame" } )
+--}, --[[additionalData]] { isNew = true, normalColor = ZO_ColorDef, highlightColor = ZO_ColorDef, disabledColor = ZO_ColorDef, font = "ZO_FontGame" } )
 function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additionalData)
 	entryType = entryType or LSM_ENTRY_TYPE_NORMAL
 	local options = g_contextMenu:GetOptions()
@@ -2944,10 +2932,10 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	--Any other custom params passed in? Mix in missing ones and skip existing (e.g. isNew)
 	if isAddDataTypeTable then
 		--[[ Will add e.g. the following data, if missing in newEntry
-			additionalData.m_normalColor
-			additionalData.m_highlightColor
-			additionalData.m_disabledColor
-			additionalData.m_font
+			additionalData.normalColor
+			additionalData.highlightColor
+			additionalData.disabledColor
+			additionalData.font
 			additionalData.label
 			...
 			--> and other custom values for your addons
@@ -3261,6 +3249,8 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	Moved exposedVariables and exposedFunctions in their locals and, the metatable into :New( Was the original plan for that. I had attached them
 	TESTED: OK
+	-Added improved OnGlobalMouseUp functionality.
+	TESTED: OK
 
 
 	-Callbacks for OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
@@ -3268,13 +3258,13 @@ WORKING ON - Current version: 2.1
 	-Callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
 	TESTED: OPEN
 
-	-Added improved OnGlobalMouseUp functionality.
-	TESTED: AT WORK -> Error: Context menu entry having a submenu, but no callback function, will close of left clicking the entry
-
 	-Added item.enabled to processNameString and updateLabelsStrings, for if it is a function, it is updated the same as name and label.
 	TESTED: OPEN
 
 	-Added dynamic selectable item based on control.selectable and has callback
+	TESTED: OPEN
+
+	-Added disabledColor and normalColor to options
 	TESTED: OPEN
 
 -------------------
