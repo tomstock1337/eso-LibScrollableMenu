@@ -1300,6 +1300,18 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 		scrollCtrl.upButton.owner = 	scrollCtrl
 		scrollCtrl.downButton.owner = 	scrollCtrl
 	end
+
+	--Enable different hightlight templates at the ZO_SortFilterList scrolLList entries -> OnMousEnter
+	-->entries opening a submenu, having a callback function, show with a different template (color e.g.)
+	-->>!!! ZO_ScrollList_EnableHighlight(self.scrollControl, function(control) end) cannot be used here as it does NOT overwrite existing highlightTemplateOrFunction !!!
+	self.scrollControl.highlightTemplateOrFunction = function(control)
+		local highlightName = "ZO_SelectionHighlight"
+		local data = getControlData(control)
+		if data.hasSubmenu and data.callback ~= nil then
+			highlightName = "LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback"
+		end
+		dLog(LSM_LOGTYPE_DEBUG, "dropdownClass:Initialize - name: %q, scrollListHighlight: %s, hasSubmenu: %s, callback: %s", tos(getControlName(control)), tos(highlightName), tos(data.hasSubmenu), tos(data.callback))
+	end
 end
 
 function dropdownClass:AddItems(items)

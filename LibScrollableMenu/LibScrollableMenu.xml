@@ -1,5 +1,15 @@
 <GuiXml>
 	<Controls>
+		<!-- LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback -->
+        <Backdrop name="LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback" virtual="true" blendMode="ADD">
+            <AnchorFill/>
+            <Edge file="EsoUI/Art/Miscellaneous/highlightOverlay_edge_8.dds" edgeFileWidth="64" edgeFileHeight="8" />
+            <Center file="EsoUI/Art/Miscellaneous/highlightOverlay_center.dds" />
+            <Insets left="20" top="8" right="-20" bottom="-8" />
+        </Backdrop>
+
+
+
 		<Control name="LibScrollableMenu_Entry_Behavior" mouseEnabled="true" virtual="true">
 			<OnMouseEnter name="BaseHandler">
 				local dropdown = self.m_dropdownObject
