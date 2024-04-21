@@ -1493,7 +1493,7 @@ function dropdownClass:OnMouseEnterEntry(control)
 	self:OnMouseExitTimeout(control)
 
 	local data = getControlData(control)
-	if not runHandler(handlerFunctions['onMouseEnter'], control, data) then
+	if data.enabled and not runHandler(handlerFunctions['onMouseEnter'], control, data) then
 		zo_comboBoxDropdown_onMouseEnterEntry(self, control)
 	end
 
@@ -1514,7 +1514,7 @@ function dropdownClass:OnMouseExitEntry(control)
 	hideTooltip(control)
 	local data = getControlData(control)
 	self:OnMouseExitTimeout(control)
-	if not runHandler(handlerFunctions['onMouseExit'], control, data) then
+	if data.enabled and not runHandler(handlerFunctions['onMouseExit'], control, data) then
 		zo_comboBoxDropdown_onMouseExitEntry(self, control)
 	end
 
@@ -1537,7 +1537,7 @@ function dropdownClass:OnEntrySelected(control, button, upInside)
 
 	local data = getControlData(control)
 	if data.enabled then
-		if not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
+		if data.enabled and not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
 			--d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
 			zo_comboBoxDropdown_onEntrySelected(self, control)
 		end
@@ -3187,6 +3187,8 @@ LibScrollableMenu = lib
 ------------------------------------------------------------------------------------------------------------------------
 -- Notes: | TODO:
 ------------------------------------------------------------------------------------------------------------------------
+
+
 
 
 --[[

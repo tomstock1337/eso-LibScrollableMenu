@@ -92,7 +92,7 @@
 			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
 			<OnInitialized>
 				<!-- Is this still needed? -->
-				self.selectible = true <!-- Denotes this is a selectible entry.   -->
+				self.selectable = true <!-- Denotes this is a selectable entry.   -->
 			</OnInitialized>
 
 			<Controls>
@@ -133,6 +133,10 @@
 
 		<!-- Submenu -->
 		<Control name="LibScrollableMenu_ComboBoxSubmenuEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
+			<OnInitialized>
+				<!-- Is this still needed? -->
+				self.selectable = true <!-- Denotes this is a selectable entry.   -->
+			</OnInitialized>
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
