@@ -1190,7 +1190,7 @@ local handlerFunctions  = {
 			local dropdown = onMouseEnter(control, data, has_submenu)
 			clearTimeout()
 			dropdown:ShowSubmenu(control)
-			return not control.closeOnSelect
+			return false --not control.closeOnSelect
 		end,
 		[CHECKBOX_ENTRY_ID] = function(control, data, ...)
 			local dropdown = onMouseEnter(control, data, no_submenu)
@@ -1216,7 +1216,7 @@ local handlerFunctions  = {
 			if not (MouseIsOver(control) or dropdown:IsEnteringSubmenu()) then
 				dropdown:OnMouseExitTimeout(control)
 			end
-			return not control.closeOnSelect
+			return false --not control.closeOnSelect
 		end,
 		[CHECKBOX_ENTRY_ID] = function(control, data)
 			local dropdown = onMouseExit(control, data, no_submenu)
