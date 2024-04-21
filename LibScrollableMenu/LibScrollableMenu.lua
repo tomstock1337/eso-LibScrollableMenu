@@ -1310,8 +1310,8 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 		if data.hasSubmenu == true and data.callback ~= nil then
 			highlightName = "LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback"
 		end
-		return highlightName
 		dLog(LSM_LOGTYPE_DEBUG, "dropdownClass:Initialize - name: %q, scrollListHighlight: %s, hasSubmenu: %s, callback: %s", tos(getControlName(control)), tos(highlightName), tos(data.hasSubmenu), tos(data.callback))
+		return highlightName
 	end
 end
 
