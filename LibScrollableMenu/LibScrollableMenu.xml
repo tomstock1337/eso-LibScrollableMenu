@@ -1,13 +1,13 @@
 <GuiXml>
 	<Controls>
-		<!-- LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback -->
+		<!-- Highlight for ZO_SortFilterList entries where a submenu got a callback function - Light green
+			Normal highlight is ZO_SelectionHighlight  -light blue -->
         <Backdrop name="LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00">
             <AnchorFill/>
             <Edge file="EsoUI/Art/Miscellaneous/highlightOverlay_edge_8.dds" edgeFileWidth="64" edgeFileHeight="8" />
             <Center file="EsoUI/Art/Miscellaneous/highlightOverlay_center.dds" />
             <Insets left="8" top="8" right="-8" bottom="-8" />
         </Backdrop>
-
 
 
 		<Control name="LibScrollableMenu_Entry_Behavior" mouseEnabled="true" virtual="true">
@@ -207,7 +207,7 @@
 		<!-- used when scrollbar is hidden -->
 		<Control name="LibScrollableMenu_ScrollContents_BarHidden" virtual="true">
 			<Anchor point="TOPLEFT" />
-			<Anchor point="BOTTOMRIGHT"/>
+			<Anchor point="BOTTOMRIGHT" offsetX="-3"/>
 		</Control>
 		<!-- used when scrollbar is shown -->
 		<Control name="LibScrollableMenu_ScrollContents_BarShown" virtual="true">
