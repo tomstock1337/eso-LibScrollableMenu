@@ -1759,18 +1759,21 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 	self:UpdateHeight()
 end
 
+
 function comboBox_base:UpdateHeight()
 	local maxRows = self:GetMaxRows()
 
 	-- Add padding to each row then subtract padding for last row
 	local padding = self.padding or 0
-	local baseEntryHeight = self.baseEntryHeight + padding
-	local maxHeight = (self.baseEntryHeight * maxRows) - padding + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
+	local baseEntryHeight = self.baseEntryHeight
+	local maxHeight = ((baseEntryHeight + padding) * maxRows) - padding + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - maxHeight: %s, baseEntryHeight: %s, maxRows: %s", tos(maxHeight), tos(self.baseEntryHeight), tos(maxRows))
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - maxHeight: %s, baseEntryHeight: %s, maxRows: %s, padding: %s", tos(maxHeight), tos(baseEntryHeight), tos(maxRows), tos(padding))
 
 	self:SetHeight(maxHeight)
 end
+
+
 
 -- Common functions
 -- Adds the customEntryTemplate to all items added
@@ -3243,27 +3246,32 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	-Added LibDebugLogger and function dLog for logging with and w/o LDL
 	TESTED: OK
+	-Rows which open a submenu, and got a callback function, will be shown light green now at their highlight
+	TESTED: OK
+	TESTED: OK
+	-Only closeOnSelect controls will allow highlighting on mouse over if has callback
+
+
+	TESTED: OPEN
+	Added enhanced UpdateHeight function
+	TESTED: OPEN
+	-Fixed name of widthPadding in row template
+	TESTED: OK
+	-Move RefreshSortedItems to comboBox_base where entries are acquired by self:GetEntries() in submenuClass and contextMenuClass
+	TESTED: OK
+	Moved exposedVariables and exposedFunctions in their locals and, the metatable into :New( Was the original plan for that. I had attached them
+	TESTED: OK
 
 	-Callbacks for OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
 	TESTED: OPEN
 	-Callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
 	TESTED: OPEN
 	-Added improved OnGlobalMouseUp functionality.
-	TESTED: OPEN
+	TESTED: AT WORK -> Error: Context menu entry having a submenu, but no callback function, will close of left clicking the entry
+
 	-Added item.enabled to processNameString and updateLabelsStrings, for if it is a function, it is updated the same as name and label.
 	TESTED: OPEN
 	-Added dynamic selectable item based on control.selectable and has callback
-	TESTED: OPEN
-	-Only closeOnSelect controls will allow highlighting on mouse over if has callback
-	TESTED: OPEN
-	Added enhanced UpdateHeight function
-	TESTED: OPEN
-	-Fixed name of widthPadding in row template
-	TESTED: OPEN
-	-Move RefreshSortedItems to comboBox_base where entries are acquired by self:GetEntries() in submenuClass and contextMenuClass
-	TESTED: OPEN
-	Moved exposedVariables and exposedFunctions in their locals and, the metatable into :New( Was the original plan for that. I had attached them
-	TESTED: OK
 
 
 -------------------
