@@ -1506,17 +1506,19 @@ function dropdownClass:OnMouseEnterEntry(control)
 	self:OnMouseExitTimeout(control)
 
 	local data = getControlData(control)
-	if data.enabled and not runHandler(handlerFunctions['onMouseEnter'], control, data) then
-		zo_comboBoxDropdown_onMouseEnterEntry(self, control)
-	end
+	if data.enabled == true then
+		if not runHandler(handlerFunctions['onMouseEnter'], control, data) then
+			zo_comboBoxDropdown_onMouseEnterEntry(self, control)
+		end
 
-	if data.tooltip or data.customTooltip then
-		self:ShowTooltip(control, data)
+		if data.tooltip or data.customTooltip then
+			self:ShowTooltip(control, data)
+		end
 	end
 
 	--TODO: Conflicting OnMouseExitTimeout -> 20240310 What in detail is conflicting here, with what?
 	if g_contextMenu:IsDropdownVisible() then
---d(">contex menu: Dropdown visible = yes")
+		--d(">contex menu: Dropdown visible = yes")
 		g_contextMenu.m_dropdownObject:OnMouseExitTimeout(control)
 	end
 end
@@ -3250,11 +3252,9 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	TESTED: OK
 	-Only closeOnSelect controls will allow highlighting on mouse over if has callback
-
-
-	TESTED: OPEN
 	Added enhanced UpdateHeight function
-	TESTED: OPEN
+	TESTED: OK - Tested options.spacing
+	TESTED: OK
 	-Fixed name of widthPadding in row template
 	TESTED: OK
 	-Move RefreshSortedItems to comboBox_base where entries are acquired by self:GetEntries() in submenuClass and contextMenuClass
@@ -3262,17 +3262,20 @@ WORKING ON - Current version: 2.1
 	Moved exposedVariables and exposedFunctions in their locals and, the metatable into :New( Was the original plan for that. I had attached them
 	TESTED: OK
 
+
 	-Callbacks for OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
 	TESTED: OPEN
 	-Callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
 	TESTED: OPEN
+
 	-Added improved OnGlobalMouseUp functionality.
 	TESTED: AT WORK -> Error: Context menu entry having a submenu, but no callback function, will close of left clicking the entry
 
 	-Added item.enabled to processNameString and updateLabelsStrings, for if it is a function, it is updated the same as name and label.
 	TESTED: OPEN
-	-Added dynamic selectable item based on control.selectable and has callback
 
+	-Added dynamic selectable item based on control.selectable and has callback
+	TESTED: OPEN
 
 -------------------
 TODO - To check (future versions)

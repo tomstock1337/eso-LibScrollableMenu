@@ -74,6 +74,7 @@ local function test()
 			narrate = narrateOptions,
 			disableFadeGradient = false,
 			headerColor = HEADER_TEXT_COLOR_RED,
+			--spacing = 12,
 			--[[ Define in XML:
 				<!-- Normal entry for Custom options.XMLRowTemplates test  -->
 				<Control name="LibScrollableMenu_ComboBoxEntry_TestXMLRowTemplates" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
@@ -183,7 +184,10 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 
 					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 
-					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
+					ShowCustomScrollableMenu(nil, {
+						--spacing = 12,
+						narrate = narrateOptions,
+					})
 					d("Submenu entry 1")
 				end,
 				--tooltip         = "Submenu Entry Test 1",
@@ -413,6 +417,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 		local wasLabelChangedAtEntry = false
 		local comboBoxMenuEntries = {
 			{
+				enabled = function() return false  end,
 				name            = function()
 					if not wasNameChangedAtEntry then
 						wasNameChangedAtEntry = true
