@@ -3224,14 +3224,31 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	-Fixed an issue where dropdowns could display a scroll bar when not necessary
 	TESTED: OK
-
 	-Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
 	TESTED: OK
 	-Added LibDebugLogger and function dLog for logging with and w/o LDL
-	TESTED: OPEN
+	TESTED: OK
 
-	--Callbacks for OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
+	-Callbacks for OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
 	TESTED: OPEN
+	-Callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
+	TESTED: OPEN
+	-Added improved OnGlobalMouseUp functionality.
+	TESTED: OPEN
+	-Added item.enabled to processNameString and updateLabelsStrings, for if it is a function, it is updated the same as name and label.
+	TESTED: OPEN
+	-Added dynamic selectable item based on control.selectable and has callback
+	TESTED: OPEN
+	-Only closeOnSelect controls will allow highlighting on mouse over if has callback
+	TESTED: OPEN
+	Added enhanced UpdateHeight function
+	TESTED: OPEN
+	-Fixed name of widthPadding in row template
+	TESTED: OPEN
+	-Move RefreshSortedItems to comboBox_base where entries are acquired by self:GetEntries() in submenuClass and contextMenuClass
+	TESTED: OPEN
+	Moved exposedVariables and exposedFunctions in their locals and, the metatable into :New( Was the original plan for that. I had attached them
+	TESTED: OK
 
 
 -------------------
