@@ -6,6 +6,9 @@
             <Edge file="EsoUI/Art/Miscellaneous/highlightOverlay_edge_8.dds" edgeFileWidth="64" edgeFileHeight="8" />
             <Center file="EsoUI/Art/Miscellaneous/highlightOverlay_center.dds" />
             <Insets left="20" top="8" right="-20" bottom="-8" />
+			<OnInitialized>
+                self:SetCenterColor(0, 0, 0.8, 0)
+            </OnInitialized>
         </Backdrop>
 
 

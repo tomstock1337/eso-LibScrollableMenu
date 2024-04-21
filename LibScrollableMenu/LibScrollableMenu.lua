@@ -1307,9 +1307,10 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	self.scrollControl.highlightTemplateOrFunction = function(control)
 		local highlightName = "ZO_SelectionHighlight"
 		local data = getControlData(control)
-		if data.hasSubmenu and data.callback ~= nil then
+		if data.hasSubmenu == true and data.callback ~= nil then
 			highlightName = "LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback"
 		end
+		return highlightName
 		dLog(LSM_LOGTYPE_DEBUG, "dropdownClass:Initialize - name: %q, scrollListHighlight: %s, hasSubmenu: %s, callback: %s", tos(getControlName(control)), tos(highlightName), tos(data.hasSubmenu), tos(data.callback))
 	end
 end
