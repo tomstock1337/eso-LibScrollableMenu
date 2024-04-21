@@ -181,7 +181,7 @@ local comboBoxDefaults = {
 	--From ZO_ComboBox
 	m_selectedItemData = nil,
 	m_selectedColor = { GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED) },
-	m_disabledColor = ZO_ERROR_COLOR,
+	m_disabledColor = ZO_GAMEPAD_UNSELECTED_COLOR, --ZO_ERROR_COLOR,
 	m_sortOrder = ZO_SORT_ORDER_UP,
 	m_sortType = ZO_SORT_BY_NAME,
 	m_sortsItems = true,
@@ -3251,6 +3251,8 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	-Added improved OnGlobalMouseUp functionality.
 	TESTED: OK
+	-Added disabledColor and normalColor to options
+	TESTED: OK
 
 
 	-Callbacks for OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
@@ -3264,8 +3266,6 @@ WORKING ON - Current version: 2.1
 	-Added dynamic selectable item based on control.selectable and has callback
 	TESTED: OPEN
 
-	-Added disabledColor and normalColor to options
-	TESTED: OPEN
 
 -------------------
 TODO - To check (future versions)
