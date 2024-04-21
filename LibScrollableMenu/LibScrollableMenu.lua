@@ -1764,11 +1764,11 @@ function comboBox_base:UpdateHeight()
 	local maxRows = self:GetMaxRows()
 
 	-- Add padding to each row then subtract padding for last row
-	local padding = self.padding or 0
+	local spacing = self.m_spacing or 0
 	local baseEntryHeight = self.baseEntryHeight
-	local maxHeight = ((baseEntryHeight + padding) * maxRows) - padding + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
+	local maxHeight = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - maxHeight: %s, baseEntryHeight: %s, maxRows: %s, padding: %s", tos(maxHeight), tos(baseEntryHeight), tos(maxRows), tos(padding))
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - maxHeight: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s", tos(maxHeight), tos(baseEntryHeight), tos(maxRows), tos(spacing))
 
 	self:SetHeight(maxHeight)
 end
