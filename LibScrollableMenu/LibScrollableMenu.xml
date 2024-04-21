@@ -11,21 +11,21 @@
 
 
 		<Control name="LibScrollableMenu_Entry_Behavior" mouseEnabled="true" virtual="true">
-			<OnMouseEnter name="BaseHandler">
+			<OnMouseEnter>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnMouseEnterEntry(self)
 				end
 			</OnMouseEnter>
 			
-			<OnMouseExit name="BaseHandler">
+			<OnMouseExit>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnMouseExitEntry(self)
 				end
 			</OnMouseExit>
 			
-			<OnMouseUp name="BaseHandler">
+			<OnMouseUp>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnEntrySelected(self, button, upInside)
