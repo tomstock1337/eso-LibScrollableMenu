@@ -2095,21 +2095,21 @@ do -- Row setup functions
 		self:SetupEntryLabelBase(control, data, list)
 	end
 
-	function comboBox_base:SetupEntryHeader(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryHeader - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+	function comboBox_base:SetupEntrySubmenu(control, data, list)
+		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntrySubmenu - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 		self:SetupEntryLabel(control, data, list)
 		addArrow(control, data, list)
+		control.typeId = SUBMENU_ENTRY_ID
+	end
+
+	function comboBox_base:SetupEntryHeader(control, data, list)
+		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryHeader - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		addDivider(control, data, list)
+		self:SetupEntryLabel(control, data, list)
 		control.isHeader = true
 		control.typeId = HEADER_ENTRY_ID
 	end
 
-	function comboBox_base:SetupEntrySubmenu(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntrySubmenu - control: %s, list: %s,", tos(getControlName(control)), tos(list))
-		addDivider(control, data, list)
-		self:SetupEntryLabel(control, data, list)
-		control.typeId = SUBMENU_ENTRY_ID
-	end
-	
 	function comboBox_base:SetupCheckbox(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupCheckbox - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 		local function setChecked(checkbox, checked)
