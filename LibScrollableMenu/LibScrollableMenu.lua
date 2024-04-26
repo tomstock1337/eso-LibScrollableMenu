@@ -2126,7 +2126,7 @@ do -- Row setup functions
 			
 			self:Narrate("OnCheckboxUpdated", checkbox, checkedData, nil)
 			lib:FireCallbacks('CheckboxUpdated', checked, checkedData, checkbox)
-			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: CheckboxUpdated - control: " ..tos(getControlName(checkbox)))
+			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: CheckboxUpdated - control: %q, checked: %s", tos(getControlName(checkbox)), tos(checked))
 		end
 		
 		self:SetupEntryLabel(control, data, list)
@@ -3262,8 +3262,6 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 	-Added dynamic selectable item based on control.selectable and has callback
 	TESTED: OK
-
-
 	-Callbacks for OnMenuOpen and OnMenuHide, OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
 	TESTED: OK
 	-Callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
