@@ -1293,7 +1293,7 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 		if data.hasSubmenu == true and data.callback ~= nil then
 			highlightName = "LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback"
 		end
-		dLog(LSM_LOGTYPE_DEBUG, "dropdownClass:Initialize - name: %q, scrollListHighlight: %s, hasSubmenu: %s, callback: %s", tos(getControlName(control)), tos(highlightName), tos(data.hasSubmenu), tos(data.callback))
+		dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Initialize - name: %q, scrollListHighlight: %s, hasSubmenu: %s, callback: %s", tos(getControlName(control)), tos(highlightName), tos(data.hasSubmenu), tos(data.callback))
 		return highlightName
 	end
 end
@@ -1710,6 +1710,11 @@ function dropdownClass:HideDropdown()
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:HideDropdown")
 	if self.owner then
 		self.owner:HideDropdown()
+		if not self.isContextMenu and not self.isSubmenu then
+			local containerCtrl = self.m_container
+			lib:FireCallbacks('OnMenuHide', containerCtrl)
+			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnMenuHide - control: " ..tos(getControlName(containerCtrl)))
+		end
 	end
 end
 
@@ -1919,8 +1924,6 @@ function comboBox_base:HideDropdown()
 			if not self.isContextMenu and not self.isSubmenu then
 				local containerCtrl = self.m_container
 				self:Narrate("OnMenuHide", containerCtrl)
-				--lib:FireCallbacks('OnMenuHide', containerCtrl)
-				--dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnMenuHide - control: " ..tos(getControlName(containerCtrl)))
 			end
 		end
 	end
@@ -2294,7 +2297,7 @@ function comboBoxClass:UpdateOptions(options, onInit)
 	onInit = onInit or false
 	local optionsChanged = self.optionsChanged
 
-	dLog(LSM_LOGTYPE_DEBUG, "comboBoxClass:UpdateOptions . options: %s, onInit: %s, optionsChanged: %s", tos(options), tos(onInit), tos(optionsChanged))
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateOptions . options: %s, onInit: %s, optionsChanged: %s", tos(options), tos(onInit), tos(optionsChanged))
 
 	--Called from Initialization of the object -> self:ResetToDefaults() was called in comboBoxClass:Initialize() already
 	-->And self:UpdateOptions() is then called via comboBox_base.Initialize(...), from where we get here
@@ -2362,7 +2365,7 @@ end
 -->If called later from e.g. UpdateOptions function where options passed in are nil or empty: Reset all to LSM default values
 --->In all cases the function comboBoxClass:UpdateOptions should update the options needed!
 function comboBoxClass:ResetToDefaults(keepExisting)
-	dLog(LSM_LOGTYPE_DEBUG, "comboBoxClass:ResetToDefaults")
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ResetToDefaults")
 	local defaults = ZO_DeepTableCopy(comboBoxDefaults)
 	if keepExisting then
 		mixinTableAndSkipExisting(self, defaults) --keep existing ZO_ComboBox default (or addon changed) values -> e.g. add a LSM helper to an exisitng ZO_ComboBox via AddCustomScrollableComboBoxDropdownMenu
@@ -2463,7 +2466,7 @@ function submenuClass:Initialize(parent, comboBoxContainer, options, depth)
 end
 
 function submenuClass:UpdateOptions(options, onInit)
-	dLog(LSM_LOGTYPE_DEBUG, "submenuClass:UpdateOptions - options: %s, onInit: %s", tos(options), tos(onInit))
+	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:UpdateOptions - options: %s, onInit: %s", tos(options), tos(onInit))
 	self:AddCustomEntryTemplates(self.options)
 end
 
@@ -2512,7 +2515,7 @@ function submenuClass:HideDropdownInternal()
 	end
 	
 	updateIsContextMenuAndIsSubmenu(self)
-	dLog(LSM_LOGTYPE_DEBUG, "submenuClass:HideDropdownInternal-isContextMenu: " .. tos(self.isContextMenu))
+	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:HideDropdownInternal-isContextMenu: " .. tos(self.isContextMenu))
 
 	if not self.isContextMenu then
 		self:Narrate("OnSubMenuHide", control)
@@ -3261,10 +3264,10 @@ WORKING ON - Current version: 2.1
 	TESTED: OK
 
 
-	-Callbacks for OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
-	TESTED: OPEN
+	-Callbacks for OnMenuOpen and OnMenuHide, OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
+	TESTED: OK
 	-Callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
-	TESTED: OPEN
+	TESTED: OK
 
 
 

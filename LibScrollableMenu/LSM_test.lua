@@ -73,7 +73,7 @@ local function test()
 			sortEntries=function() return false end,
 			narrate = narrateOptions,
 			disableFadeGradient = false,
-			headerColor = HEADER_TEXT_COLOR_RED,
+			--headerColor = HEADER_TEXT_COLOR_RED,
 			--disabledColor = ZO_GAMEPAD_UNSELECTED_COLOR,
 			--normalColor = ZO_WHITE,
 			--spacing = 12,
