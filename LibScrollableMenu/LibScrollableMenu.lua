@@ -3206,67 +3206,31 @@ LibScrollableMenu = lib
 -------------------
 WORKING ON - Current version: 2.1
 -------------------
-	- Fixed: comboBoxClass:OnGlobalMouseUp(eventCode, ...) must close all submenus and the main menu (dropdown) of the ZO_ComboBox if we right click on the main comboBox to show a context menu there
-	TESTED: OK
-	- Fixed: submenu defaults not inheriting from parent on initialize
-	TESTED: OK
-	- Added: function sets to update name/label on AddItem and update on Show
-	TESTED: OK
-	- Added: options.disableFadeGradient, options.headerColor
-	TESTED: OK
-	- changed ScrollContent XML template names to LibScrollableMenu_ScrollContents_BarHidden, LibScrollableMenu_ScrollContents_BarShown
-	TESTED: OK
-	- Adjusted AnchorToControl so submenus sit on edge of previous dropdown. +- 2 pixels to "4, -4", direction dependent.
-	TESTED: OK
-	- Exposed row setup functions to object to allow addon use in custom setupFunction of custom virtual XML template
-	TESTED: OK
-	- Isolated submenuClass:ShowDropdownInternal and submenuClass:HideDropdownInternal also should be set independently based on class
-		There was no need for the extra functions attached to dropdownClass
-	TESTED: OK
-	-Added comboBoxClass:SetOption(key) function
-	TESTED: OK (visibleDropdownRows, visibleSubmenuRows, disableFadeGradient)
-	-Updated comboBoxClass:UpdateOptions() function
-	TESTED: OK (visibleDropdownRows, visibleSubmenuRows, disableFadeGradient)
-	-Callback OnDropdownMenuAdded can change the options of a dropdown pre-init
-	TESTED: OK
-	-data.tooltip and data.customTooltip function with show & hide
-	TESTED: OK
-	--Changed all API functions for context menus to accept entries as function returning a table too
-	TESTED: OK
-	-Added API function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
-	TESTED: OK
-	-Fixed an issue where dropdowns could display a scroll bar when not necessary
-	TESTED: OK
-	-Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
-	TESTED: OK
-	-Added LibDebugLogger and function dLog for logging with and w/o LDL
-	TESTED: OK
-	-Rows which open a submenu, and got a callback function, will be shown light green now at their highlight
-	TESTED: OK
-	TESTED: OK
-	-Only closeOnSelect controls will allow highlighting on mouse over if has callback
-	Added enhanced UpdateHeight function
-	TESTED: OK - Tested options.spacing
-	TESTED: OK
-	-Fixed name of widthPadding in row template
-	TESTED: OK
-	-Move RefreshSortedItems to comboBox_base where entries are acquired by self:GetEntries() in submenuClass and contextMenuClass
-	TESTED: OK
-	Moved exposedVariables and exposedFunctions in their locals and, the metatable into :New( Was the original plan for that. I had attached them
-	TESTED: OK
-	-Added improved OnGlobalMouseUp functionality.
-	TESTED: OK
-	-Added disabledColor and normalColor to options
-	TESTED: OK
-	-Added item.enabled to processNameString and updateLabelsStrings, for if it is a function, it is updated the same as name and label.
-	TESTED: OK
-	-Added dynamic selectable item based on control.selectable and has callback
-	TESTED: OK
-	-Callbacks for OnMenuOpen and OnMenuHide, OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
-	TESTED: OK
-	-Callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
-	TESTED: OK
+	- Fixed comboBoxClass:OnGlobalMouseUp(eventCode, ...) must close all submenus and the main menu (dropdown) of the ZO_ComboBox if we right click on the main comboBox to show a context menu there
+	- Fixed improved OnGlobalMouseUp functionality
+	- Fixed submenu defaults not inheriting from parent on initialize
+	- Fixed callbacks for OnMenuOpen and OnMenuHide, OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
+	- Fixed callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
+	- Fixed name of widthPadding in row template
+	- Fixed height will recalculate on each open (respecting functions returning values of the entris)
+	- Fixed spacing, width and scollbars
+	- Fixed an issue where dropdowns could display a scroll bar when not necessary
+	- Fixed data.tooltip and data.customTooltip function with show & hide
+	- Fixed all API functions for context menus to accept entries as function returning a table too
+	- Fixed enabled state of entries not firing any onMouseEnter/-exit handlers anymore
+	- Fixed a lot of other smaller errors
 
+	- Exposed row setup functions to object to allow addon use in custom setupFunction of custom virtual XML template
+	- Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
+	- Changed rows which open a submenu, and got a callback function, will be shown light green now at their highlight
+
+	- Added options.disableFadeGradient, options.headerColor, options.normalColor, options.disabledColor
+	- Added disabledColor and normalColor to options
+	- Added item.enabled to processNameString and updateLabelsStrings, for if it is a function, it is updated the same as name and label.
+	- Added dynamic selectable item based on control.selectable and has callback
+	- Added Callback OnDropdownMenuAdded which can change the options of a dropdown pre-init
+	- Added API function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
+	- Added LibDebugLogger and function dLog for logging with and w/o LDL. See slash commands /lsmdebug and /lsmdebugverbose (verbose logging still needs to be manually enabled within LibDebugLogger's Startup config file! Tags: LibScrollableMenu and LibScrollableMenu/Verbose)
 
 
 
