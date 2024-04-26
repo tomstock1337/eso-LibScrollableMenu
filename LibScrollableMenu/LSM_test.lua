@@ -5,7 +5,7 @@ local MAJOR = lib.name
 -- For testing - Combobox with all kind of entry types (test offsets, etc.)
 ------------------------------------------------------------------------------------------------------------------------
 local function test()
-	if lib.testDropdown == nil then
+	if lib.testComboBoxContainer == nil then
 		local testTLC = CreateTopLevelWindow(MAJOR .. "TestTLC")
 		testTLC:SetHidden(true)
 		testTLC:SetDimensions(1, 1)
@@ -13,11 +13,14 @@ local function test()
 		testTLC:SetMovable(true)
 		testTLC:SetMouseEnabled(false)
 
-		local comboBox = WINDOW_MANAGER:CreateControlFromVirtual(MAJOR .. "TestDropdown", testTLC, "ZO_ComboBox")
-		comboBox:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
-		comboBox:SetHeight(24)
-		comboBox:SetWidth(250)
-		comboBox:SetMovable(true)
+		local comboBoxContainer = WINDOW_MANAGER:CreateControlFromVirtual(MAJOR .. "TestDropdown", testTLC, "ZO_ComboBox")
+		local comboBox          = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
+		lib.testComboBoxContainer = comboBoxContainer
+
+		comboBoxContainer:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
+		comboBoxContainer:SetHeight(24)
+		comboBoxContainer:SetWidth(250)
+		comboBoxContainer:SetMovable(true)
 
 		local narrateOptions = {
 			["OnComboBoxMouseEnter"] = 	function(m_dropdownObject, comboBoxControl)
@@ -62,85 +65,99 @@ local function test()
 		--Define your options for the scrollHelper here
 		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
 		-->LibScrollableMenu.lua
+		local HEADER_TEXT_COLOR_RED = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_FAILED))
+
 		local options = {
-			visibleRowsDropdown = 10, visibleRowsSubmenu = 10, sortEntries=function() return false end,
-			--[[
-            --		table	narrate:optional				Table or function returning a table with key = narration event and value = function called for that narration event.
-            --												Each functions signature/parameters is shown below!
-            --												-> The function either builds your narrateString and narrates it in your addon.
-            --												   Or you must return a string as 1st return param (and optionally a boolean "stopCurrentNarration" as 2nd return param. If this is nil it will be set to false!)
-            --													and let the library here narrate it for you via the UI narration
-            --												Optional narration events can be:
-            --												"OnComboBoxMouseEnter" 	function(m_dropdownObject, comboBoxControl)  Build your narrateString and narrate it now, or return a string and let the library narrate it for you end
-            --												"OnComboBoxMouseExit"	function(m_dropdownObject, comboBoxControl) end
-            --												"OnMenuShow"			function(m_dropdownObject, dropdownControl, nil, nil) end
-            --												"OnMenuHide"			function(m_dropdownObject, dropdownControl) end
-            --												"OnSubMenuShow"			function(m_dropdownObject, parentControl, anchorPoint) end
-            --												"OnSubMenuHide"			function(m_dropdownObject, parentControl) end
-            --												"OnEntryMouseEnter"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
-            --												"OnEntryMouseExit"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
-            --												"OnEntrySelected"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
-            --												"OnCheckboxUpdated"		function(m_dropdownObject, checkboxControl, data) end
-            --			Example:	narrate = { ["OnComboBoxMouseEnter"] = myAddonsNarrateDropdownOnMouseEnter, ... }
-            ]]
+			visibleRowsDropdown = 10,
+			visibleRowsSubmenu = 10,
+			sortEntries=function() return false end,
 			narrate = narrateOptions,
+			disableFadeGradient = false,
+			--headerColor = HEADER_TEXT_COLOR_RED,
+			--disabledColor = ZO_GAMEPAD_UNSELECTED_COLOR,
+			--normalColor = ZO_WHITE,
+			--spacing = 12,
+			--[[ Define in XML:
+				<!-- Normal entry for Custom options.XMLRowTemplates test  -->
+				<Control name="LibScrollableMenu_ComboBoxEntry_TestXMLRowTemplates" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
+					<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
+					<OnInitialized>
+						<!-- Is this still needed? -->
+						self.selectible = true <!-- Denotes this is a selectible entry.   -->
+					</OnInitialized>
+
+					<Controls>
+						<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
+							<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
+							<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+						</Label>
+					</Controls>
+				</Control>
+
+			--Afterwards enable this custom enryType's setupFunction
+			XMLRowTemplates = {
+				[lib.scrollListRowTypes.ENTRY_ID] = {
+					template = "LibScrollableMenu_ComboBoxEntry_TestXMLRowTemplates",
+					rowHeight = 40,
+					setupFunc = function(control, data, list)
+						local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer) -- comboBoxContainer = The ZO_ComboBox control you created via WINDOW_MANAGER:CreateControlFromVirtual("NameHere", yourTopLevelControlToAddAsAChild, "ZO_ComboBox")
+						comboBox:SetupEntryLabel(control, data, list)
+					end,
+				}
+			}
+
+			]]
 		}
+
+		--Try to change the options of the scrollhelper as it gets created
+		--[[
+		lib:RegisterCallback('OnDropdownMenuAdded', function(comboBox, optionsPassedIn)
+--d("[LSM]TEST - Callback fired: OnDropdownMenuAdded - current visibleRows: " ..tostring(optionsPassedIn.visibleRowsDropdown))
+			optionsPassedIn.visibleRowsDropdown = 5 -- Overwrite the visible rows at the dropdown
+--d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
+		end)
+		]]
 
 		--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
 		--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
-		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBox, options)
+		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBoxContainer, options)
 		-- did not work		scrollHelper.OnShow = function() end --don't change parenting
 
---[[
-LSM_DEBUG = {
-	optionsBefore = options
-}
-]]
-
-		--Try to change the options of the scrollhelper as it gets created
-		lib:RegisterCallback('OnDropdownMenuAdded', function(comboBox, optionsPassedIn)
---d("[LSM]TEST: OnDropdownMenuAdded")
-			optionsPassedIn.visibleRowsDropdown = 5 -- Overwrite the visible rows at the dropdown
---LSM_DEBUG.optionsAfter = optionsPassedIn
-			end)
-
-
-		lib.testDropdown = comboBox
 
 		--Prepare and add the text entries in the dropdown's comboBox
-		local comboBox = comboBox.m_comboBox
 
 		local subEntries = {
 
 			{
-				isHeader        = false,
+				
 				name            = "Submenu entry 1:1",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry 1:1")
 				end,
-				--tooltip         = "Submenu Entry Test 1",
+				tooltip         = "Submenu Entry Test 1:1",
 				--icons 			= nil,
 			},
 			{
 				name            = "-",
 			},
 			{
-				isHeader        = false,
+
 				name            = "Submenu entry 1:2",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry 1:2")
 				end,
-				tooltip         = "Submenu entry 1:2",
+				tooltip         = function() return "Submenu Entry Test 1:2" end,
 				isNew			= true,
 				--icons 			= nil,
-			}
+			},
+
 		}
 
 		--LibScrollableMenu - LSM entry - Submenu normal
 		local submenuEntries = {
 			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 1",
+
+				name            = "Submenu Entry Test 1 (contexMenu)",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 1")
 				end,
@@ -148,25 +165,68 @@ LSM_DEBUG = {
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
 
-					AddCustomScrollableSubMenuEntry("Submenu entry 1", subEntries)
+					AddCustomScrollableSubMenuEntry("Submenu entry 1 (function)", subEntries) -- function() return subEntries end --todo: ERROR both do not remove the isNew onMouseEnter at a contextmenu
 
-					AddCustomScrollableMenuEntry("Custom menu Normal entry 1", function() d('Custom menu Normal entry 1') end)
+					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Parent, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
+						d('Custom menu Normal entry 1')
+
+						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
+							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
+d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+							for k, v in ipairs(entriesFound) do
+								local name = v.label or v.name
+								d(">name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
+							end
+
+						end
+
+						--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
+						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenu, nil, true)
+					end)
 
 					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 
-					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
+					ShowCustomScrollableMenu(nil, {
+						--spacing = 12,
+						narrate = narrateOptions,
+					})
 					d("Submenu entry 1")
 				end,
 				--tooltip         = "Submenu Entry Test 1",
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
-				name            = "Submenu Entry Test 2",
+
+				name            = "Submenu Entry Test 2 (contextMenu)",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 2")
 				end,
-				tooltip         = "Submenu Entry Test 2",
+				contextMenuCallback =   function(self)
+					d("contextMenuCallback")
+					ClearCustomScrollableMenu()
+
+					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Same, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
+						d('Custom menu Normal entry 1')
+
+						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
+							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
+d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+							for k, v in ipairs(entriesFound) do
+								local name = v.label or v.name
+								d(">[Same menu]name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
+							end
+
+						end
+
+						--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
+						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenu, nil, false)
+					end)
+
+					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
+
+					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
+					d("Submenu entry 1")
+				end,
 				isNew			= true,
 				--icons 			= nil,
 			},
@@ -206,7 +266,7 @@ LSM_DEBUG = {
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+
 				name            = "Submenu Entry Test 3",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 3")
@@ -223,7 +283,7 @@ LSM_DEBUG = {
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+
 				name            = "Submenu Entry Test 4",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 4")
@@ -232,7 +292,7 @@ LSM_DEBUG = {
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+
 				name            = "Submenu Entry Test 5",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 5")
@@ -247,7 +307,7 @@ LSM_DEBUG = {
 				end,
 				entries         = {
 					{
-						isHeader        = false,
+
 						name            = "Normal entry 6 1:1",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:1")
@@ -256,7 +316,7 @@ LSM_DEBUG = {
 						--icons 			= nil,
 					},
 					{
-						isHeader        = false,
+
 						name            = "Submenu entry 6 1:2",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:2")
@@ -264,7 +324,7 @@ LSM_DEBUG = {
 						tooltip         = "Submenu entry 6 1:2",
 						entries         = {
 							{
-								isHeader        = false,
+
 								name            = "Submenu entry 6 2:1",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:1")
@@ -273,7 +333,7 @@ LSM_DEBUG = {
 								--icons 			= nil,
 							},
 							{
-								isHeader        = false,
+
 								name            = "Submenu entry 6 2:2",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:2")
@@ -281,7 +341,7 @@ LSM_DEBUG = {
 								tooltip         = "Submenu entry 6 2:2",
 								entries         = {
 									{
-										isHeader        = false,
+
 										name            = "Normal entry 6 2:1",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:1")
@@ -290,7 +350,7 @@ LSM_DEBUG = {
 										--icons 			= nil,
 									},
 									{
-										isHeader        = false,
+
 										name            = "Normal entry 6 2:2",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:2")
@@ -304,7 +364,7 @@ LSM_DEBUG = {
 						},
 					},
 					{
-						isHeader        = false,
+
 						name            = "Normal entry 6 1:2",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Normal entry 6 1:2")
@@ -317,7 +377,7 @@ LSM_DEBUG = {
 				tooltip         = "Submenu entry 6"
 			},
 			{
-				isHeader        = false,
+
 				name            = "Submenu Entry Test 7",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 7")
@@ -326,7 +386,7 @@ LSM_DEBUG = {
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+
 				name            = "Submenu Entry Test 8",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 8")
@@ -335,7 +395,7 @@ LSM_DEBUG = {
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+
 				name            = "Submenu Entry Test 9",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 9")
@@ -344,7 +404,7 @@ LSM_DEBUG = {
 				--icons 			= nil,
 			},
 			{
-				isHeader        = false,
+
 				name            = "Submenu Entry Test 10",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 10")
@@ -355,9 +415,20 @@ LSM_DEBUG = {
 		}
 
 		--Normal entries
+		local wasNameChangedAtEntry = false
+		local wasLabelChangedAtEntry = false
 		local comboBoxMenuEntries = {
 			{
-				name            = "Normal entry 1",
+				enabled = function() return false  end,
+				name            = function()
+					if not wasNameChangedAtEntry then
+						wasNameChangedAtEntry = true
+						return "Normal entry 1 (contextMenu)"
+					else
+						wasNameChangedAtEntry = false
+						return "Normal entry 1 - Changed (contextMenu)"
+					end
+				end,
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 				callback        =   function(self)
 					d("Normal entry 1")
@@ -365,46 +436,79 @@ LSM_DEBUG = {
 				contextMenuCallback =   function(self)
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
+					--AddCustomScrollableSubMenuEntry("Context menu entry 1", subEntries)
 
-					AddCustomScrollableSubMenuEntry("Context menu entry 1", subEntries)
+					AddCustomScrollableSubMenuEntry("Context menu entry1 opening a submenu", subEntries)
 
-					AddCustomScrollableMenuEntry("Context menu Normal entry 1", function() d('Context menu Normal entry 1') end)
+					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Parent, Checkboxes)", function(comboBox, itemName, item, selectionChanged, oldItem)
+						d('Context menu Normal entry 1')
+
+
+						local function myAddonCallbackFunc(p_comboBox, p_item, entriesFound, ...) --... will be filled with customParams
+							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
+d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+							for k, v in ipairs(entriesFound) do
+								local name = v.label or v.name
+								d(">name of checkbox: " .. tostring(name).. ", checked: " .. tostring(v.checked))
+							end
+
+						end
+
+						--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
+						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, { LSM_ENTRY_TYPE_CHECKBOX }, true, "customParam1", "customParam2")
+					end)
 
 					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end)
-
 					ShowCustomScrollableMenu()
 				end,
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
 				isNew			= true,
 				--entries         = submenuEntries,
 				--tooltip         =
+				customTooltip   = function(data, rowControl, point, offsetX, offsetY, relativePoint)
+					if data ~= nil then
+						ZO_Tooltips_ShowTextTooltip(rowControl, point or TOP, "Test custom tooltip")
+					else
+						ZO_Tooltips_HideTextTooltip()
+					end
+				end,
+				type = lib.LSM_ENTRY_TYPE_CHECKBOX
 			},
 			{
 				name            = "-", --Divider
 			},
 			{
-				name            = "", --no name test
-				--label 			= "", --no label test
+				name            = "Name value", --no name test
+				label           = function()
+					if not wasLabelChangedAtEntry then
+						wasLabelChangedAtEntry = true
+						return "Entry with label 1"
+					else
+						wasLabelChangedAtEntry = false
+						return "Entry with label 1 - Changed"
+					end
+				end,
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 				callback        =   function(self)
-					d("Entry without name!")
+					d("Entry with label 1!")
 				end,
 				--entries         = submenuEntries,
 				--tooltip         =
+				type = lib.LSM_ENTRY_TYPE_CHECKBOX
 			},
 			{
 				name            = "-", --Divider
 			},
 			{
-				name            = "Entry having submenu 1",
+				name            = "Entry having submenu 1 (function)",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Entry having submenu 1")
 				end,
-				entries         = submenuEntries,
+				entries         = function() return submenuEntries end,
 				tooltip         = 'Submenu test tooltip.'
 			},
 			{
-				name            = "Normal entry 2",
+				name            = "Normal entry 2 (contextMenu)",
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 				callback        =   function(self)
 					d("Normal entry 2")
@@ -476,7 +580,7 @@ LSM_DEBUG = {
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem) d("Submenu entry 6") end,
 				entries         = {
 					{
-						isHeader        = false,
+
 						name            = "Normal entry 6 1:1",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:1")
@@ -485,7 +589,7 @@ LSM_DEBUG = {
 						--icons 			= nil,
 					},
 					{
-						isHeader        = false,
+
 						name            = "Submenu entry 6 1:1",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:2")
@@ -493,7 +597,7 @@ LSM_DEBUG = {
 						tooltip         = "Submenu entry 6 1:2",
 						entries         = {
 							{
-								isHeader        = false,
+
 								name            = "Submenu entry 6 2:1",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:1")
@@ -502,7 +606,7 @@ LSM_DEBUG = {
 								--icons 			= nil,
 							},
 							{
-								isHeader        = false,
+
 								name            = "Submenu entry 6 2:2",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:2")
@@ -510,7 +614,7 @@ LSM_DEBUG = {
 								tooltip         = "Submenu entry 6 2:2",
 								entries         = {
 									{
-										isHeader        = false,
+
 										name            = "Normal entry 6 2:1",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:1")
@@ -519,7 +623,7 @@ LSM_DEBUG = {
 										--icons 			= nil,
 									},
 									{
-										isHeader        = false,
+
 										name            = "Normal entry 6 2:2",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:2")
@@ -533,7 +637,7 @@ LSM_DEBUG = {
 						},
 					},
 					{
-						isHeader        = false,
+
 						name            = "Normal entry 6 1:2",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Normal entry 6 1:2")
@@ -662,7 +766,7 @@ LSM_DEBUG = {
 
 
 		--DOES WORK
-		ZO_PlayerInventoryMenuBarButton1:SetHandler("OnMouseUp", function(ctrl, button, upInside)
+		ZO_PreHookHandler(ZO_PlayerInventoryMenuBarButton1, "OnMouseUp", function(ctrl, button, upInside)
 			d("[LSM]ZO_PlayerInventoryMenuBarButton1 - OnMouseUp")
 			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
 				ClearCustomScrollableMenu()
@@ -690,9 +794,8 @@ LSM_DEBUG = {
 
 	end
 
-	local comboBox = lib.testDropdown
-	
-	local testTLC = comboBox:GetOwningWindow()
+
+	local testTLC = lib.testComboBoxContainer:GetOwningWindow()
 	--local testTLC = comboBox:GetParent()
 	if testTLC:IsHidden() then
 		testTLC:SetHidden(false)
@@ -704,6 +807,92 @@ LSM_DEBUG = {
 end
 lib.Test = test
 
+
+local optionsVisibleRowsCurrent = 10
+local optionsDisableFadeGradient = false
+local function test2()
+	if lib.testComboBoxContainer == nil then return end
+	local comboBox = lib.testComboBoxContainer
+	if comboBox then
+		if optionsVisibleRowsCurrent == 10 then
+			optionsVisibleRowsCurrent = 15
+		else
+			optionsVisibleRowsCurrent = 10
+		end
+d("[LSM]Test2 - Updating options- toggling visibleRows to: " ..tostring(optionsVisibleRowsCurrent) .. ", disableFadeGradient to: " ..tostring(optionsDisableFadeGradient))
+
+		if optionsDisableFadeGradient then
+			optionsDisableFadeGradient = false
+		else
+			optionsDisableFadeGradient = true
+		end
+		local optionsNew = {
+			visibleRowsDropdown = optionsVisibleRowsCurrent,
+			visibleRowsSubmenu = optionsVisibleRowsCurrent,
+			disableFadeGradient = optionsDisableFadeGradient,
+			sortEntries=function() return false end,
+			--narrate = narrateOptions,
+		}
+
+		SetCustomScrollableMenuOptions(optionsNew, comboBox)
+	end
+end
+lib.Test2 = test2
+
 --test()
 --	/script LibScrollableMenu.Test()
+
+--Create LSM test UI and TLC
 SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
+
+--Update LSM test UI combobox with new options
+SLASH_COMMANDS["/lsmtest2"] = function() lib.Test2() end
+
+
+
+--[[
+What should happen if a combobox's dropdown entry / submenu entry / nested submenu entry, or a context menu at any of these entries,
+is selected:
+
+[ Comobox ]
+
+Dropdown 1
+ _________________		Submenu dropdown 1
+| 1 Normal entry |	 _____________________
+| 2 Submenu    > |	| 4 Submenu Entry    |	 Nested submenu dropdown 1
+|_3 Submenu_____|   |_5 Nested Submenu_ >|   ________________________
+											| 6 Nested Submenu Entry |
+											__________________________
+
+
+1)  OnSelected: Close Dropdown 1
+	OnContextMenu:
+Cntxt. Dropdown 1
+ _________________		Cntxt. Submenu dropdown 1
+| 7 Normal entry |	 _____________________
+| 8 Submenu    > |	| 10 Submenu Entry    |	 Cntxt. Nested submenu dropdown 1
+|_9 Submenu_____|   |_11 Nested Submenu_ >|  ________________________
+											| 12 Nested Submenu Entry |
+											__________________________
+ OnContextEntrySelected (7-12): Close Cntxt [(Nested) submenu] dropdown 1
+ Keep Dropdown 1 opened (no matter if moc() == Dropdown 1 control or not)
+ Keep all other (nested) submenus and dropdowns opened too.
+
+2) OnSelected: If entry got a callback: Close Dropdown 1
+3) OnSelected: If entry got a callback: Close Dropdown 1
+4) OnSelected: Close Submenu dropdown 1, close Dropdown 1
+5) OnSelected: If entry got a callback: Close Submenu dropdown 1, close Dropdown 1
+6) OnSelected: Close Nested submenu dropdown, close Submenu dropdown 1, close Dropdown 1
+	OnContextMenu:
+Cntxt. Dropdown 2
+ _________________		Cntxt. Submenu dropdown 2
+| 13 Normal entry |	 _____________________
+| 14 Submenu    > |	| 16 Submenu Entry    |	 Cntxt. Nested submenu dropdown 2
+|_15 Submenu_____|  |_17 Nested Submenu_ >|  ________________________
+											| 18 Nested Submenu Entry |
+											__________________________
+ OnContextEntrySelected (13-18): Close Cntxt [(Nested) submenu] dropdown 2
+ Keep Nested Submenu dropdown 1 opened (no matter if moc() == Nested submenu dropdown 1 or not.
+ Keep all other (nested) submenus and dropdowns opened too.
+
+]]

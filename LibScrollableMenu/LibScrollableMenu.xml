@@ -1,5 +1,15 @@
 <GuiXml>
 	<Controls>
+		<!-- Highlight for ZO_SortFilterList entries where a submenu got a callback function - Light green
+			Normal highlight is ZO_SelectionHighlight  -light blue -->
+        <Backdrop name="LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00">
+            <AnchorFill/>
+            <Edge file="EsoUI/Art/Miscellaneous/highlightOverlay_edge_8.dds" edgeFileWidth="64" edgeFileHeight="8" />
+            <Center file="EsoUI/Art/Miscellaneous/highlightOverlay_center.dds" />
+            <Insets left="8" top="8" right="-8" bottom="-8" />
+        </Backdrop>
+
+
 		<Control name="LibScrollableMenu_Entry_Behavior" mouseEnabled="true" virtual="true">
 			<OnMouseEnter>
 				local dropdown = self.m_dropdownObject
@@ -81,7 +91,7 @@
 				</Label>
 				<!-- ZoFontWinH5 inherits="ZO_HorizontalDivider" inherits="ZO_WideHorizontalDivider" offsetY="4" -->
 				<Texture name="$(parent)Divider" inherits="ZO_Options_Divider">
-					<Anchor point="BOTTOMLEFT" offsetX="0" offsetY="-5"/>
+					<Anchor point="BOTTOMLEFT" offsetX="3" offsetY="-5"/>
 					<Anchor point="BOTTOMRIGHT" offsetX="0" offsetY="0" />
 				</Texture>
 			</Controls>
@@ -92,7 +102,7 @@
 			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
 			<OnInitialized>
 				<!-- Is this still needed? -->
-				self.selectible = true <!-- Denotes this is a selectible entry.   -->
+				self.selectable = true <!-- Denotes this is a selectable entry.   -->
 			</OnInitialized>
 
 			<Controls>
@@ -133,6 +143,10 @@
 
 		<!-- Submenu -->
 		<Control name="LibScrollableMenu_ComboBoxSubmenuEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
+			<OnInitialized>
+				<!-- Is this still needed? -->
+				self.selectable = true <!-- Denotes this is a selectable entry.   -->
+			</OnInitialized>
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
@@ -150,47 +164,53 @@
 			TLC so it can be forced above other dropdowns without having to consider layering
 			Since some UI panels have layering set, we set it as overlay high, so it will be above those
 		-->
-		<TopLevelControl name="LibScrollableMenu_Keyboard_Template" layer="CONTROL" tier="HIGH" hidden="true" mouseEnabled="true" clampedToScreen="true" virtual="true">
+		<TopLevelControl name="LibScrollableMenu_Keyboard_Template" inherits="ZO_ComboBoxDropdown_Keyboard_Template" virtual="true">
 			<!--Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" /-->
 			<!-- Width will be set programmatically -->
-			<OnEffectivelyShown>
-				<!-- For some reason this is not working for contextmenu. So, I had added it in a couple places in the lua
-				If we are unable to make this work then it can be removed-->
+			<OnInitialized>
+				-- Overwritten to prevent original OnInitialized
+			</OnInitialized>
+			
+			<OnEffectivelyShown name="BringToTop">
 				self:BringWindowToTop()
 			</OnEffectivelyShown>
 
-			<OnEffectivelyHidden>
+			<OnEffectivelyHidden name="HideDropdown" >
 				if self.object then
 					self.object:HideDropdown()
 				end
 			</OnEffectivelyHidden>
 	
-			<OnMouseEnter>
-			--	d( '- - OnMouseEnter LibScrollableMenu_Keyboard_Template')
-			--	d( self:GetName())
+			<OnMouseEnter name="CloseCheck">
 				if self.object then
 					self.object:OnMouseExitTimeout(self)
 				end
 			</OnMouseEnter>
-			
-			<Controls>
-				<Backdrop name="$(parent)BG" inherits="ZO_DefaultBackdrop">
-					<AnchorFill />
-				</Backdrop>
-
-				<Control name="$(parent)Scroll" inherits="ZO_ScrollList">
-					<Anchor point="TOPLEFT" offsetX="1" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
-					<Anchor point="BOTTOMRIGHT" offsetX="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
-				</Control>
-			</Controls>
 		</TopLevelControl>
 		
-		<!-- Scrollbar padding -->
-		<Control name="LibScrollableMenu_Scroll_No_Bar" virtual="true">
-			<Anchor point="TOPLEFT" />
-			<Anchor point="BOTTOMRIGHT"/>
+		<!-- ZO_ComboBox -->
+		<Control name="LibScrollableMenu_ComboBox_Behavior" virtual="true">
+			<OnMouseEnter name="Narrate">
+				if self.m_comboBox then
+					self.m_comboBox.m_dropdownObject:Narrate("OnComboBoxMouseEnter", self, nil, nil)
+				end
+			</OnMouseEnter>
+			
+			<OnMouseExit name="Narrate">
+				if self.m_comboBox then
+					self.m_comboBox.m_dropdownObject:Narrate("OnComboBoxMouseExit", self, nil, nil)
+				end
+			</OnMouseExit>
 		</Control>
-		<Control name="LibScrollableMenu_Scroll_Bar" virtual="true">
+
+		<!-- Scrollbar padding -->
+		<!-- used when scrollbar is hidden -->
+		<Control name="LibScrollableMenu_ScrollContents_BarHidden" virtual="true">
+			<Anchor point="TOPLEFT" />
+			<Anchor point="BOTTOMRIGHT" offsetX="-3"/>
+		</Control>
+		<!-- used when scrollbar is shown -->
+		<Control name="LibScrollableMenu_ScrollContents_BarShown" virtual="true">
 			<Anchor point="TOPLEFT" />
 			<Anchor point="BOTTOMRIGHT" offsetX="-ZO_SCROLL_BAR_WIDTH" />
 		</Control>
