@@ -88,6 +88,7 @@ local LCMLastAddedMenuItem = lib.LCMLastAddedMenuItem
 ------------------------------------------------------------------------------------------------------------------------
 --Table of last created (theoretically, not shown!) ZO_Menu items -> Which LSM will then show on ShowMenu() call
 lib.ZO_MenuData = {}
+lib.ZO_MenuData_CurrentIndex = 0
 --Preventer variable to keep the current lib.ZO_MenuData entries (e.g. if ClearMenu() is called from ShowMenu() function)
 lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
 --Explicitly call ClearMenu() of ZO_Menu if ClearCustomScrollableMenu() ( -> g_contextMenu:ClearItems()) is called?
@@ -97,6 +98,12 @@ lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
 -- Move LibCustomMenu and normal vanilla ZO_Menu to LibScrollableMenu scrollable menus
 -- -> Means: Map the entries of the ZO_Menu items to LSM entries and then only show LSM instead
 ------------------------------------------------------------------------------------------------------------------------
+
+local function resetZO_MenuClearVariables()
+	lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
+	lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
+end
+
 
 --[[
 local function isSupportedInventoryRowPattern(ownerCtrl, controlName)
@@ -422,19 +429,12 @@ d("<ABORT index: " ..tos(index).. ", name: " ..mytext .. ", exists: " ..tos(lib.
 				["onEnter"] = onEnter,
 				["onExit"] = onExit,
 				["enabled"] = enabled,
-				["entries"] = entries,
-				["isDivider"] = isDivider
-			}
+				["isDivider"] = isDivider,
 
-			--Submenu?
-			if entries ~= nil and itemType == MENU_ADD_OPTION_LABEL then
-				lastAddedZO_MenuItemCtrl.entryData = nil
-				lastAddedZO_MenuItemCtrl.submenuData = dataToAdd
-			else
-				--Normal entry
-				lastAddedZO_MenuItemCtrl.submenuData = nil
-				lastAddedZO_MenuItemCtrl.entryData = dataToAdd
-			end
+				["entries"] = entries,
+			}
+			lastAddedZO_MenuItem.item.entryData = dataToAdd
+			lastAddedZO_MenuItem.item.submenuData = entries ~= nil and dataToAdd
 
 			--Map the entry new and add it to our data
 			local lsmEntryMapped = mapZO_MenuItemToLSMEntry(lastAddedZO_MenuItem, index, false)
@@ -446,7 +446,6 @@ d(">>ADDED LSMEntryMapped, index: " ..tos(index) ..", name: " ..mytext)
 d("<ABORT 2: lastAddedZO_MenuItemCtrl is NIL")
 		end
 	end
-
 
 	---- HOOKs ----
 	local ZO_Menu_showMenuHooked = false
@@ -465,7 +464,7 @@ d("<ABORT 2: lastAddedZO_MenuItemCtrl is NIL")
 				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then return false end
 
 				--Add the entry to lib.ZO_MenuData = {} now
-				LCMLastAddedMenuItem = { name = mytext, callback = myfunction, itemType = itemType }
+				LCMLastAddedMenuItem = { index = ZO_Menu.currentIndex, name = mytext, callback = myfunction, itemType = itemType }
 d("[LSM]PreHook LCM.AddMenuItem-name: " ..tos(mytext) .. "; itemType: " ..tos(itemType))
 			end)
 			--LibCustomMenu.AddSubMenuItem(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, entries, isDivider)
@@ -474,7 +473,7 @@ d("[LSM]PreHook LCM.AddMenuItem-name: " ..tos(mytext) .. "; itemType: " ..tos(it
 				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then return false end
 
 				--Add the entry to lib.ZO_MenuData = {} now
-				LCMLastAddedMenuItem = { name = mytext, callback = myfunction, itemType = itemType, isSubmenu = true, entries = entries }
+				LCMLastAddedMenuItem = { index = ZO_Menu.currentIndex, name = mytext, callback = myfunction, itemType = itemType, isSubmenu = true, entries = entries }
 d("[LSM]PreHook LCM.AddSubMenuItem-name: " ..tos(mytext) .. "; entries: " ..tos(entries))
 			end)
 
@@ -487,16 +486,18 @@ d("[LSM]PreHook LCM.AddSubMenuItem-name: " ..tos(mytext) .. "; entries: " ..tos(
 		if not ZO_Menu_showMenuHooked then
 			--ZO_Menu's AddMenuitem function. Attention: Will be called internally by LibCustomMenu's AddCustom*MenuItem too!
 			SecurePostHook("AddMenuItem", function(labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
-d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; entries: " ..tos(LCMLastAddedMenuItem.entries))
+				--PostHook: We need to get back to last index to compare it properly!
+				local lastAddedIndex = ZO_Menu.currentIndex - 1
+d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; index: " ..tos(LCMLastAddedMenuItem.index) .."/last: " ..tos(lastAddedIndex) .."; entries: " ..tos(LCMLastAddedMenuItem.entries))
 				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then LCMLastAddedMenuItem = {} return false end
 
 				--Was the item added via LibCustomMenu?
 				local entries
-				if libCustomMenuIsLoaded == true and LCMLastAddedMenuItem.name ~= nil then
-					if LCMLastAddedMenuItem.name == labelText and
+				if libCustomMenuIsLoaded == true and LCMLastAddedMenuItem.index ~= nil and LCMLastAddedMenuItem.name ~= nil and LCMLastAddedMenuItem.isSubmenu == true and LCMLastAddedMenuItem.entries ~= nil then
+					if LCMLastAddedMenuItem.index == lastAddedIndex
+							or ( LCMLastAddedMenuItem.name == labelText or (string.format("%s |u16:0::|u", LCMLastAddedMenuItem.name) == labelText) ) and
 							LCMLastAddedMenuItem.callback == onSelect and
-							LCMLastAddedMenuItem.itemType == itemType and
-							LCMLastAddedMenuItem.isSubmenu == true then
+							LCMLastAddedMenuItem.itemType == itemType then
 						entries = ZO_ShallowTableCopy(LCMLastAddedMenuItem.entries)
 					end
 				end
@@ -506,7 +507,7 @@ d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; entries: " ..to
 				local isDivider = (libCustomMenuIsLoaded == true and itemType ~= MENU_ADD_OPTION_HEADER and labelText == libDivider) or labelText == libDivider
 				--As we are at a "PostHook" we need to manually decrease the index of ZO_Menu items by 1 (for our function call), to simulate the correct index
 				-->As it was increased by 1 already in the original AddMenuItem call!
-				storeZO_MenuItemDataForLSM(ZO_Menu.currentIndex - 1, labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled, entries, isDivider)
+				storeZO_MenuItemDataForLSM(lastAddedIndex, labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled, entries, isDivider)
 
 				--return false --Call original ZO_Menu AddMenuItem code now too to increase the ZO_Menu.currentIndex and fill ZO_Menu.items etc. properly
 			end)
@@ -514,7 +515,9 @@ d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; entries: " ..to
 
 			--Hook the ClearMenu function so we can clear our LSM variables too
 			SecurePostHook("ClearMenu", function()
+d("<<<<<<<<<<<<<<<<<<<<<<<")
 				d("[LSM]ClearMenu - preventClearCustomScrollableMenuToClearZO_MenuData: " ..tos(lib.preventClearCustomScrollableMenuToClearZO_MenuData))
+d("<<<<<<<<<<<<<<<<<<<<<<<")
 
 				--Clear the existing LSM context menu entries
 				clearCustomScrollableMenu()
@@ -526,56 +529,69 @@ d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; entries: " ..to
 			-->So we do must NOT call ClearMenu() or ClearCustomScrollableMenu() in between
 
 
-			--TODO 20240417
-			--On ClearMenu() -> ClearCustomScrollableMenu() -> clear lib.ZO_MenuData
-			--On AddMenuItem or AddCustomMenuItem (wenn LibCustomMenu is enabled) and AddCustomSubmenuItem (Attention: AddCustom*Menuitem call AddMenuItem internally again! So set a preventer for duplicate entries there via hooks to LibCustomMenu AddMenuItem and AddSubMenuItem)
-			--> Directly map to LSM entry data and store it in a table lib.ZO_MenuData
-			--> At ShowMenu: Just check entries in lib.ZO_MenuData and populate them via LSM (if relevant)
-			--> Else, as it currently is handled on ShowMenu, each new addon using ShowMenu would multiply the output of the same entries again and again!
-
-
 			--ShowMenu will be called TWICE or at least multiple times -> once for vanilla menu items and then additonally per addon added items!
+			--->So one needs to "only add new entries added to ZO_Menu". Else we would re-add the before added entries which have been added via
+			--->AddCustomScrollableMenuEntry already
+			--->The currently last added entry index will be stored in lib.ZO_MenuData_CurrentIndex
 			ZO_PreHook("ShowMenu", function(owner, initialRefCount, menuType)
-				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then return false end
-				d("[LSM]ShowMenu - initialRefCount: " ..tos(initialRefCount) .. ", menuType: " ..tos(menuType))
-				if lib.debugLCM then
-					LSM_Debug = LSM_Debug or {}
-					LSM_Debug._ZO_Menu_Items = LSM_Debug._ZO_Menu_Items or {}
+				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then
+					resetZO_MenuClearVariables()
+					return false
 				end
+				d("!!!!!!!!!!!!!!!!!!!!")
+				d("[LSM]ShowMenu - initialRefCount: " ..tos(initialRefCount) .. ", menuType: " ..tos(menuType))
+				d("!!!!!!!!!!!!!!!!!!!!")
 
 				--No entries added to internal table (nothing was available in ZO_Menu?) -> Show normal ZO_Menu.items data then
-				if ZO_IsTableEmpty(lib.ZO_MenuData) then
+				local ZO_MenuData = lib.ZO_MenuData
+				if ZO_IsTableEmpty(ZO_MenuData) then
 					d("<ABORT: Calling normal ZO_Menu ShowMenu()")
+					resetZO_MenuClearVariables()
 					return false
 				end
 
 				--Do not support any non default menu types (e.g. dropdown special menus liek ZO_AutoComplete)
 				menuType = menuType or MENU_TYPE_DEFAULT
-				if menuType ~= MENU_TYPE_DEFAULT then return end
+				if menuType ~= MENU_TYPE_DEFAULT then
+					resetZO_MenuClearVariables()
+					return
+				end
 
 
 				owner = owner or GetMenuOwner(ZO_Menu)
 				owner = owner or moc()
-				if owner == nil then return false end
+				if owner == nil then
+					resetZO_MenuClearVariables()
+					return false
+				end
 
 				--local isAllowed, _ = isSupportedInventoryRowPattern(owner, ownerName)
 				local isBlocked, ownerName = isBlacklistedControl(owner)
 				if lib.debugLCM then
-					d("!!!!!!!!!!!!!!!!!!!!")
-					d("[LSM]SecurePostHook-ShowMenu-owner: " .. tos(ownerName) ..", isBlocked: " ..tos(isBlocked))
-					d("!!!!!!!!!!!!!!!!!!!!")
+					d(">>>>> owner: " .. tos(ownerName) ..", isBlocked: " ..tos(isBlocked))
 				end
 				if isBlocked then
+					resetZO_MenuClearVariables()
 					return false
 				end
 
 				--Build new LSM context menu now
 				local numLSMItemsAdded = 0
-				for idx, lsmEntry in ipairs(lib.ZO_MenuData) do
-					d(">Add item of ZO_Menu["..tos(idx).."]: " ..tos(lsmEntry.name))
+				local lastUsedItemIndex = lib.ZO_MenuData_CurrentIndex
+
+				--for idx, lsmEntry in ipairs(lib.ZO_MenuData) do
+				local numItems = #ZO_MenuData
+				local startIndex = lastUsedItemIndex + 1
+				if startIndex >= numItems then
+					resetZO_MenuClearVariables()
+					return
+				end
+
+				--Now loop all non-processed entries from ZO_MenuData and add them to the LSM context menu
+				for idx=startIndex, numItems, 1  do
+					local lsmEntry = ZO_MenuData[idx]
 					if lib.debugLCM then
-						LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items = LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items or {}
-						LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items[#LSM_Debug._ZO_Menu_Items[ownerName].LSM_Items+1] = lsmEntry
+						d("~~~~ Add item of ZO_Menu["..tos(idx).."]: " ..tos(lsmEntry.name))
 					end
 
 					if lsmEntry ~= nil and lsmEntry.name ~= nil then
@@ -584,11 +600,17 @@ d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; entries: " ..to
 						AddCustomScrollableMenuEntry(lsmEntry.name, lsmEntry.callback, lsmEntry.entryType, lsmEntry.entries, lsmEntry)
 						numLSMItemsAdded = numLSMItemsAdded + 1
 					end
+
+					--Set the last added index now, for next call to ShowMenu()
+					lib.ZO_MenuData_CurrentIndex = idx
 				end
 
 				--No LSM mapped items found? Show normal ZO_Menu now
 				if lib.debugLCM then d(">>> numLSMItemsAdded: " ..tos(numLSMItemsAdded)) end
-				if numLSMItemsAdded <= 0 then return false end
+				if numLSMItemsAdded <= 0 then
+					resetZO_MenuClearVariables()
+					return false
+				end
 
 
 				--Hide original ZO_Menu (and LibCustomMenu added entries) now -> Do this here AFTER preparing LSM entries,
@@ -605,6 +627,10 @@ d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; entries: " ..to
 				--lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
 				ZO_Menu:SetHidden(true)
 				ZO_MenuHighlight:SetHidden(true)
+				ZO_Menu.underlayControl:SetHidden(true)
+				ZO_Menu:SetDimensions(0, 0)
+				ZO_Menu.width = 0
+				ZO_Menu.height = 0
 
 				--Set the variable to call ClearMenu() on next reset of the LSM contextmenu (if LSM context menu closes e.g.)
 				lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = true
@@ -650,7 +676,10 @@ d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; entries: " ..to
 	--Unregister a before registered custom scrollable invetory context menu again
 	--returns true if addon was unregistered, false if addon was not unregstered
 	function lib.UnregisterCustomScrollableZO_MenuContextMenu(addonName)
-		if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then return end
+		if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then
+			resetZO_MenuClearVariables()
+			return
+		end
 		assert(addonName ~= nil, sfor('['..MAJOR..'.UnregisterCustomScrollableZO_MenuContextMenu] \'addonName\' missing: %q', tos(addonName)))
 		if registeredCustomScrollableInventoryContextMenus[addonName] ~= nil then
 			registeredCustomScrollableInventoryContextMenus[addonName] = nil
@@ -663,7 +692,10 @@ d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; entries: " ..to
 
 	--Did an addon register a custom scrollable menu as replacement for ZO_Menu?
 	function lib.IsCustomScrollableZO_MenuContextMenuRegistered(addonName)
-		if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then return false end
+		if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then
+			resetZO_MenuClearVariables()
+			return false
+		end
 		assert(addonName ~= nil, sfor('['..MAJOR..'.IsCustomScrollableZO_MenuContextMenuRegistered] \'addonName\' missing: %q', tos(addonName)))
 		return registeredCustomScrollableInventoryContextMenus[addonName] ~= nil
 	end

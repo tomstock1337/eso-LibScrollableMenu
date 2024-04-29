@@ -2619,11 +2619,12 @@ function contextMenuClass:ClearItems()
 	-->vanilla menus and addon added menu entries -> ShowMenu could be called several times then, and ClearMenu() [by LSM] too)
 	if not lib.preventClearCustomScrollableMenuToClearZO_MenuData then
 		lib.ZO_MenuData = {}
+		lib.ZO_MenuData_CurrentIndex = 0
 	end
 
 	--Clear the ZO_Menu items if we clear the LSM context menu items?
 	if lib.callZO_MenuClearMenuOnClearCustomScrollableMenu then
-		lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = nil
+		lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
 d(">Calling ClearMenu() because of callZO_MenuClearMenuOnClearCustomScrollableMenu = true")
 		ClearMenu()
 	end
