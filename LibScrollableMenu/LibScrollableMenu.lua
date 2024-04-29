@@ -2097,7 +2097,7 @@ do -- Row setup functions
 		self:SetupEntryBase(control, data, list)
 	end
 	
-	function comboBox_base:SetupEntryLabel(control, data)
+	function comboBox_base:SetupEntryLabel(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryLabel - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 		control.typeId = ENTRY_ID
 		addIcon(control, data, list)
