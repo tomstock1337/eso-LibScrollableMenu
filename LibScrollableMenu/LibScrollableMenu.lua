@@ -722,28 +722,13 @@ local function clearNewStatus(control, data)
 	end
 end
 
+
 --Set the custom XML virtual template for a dropdown entry
 local function setItemEntryCustomTemplate(item, customEntryTemplates)
-
-	local isDivider = (item.label ~= nil and item.label == libDivider) or item.name == libDivider
-	local isHeader = getValueOrCallback(item.isHeader, item)
-	local isCheckbox = getValueOrCallback(item.isCheckbox, item)
-
-	local hasSubmenu = getValueOrCallback(item.entries, item) ~= nil
-
-	local entryType = ( (hasSubmenu and SUBMENU_ENTRY_ID) or (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) )
-					or getValueOrCallback(item.entryType, item)
-					or ENTRY_ID
-
-	item.isHeader = isHeader
-	item.isDivider = isDivider
-	item.isCheckbox = isCheckbox
-	item.hasSubmenu = hasSubmenu
-
+	local entryType = item.entryType
 	dLog(LSM_LOGTYPE_VERBOSE, "setItemEntryCustomTemplate - name: %q, entryType: %s", tos(item.label or item.name), tos(entryType))
 
 	if entryType then
-		item.entryType = entryType
 		local customEntryTemplate = customEntryTemplates[entryType].template
 		zo_comboBox_setItemEntryCustomTemplate(item, customEntryTemplate)
 	end
@@ -756,6 +741,34 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 		In most cases, typeId + 1 is never used, well, noticed, since the default padding is 0. Making it the same as root entry,
 		Now, Last Entry == entryType + 1
 	]]
+end
+
+local function validateEntryType(item)
+	--Check if any other entryType could be determined
+	local isDivider = (item.label ~= nil and item.label == libDivider) or item.name == libDivider
+	local isHeader = getValueOrCallback(item.isHeader, item)
+	local isCheckbox = getValueOrCallback(item.isCheckbox, item)
+	local hasSubmenu = getValueOrCallback(item.entries, item) ~= nil
+
+	--Prefer passed in entryType
+	local entryType = getValueOrCallback(item.entryType, item)
+	--If no entryType was passed in: Get the entryType by the before determined data
+	if not entryType or entryType == LSM_ENTRY_TYPE_NORMAL then
+		entryType = hasSubmenu and LSM_ENTRY_TYPE_SUBMENU or
+		isDivider and LSM_ENTRY_TYPE_DIVIDER or
+		isHeader and LSM_ENTRY_TYPE_HEADER or
+		isCheckbox and LSM_ENTRY_TYPE_CHECKBOX
+		or LSM_ENTRY_TYPE_NORMAL
+	end
+
+	--Update the item's variables
+	item.isHeader = isHeader
+	item.isDivider = isDivider
+	item.isCheckbox = isCheckbox
+	item.hasSubmenu = hasSubmenu
+
+	--Set the entryType to the itm
+	item.entryType = entryType
 end
 
 local function updateLabelsStrings(data)
@@ -826,7 +839,9 @@ local function addItem_Base(self, itemEntry)
 	dLog(LSM_LOGTYPE_VERBOSE, "addItem_Base - itemEntry: " ..tos(itemEntry))
 	--Get/build data.label and/or data.name values
 	processNameString(itemEntry)
-	
+	--Get the entrType
+	validateEntryType(itemEntry)
+
 	if not itemEntry.customEntryTemplate then
 		setItemEntryCustomTemplate(itemEntry, self.XMLrowTemplates)
 		
@@ -835,11 +850,11 @@ local function addItem_Base(self, itemEntry)
 		elseif itemEntry.isHeader then
 			itemEntry.font = self.m_headerFont
 			itemEntry.color = self.m_headerFontColor
-		elseif itemEntry.isDivider then
+		--elseif itemEntry.isDivider then
 			-- Placeholder: Divider
-		elseif itemEntry.isCheckbox then
+		--elseif itemEntry.isCheckbox then
 			-- Placeholder: Checkbox
-		elseif itemEntry.isNew then
+		--elseif itemEntry.isNew then
 			-- Placeholder: Is new
 		end
 	end
@@ -3214,7 +3229,7 @@ LibScrollableMenu = lib
 WORKING ON - Current version: 2.1.1
 -------------------
 	- Fix divider not being shown if entryType is LSM_ENTRY_TYPE_NORMAL (but text is actually "-" only)
-	- Fix submenu entries not shown
+	- Fix entryTypes passed in to the API functions to be used (even if wrong)
 	- Fix horizontalAlignment in setup functions
 	- Fix list in setup functions
 	- Fix LSMOptionsToZO_ComboBoxOptionsCallbacks -> self.options
