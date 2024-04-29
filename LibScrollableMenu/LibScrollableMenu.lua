@@ -382,6 +382,7 @@ local function getControlName(control, alternativeControl)
 	ctrlName = ctrlName or "n/a"
 	return ctrlName
 end
+lib.GetControlName = getControlName
 
 -- Is moc owned by comboBox
 local function isMocOwnedByComboBox(self, control)
