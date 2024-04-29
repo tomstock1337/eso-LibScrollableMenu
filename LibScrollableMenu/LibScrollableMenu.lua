@@ -147,6 +147,7 @@ local LSM_ENTRY_TYPE_HEADER = 	LSM_ENTRY_TYPE_HEADER
 local LSM_ENTRY_TYPE_CHECKBOX = LSM_ENTRY_TYPE_CHECKBOX
 local LSM_ENTRY_TYPE_SUBMENU = 	LSM_ENTRY_TYPE_SUBMENU
 
+--Used in API RunCustomScrollableMenuItemsCallback to validate passed in entryTypes
 local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_NORMAL] = 	true,
 	[LSM_ENTRY_TYPE_DIVIDER] = 	true,
@@ -156,6 +157,7 @@ local libraryAllowedEntryTypes = {
 }
 lib.allowedEntryTypes = libraryAllowedEntryTypes
 
+--Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be allowed for the contextMenus
 local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_NORMAL] = true,
 	[LSM_ENTRY_TYPE_DIVIDER] = true,
@@ -164,6 +166,7 @@ local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_CHECKBOX] = true,
 }
 
+--Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be used without a callback function
 local entryTypesForContextMenuWithoutMandatoryCallback = {
 	[LSM_ENTRY_TYPE_DIVIDER] = true,
 	[LSM_ENTRY_TYPE_HEADER] = true,
@@ -732,15 +735,6 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 		local customEntryTemplate = customEntryTemplates[entryType].template
 		zo_comboBox_setItemEntryCustomTemplate(item, customEntryTemplate)
 	end
-	--[[ NOTICE: A note on LAST_ENTRY_ID and, why it was removed from here, >= 1.9.
-		Last entry is no longer specifically used by ZO_ComboBox.
-		As such, I removed all references to LAST ENTRY from the lib
-		Each type is given a "Last entry" on creation as...
-				ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId, entryTemplate, entryHeightWithSpacing, setupFunction)
-				ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId + 1, entryTemplate, entryHeight, setupFunction)
-		In most cases, typeId + 1 is never used, well, noticed, since the default padding is 0. Making it the same as root entry,
-		Now, Last Entry == entryType + 1
-	]]
 end
 
 local function validateEntryType(item)
@@ -750,15 +744,15 @@ local function validateEntryType(item)
 	local isCheckbox = getValueOrCallback(item.isCheckbox, item)
 	local hasSubmenu = getValueOrCallback(item.entries, item) ~= nil
 
-	--Prefer passed in entryType
+	--Prefer passed in entryType (if any provided)
 	local entryType = getValueOrCallback(item.entryType, item)
 	--If no entryType was passed in: Get the entryType by the before determined data
 	if not entryType or entryType == LSM_ENTRY_TYPE_NORMAL then
 		entryType = hasSubmenu and LSM_ENTRY_TYPE_SUBMENU or
-		isDivider and LSM_ENTRY_TYPE_DIVIDER or
-		isHeader and LSM_ENTRY_TYPE_HEADER or
-		isCheckbox and LSM_ENTRY_TYPE_CHECKBOX
-		or LSM_ENTRY_TYPE_NORMAL
+					isDivider and LSM_ENTRY_TYPE_DIVIDER or
+					isHeader and LSM_ENTRY_TYPE_HEADER or
+					isCheckbox and LSM_ENTRY_TYPE_CHECKBOX
+					or LSM_ENTRY_TYPE_NORMAL
 	end
 
 	--Update the item's variables
@@ -1641,6 +1635,8 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 			end
 
 			if isLastEntry then
+				--entryTypes are added via ZO_ScrollList_AddDataType and there always exists 1 respective "last" entryType too,
+				--which handles the spacing at the last (most bottom) list entry to be different compared to the normal entryType
 				entryType = entryType + 1
 			else
 				entryHeight = entryHeight + self.spacing
@@ -3229,11 +3225,17 @@ LibScrollableMenu = lib
 WORKING ON - Current version: 2.1.1
 -------------------
 	- Fix divider not being shown if entryType is LSM_ENTRY_TYPE_NORMAL (but text is actually "-" only)
+	TESTED: OK
 	- Fix entryTypes passed in to the API functions to be used (even if wrong)
+	TESTED: OK
 	- Fix horizontalAlignment in setup functions
+	TESTED: OK
 	- Fix list in setup functions
+	TESTED: OK
 	- Fix LSMOptionsToZO_ComboBoxOptionsCallbacks -> self.options
+	TESTED: OK
 	- Add LSM_ENTRY_TYPE_SUBMENU and all needed code
+	TESTED: OK
 
 
 
