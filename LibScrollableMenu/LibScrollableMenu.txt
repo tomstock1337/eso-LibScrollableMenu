@@ -17,4 +17,4 @@ LibScrollableMenu.xml
 
 ## Uncomment this to test the combobox with different menu entryTypes and submenus
 ## Use slash command /lsmtest to show the test UI
-LSM_test.lua
+## LSM_test.lua
