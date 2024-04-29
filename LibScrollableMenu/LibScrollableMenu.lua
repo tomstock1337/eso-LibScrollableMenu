@@ -3,7 +3,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
-lib.version = "2.1"
+lib.version = "2.1.1"
 
 lib.data = {}
 
@@ -132,21 +132,26 @@ local CHECKBOX_ENTRY_ID = 5
 lib.LSM_ENTRY_TYPE_NORMAL = 	ENTRY_ID
 lib.LSM_ENTRY_TYPE_DIVIDER = 	DIVIDER_ENTRY_ID
 lib.LSM_ENTRY_TYPE_HEADER = 	HEADER_ENTRY_ID
+lib.LSM_ENTRY_TYPE_SUBMENU = 	SUBMENU_ENTRY_ID
 lib.LSM_ENTRY_TYPE_CHECKBOX = 	CHECKBOX_ENTRY_ID
 --Add global variables
 LSM_ENTRY_TYPE_NORMAL = 		lib.LSM_ENTRY_TYPE_NORMAL
 LSM_ENTRY_TYPE_DIVIDER = 		lib.LSM_ENTRY_TYPE_DIVIDER
 LSM_ENTRY_TYPE_HEADER = 		lib.LSM_ENTRY_TYPE_HEADER
 LSM_ENTRY_TYPE_CHECKBOX = 		lib.LSM_ENTRY_TYPE_CHECKBOX
+LSM_ENTRY_TYPE_SUBMENU = 		lib.LSM_ENTRY_TYPE_SUBMENU
+
 local LSM_ENTRY_TYPE_NORMAL = 	LSM_ENTRY_TYPE_NORMAL
 local LSM_ENTRY_TYPE_DIVIDER = 	LSM_ENTRY_TYPE_DIVIDER
 local LSM_ENTRY_TYPE_HEADER = 	LSM_ENTRY_TYPE_HEADER
 local LSM_ENTRY_TYPE_CHECKBOX = LSM_ENTRY_TYPE_CHECKBOX
+local LSM_ENTRY_TYPE_SUBMENU = 	LSM_ENTRY_TYPE_SUBMENU
 
 local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_NORMAL] = 	true,
 	[LSM_ENTRY_TYPE_DIVIDER] = 	true,
 	[LSM_ENTRY_TYPE_HEADER] = 	true,
+	[LSM_ENTRY_TYPE_SUBMENU] =	true,
 	[LSM_ENTRY_TYPE_CHECKBOX] =	true,
 }
 lib.allowedEntryTypes = libraryAllowedEntryTypes
@@ -155,12 +160,14 @@ local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_NORMAL] = true,
 	[LSM_ENTRY_TYPE_DIVIDER] = true,
 	[LSM_ENTRY_TYPE_HEADER] = true,
+	[LSM_ENTRY_TYPE_SUBMENU] =	true,
 	[LSM_ENTRY_TYPE_CHECKBOX] = true,
 }
 
 local entryTypesForContextMenuWithoutMandatoryCallback = {
 	[LSM_ENTRY_TYPE_DIVIDER] = true,
 	[LSM_ENTRY_TYPE_HEADER] = true,
+	[LSM_ENTRY_TYPE_SUBMENU] =	true,
 }
 
 
@@ -251,7 +258,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		comboBoxObject:SetSortOrder(sortType , sortOrder )
 	end,
 	['sortOrder'] = function(comboBoxObject, sortOrder)
-		local options = self.options
+		local options = comboBoxObject.options
 		local updatedOptions = comboBoxObject.updatedOptions
 		--SortType was updated already during current comboBoxObject:UpdateOptions(options) -> SetOption() loop? No need to
 		--update the sort order again here
@@ -724,8 +731,8 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 
 	local hasSubmenu = getValueOrCallback(item.entries, item) ~= nil
 
-	local entryType = ( (hasSubmenu and SUBMENU_ENTRY_ID) or getValueOrCallback(item.entryType, item) )
-					or ( (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) )
+	local entryType = ( (hasSubmenu and SUBMENU_ENTRY_ID) or (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) )
+					or getValueOrCallback(item.entryType, item)
 					or ENTRY_ID
 
 	item.isHeader = isHeader
@@ -2086,7 +2093,7 @@ do -- Row setup functions
 		local horizontalAlignment = getValueOrCallback(data.horizontalAlignment, data)
 		horizontalAlignment = horizontalAlignment or self.horizontalAlignment
 		
-		applyEntryFont(control, font, color, alignment)
+		applyEntryFont(control, font, color, horizontalAlignment)
 		self:SetupEntryBase(control, data, list)
 	end
 	
@@ -3204,33 +3211,14 @@ LibScrollableMenu = lib
 
 --[[
 -------------------
-WORKING ON - Current version: 2.1
+WORKING ON - Current version: 2.1.1
 -------------------
-	- Fixed comboBoxClass:OnGlobalMouseUp(eventCode, ...) must close all submenus and the main menu (dropdown) of the ZO_ComboBox if we right click on the main comboBox to show a context menu there
-	- Fixed improved OnGlobalMouseUp functionality
-	- Fixed submenu defaults not inheriting from parent on initialize
-	- Fixed callbacks for OnMenuOpen and OnMenuHide, OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
-	- Fixed callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
-	- Fixed name of widthPadding in row template
-	- Fixed height will recalculate on each open (respecting functions returning values of the entris)
-	- Fixed spacing, width and scollbars
-	- Fixed an issue where dropdowns could display a scroll bar when not necessary
-	- Fixed data.tooltip and data.customTooltip function with show & hide
-	- Fixed all API functions for context menus to accept entries as function returning a table too
-	- Fixed enabled state of entries not firing any onMouseEnter/-exit handlers anymore
-	- Fixed a lot of other smaller errors
-
-	- Exposed row setup functions to object to allow addon use in custom setupFunction of custom virtual XML template
-	- Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
-	- Changed rows which open a submenu, and got a callback function, will be shown light green now at their highlight
-
-	- Added options.disableFadeGradient, options.headerColor, options.normalColor, options.disabledColor
-	- Added disabledColor and normalColor to options
-	- Added item.enabled to processNameString and updateLabelsStrings, for if it is a function, it is updated the same as name and label.
-	- Added dynamic selectable item based on control.selectable and has callback
-	- Added Callback OnDropdownMenuAdded which can change the options of a dropdown pre-init
-	- Added API function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
-	- Added LibDebugLogger and function dLog for logging with and w/o LDL. See slash commands /lsmdebug and /lsmdebugverbose (verbose logging still needs to be manually enabled within LibDebugLogger's Startup config file! Tags: LibScrollableMenu and LibScrollableMenu/Verbose)
+	- Fix divider not being shown if entryType is LSM_ENTRY_TYPE_NORMAL (but text is actually "-" only)
+	- Fix submenu entries not shown
+	- Fix horizontalAlignment in setup functions
+	- Fix list in setup functions
+	- Fix LSMOptionsToZO_ComboBoxOptionsCallbacks -> self.options
+	- Add LSM_ENTRY_TYPE_SUBMENU and all needed code
 
 
 
