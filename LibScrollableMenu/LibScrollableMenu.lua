@@ -3,7 +3,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
-lib.version = "2.1 with LCM support"
+lib.version = "2.1.2"
 
 lib.data = {}
 
@@ -48,6 +48,7 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 --Library internal global locals
 local g_contextMenu -- The contextMenu (like ZO_Menu): Will be created at onAddonLoaded
 
+------------------------------------------------------------------------------------------------------------------------
 --Logging
 lib.doDebug = false
 local logger
@@ -132,35 +133,45 @@ local CHECKBOX_ENTRY_ID = 5
 lib.LSM_ENTRY_TYPE_NORMAL = 	ENTRY_ID
 lib.LSM_ENTRY_TYPE_DIVIDER = 	DIVIDER_ENTRY_ID
 lib.LSM_ENTRY_TYPE_HEADER = 	HEADER_ENTRY_ID
+lib.LSM_ENTRY_TYPE_SUBMENU = 	SUBMENU_ENTRY_ID
 lib.LSM_ENTRY_TYPE_CHECKBOX = 	CHECKBOX_ENTRY_ID
 --Add global variables
 LSM_ENTRY_TYPE_NORMAL = 		lib.LSM_ENTRY_TYPE_NORMAL
 LSM_ENTRY_TYPE_DIVIDER = 		lib.LSM_ENTRY_TYPE_DIVIDER
 LSM_ENTRY_TYPE_HEADER = 		lib.LSM_ENTRY_TYPE_HEADER
 LSM_ENTRY_TYPE_CHECKBOX = 		lib.LSM_ENTRY_TYPE_CHECKBOX
+LSM_ENTRY_TYPE_SUBMENU = 		lib.LSM_ENTRY_TYPE_SUBMENU
+
 local LSM_ENTRY_TYPE_NORMAL = 	LSM_ENTRY_TYPE_NORMAL
 local LSM_ENTRY_TYPE_DIVIDER = 	LSM_ENTRY_TYPE_DIVIDER
 local LSM_ENTRY_TYPE_HEADER = 	LSM_ENTRY_TYPE_HEADER
 local LSM_ENTRY_TYPE_CHECKBOX = LSM_ENTRY_TYPE_CHECKBOX
+local LSM_ENTRY_TYPE_SUBMENU = 	LSM_ENTRY_TYPE_SUBMENU
 
+--Used in API RunCustomScrollableMenuItemsCallback to validate passed in entryTypes
 local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_NORMAL] = 	true,
 	[LSM_ENTRY_TYPE_DIVIDER] = 	true,
 	[LSM_ENTRY_TYPE_HEADER] = 	true,
+	[LSM_ENTRY_TYPE_SUBMENU] =	true,
 	[LSM_ENTRY_TYPE_CHECKBOX] =	true,
 }
 lib.allowedEntryTypes = libraryAllowedEntryTypes
 
+--Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be allowed for the contextMenus
 local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_NORMAL] = true,
 	[LSM_ENTRY_TYPE_DIVIDER] = true,
 	[LSM_ENTRY_TYPE_HEADER] = true,
+	[LSM_ENTRY_TYPE_SUBMENU] =	true,
 	[LSM_ENTRY_TYPE_CHECKBOX] = true,
 }
 
+--Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be used without a callback function
 local entryTypesForContextMenuWithoutMandatoryCallback = {
 	[LSM_ENTRY_TYPE_DIVIDER] = true,
 	[LSM_ENTRY_TYPE_HEADER] = true,
+	[LSM_ENTRY_TYPE_SUBMENU] =	true,
 }
 
 
@@ -252,7 +263,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		comboBoxObject:SetSortOrder(sortType , sortOrder )
 	end,
 	['sortOrder'] = function(comboBoxObject, sortOrder)
-		local options = self.options
+		local options = comboBoxObject.options
 		local updatedOptions = comboBoxObject.updatedOptions
 		--SortType was updated already during current comboBoxObject:UpdateOptions(options) -> SetOption() loop? No need to
 		--update the sort order again here
@@ -718,38 +729,41 @@ end
 
 --Set the custom XML virtual template for a dropdown entry
 local function setItemEntryCustomTemplate(item, customEntryTemplates)
+	local entryType = item.entryType
+	dLog(LSM_LOGTYPE_VERBOSE, "setItemEntryCustomTemplate - name: %q, entryType: %s", tos(item.label or item.name), tos(entryType))
 
+	if entryType then
+		local customEntryTemplate = customEntryTemplates[entryType].template
+		zo_comboBox_setItemEntryCustomTemplate(item, customEntryTemplate)
+	end
+end
+
+local function validateEntryType(item)
+	--Check if any other entryType could be determined
 	local isDivider = (item.label ~= nil and item.label == libDivider) or item.name == libDivider
 	local isHeader = getValueOrCallback(item.isHeader, item)
 	local isCheckbox = getValueOrCallback(item.isCheckbox, item)
-
 	local hasSubmenu = getValueOrCallback(item.entries, item) ~= nil
 
-	local entryType = ( (hasSubmenu and SUBMENU_ENTRY_ID) or getValueOrCallback(item.entryType, item) )
-					or ( (isDivider and DIVIDER_ENTRY_ID) or (isCheckbox and CHECKBOX_ENTRY_ID) or (isHeader and HEADER_ENTRY_ID) )
-					or ENTRY_ID
+	--Prefer passed in entryType (if any provided)
+	local entryType = getValueOrCallback(item.entryType, item)
+	--If no entryType was passed in: Get the entryType by the before determined data
+	if not entryType or entryType == LSM_ENTRY_TYPE_NORMAL then
+		entryType = hasSubmenu and LSM_ENTRY_TYPE_SUBMENU or
+					isDivider and LSM_ENTRY_TYPE_DIVIDER or
+					isHeader and LSM_ENTRY_TYPE_HEADER or
+					isCheckbox and LSM_ENTRY_TYPE_CHECKBOX
+					or LSM_ENTRY_TYPE_NORMAL
+	end
 
+	--Update the item's variables
 	item.isHeader = isHeader
 	item.isDivider = isDivider
 	item.isCheckbox = isCheckbox
 	item.hasSubmenu = hasSubmenu
 
-	dLog(LSM_LOGTYPE_VERBOSE, "setItemEntryCustomTemplate - name: %q, entryType: %s", tos(item.label or item.name), tos(entryType))
-
-	if entryType then
-		item.entryType = entryType
-		local customEntryTemplate = customEntryTemplates[entryType].template
-		zo_comboBox_setItemEntryCustomTemplate(item, customEntryTemplate)
-	end
-	--[[ NOTICE: A note on LAST_ENTRY_ID and, why it was removed from here, >= 1.9.
-		Last entry is no longer specifically used by ZO_ComboBox.
-		As such, I removed all references to LAST ENTRY from the lib
-		Each type is given a "Last entry" on creation as...
-				ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId, entryTemplate, entryHeightWithSpacing, setupFunction)
-				ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId + 1, entryTemplate, entryHeight, setupFunction)
-		In most cases, typeId + 1 is never used, well, noticed, since the default padding is 0. Making it the same as root entry,
-		Now, Last Entry == entryType + 1
-	]]
+	--Set the entryType to the itm
+	item.entryType = entryType
 end
 
 local function updateLabelsStrings(data)
@@ -820,7 +834,9 @@ local function addItem_Base(self, itemEntry)
 	dLog(LSM_LOGTYPE_VERBOSE, "addItem_Base - itemEntry: " ..tos(itemEntry))
 	--Get/build data.label and/or data.name values
 	processNameString(itemEntry)
-	
+	--Get the entrType
+	validateEntryType(itemEntry)
+
 	if not itemEntry.customEntryTemplate then
 		setItemEntryCustomTemplate(itemEntry, self.XMLrowTemplates)
 		
@@ -829,11 +845,11 @@ local function addItem_Base(self, itemEntry)
 		elseif itemEntry.isHeader then
 			itemEntry.font = self.m_headerFont
 			itemEntry.color = self.m_headerFontColor
-		elseif itemEntry.isDivider then
+		--elseif itemEntry.isDivider then
 			-- Placeholder: Divider
-		elseif itemEntry.isCheckbox then
+		--elseif itemEntry.isCheckbox then
 			-- Placeholder: Checkbox
-		elseif itemEntry.isNew then
+		--elseif itemEntry.isNew then
 			-- Placeholder: Is new
 		end
 	end
@@ -1620,6 +1636,8 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 			end
 
 			if isLastEntry then
+				--entryTypes are added via ZO_ScrollList_AddDataType and there always exists 1 respective "last" entryType too,
+				--which handles the spacing at the last (most bottom) list entry to be different compared to the normal entryType
 				entryType = entryType + 1
 			else
 				entryHeight = entryHeight + self.spacing
@@ -2087,11 +2105,11 @@ do -- Row setup functions
 		local horizontalAlignment = getValueOrCallback(data.horizontalAlignment, data)
 		horizontalAlignment = horizontalAlignment or self.horizontalAlignment
 		
-		applyEntryFont(control, font, color, alignment)
+		applyEntryFont(control, font, color, horizontalAlignment)
 		self:SetupEntryBase(control, data, list)
 	end
 	
-	function comboBox_base:SetupEntryLabel(control, data)
+	function comboBox_base:SetupEntryLabel(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryLabel - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 		control.typeId = ENTRY_ID
 		addIcon(control, data, list)
@@ -2594,6 +2612,20 @@ end
 function contextMenuClass:ClearItems()
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ClearItems")
 	self:SetOptions(nil)
+
+	--Clear cached entries of LSM (which have been build based on ZO_Menu items)
+	-->But only if we aren't currently in a ShowMenu() process where we build the entries in lib.ZO_MenuData (accross
+	-->vanilla menus and addon added menu entries -> ShowMenu could be called several times then, and ClearMenu() [by LSM] too)
+	if not lib.preventClearCustomScrollableMenuToClearZO_MenuData then
+		lib.ZO_MenuData = {}
+	end
+
+	--Clear the ZO_Menu items if we clear the LSM context menu items?
+	if lib.callZO_MenuClearMenuOnClearCustomScrollableMenu then
+		lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = nil
+d(">Calling ClearMenu() because of callZO_MenuClearMenuOnClearCustomScrollableMenu = true")
+		ClearMenu()
+	end
 
 	ZO_ComboBox_HideDropdown(self:GetContainer())
 	ZO_ClearNumericallyIndexedTable(self.data)
@@ -3214,33 +3246,9 @@ LibScrollableMenu = lib
 
 --[[
 -------------------
-WORKING ON - Current version: 2.1
+WORKING ON - Current version: 2.1.2
 -------------------
-	- Fixed comboBoxClass:OnGlobalMouseUp(eventCode, ...) must close all submenus and the main menu (dropdown) of the ZO_ComboBox if we right click on the main comboBox to show a context menu there
-	- Fixed improved OnGlobalMouseUp functionality
-	- Fixed submenu defaults not inheriting from parent on initialize
-	- Fixed callbacks for OnMenuOpen and OnMenuHide, OnSubmenuHide and OnSubmenuShow somehow fire very often, instead of once where needed.
-	- Fixed callbacks for OnRowEnter and OnRowExit somehow fire twice, instead of once
-	- Fixed name of widthPadding in row template
-	- Fixed height will recalculate on each open (respecting functions returning values of the entris)
-	- Fixed spacing, width and scollbars
-	- Fixed an issue where dropdowns could display a scroll bar when not necessary
-	- Fixed data.tooltip and data.customTooltip function with show & hide
-	- Fixed all API functions for context menus to accept entries as function returning a table too
-	- Fixed enabled state of entries not firing any onMouseEnter/-exit handlers anymore
-	- Fixed a lot of other smaller errors
-
-	- Exposed row setup functions to object to allow addon use in custom setupFunction of custom virtual XML template
-	- Changed API function's AddCustomScrollableMenuEntry last parameter isNew into table additionalData, to pass in several additional data table values (defined by LSM and custom addon ones)
-	- Changed rows which open a submenu, and got a callback function, will be shown light green now at their highlight
-
-	- Added options.disableFadeGradient, options.headerColor, options.normalColor, options.disabledColor
-	- Added disabledColor and normalColor to options
-	- Added item.enabled to processNameString and updateLabelsStrings, for if it is a function, it is updated the same as name and label.
-	- Added dynamic selectable item based on control.selectable and has callback
-	- Added Callback OnDropdownMenuAdded which can change the options of a dropdown pre-init
-	- Added API function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
-	- Added LibDebugLogger and function dLog for logging with and w/o LDL. See slash commands /lsmdebug and /lsmdebugverbose (verbose logging still needs to be manually enabled within LibDebugLogger's Startup config file! Tags: LibScrollableMenu and LibScrollableMenu/Verbose)
+	LibCustomMenu integration
 
 
 
