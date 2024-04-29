@@ -1,21 +1,31 @@
 <GuiXml>
 	<Controls>
+		<!-- Highlight for ZO_SortFilterList entries where a submenu got a callback function - Light green
+			Normal highlight is ZO_SelectionHighlight  -light blue -->
+        <Backdrop name="LSM_ListRowHighlightTemplate_SubmenuEntryWithCallback" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00">
+            <AnchorFill/>
+            <Edge file="EsoUI/Art/Miscellaneous/highlightOverlay_edge_8.dds" edgeFileWidth="64" edgeFileHeight="8" />
+            <Center file="EsoUI/Art/Miscellaneous/highlightOverlay_center.dds" />
+            <Insets left="8" top="8" right="-8" bottom="-8" />
+        </Backdrop>
+
+
 		<Control name="LibScrollableMenu_Entry_Behavior" mouseEnabled="true" virtual="true">
-			<OnMouseEnter name="BaseHandler">
+			<OnMouseEnter>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnMouseEnterEntry(self)
 				end
 			</OnMouseEnter>
 			
-			<OnMouseExit name="BaseHandler">
+			<OnMouseExit>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnMouseExitEntry(self)
 				end
 			</OnMouseExit>
 			
-			<OnMouseUp name="BaseHandler">
+			<OnMouseUp>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnEntrySelected(self, button, upInside)
@@ -92,7 +102,7 @@
 			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
 			<OnInitialized>
 				<!-- Is this still needed? -->
-				self.selectible = true <!-- Denotes this is a selectible entry.   -->
+				self.selectable = true <!-- Denotes this is a selectable entry.   -->
 			</OnInitialized>
 
 			<Controls>
@@ -133,6 +143,10 @@
 
 		<!-- Submenu -->
 		<Control name="LibScrollableMenu_ComboBoxSubmenuEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
+			<OnInitialized>
+				<!-- Is this still needed? -->
+				self.selectable = true <!-- Denotes this is a selectable entry.   -->
+			</OnInitialized>
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
@@ -193,7 +207,7 @@
 		<!-- used when scrollbar is hidden -->
 		<Control name="LibScrollableMenu_ScrollContents_BarHidden" virtual="true">
 			<Anchor point="TOPLEFT" />
-			<Anchor point="BOTTOMRIGHT"/>
+			<Anchor point="BOTTOMRIGHT" offsetX="-3"/>
 		</Control>
 		<!-- used when scrollbar is shown -->
 		<Control name="LibScrollableMenu_ScrollContents_BarShown" virtual="true">

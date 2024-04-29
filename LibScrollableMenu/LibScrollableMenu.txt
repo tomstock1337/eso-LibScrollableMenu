@@ -10,10 +10,11 @@
 ## IsLibrary: true
 ## Author: IsJustaGhost, Baertram, tomstock (, Kyoma)
 ## APIVersion: 101041 101042
-## OptionalDependsOn: LibDebugLogger>=263 LibCustomMenu>=722
+## OptionalDependsOn: LibDebugLogger>=263 LibCustomMenu=>722
 
 LibScrollableMenu.lua
 LibScrollableMenu.xml
+ZO_Menu2LSM_Mapping.lua
 
 ## Uncomment this to test the combobox with different menu entryTypes and submenus
 ## Use slash command /lsmtest to show the test UI
