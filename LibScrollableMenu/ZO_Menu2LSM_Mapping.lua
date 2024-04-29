@@ -218,7 +218,6 @@ function lib.LoadZO_MenuHooks()
 			local tooltipData = ZO_Menu_ItemCtrl.tooltip
 			local tooltipIsFunction = type(tooltipData) == "function"
 
-
 			--Is LibCustomMenu loaded?
 			if libCustomMenuIsLoaded == true then
 				--LibCustomMenu values in ZO_Menu.items[i].item.entryData or .submenuData:
@@ -235,10 +234,11 @@ function lib.LoadZO_MenuHooks()
 				}
 				]]
 				--Normal entry?
-				local entryData = ZO_MenuItemData.entryData
+				local entryData = ZO_Menu_ItemCtrl.entryData
 				--Is this an entry opening a submenu?
-				local submenuData = ZO_MenuItemData.submenuData
-				local submenuItems = submenuData ~= nil and submenuData.entries
+				local submenuData = ZO_Menu_ItemCtrl.submenuData
+				local submenuItems = (submenuData ~= nil and submenuData.entries ~= nil and submenuData.entries) or nil
+d(">entryData: " ..tos(entryData) .."; submenuData: " ..tos(submenuData) .."; #entries: " ..tos(submenuItems ~= nil and #submenuItems))
 
 				-->LCM Submenu
 				if submenuData ~= nil and not ZO_IsTableEmpty(submenuItems) then
@@ -434,7 +434,7 @@ d("<ABORT index: " ..tos(index).. ", name: " ..mytext .. ", exists: " ..tos(lib.
 				["entries"] = entries,
 			}
 			lastAddedZO_MenuItem.item.entryData = dataToAdd
-			lastAddedZO_MenuItem.item.submenuData = entries ~= nil and dataToAdd
+			lastAddedZO_MenuItem.item.submenuData = (entries ~= nil and dataToAdd) or nil
 
 			--Map the entry new and add it to our data
 			local lsmEntryMapped = mapZO_MenuItemToLSMEntry(lastAddedZO_MenuItem, index, false)
