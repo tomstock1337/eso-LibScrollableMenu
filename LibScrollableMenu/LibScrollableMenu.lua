@@ -900,7 +900,7 @@ local function getTooltipAnchor(self, control, tooltipText, hasSubmenu)
 	if not right then
 		local width, height = GuiRoot:GetDimensions()
 		local fontObject = _G[DEFAULT_FONT]
-		local nameWidth = GetStringWidthScaled(fontObject, tooltipText, 1, SPACE_INTERFACE)
+		local nameWidth = (type(tooltipText) == "string" and GetStringWidthScaled(fontObject, tooltipText, 1, SPACE_INTERFACE)) or 250
 
 		if control:GetRight() + nameWidth > width then
 			right = true
