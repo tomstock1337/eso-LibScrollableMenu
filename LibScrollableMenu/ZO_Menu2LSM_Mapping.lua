@@ -180,14 +180,13 @@ function lib.LoadZO_MenuHooks()
 	end
 
 	--Map the LibCustomMenu and normal ZO_Menu entries data to LibScrollableMenu entries data
-	-->Or: Map simulated ZO_Menu entries (if ZO_PreHook AddMenuItem with retrn true is on!) 
 	local itemAddedNum = 0
 	local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSubmenu)
 		itemAddedNum = itemAddedNum + 1
 		if lib.debugLCM then d("[LSM]mapZO_MenuItemToLSMEntry-itemAddedNum: " .. tos(itemAddedNum) ..", isBuildingSubmenu: " .. tos(isBuildingSubmenu)) end
 		isBuildingSubmenu = isBuildingSubmenu or false
 		local lsmEntry
-		local ZO_Menu_ItemCtrl = ZO_MenuItemData.item
+		local ZO_Menu_ItemCtrl = ZO_MenuItemData.item --~= nil and ZO_ShallowTableCopy(ZO_MenuItemData.item)
 		if ZO_Menu_ItemCtrl ~= nil then
 
 			local entryName
@@ -200,14 +199,14 @@ function lib.LoadZO_MenuHooks()
 			local submenuEntries
 			local isNew = nil
 
-			--LibCustomMenu variables - Does LSM support them all? - TODO?
+			--LibCustomMenu variables - LSM does not support that all yet - TODO?
 			local myfont
 			local normalColor
 			local highlightColor
 			local disabledColor
 			local itemYPad
 			local horizontalAlignment
-			local tooltip
+			local tooltip --todo: Add tooltips check and if function -> map to LSM entry.customTooltip
 			local customTooltip
 			local enabled = true
 
@@ -404,8 +403,7 @@ d(">entryData: " ..tos(entryData) .."; submenuData: " ..tos(submenuData) .."; #e
 	lib.MapZO_MenuItemToLibScrollableMenuEntry = mapZO_MenuItemToLSMEntry
 
 
-	--Store ZO_Menu items data at lib.ZO_MenuData = {}, with the same index as ZO_Menu.items would currently use -> ZO_Menu.items is empty though as we prehooked the AddMenuItem function and suppressed creation of any controls
-	-->Will be directly mapped to LibCustomMenu entries and shown at ShowMenu() then
+	--Store ZO_Menu items data at lib.ZO_MenuData = {}, with the same index as ZO_Menu.itms currently use. Will be directly mapped to LibCustomMenu entries and shown at ShowMenu() then
 	local function storeZO_MenuItemDataForLSM(index, mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled, entries, isDivider)
 d("[LSM]storeLCMEntryDataToLSM-index: " ..tos(index) .."; mytext: " ..tos(mytext) .. "; entries: " .. tos(entries))
 
@@ -414,8 +412,6 @@ d("<ABORT index: " ..tos(index).. ", name: " ..mytext .. ", exists: " ..tos(lib.
 			return
 		end
 
-		--[[
-		--This code is used if ZO_Menu.items[index] exists -> SecurePostHook of AddMenuItem
 		local lastAddedZO_MenuItem = ZO_Menu.items[index]
 		local lastAddedZO_MenuItemCtrl = (lastAddedZO_MenuItem ~= nil and lastAddedZO_MenuItem.item) or nil
 		if lastAddedZO_MenuItemCtrl ~= nil then
@@ -448,53 +444,6 @@ d(">>ADDED LSMEntryMapped, index: " ..tos(index) ..", name: " ..mytext)
 			end
 		else
 d("<ABORT 2: lastAddedZO_MenuItemCtrl is NIL")
-		end
-		]]
-
-		--This code is used if ZO_Menu.items[index] DOES NOT exist -> Z_PreHook with return true of AddMenuItem
-		-->Simulate a ZO_Menu.items[index] entry
-		local lastAddedZO_MenuItem = {
-			item = {												--original ZO_Menu.items[index].item control from menuitem pool. Now only a table
-				OnSelect = myfunction,
-				menuIndex = index,
-				enabled = enabled,
-				onEnter = onEnter,
-				onExit = onExit
-			},
-			checkbox = (itemType == MENU_ADD_OPTION_CHECKBOXand {	--original ZO_Menu.items[index].checkbox control from checkbox pool. Now only a boolean
-				OnSelect = myfunction,
-				menuIndex = index,
-			}) or nil,
-			itemYPad = itemYPad,									--original ZO_Menu.items[index].itemYPad
-		}
-
-		--Now build the subTable for normal entrydata or submenuData
-		local dataToAdd = {
-			["index"] = index,
-			["mytext"] = mytext,
-			["myfunction"] = myfunction,
-			["itemType"] = itemType,
-			["myFont"] = myFont,
-			["normalColor"] = normalColor,
-			["highlightColor"] = highlightColor,
-			["itemYPad"] = itemYPad,
-			["horizontalAlignment"] = horizontalAlignment,
-			["isHighlighted"] = isHighlighted,
-			["onEnter"] = onEnter,
-			["onExit"] = onExit,
-			["enabled"] = enabled,
-			["isDivider"] = isDivider,
-
-			["entries"] = entries,
-		}
-		lastAddedZO_MenuItem.item.entryData = dataToAdd
-		lastAddedZO_MenuItem.item.submenuData = (entries ~= nil and dataToAdd) or nil
-
-		--Map the entry new and add it to our data
-		local lsmEntryMapped = mapZO_MenuItemToLSMEntry(lastAddedZO_MenuItem, index, false)
-		if lsmEntryMapped ~= nil then
-d(">>ADDED LSMEntryMapped, index: " ..tos(index) ..", name: " ..mytext)
-			lib.ZO_MenuData[index] = lsmEntryMapped
 		end
 	end
 
@@ -536,66 +485,30 @@ d("[LSM]PreHook LCM.AddSubMenuItem-name: " ..tos(mytext) .. "; entries: " ..tos(
 		--Check if ZO_Menu hooks were done
 		if not ZO_Menu_showMenuHooked then
 			--ZO_Menu's AddMenuitem function. Attention: Will be called internally by LibCustomMenu's AddCustom*MenuItem too!
-			-->Changed to a ZO_PreHook to suppress ZO_Menu data creation (save time) -< No controls craeted from pools! No entries in ZO_Menu.items!
-			local DEFAULT_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL))
-			local DEFAULT_TEXT_HIGHLIGHT = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT))
-
-			ZO_PreHook("AddMenuItem", function(labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
+			SecurePostHook("AddMenuItem", function(labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
+				--PostHook: We need to get back to last index to compare it properly!
+				local lastAddedIndex = ZO_Menu.currentIndex - 1
+d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; index: " ..tos(LCMLastAddedMenuItem.index) .."/last: " ..tos(lastAddedIndex) .."; entries: " ..tos(LCMLastAddedMenuItem.entries))
 				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then LCMLastAddedMenuItem = {} return false end
 
- 				if not internalassert(onSelect, "["..MAJOR.."]AddMenuItem requires a valid onSelect function") then
-        			-- ESO-804925
-        			return
-    			end
-
-				--Index of currently added entry
-				local addedItemIndex = ZO_Menu.currentIndex
-d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; index: " ..tos(LCMLastAddedMenuItem.index) .."/last: " ..tos(addedItemIndex) .."; entries: " ..tos(LCMLastAddedMenuItem.entries))
-
-				--Presetting default values
-				local isEnabled = enabled
-				if isEnabled == nil then
-					-- Evaluate nil to be equivalent to true for backwards compatibility.
-					isEnabled = true
-				end
-				if labelFont == nil then
-					if not IsInGamepadPreferredMode() then
-						labelFont = "ZoFontGame"
-					else
-						labelFont = "ZoFontGamepad22"
-					end
-				end
-				normalColor = normalColor or DEFAULT_TEXT_COLOR
-				highlightColor = highlightColor or DEFAULT_TEXT_HIGHLIGHT
-				horizontalAlignment = horizontalAlignment or TEXT_ALIGN_LEFT
-				itemYPad = itemYPad or 0
-
-				--Was the item added via LibCustomMenu and is it a submenu?
+				--Was the item added via LibCustomMenu?
 				local entries
 				if libCustomMenuIsLoaded == true and LCMLastAddedMenuItem.index ~= nil and LCMLastAddedMenuItem.name ~= nil and LCMLastAddedMenuItem.isSubmenu == true and LCMLastAddedMenuItem.entries ~= nil then
-					if LCMLastAddedMenuItem.index == addedItemIndex
-							--Attention: LibCustomMenu's function LibCustomMenu.AddSubMenuItem paramete "mytext" is without the |u16:0::|u addition, but the actual call to AddMenuItem
-							--added that prefix then!
+					if LCMLastAddedMenuItem.index == lastAddedIndex
 							or ( LCMLastAddedMenuItem.name == labelText or (string.format("%s |u16:0::|u", LCMLastAddedMenuItem.name) == labelText) ) and
 							LCMLastAddedMenuItem.callback == onSelect and
 							LCMLastAddedMenuItem.itemType == itemType then
-						entries = ZO_ShallowTableCopy(LCMLastAddedMenuItem.entries) --copy the subtable as LCMLastAddedMenuItem will be cleared on next line!
+						entries = ZO_ShallowTableCopy(LCMLastAddedMenuItem.entries)
 					end
 				end
-
-				--Reset data table created a LibCustomMenu hooks
 				LCMLastAddedMenuItem = {}
 
 				--Add the entry to lib.ZO_MenuData = {} now
 				local isDivider = (libCustomMenuIsLoaded == true and itemType ~= MENU_ADD_OPTION_HEADER and labelText == libDivider) or labelText == libDivider
 				--As we are at a "PostHook" we need to manually decrease the index of ZO_Menu items by 1 (for our function call), to simulate the correct index
 				-->As it was increased by 1 already in the original AddMenuItem call!
-				storeZO_MenuItemDataForLSM(addedItemIndex, labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, isEnabled, entries, isDivider)
+				storeZO_MenuItemDataForLSM(lastAddedIndex, labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled, entries, isDivider)
 
-				--Incease the currrently added index for next entry
-				ZO_Menu.currentIndex = ZO_Menu.currentIndex + 1
-
-				return true --Prevent call to original function -> No control additions to ZO_Menu!
 				--return false --Call original ZO_Menu AddMenuItem code now too to increase the ZO_Menu.currentIndex and fill ZO_Menu.items etc. properly
 			end)
 
