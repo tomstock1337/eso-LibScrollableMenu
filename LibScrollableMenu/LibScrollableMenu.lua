@@ -932,15 +932,17 @@ end
 Function to show and hide a custom tooltip control. Pass that in to the data table of any entry, via data.customTooltip!
 Your function needs to create and show/hide that control, and populate the text etc to the control too!
 Parameters:
+-control The control the tooltip blongs to
+-inside boolean to show if your mouse is inside the control. Will be false if tooltip should hide
 -data The table with the current data of the rowControl
 	-> To distinguish if the tooltip should be hidden or shown:	If 1st param data is missing the tooltip will be hidden! If data is provided the tooltip wil be shown
 -rowControl The userdata of the control the tooltip should show about
 -point, offsetX, offsetY, relativePoint: Suggested anchoring points
 
 Example - Show an item tooltip of an inventory item
-data.customTooltip = function(data, relativeTo, point, offsetX, offsetY, relativePoint)
+data.customTooltip = function(control, inside, data, relativeTo, point, offsetX, offsetY, relativePoint)
     ClearTooltip(ItemTooltip)
-	if data then
+	if inside and data then
 		InitializeTooltip(ItemTooltip, relativeTo, point, offsetX, offsetY, relativePoint)
         ItemTooltip:SetBagItem(data.bagId, data.slotIndex)
 		ItemTooltipTopLevel:BringWindowToTop()
@@ -948,8 +950,8 @@ data.customTooltip = function(data, relativeTo, point, offsetX, offsetY, relativ
 end
 
 Another example using a custom control of your addon to show the tooltip:
-customTooltipFunc = function(data, rowControl, point, offsetX, offsetY, relativePoint)
-	if data == nil then
+customTooltipFunc = function(control, inside, data, rowControl, point, offsetX, offsetY, relativePoint)
+	if not inside or data == nil then
 		myAddon.myTooltipControl:SetHidden(true)
 	else
 		myAddon.myTooltipControl:ClearAnchors()
@@ -980,11 +982,11 @@ local function showTooltip(self, control, data, hasSubmenu)
 			lib.lastCustomTooltipFunction = customTooltipFunc
 
 			local onHideCustomTooltipFunc = function()
-				customTooltipFunc(nil, control) --leave 1st param data empty so the calling func knows we are hiding
+				customTooltipFunc(control, false, nil) --Set 2nd param to false and leave 3rd param data empty so the calling func knows we are hiding
 			end
 			lib.onHideCustomTooltipFunc = onHideCustomTooltipFunc
 
-			customTooltipFunc(data, relativeTo, point, offsetX, offsetY, relativePoint)
+			customTooltipFunc(control, true, data, relativeTo, point, offsetX, offsetY, relativePoint)
 		else
 			InitializeTooltip(InformationTooltip, relativeTo, point, offsetX, offsetY, relativePoint)
 			SetTooltipText(InformationTooltip, tooltipText)
