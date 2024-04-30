@@ -879,7 +879,7 @@ end
 
 local function getTooltipAnchor(self, control, tooltipText, hasSubmenu)
 	local relativeTo = control
-	dLog(LSM_LOGTYPE_VERBOSE, "getTooltipAnchor - control: %s, tooltipText: %s, hasSubmenu: %s", tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu))
+	dLog(LSM_LOGTYPE_DEBUG, "getTooltipAnchor - control: %s, tooltipText: %s, hasSubmenu: %s", tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu))
 
 	local submenu = self:GetSubmenu()
 	if hasSubmenu then
@@ -969,7 +969,7 @@ local function showTooltip(self, control, data, hasSubmenu)
 	local customTooltipFunc = data.customTooltip
 	if type(customTooltipFunc) ~= "function" then customTooltipFunc = nil end
 
-	dLog(LSM_LOGTYPE_VERBOSE, "showTooltip - control: %s, tooltipText: %s, hasSubmenu: %s, customTooltipFunc: %s", tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu), tos(customTooltipFunc))
+	dLog(LSM_LOGTYPE_DEBUG, "showTooltip - control: %s, tooltipText: %s, hasSubmenu: %s, customTooltipFunc: %s", tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu), tos(customTooltipFunc))
 
 	--To prevent empty tooltips from opening.
 	if tooltipText == nil and customTooltipFunc == nil then return end

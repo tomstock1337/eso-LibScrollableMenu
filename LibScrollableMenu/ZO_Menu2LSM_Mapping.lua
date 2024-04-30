@@ -277,7 +277,7 @@ function lib.LoadZO_MenuHooks()
 						}
 
 						local tooltipDataSubMenu = submenuEntry.tooltip
-						local tooltipIsFunctionSubMenu = type(tooltipData) == "function"
+						local tooltipIsFunctionSubMenu = type(tooltipDataSubMenu) == "function"
 						if tooltipIsFunctionSubMenu then
 							submenuEntry.entryData.customTooltip = tooltipDataSubMenu
 						else
@@ -434,12 +434,18 @@ function lib.LoadZO_MenuHooks()
 	--Hide the ZO_Menu controls etc. but keep the index, owner and anchors etc. as they are
 	-->ZO_Menu.items should be valid then for other addons to read them until real ClearMenu() is called?
 	local function customClearMenu()
-		--local owner = ZO_Menu.owner
-
-		ZO_Menu:SetHidden(true)
-		ZO_MenuHighlight:SetHidden(true)
 		ZO_Menu_SetSelectedIndex(nil)
 
+		ZO_Menu:ClearAnchors()
+		ZO_Menu:SetDimensions(0, 0)
+		ZO_Menu.width = 0
+		ZO_Menu.height = 0
+		ZO_Menu.spacing = 0
+		ZO_Menu.menuPad = 8
+		ZO_Menu:SetHidden(true)
+		ZO_MenuHighlight:SetHidden(true)
+
+		--local owner = ZO_Menu.owner
 		if ZO_Menu.itemPool then
 			ZO_Menu.itemPool:ReleaseAllObjects()
 		end
@@ -450,16 +456,14 @@ function lib.LoadZO_MenuHooks()
 
 		ZO_Menu.highlightPool:ReleaseAllObjects()
 
-		--ZO_Menu.nextAnchor = ZO_Menu
-
-		ZO_Menu:SetDimensions(0, 0)
-		--ZO_Menu.currentIndex = 1
-		ZO_Menu.width = 0
-		ZO_Menu.height = 0
-		ZO_Menu.items = {}
-		ZO_Menu.spacing = 0
-		ZO_Menu.menuPad = 8
-		--ZO_Menu.owner = nil
+		for idx, menuRowCtrl in ipairs(ZO_Menu.items) do
+			if menuRowCtrl ~= nil and menuRowCtrl.item ~= nil and menuRowCtrl.item.SetHidden ~= nil then
+				menuRowCtrl.item:SetHidden(true)
+				--menuRowCtrl.item:ClearAnchors()
+				menuRowCtrl.item:SetDimensions(0,0)
+			end
+		end
+		--ZO_Menu.items = {} --hides all controls shown but unfortunately will make other addons fail as they still need the references!
 	end
 
 	---- HOOKs ----
@@ -467,6 +471,8 @@ function lib.LoadZO_MenuHooks()
 	local LCM_AddItemFunctionsHooked = false
 	local function addZO_Menu_ShowMenuHook()
 		if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then return end
+
+		local lastAddedIndex = 0
 
 		--LibCustomMenu is loaded?
 		if libCustomMenuIsLoaded then
@@ -492,6 +498,20 @@ function lib.LoadZO_MenuHooks()
 				if lib.debugLCM then d("[LSM]PreHook LCM.AddSubMenuItem-name: " ..tos(mytext) .. "; entries: " ..tos(entries)) end
 			end)
 
+			--LibCustomMenu
+			SecurePostHook("AddCustomMenuTooltip", function(tooltipFunc, index)
+				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then return false end
+				if type(tooltipFunc) ~= "function" then return end
+				index = index or #ZO_Menu.items
+				assert(index > 0 and index <= #ZO_Menu.items, "["..MAJOR.."]No ZO_Menu item found for the tooltip")
+				--Add the tooltip func as customTooltip to the mapped LSM entry now
+				local lsmEntry = lib.ZO_MenuData[index]
+				if lsmEntry == nil then return end
+--d("[LSM]AddCustomMenuTooltip-index: " ..tos(index) .. "; entry: " .. tos(lsmEntry.label or lsmEntry.name))
+				lsmEntry.tooltip = nil
+				lsmEntry.customTooltip = tooltipFunc
+			end)
+
 			--Hook the LibCustomMenu functions
 			LCM_AddItemFunctionsHooked = true
 		end
@@ -501,10 +521,12 @@ function lib.LoadZO_MenuHooks()
 		if not ZO_Menu_showMenuHooked then
 			--ZO_Menu's AddMenuitem function. Attention: Will be called internally by LibCustomMenu's AddCustom*MenuItem too!
 			SecurePostHook("AddMenuItem", function(labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
+				ZO_Menus:SetHidden(false)
+
 				--PostHook: We need to get back to last index to compare it properly!
-				local lastAddedIndex = ZO_Menu.currentIndex - 1
+				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then LCMLastAddedMenuItem = {} lastAddedIndex = 0 return false end
+				lastAddedIndex = ZO_Menu.currentIndex - 1
 				if lib.debugLCM then d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; index: " ..tos(LCMLastAddedMenuItem.index) .."/last: " ..tos(lastAddedIndex) .."; entries: " ..tos(LCMLastAddedMenuItem.entries)) end
-				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then LCMLastAddedMenuItem = {} return false end
 
 				--Was the item added via LibCustomMenu?
 				local entries
@@ -535,6 +557,7 @@ function lib.LoadZO_MenuHooks()
 					d("[LSM]ClearMenu - preventClearCustomScrollableMenuToClearZO_MenuData: " ..tos(lib.preventClearCustomScrollableMenuToClearZO_MenuData))
 					d("<<<<<<<<<<<<<<<<<<<<<<<")
 				end
+				ZO_Menus:SetHidden(false)
 
 				--Clear the existing LSM context menu entries
 				clearCustomScrollableMenu()
@@ -552,20 +575,21 @@ function lib.LoadZO_MenuHooks()
 			--->The currently last added entry index will be stored in lib.ZO_MenuData_CurrentIndex and we will only map and add the new added entries of
 			--->ZO_Menu.items to our table lib.ZO_MenuData
 			ZO_PreHook("ShowMenu", function(owner, initialRefCount, menuType)
+				ZO_Menus:SetHidden(false)
 				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then
 					resetZO_MenuClearVariables()
 					return false
 				end
-				if lib.debugLCM then
+				--if lib.debugLCM then
 					d("!!!!!!!!!!!!!!!!!!!!")
 					d("[LSM]ShowMenu - initialRefCount: " ..tos(initialRefCount) .. ", menuType: " ..tos(menuType))
 					d("!!!!!!!!!!!!!!!!!!!!")
-				end
+				--end
 
 				if next(ZO_Menu.items) == nil then
 					resetZO_MenuClearVariables()
-        			return false
-    			end
+					return false
+				end
 
 				--No entries added to internal table (nothing was available in ZO_Menu?) -> Show normal ZO_Menu.items data then
 				local ZO_MenuData = lib.ZO_MenuData
@@ -581,7 +605,6 @@ function lib.LoadZO_MenuHooks()
 					resetZO_MenuClearVariables()
 					return false
 				end
-
 
 				owner = owner or GetMenuOwner(ZO_Menu)
 				owner = owner or moc()
@@ -633,23 +656,14 @@ function lib.LoadZO_MenuHooks()
 					return false
 				end
 
+				--Set the variable to call ClearMenu() on next reset of the LSM contextmenu (if LSM context menu closes e.g.)
+				lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = true
+
 				--Hide original ZO_Menu (and LibCustomMenu added entries) now -> Do this here AFTER preparing LSM entries,
 				-- else the ZO_Menu.items and sub controls will be emptied already (nil)!
 				-->Actually do NOT clear the ZO_Menu here to keep all entries in. Entries with the same index are skipped as we try to map them from LCM to LSM.
 				--> Only hide the ZO_Menu here but do not call ClearMenu as this would empty the ZO_Menu.items early!
-				--[[
-				ZO_Menu:SetHidden(true)
-				ZO_MenuHighlight:SetHidden(true)
-				ZO_Menu.underlayControl:SetHidden(true)
-				ZO_Menu:SetDimensions(0, 0)
-				ZO_Menu.width = 0
-				ZO_Menu.height = 0
-				ZO_Menu:ClearAnchors()
-				]]
 				customClearMenu()
-
-				--Set the variable to call ClearMenu() on next reset of the LSM contextmenu (if LSM context menu closes e.g.)
-				lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = true
 
 				--Show the LSM contetx menu now with the mapped and added ZO_Menu entries
 				local isZOListDialogHidden = zoListDialog:IsHidden()
@@ -660,6 +674,10 @@ function lib.LoadZO_MenuHooks()
 					visibleRowsDropdown = 	visibleRows,
 					visibleRowsSubmenu = 	visibleRows,
 				})
+				--Hide the ZO_Menu TLC now -> Delayed to next frame (to hide that small [ ] near teh right clicked mouse position)
+				zo_callLater(function()
+					ZO_Menus:SetHidden(true)
+				end, 1)
 
 				--Suppress original ZO_Menu building and "Show" now
 				return true
