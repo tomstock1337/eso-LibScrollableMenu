@@ -332,8 +332,8 @@ local function dLog(debugType, text, ...)
 			logger:Debug(debugText)
 
 		elseif debugType == LSM_LOGTYPE_VERBOSE then
-			if logger.verbose and logger.verbose.isEnabled == true then
-				logger:Verbose(debugText)
+			if logger.verbose then
+				logger.verbose:Verbose(debugText)
 			end
 
 		elseif debugType == LSM_LOGTYPE_INFO then
@@ -1780,7 +1780,7 @@ function comboBox_base:UpdateHeight()
 	local baseEntryHeight = self.baseEntryHeight
 	local maxHeight = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - maxHeight: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s", tos(maxHeight), tos(baseEntryHeight), tos(maxRows), tos(spacing))
+	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - maxHeight: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s", tos(maxHeight), tos(baseEntryHeight), tos(maxRows), tos(spacing))
 
 	self:SetHeight(maxHeight)
 end
@@ -1789,8 +1789,8 @@ end
 
 -- Common functions
 -- Adds the customEntryTemplate to all items added
-function comboBox_base:AddItem(itemEntry, updateOptions, templates)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:AddItem - itemEntry: %s, updateOptions: %s, templates: %s", tos(updateOptions), tos(self.baseEntryHeight), tos(templates))
+function comboBox_base:AddItem(itemEntry, updateOptions)
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:AddItem - itemEntry: %s, updateOptions: %s", tos(itemEntry), tos(updateOptions))
 	addItem_Base(self, itemEntry)
 	zo_comboBox_base_addItem(self, itemEntry, updateOptions)
 	tins(self.m_unsortedItems, itemEntry)
@@ -2189,7 +2189,7 @@ local comboBoxClass = comboBox_base:Subclass()
 
 -- comboBoxClass:New(To simplify locating the beginning of the class
 function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth, initExistingComboBox)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s, initExistingComboBox: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth), tos(initExistingComboBox))
 	comboBoxContainer.m_comboBox = self
 
 	--Reset to the default ZO_ComboBox variables
@@ -2387,7 +2387,7 @@ end
 -->If called later from e.g. UpdateOptions function where options passed in are nil or empty: Reset all to LSM default values
 --->In all cases the function comboBoxClass:UpdateOptions should update the options needed!
 function comboBoxClass:ResetToDefaults(keepExisting)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ResetToDefaults")
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ResetToDefaults-keepExisting: %s", tos(keepExisting))
 	local defaults = ZO_DeepTableCopy(comboBoxDefaults)
 	if keepExisting then
 		mixinTableAndSkipExisting(self, defaults) --keep existing ZO_ComboBox default (or addon changed) values -> e.g. add a LSM helper to an exisitng ZO_ComboBox via AddCustomScrollableComboBoxDropdownMenu
@@ -2607,6 +2607,7 @@ function contextMenuClass:AddMenuItems()
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:AddMenuItems")
 	self:RefreshSortedItems()
 	self:UpdateItems()
+	self:UpdateHeight()
 	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
 	self.m_dropdownObject:AnchorToMouse()
 	self.m_dropdownObject.control:BringWindowToTop()
@@ -3234,13 +3235,16 @@ local function onAddonLoaded(event, name)
 		loadLogger()
 		lib.doDebug = not lib.doDebug
 		if logger then logger:SetEnabled(lib.doDebug) end
+		d("["..MAJOR.."]Debugging: " .. (lib.doDebug == true and "ON" or "OFF"))
 	end
+	local isVerboseDebuggingEnabled = false
 	SLASH_COMMANDS["/lsmdebugverbose"] = function()
 		loadLogger()
-		lib.doDebug = not lib.doDebug
+		isVerboseDebuggingEnabled = not isVerboseDebuggingEnabled
 		if logger and logger.verbose then
-			logger.verbose:SetEnabled(lib.doDebug)
+			logger.verbose:SetEnabled(isVerboseDebuggingEnabled)
 		end
+		d("["..MAJOR.."]Debugging: " .. (lib.doDebug == true and "ON" or "OFF") .. "/ Verbose: " ..tos(isVerboseDebuggingEnabled == true and "ON" or "OFF"))
 	end
 
 	--Load the hooks for ZO_Menu and allow replacement of ZO_Menu items with LSM entries
@@ -3267,7 +3271,9 @@ LibScrollableMenu = lib
 -------------------
 WORKING ON - Current version: 2.1.2
 -------------------
-	LibCustomMenu integration
+	1. LibCustomMenu integration
+	2. Fixed context menu UpdateHeight to show visibleRowsDropdown properly
+	3. Fixed debug logger for verbose messages
 
 
 

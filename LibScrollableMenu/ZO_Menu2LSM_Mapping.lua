@@ -431,6 +431,37 @@ function lib.LoadZO_MenuHooks()
 		end
 	end
 
+	--Hide the ZO_Menu controls etc. but keep the index, owner and anchors etc. as they are
+	-->ZO_Menu.items should be valid then for other addons to read them until real ClearMenu() is called?
+	local function customClearMenu()
+		--local owner = ZO_Menu.owner
+
+		ZO_Menu:SetHidden(true)
+		ZO_MenuHighlight:SetHidden(true)
+		ZO_Menu_SetSelectedIndex(nil)
+
+		if ZO_Menu.itemPool then
+			ZO_Menu.itemPool:ReleaseAllObjects()
+		end
+
+		if ZO_Menu.checkBoxPool then
+			ZO_Menu.checkBoxPool:ReleaseAllObjects()
+		end
+
+		ZO_Menu.highlightPool:ReleaseAllObjects()
+
+		--ZO_Menu.nextAnchor = ZO_Menu
+
+		ZO_Menu:SetDimensions(0, 0)
+		--ZO_Menu.currentIndex = 1
+		ZO_Menu.width = 0
+		ZO_Menu.height = 0
+		ZO_Menu.items = {}
+		ZO_Menu.spacing = 0
+		ZO_Menu.menuPad = 8
+		--ZO_Menu.owner = nil
+	end
+
 	---- HOOKs ----
 	local ZO_Menu_showMenuHooked = false
 	local LCM_AddItemFunctionsHooked = false
@@ -606,6 +637,7 @@ function lib.LoadZO_MenuHooks()
 				-- else the ZO_Menu.items and sub controls will be emptied already (nil)!
 				-->Actually do NOT clear the ZO_Menu here to keep all entries in. Entries with the same index are skipped as we try to map them from LCM to LSM.
 				--> Only hide the ZO_Menu here but do not call ClearMenu as this would empty the ZO_Menu.items early!
+				--[[
 				ZO_Menu:SetHidden(true)
 				ZO_MenuHighlight:SetHidden(true)
 				ZO_Menu.underlayControl:SetHidden(true)
@@ -613,17 +645,20 @@ function lib.LoadZO_MenuHooks()
 				ZO_Menu.width = 0
 				ZO_Menu.height = 0
 				ZO_Menu:ClearAnchors()
+				]]
+				customClearMenu()
 
 				--Set the variable to call ClearMenu() on next reset of the LSM contextmenu (if LSM context menu closes e.g.)
 				lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = true
 
 				--Show the LSM contetx menu now with the mapped and added ZO_Menu entries
-				if lib.debugLCM then d("< ~~ SHOWING LSM! ShowCustomScrollableMenu ~~~") end
 				local isZOListDialogHidden = zoListDialog:IsHidden()
+				local visibleRows = (isZOListDialogHidden and 20) or 15
+				if lib.debugLCM then d("< ~~ SHOWING LSM! ShowCustomScrollableMenu - isZOListDialogHidden: " ..tos(isZOListDialogHidden) .."; visibleRows: " ..tos(visibleRows) .." ~~~") end
 				ShowCustomScrollableMenu(owner, {
 					sortEntries = 			false,
-					visibleRowsDropdown = 	isZOListDialogHidden and 20 or 15,
-					visibleRowsSubmenu = 	isZOListDialogHidden and 20 or 15,
+					visibleRowsDropdown = 	visibleRows,
+					visibleRowsSubmenu = 	visibleRows,
 				})
 
 				--Suppress original ZO_Menu building and "Show" now
@@ -722,13 +757,15 @@ function lib.LoadZO_MenuHooks()
 	local function invContextMenuZO_MenuReplacement()
 		if isZO_MenuContextMenuReplacementRegistered(MAJOR) then
 			unregisterZO_MenuContextMenuReplacement(MAJOR)
+			d("["..MAJOR.."]Using default (ZO_Menu) game context menus")
 		else
 			registerZO_MenuContextMenuReplacement(MAJOR)
+			d("["..MAJOR.."]LSM provides game context menus")
 		end
 	end
 
 	--Toggle the replacement of ZO_Menu (including LibCustomMenu) on and off
-	SLASH_COMMANDS["/lsmuseforinv"] = function() invContextMenuZO_MenuReplacement() end
+	SLASH_COMMANDS["/lsmcontextmenus"] = function() invContextMenuZO_MenuReplacement() end
 
 ------------------------------------------------------------------------------------------------------------------------
 end --function lib.LoadZO_MenuHooks()
