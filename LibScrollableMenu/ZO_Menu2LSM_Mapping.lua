@@ -645,23 +645,23 @@ function lib.LoadZO_MenuHooks()
 	-->LibCustomMenu and vanilla ZO_Menu inventory context menus will be suppressed then, mapped into LSM entries and
 	-->LSM context menu will be shown instead
 	-->Else: Normal ZO_Menu and LibCustomMenu inventory context menus will be used
-	function lib.RegisterCustomScrollableZO_MenuContextMenu(addonName)
-		assert(addonName ~= nil and registeredCustomScrollableInventoryContextMenus[addonName] == nil, sfor('['..MAJOR..'.RegisterCustomScrollableZO_MenuContextMenu] \'addonName\' missing or already registered: %q', tos(addonName)))
+	function lib.RegisterZO_MenuContextMenuReplacement(addonName)
+		assert(addonName ~= nil and registeredCustomScrollableInventoryContextMenus[addonName] == nil, sfor('['..MAJOR..'.RegisterZO_MenuContextMenuReplacement] \'addonName\' missing or already registered: %q', tos(addonName)))
 		registeredCustomScrollableInventoryContextMenus[addonName] = true
 		clearZO_MenuAndLSM()
 		addZO_Menu_ShowMenuHook()
 	end
-	local registerCustomScrollableZO_MenuContextMenu = lib.RegisterCustomScrollableZO_MenuContextMenu
+	local registerZO_MenuContextMenuReplacement = lib.RegisterZO_MenuContextMenuReplacement
 
 
 	--Unregister a before registered custom scrollable invetory context menu again
 	--Returns true if addon was unregistered, false if addon was not unregistered
-	function lib.UnregisterCustomScrollableZO_MenuContextMenu(addonName)
+	function lib.UnregisterZO_MenuContextMenuReplacement(addonName)
 		if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then
 			resetZO_MenuClearVariables()
 			return
 		end
-		assert(addonName ~= nil, sfor('['..MAJOR..'.UnregisterCustomScrollableZO_MenuContextMenu] \'addonName\' missing: %q', tos(addonName)))
+		assert(addonName ~= nil, sfor('['..MAJOR..'.UnregisterZO_MenuContextMenuReplacement] \'addonName\' missing: %q', tos(addonName)))
 		if registeredCustomScrollableInventoryContextMenus[addonName] ~= nil then
 			registeredCustomScrollableInventoryContextMenus[addonName] = nil
 			clearZO_MenuAndLSM()
@@ -669,18 +669,18 @@ function lib.LoadZO_MenuHooks()
 		end
 		return false
 	end
-	local unregisterCustomScrollableZO_MenuContextMenu = lib.UnregisterCustomScrollableZO_MenuContextMenu
+	local unregisterZO_MenuContextMenuReplacement = lib.UnregisterZO_MenuContextMenuReplacement
 
 	--Did an addon with name "<addonName>" register a custom scrollable menu as replacement for ZO_Menu?
-	function lib.IsCustomScrollableZO_MenuContextMenuRegistered(addonName)
+	function lib.IsZO_MenuContextMenuReplacementRegistered(addonName)
 		if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then
 			resetZO_MenuClearVariables()
 			return false
 		end
-		assert(addonName ~= nil, sfor('['..MAJOR..'.IsCustomScrollableZO_MenuContextMenuRegistered] \'addonName\' missing: %q', tos(addonName)))
+		assert(addonName ~= nil, sfor('['..MAJOR..'.IsZO_MenuContextMenuReplacementRegistered] \'addonName\' missing: %q', tos(addonName)))
 		return registeredCustomScrollableInventoryContextMenus[addonName] ~= nil
 	end
-	local isCustomScrollableZO_MenuContextMenuRegistered = lib.IsCustomScrollableZO_MenuContextMenuRegistered
+	local isZO_MenuContextMenuReplacementRegistered = lib.IsZO_MenuContextMenuReplacementRegistered
 
 
 	--------------------------------------------------------------------------------------------------------------------
@@ -692,24 +692,24 @@ function lib.LoadZO_MenuHooks()
 	-->will be used.
 	-->The controlName must be the name of the control where the context menu opens on, the parent control of that control or
 	-->the openingWindow control of that control!
-	function lib.AddControlToCustomScrollableZO_MenuContextMenuBlacklist(controlName)
+	function lib.AddControlToZO_MenuContextMenuReplacementBlacklist(controlName)
 		local controlNameType = type(controlName)
-		assert(controlNameType == "string" and blacklistedControlsForZO_MenuReplacement[controlName] == nil, sfor('['..MAJOR..'.AddControlToCustomScrollableZO_MenuContextMenuBlacklist] \'controlName\' missing, wrong type %q, or already added. Name: %q', tos(controlNameType), tos(controlName)))
+		assert(controlNameType == "string" and blacklistedControlsForZO_MenuReplacement[controlName] == nil, sfor('['..MAJOR..'.AddControlToZO_MenuContextMenuReplacementBlacklist] \'controlName\' missing, wrong type %q, or already added. Name: %q', tos(controlNameType), tos(controlName)))
 		blacklistedControlsForZO_MenuReplacement[controlName] = true
 	end
 
 	--Remove a control from the blacklist that should not be replacing ZO_Menu context menus with LibScrollableMenu context menu.
 	-->For these removed controls the LSM context menu will be shown, instead of ZO_Menu
-	function lib.RemoveControlFromCustomScrollableZO_MenuContextMenuBlacklist(controlName)
+	function lib.RemoveControlFromZO_MenuContextMenuReplacementBlacklist(controlName)
 		local controlNameType = type(controlName)
-		assert(controlNameType == "string" and blacklistedControlsForZO_MenuReplacement[controlName] ~= nil, sfor('['..MAJOR..'.RemoveControlFromCustomScrollableZO_MenuContextMenuBlacklist] \'controlName\' missing, wrong type %q, or was not added yet. Name: %q', tos(controlNameType), tos(controlName)))
+		assert(controlNameType == "string" and blacklistedControlsForZO_MenuReplacement[controlName] ~= nil, sfor('['..MAJOR..'.RemoveControlFromZO_MenuContextMenuReplacementBlacklist] \'controlName\' missing, wrong type %q, or was not added yet. Name: %q', tos(controlNameType), tos(controlName)))
 		blacklistedControlsForZO_MenuReplacement[controlName] = nil
 	end
 
 	--Did an addon register a custom scrollable menu as replacement for ZO_Menu?
-	function lib.IsControlOnCustomScrollableZO_MenuContextMenuBlacklist(controlName)
+	function lib.IsControlOnZO_MenuContextMenuReplacementBlacklist(controlName)
 		local controlNameType = type(controlName)
-		assert(controlNameType == "string", sfor('['..MAJOR..'.IsControlOnCustomScrollableZO_MenuContextMenuBlacklist] \'controlName\' missing or wrong type %q. Name: %q', tos(controlNameType), tos(controlName)))
+		assert(controlNameType == "string", sfor('['..MAJOR..'.IsControlOnZO_MenuContextMenuReplacementBlacklist] \'controlName\' missing or wrong type %q. Name: %q', tos(controlNameType), tos(controlName)))
 		return blacklistedControlsForZO_MenuReplacement[controlName] ~= nil
 	end
 
@@ -719,10 +719,10 @@ function lib.LoadZO_MenuHooks()
 	-- Load the ZO_Menu & LCM -> LSM hook via a slash command
 	--------------------------------------------------------------------------------------------------------------------
 	local function invContextMenuZO_MenuReplacement()
-		if isCustomScrollableZO_MenuContextMenuRegistered(MAJOR) then
-			unregisterCustomScrollableZO_MenuContextMenu(MAJOR)
+		if isZO_MenuContextMenuReplacementRegistered(MAJOR) then
+			unregisterZO_MenuContextMenuReplacement(MAJOR)
 		else
-			registerCustomScrollableZO_MenuContextMenu(MAJOR)
+			registerZO_MenuContextMenuReplacement(MAJOR)
 		end
 	end
 
