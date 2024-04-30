@@ -612,6 +612,7 @@ function lib.LoadZO_MenuHooks()
 				ZO_Menu:SetDimensions(0, 0)
 				ZO_Menu.width = 0
 				ZO_Menu.height = 0
+				ZO_Menu:ClearAnchors()
 
 				--Set the variable to call ClearMenu() on next reset of the LSM contextmenu (if LSM context menu closes e.g.)
 				lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = true
