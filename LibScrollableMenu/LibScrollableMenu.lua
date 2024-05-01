@@ -2627,7 +2627,7 @@ function contextMenuClass:ZO_MenuHooks()
 	-->But only if we aren't currently in a ShowMenu() process where we build the entries in lib.ZO_MenuData (accross
 	-->vanilla menus and addon added menu entries -> ShowMenu could be called several times then, and ClearMenu() [by LSM] too)
 	if not lib.preventClearCustomScrollableMenuToClearZO_MenuData then
-		if lib.debugLCM then d(">Clearing ZO_MenuData* again") end
+		if lib.debugLCM then d("["..MAJOR.."]Clearing ZO_MenuData* again") end
 		lib.ZO_MenuData = {}
 		lib.ZO_MenuData_CurrentIndex = 0
 	end
@@ -2635,7 +2635,7 @@ function contextMenuClass:ZO_MenuHooks()
 	--Clear the ZO_Menu items if we clear the LSM context menu items?
 	if lib.callZO_MenuClearMenuOnClearCustomScrollableMenu then
 		lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
-		if lib.debugLCM then d(">Calling ClearMenu() because of callZO_MenuClearMenuOnClearCustomScrollableMenu = true") end
+		if lib.debugLCM then d("["..MAJOR.."]Calling ClearMenu() because of callZO_MenuClearMenuOnClearCustomScrollableMenu = true") end
 		ClearMenu()
 	end
 end

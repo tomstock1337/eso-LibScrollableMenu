@@ -238,7 +238,7 @@ function lib.LoadZO_MenuHooks()
 				--Is this an entry opening a submenu?
 				local submenuData = ZO_Menu_ItemCtrl.submenuData
 				local submenuItems = (submenuData ~= nil and submenuData.entries ~= nil and submenuData.entries) or nil
-				if lib.debugLCM then d(">entryData: " ..tos(entryData) .."; submenuData: " ..tos(submenuData) .."; #entries: " ..tos(submenuItems ~= nil and #submenuItems)) end
+				if lib.debugLCM then d(">entryData: " ..tos(entryData) .."; submenuData: " ..tos(submenuData) .."; #entries: " ..tos(submenuItems ~= nil and #submenuItems or 0)) end
 
 				-->LCM Submenu
 				if submenuData ~= nil and not ZO_IsTableEmpty(submenuItems) then
@@ -253,8 +253,8 @@ function lib.LoadZO_MenuHooks()
 					highlightColor = 		entryData.highlightColor
 					itemYPad = 				entryData.itemYPad
 					isHeader = 				false
-					tooltip = 				not tooltipIsFunction and tooltipData
-					customTooltip = 		tooltipIsFunction and tooltipData
+					tooltip = 				(not tooltipIsFunction and tooltipData) or nil
+					customTooltip = 		(tooltipIsFunction == true and tooltipData) or nil
 					--enabled =				submenuData.enabled Not supported in LibCustomMenu
 
 					hasSubmenu = true
@@ -265,7 +265,7 @@ function lib.LoadZO_MenuHooks()
 						--Prepapre the needed data table for the recursive call to mapZO_MenuItemToLSMEntry
 						-->Fill in "entryData" table into a DUMMY item
 						submenuEntry.entryData = {
-							mytext = 				submenuEntry.label,
+							mytext = 				submenuEntry.label or submenuEntry.name,
 							itemType =				submenuEntry.itemType,
 							myfunction =			submenuEntry.callback,
 							myfont =				submenuEntry.myfont,
@@ -507,7 +507,7 @@ function lib.LoadZO_MenuHooks()
 				--Add the tooltip func as customTooltip to the mapped LSM entry now
 				local lsmEntry = lib.ZO_MenuData[index]
 				if lsmEntry == nil then return end
---d("[LSM]AddCustomMenuTooltip-index: " ..tos(index) .. "; entry: " .. tos(lsmEntry.label or lsmEntry.name))
+				if lib.debugLCM then d("[LSM]AddCustomMenuTooltip-index: " ..tos(index) .. "; entry: " .. tos(lsmEntry.label or lsmEntry.name)) end
 				lsmEntry.tooltip = nil
 				lsmEntry.customTooltip = tooltipFunc
 			end)
@@ -580,11 +580,11 @@ function lib.LoadZO_MenuHooks()
 					resetZO_MenuClearVariables()
 					return false
 				end
-				--if lib.debugLCM then
+				if lib.debugLCM then
 					d("!!!!!!!!!!!!!!!!!!!!")
 					d("[LSM]ShowMenu - initialRefCount: " ..tos(initialRefCount) .. ", menuType: " ..tos(menuType))
 					d("!!!!!!!!!!!!!!!!!!!!")
-				--end
+				end
 
 				if next(ZO_Menu.items) == nil then
 					resetZO_MenuClearVariables()
@@ -628,7 +628,8 @@ function lib.LoadZO_MenuHooks()
 				--for idx, lsmEntry in ipairs(lib.ZO_MenuData) do
 				local numItems = #ZO_MenuData
 				local startIndex = lastUsedItemIndex + 1
-				if startIndex >= numItems then
+				if startIndex > numItems then
+					if lib.debugLCM then d("<ABORT: startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems)) end
 					resetZO_MenuClearVariables()
 					return false
 				end
