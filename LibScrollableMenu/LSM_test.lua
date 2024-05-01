@@ -849,7 +849,6 @@ SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
 SLASH_COMMANDS["/lsmtest2"] = function() lib.Test2() end
 
 
-
 --[[
 What should happen if a combobox's dropdown entry / submenu entry / nested submenu entry, or a context menu at any of these entries,
 is selected:
