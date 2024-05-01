@@ -410,10 +410,10 @@ local function getScrollContentsTemplate(barHidden)
 	return getDropdownTemplate(barHidden, '_ScrollContents', '_BarHidden', '_BarShown')
 end
 
---------------------------------------------------------------------
---Drpdown Header controls
---------------------------------------------------------------------
 
+--------------------------------------------------------------------
+--Dropdown Header controls
+--------------------------------------------------------------------
 --[[ Adds options
 	options.titleText
 	options.titleFont
@@ -437,24 +437,26 @@ lib.headerControls = {
 	FILTER_CONTAINER	= 5,
 	CUSTOM_CONTROL		= 6,
 }
+local headerControls = lib.headerControls
+
 local refreshDropdownHeader
 do
 	local HeaderFontTitle = "ZoFontHeader3"
 	local HeaderFontSubtitle = "ZoFontHeader2"
 
-	local PARENT			= lib.headerControls.PARENT
-	local TITLE				= lib.headerControls.TITLE
-	local SUBTITLE			= lib.headerControls.SUBTITLE
-	local CENTER_BASELINE	= lib.headerControls.CENTER_BASELINE
-	local TITLE_BASELINE	= lib.headerControls.TITLE_BASELINE
-	local DIVIDER_SIMPLE	= lib.headerControls.DIVIDER_SIMPLE
-	local FILTER_CONTAINER	= lib.headerControls.FILTER_CONTAINER
-	local CUSTOM_CONTROL	= lib.headerControls.CUSTOM_CONTROL
+	local PARENT			= headerControls.PARENT
+	local TITLE				= headerControls.TITLE
+	local SUBTITLE			= headerControls.SUBTITLE
+	local CENTER_BASELINE	= headerControls.CENTER_BASELINE
+	local TITLE_BASELINE	= headerControls.TITLE_BASELINE
+	local DIVIDER_SIMPLE	= headerControls.DIVIDER_SIMPLE
+	local FILTER_CONTAINER	= headerControls.FILTER_CONTAINER
+	local CUSTOM_CONTROL	= headerControls.CUSTOM_CONTROL
 
 	local g_refreshResults = {}
 	local g_currentBottomLeftHeader = PARENT
 
-	local function applyAnchorToControl(control, controlId)
+	local function header_applyAnchorToControl(control, controlId)
 		if control:IsHidden() then control:SetHidden(false) end
 		local controls = control.controls
 
@@ -465,7 +467,7 @@ do
 		g_currentBottomLeftHeader = controlId
 	end
 
-	local function updateAnchors(control, refreshResults)
+	local function header_updateAnchors(control, refreshResults)
 		local owningWindow = control:GetOwningWindow()
 		local hasFocus = owningWindow.filterBox:HasFocus()
 		
@@ -481,7 +483,7 @@ do
 		for controlId, headerControl in ipairs(controls) do
 			headerControl:ClearAnchors()
 			if refreshResults[controlId] then
-				applyAnchorToControl(control, controlId)
+				header_applyAnchorToControl(control, controlId)
 				headerHeight = headerHeight + headerControl:GetHeight() + 5
 				
 				--[[
@@ -499,7 +501,7 @@ do
 		control:SetHeight(headerHeight + 5)
 	end
 
-	local function setAlignment(control, alignment, defaultAlignment)
+	local function header_setAlignment(control, alignment, defaultAlignment)
 		if control == nil then
 			return
 		end
@@ -511,7 +513,7 @@ do
 		control:SetHorizontalAlignment(alignment)
 	end
 
-	local function setFont(control, font, defaultFont)
+	local function header_setFont(control, font, defaultFont)
 		if control == nil then
 			return
 		end
@@ -523,7 +525,7 @@ do
 		control:SetFont(font)
 	end
 
-	local function processData(control, data)
+	local function header_processData(control, data)
 		if control == nil then
 			return false
 		end
@@ -547,7 +549,7 @@ do
 		return data ~= nil
 	end
 
-	local function processControl(control, customControl)
+	local function header_processControl(control, customControl)
 		if control == nil then
 			return false
 		end
@@ -584,27 +586,28 @@ do
 		
 		g_refreshResults = {}
 		
-		g_refreshResults[TITLE] = processData(controls[TITLE], options.titleText)
-		setFont(controls[TITLE], options.titleFont, HeaderFontTitle)
+		g_refreshResults[TITLE] = header_processData(controls[TITLE], options.titleText)
+		header_setFont(controls[TITLE], options.titleFont, HeaderFontTitle)
 		
-		g_refreshResults[SUBTITLE] = processData(controls[SUBTITLE], options.subtitleText)
-		setFont(controls[SUBTITLE], options.subtitleFont, HeaderFontSubtitle)
+		g_refreshResults[SUBTITLE] = header_processData(controls[SUBTITLE], options.subtitleText)
+		header_setFont(controls[SUBTITLE], options.subtitleFont, HeaderFontSubtitle)
 		
-		setAlignment(controls[TITLE], options.titleTextAlignment, TEXT_ALIGN_CENTER)
+		header_setAlignment(controls[TITLE], options.titleTextAlignment, TEXT_ALIGN_CENTER)
 		local showTitle = g_refreshResults[TITLE] or g_refreshResults[SUBTITLE] or false
 		
 		local showDivider = false
-		g_refreshResults[FILTER_CONTAINER] = processData(controls[FILTER_CONTAINER], options.enableFilter)
+		g_refreshResults[FILTER_CONTAINER] = header_processData(controls[FILTER_CONTAINER], options.enableFilter)
 		showDivider = showDivider or g_refreshResults[FILTER_CONTAINER]
 		
-		g_refreshResults[CUSTOM_CONTROL] = processControl(controls[CUSTOM_CONTROL], options.customHeaderControl)
+		g_refreshResults[CUSTOM_CONTROL] = header_processControl(controls[CUSTOM_CONTROL], options.customHeaderControl)
 		showDivider = showDivider or g_refreshResults[CUSTOM_CONTROL]
 		
 		g_refreshResults[DIVIDER_SIMPLE] = (showDivider and showTitle)
 		
-		updateAnchors(control, g_refreshResults)
+		header_updateAnchors(control, g_refreshResults)
 	end
 end
+
 
 --------------------------------------------------------------------
 -- Local functions
@@ -613,6 +616,7 @@ end
 -- zo_clamp(500, 500, 250) >> 500
 -- clamp(500, 500, 250) >> 250
 local function clamp(value, minimum, maximum)
+	dLog(LSM_LOGTYPE_VERBOSE, "clamp - value: %q, minimum: %s, maximum: %s", tos(value), tos(minimum), tos(maximum))
 	if(value >= maximum) then return maximum end
 	if(value <= minimum) then return minimum end
 	return value
@@ -626,18 +630,29 @@ local function getControlName(control, alternativeControl)
 	ctrlName = ctrlName or "n/a"
 	return ctrlName
 end
+lib.GetControlName = getControlName
+
+local function isParentOf(control, selfVar)
+	dLog(LSM_LOGTYPE_VERBOSE, "isParentOf - control: %s, selfVar: %s", tos(getControlName(control)), tos(getControlName(selfVar)))
+	local owningWindow = (control ~= nil and control.GetOwningWindow and control:GetOwningWindow()) or nil
+	return owningWindow and owningWindow.object and owningWindow.object.m_comboBox == selfVar or false
+end
 
 local function throttledCall(callback, delay)
 	delay = delay or throttledCallDelay
+	dLog(LSM_LOGTYPE_VERBOSE, "REGISTERING throttledCall - callback: %s, delay: %s", tos(callback), tos(delay))
 	EM:UnregisterForUpdate(throttledCallDelayName)
 	EM:RegisterForUpdate(throttledCallDelayName, delay, function()
 		EM:UnregisterForUpdate(throttledCallDelayName)
+		dLog(LSM_LOGTYPE_VERBOSE, "DELAYED throttledCall -> CALLING callback now: %s", tos(callback))
 		callback()
 	end)
 end
+lib.ThrottledCall = throttledCall
 
 -- Is moc owned by comboBox
 local function isMocOwnedByComboBox(self, control)
+	dLog(LSM_LOGTYPE_VERBOSE, "isMocOwnedByComboBox - self: %s, control: %s", tos(self), tos(getControlName(control)))
 	local owningWindow = control:GetOwningWindow()
 	local object = owningWindow and owningWindow.object
 	local comboBox = object and object.m_comboBox
@@ -651,6 +666,7 @@ local function isMocOwnedByComboBox(self, control)
 end
 
 local function onGlobalMouseLeftUp(self, button, ...)
+	dLog(LSM_LOGTYPE_VERBOSE, "onGlobalMouseLeftUp - self: %s, button: %s", tos(self), tos(button))
 	if button == MOUSE_BUTTON_INDEX_LEFT then
 		local mocCtrl = moc()
 	
@@ -705,7 +721,7 @@ local function mixinTableAndSkipExisting(targetData, sourceData, callbackFunc, .
 end
 
 --The default callback for the recursiveOverEntries function
-local function defaultRecursiveCallback(_entry)
+local function defaultRecursiveCallback()
 	dLog(LSM_LOGTYPE_VERBOSE, "defaultRecursiveCallback")
 	return false
 end
@@ -1400,7 +1416,6 @@ end
 
 local function onMouseUp(control, data, hasSubmenu, button, upInside)
 	local dropdown = control.m_dropdownObject
-
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseUp - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
 	if upInside then
 		if button == MOUSE_BUTTON_INDEX_LEFT then
@@ -1411,7 +1426,7 @@ local function onMouseUp(control, data, hasSubmenu, button, upInside)
 			if data.callback then
 				dropdown:SelectItemByIndex(control.m_data.m_index)
 			end
-		else
+		elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 			if data.contextMenuCallback then
 				dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntrySelected - contextMenuCallback!")
 				data.contextMenuCallback(control)
@@ -2329,6 +2344,7 @@ end
 ]]
 
 -- TODO: not used
+--[[
 function comboBox_base:IsMouseOverScrollbarControl()
 	local mocCtrl = moc()
 	if mocCtrl ~= nil then
@@ -2340,6 +2356,7 @@ function comboBox_base:IsMouseOverScrollbarControl()
 	
 	return false
 end
+]]
 
 function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:Narrate - eventName: %s, ctrl: %s, hasSubmenu: %s, anchorPoint: %s ", tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint))
@@ -2709,20 +2726,15 @@ function comboBoxClass:AddMenuItems()
 end
 
 function comboBoxClass:BypassOnGlobalMouseUp(button, ...)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:BypassOnGlobalMouseUp - button: %s, isMouseOverScrollbar: %s", tos(button), tos(self:IsMouseOverScrollbarControl()))
-	
-	local function isParentOf(control)
-		local owningWindow = control:GetOwningWindow()
-		return owningWindow and owningWindow.object and owningWindow.object.m_comboBox == self or false
-	end
-	
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:BypassOnGlobalMouseUp - button: %s", tos(button))
+
 	if onGlobalMouseLeftUp(self, button, ...) then
 		return true
 	else
 		if g_contextMenu:IsDropdownVisible() then
 			-- to prevent a context menu selection from closing the comboBox
 			return true
-		elseif not isParentOf(moc()) then
+		elseif not isParentOf(moc(), self) then
 			-- Close comboBox if right-clicked on non-comboBox control
 			return false
 		end
@@ -2733,6 +2745,7 @@ function comboBoxClass:BypassOnGlobalMouseUp(button, ...)
 end
 
 function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:OnGlobalMouseUp")
 	if not self:BypassOnGlobalMouseUp(...) then
 		if self:IsDropdownVisible() then
 			self:HideDropdown()
@@ -2740,8 +2753,8 @@ function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
 			if self.m_container:IsHidden() then
 				self:HideDropdown()
 			else
-				-- If shown in ShowDropdownInternal, the global mouseup will fire and immediately dismiss the combo box. We need to
-				-- delay showing it until the first one fires.
+				-- If shown in ShowDropdownInternal, the global mouseup will fire and immediately dismiss the combo box.
+				-- We need to delay showing it until the first one fires.
 				self:ShowDropdownOnMouseUp()
 			end
 		end
@@ -3263,10 +3276,10 @@ function contextMenuClass:SetPreshowDropdownCallback()
 end
 
 function contextMenuClass:BypassOnGlobalMouseUp(button, ...)
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:BypassOnGlobalMouseUp - button: %s, isMouseOverScrollbar: %s", tos(button), tos(self:IsMouseOverScrollbarControl()))
+	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:BypassOnGlobalMouseUp - button: %s", tos(button))
 
-	if not self:IsDropdownVisible() and button == MOUSE_BUTTON_INDEX_RIGHT then
-		-- Needed to open the context menu
+	if button == MOUSE_BUTTON_INDEX_RIGHT and not self:IsDropdownVisible() then
+		-- Needed to open the context menu (even if any context menu is already shown)
 		return false
 	end
 

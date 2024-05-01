@@ -154,17 +154,17 @@ local function test()
 		local submenuEntries = {
 			{
 
-				name            = "Submenu Entry Test 1 (contexMenu)",
+				name            = "Submenu Entry Test 1 (contextMenu)",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 1")
 				end,
 				contextMenuCallback =   function(self)
-					d("contextMenuCallback")
+					d("Submenu Entry Test 1 (contextMenu) -> Callback")
 					ClearCustomScrollableMenu()
 
-					AddCustomScrollableSubMenuEntry("Submenu entry 1 (function)", subEntries) -- function() return subEntries end --todo: ERROR both do not remove the isNew onMouseEnter at a contextmenu
+					AddCustomScrollableSubMenuEntry("Context Submenu entry 1 (function)", subEntries) -- function() return subEntries end --todo: ERROR both do not remove the isNew onMouseEnter at a contextmenu
 
-					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Parent, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
+					AddCustomScrollableMenuEntry("Context RunCustomScrollableMenuItemsCallback (Parent, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Custom menu Normal entry 1')
 
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
@@ -181,10 +181,9 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenu, nil, true)
 					end)
 
-					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
+					AddCustomScrollableMenuEntry("Context Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 
 					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
-					d("Submenu entry 1")
 				end,
 				--tooltip         = "Submenu Entry Test 1",
 				--icons 			= nil,
@@ -196,10 +195,10 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 					d("Submenu entry test 2")
 				end,
 				contextMenuCallback =   function(self)
-					d("contextMenuCallback")
+					d("Submenu Entry Test 2 (contextMenu) -> Callback")
 					ClearCustomScrollableMenu()
 
-					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Same, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
+					AddCustomScrollableMenuEntry("Context RunCustomScrollableMenuItemsCallback (Same, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Custom menu Normal entry 1')
 
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
@@ -216,10 +215,9 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenu, nil, false)
 					end)
 
-					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
+					AddCustomScrollableMenuEntry("Context Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 
 					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
-					d("Submenu entry 1")
 				end,
 				isNew			= true,
 				--icons 			= nil,
@@ -458,8 +456,8 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 				isNew			= true,
 				--entries         = submenuEntries,
 				--tooltip         =
-				customTooltip   = function(data, rowControl, point, offsetX, offsetY, relativePoint)
-					if data ~= nil then
+				customTooltip   = function(control, isAbove, data, rowControl, point, offsetX, offsetY, relativePoint)
+					if isAbove and data ~= nil then
 						ZO_Tooltips_ShowTextTooltip(rowControl, point or TOP, "Test custom tooltip")
 					else
 						ZO_Tooltips_HideTextTooltip()
