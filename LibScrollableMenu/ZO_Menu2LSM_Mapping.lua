@@ -142,6 +142,7 @@ end
 
 --Hide currently shown context menus
 local function clearZO_MenuAndLSM()
+	ZO_Menus:SetHidden(false)
 	ClearMenu()
 	clearCustomScrollableMenu()
 end
@@ -446,6 +447,7 @@ function lib.LoadZO_MenuHooks()
 		ZO_MenuHighlight:SetHidden(true)
 
 		--local owner = ZO_Menu.owner
+		--[[
 		if ZO_Menu.itemPool then
 			ZO_Menu.itemPool:ReleaseAllObjects()
 		end
@@ -455,14 +457,13 @@ function lib.LoadZO_MenuHooks()
 		end
 
 		ZO_Menu.highlightPool:ReleaseAllObjects()
-
 		for idx, menuRowCtrl in ipairs(ZO_Menu.items) do
 			if menuRowCtrl ~= nil and menuRowCtrl.item ~= nil and menuRowCtrl.item.SetHidden ~= nil then
 				menuRowCtrl.item:SetHidden(true)
-				--menuRowCtrl.item:ClearAnchors()
-				menuRowCtrl.item:SetDimensions(0,0)
+				--menuRowCtrl.item:SetDimensions(0,0)
 			end
 		end
+		]]
 		--ZO_Menu.items = {} --hides all controls shown but unfortunately will make other addons fail as they still need the references!
 	end
 
@@ -524,7 +525,7 @@ function lib.LoadZO_MenuHooks()
 				ZO_Menus:SetHidden(false)
 
 				--PostHook: We need to get back to last index to compare it properly!
-				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then LCMLastAddedMenuItem = {} lastAddedIndex = 0 return false end
+				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then LCMLastAddedMenuItem = {} lastAddedIndex = 0 return end
 				lastAddedIndex = ZO_Menu.currentIndex - 1
 				if lib.debugLCM then d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; index: " ..tos(LCMLastAddedMenuItem.index) .."/last: " ..tos(lastAddedIndex) .."; entries: " ..tos(LCMLastAddedMenuItem.entries)) end
 

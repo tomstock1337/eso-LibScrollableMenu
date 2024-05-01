@@ -1377,7 +1377,7 @@ function dropdownClass:AnchorToControl(parentControl)
 	
 	local relativeTo = parentControl.m_dropdownObject.scrollControl
 	-- Get offsetY in relation to parentControl's top in the scroll container
-    local offsetY = select(6, parentControl:GetAnchor(0))
+    local offsetY = select(6, parentControl:GetAnchor(0)) - 3
 
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AnchorToControl - point: %s, relativeTo: %s, relativePoint: %s offsetX: %s, offsetY: %s", tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(offsetX), tos(offsetY))
 
