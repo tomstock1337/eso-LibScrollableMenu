@@ -2620,6 +2620,7 @@ function contextMenuClass:ZO_MenuHooks()
 		lib.ZO_MenuData_CurrentIndex = 0
 		lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
 		lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
+		lib.ZO_Menu_cBoxControlsToMonitor = {}
 		return
 	end
 
@@ -2630,6 +2631,7 @@ function contextMenuClass:ZO_MenuHooks()
 		if lib.debugLCM then d("["..MAJOR.."]Clearing ZO_MenuData* again") end
 		lib.ZO_MenuData = {}
 		lib.ZO_MenuData_CurrentIndex = 0
+		lib.ZO_Menu_cBoxControlsToMonitor = {}
 	end
 
 	--Clear the ZO_Menu items if we clear the LSM context menu items?
