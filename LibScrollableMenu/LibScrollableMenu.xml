@@ -2,27 +2,18 @@
 	<Controls>
 		<!-- Highlight for ZO_SortFilterList entries where a submenu got a callback function - Light green
 			Normal highlight is ZO_SelectionHighlight  -light blue -->
-        <Backdrop name="LibScrollableMenu_Highlight_WithCallback" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00">
-            <AnchorFill/>
-            <Edge file="EsoUI/Art/Miscellaneous/highlightOverlay_edge_8.dds" edgeFileWidth="64" edgeFileHeight="8" />
-            <Center file="EsoUI/Art/Miscellaneous/highlightOverlay_center.dds" />
-            <Insets left="8" top="8" right="-8" bottom="-8" />
-            <!--Controls>
-                <Texture name="$(parent)MungeOverlay" textureFile="EsoUI/Art/Tooltips/munge_overlay.dds" layer="CONTROLS" level="1" addressMode="WRAP" hidden="false">
-                    <Anchor point="TOPLEFT" offsetY="1" />
-                    <Anchor point="BOTTOMRIGHT" offsetY="-2" />
-                </Texture>
+		<Backdrop name="LibScrollableMenu_Highlight_WithOutCallback" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00">
+			<AnchorFill/>
+			<Edge file="EsoUI/Art/Miscellaneous/highlightOverlay_edge_8.dds" edgeFileWidth="64" edgeFileHeight="8" />
+			<Center file="EsoUI/Art/Miscellaneous/highlightOverlay_center.dds" />
+			<Insets left="8" top="8" right="-8" bottom="-8" />
+			<!--Controls>
+				<Texture name="$(parent)MungeOverlay" textureFile="EsoUI/Art/Tooltips/munge_overlay.dds" layer="CONTROLS" level="1" addressMode="WRAP" hidden="false">
+					<Anchor point="TOPLEFT" offsetY="1" />
+					<Anchor point="BOTTOMRIGHT" offsetY="-2" />
+				</Texture>
 			</Controls-->
-        </Backdrop>
-		
-		<Texture name="LibScrollableMenu_Highlight_SubmenuOpened" textureFile="esoui/art/contacts/social_list_bgstrip_highlight.dds" alpha="0" virtual="true">
-			<AnchorFill />
-			<TextureCoords left="1" right="0" top="0" bottom="0" />
-		</Texture>
-		
-		<Texture name="LibScrollableMenu_Highlight_SubmenuOpened_WithCallback" inherits="LibScrollableMenu_Highlight_SubmenuOpened" color="00ff00" virtual="true">
-			<AnchorFill />
-		</Texture>
+		</Backdrop>
 		
 		<!-- Base row template with Multi-Icon -->
 		<Control name="LibScrollableMenu_IconEntry_Template" virtual="true">
@@ -32,7 +23,7 @@
 				<Control name="$(parent)IconContainer">
 					<Dimensions x="25"  y="25"/>
 					<Anchor point="TOPLEFT" offsetX="0" offsetY="0"/>
-					<Anchor point="BOTTOMLEFT" offsetY="-4" />
+					<Anchor point="BOTTOMLEFT" offsetY="0" />
 					<Controls>
 						<Texture name="$(parent)Icon" inherits="ZO_MultiIcon">
 							<!--Dimensions x="25"  y="25"/>
@@ -54,7 +45,7 @@
 			</Controls>
 		</Control>
 
-        <Control name="LibScrollableMenu_ComboBoxEntry_Behavior" inherits="LibScrollableMenu_IconEntry_Template" level="3" mouseEnabled="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxEntry_Behavior" inherits="LibScrollableMenu_IconEntry_Template" level="3" mouseEnabled="true" virtual="true">
 			<OnMouseEnter> <!-- name="BaseHandler"-->
 				local dropdown = self.m_dropdownObject
 				if dropdown then
@@ -75,7 +66,7 @@
 					dropdown:OnEntrySelected(self, button, upInside)
 				end
 			</OnMouseUp>
-        </Control>
+		</Control>
 
 		<!-- Row templates -->
 		<!-- Divider | no icon no handlers -->
@@ -147,7 +138,7 @@
 				</Button>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
 					<Anchor point="LEFT" relativeTo="$(parent)Checkbox" relativePoint="RIGHT" offsetX="4"/>
-					<Anchor point="RIGHT" offsetX="-25" />
+					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
 				</Label>
 			</Controls>
 		</Control>
@@ -166,7 +157,7 @@
 				<Texture name="$(parent)Arrow" textureFile="EsoUI/Art/Miscellaneous/colorPicker_slider_vertical.dds">
 					<TextureCoords left="0" right="0.5" top="0" bottom="1"/>
 					<Dimensions x="16"  y="20"/>
-					<Anchor point="LEFT" relativeTo="$(parent)Label" relativePoint="RIGHT" offsetY="0"/>
+					<Anchor point="LEFT" relativeTo="$(parent)Label" relativePoint="RIGHT" offsetY="1"/>
 				</Texture>
 			</Controls>
 		</Control>
@@ -198,13 +189,13 @@
 			
 			<OnShow name="Narrate">
 				if self.object then
-					self.object:OnShow(self.object:GetFormattedNarrateEvent('Show'))
+			--		self.object:OnShow(self.object:GetFormattedNarrateEvent('Show'))
 				end
 			</OnShow>
 			
 			<OnHide name="Narrate">
 				if self.object then
-					self.object:OnHide(self.object:GetFormattedNarrateEvent('Hide'))
+			--		self.object:OnHide(self.object:GetFormattedNarrateEvent('Hide'))
 				end
 			</OnHide>
 		</TopLevelControl>
@@ -213,6 +204,12 @@
 			<OnInitialized>
 				-- Overwritten to prevent original OnInitialized
 			</OnInitialized>
+			<Controls>
+				<Control name="$(parent)Scroll" override="true">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
+				</Control>
+			</Controls>
 		</TopLevelControl>
 		
 		<TopLevelControl name="LibScrollableMenu_Dropdown_Template_WithHeader"inherits="LibScrollableMenu_Dropdown_Behavior" virtual="true">
@@ -242,8 +239,23 @@
 
 					<Controls>
 						<!-- Provides an area that clearly shows the border of the header -->
-						<Backdrop name="$(parent)BG" inherits="ZO_DefaultBackdrop">
+						<Backdrop name="$(parent)BG">
 							<AnchorFill />
+							
+							<Edge file="EsoUI/Art/Tooltips/UI-Border.dds" edgeFileWidth="128" edgeFileHeight="16" />
+							<!--Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds" /-->
+							<Center file="" />
+							<Insets left="16" top="16" right="-16" bottom="-16" />
+							
+							<OnInitialized>
+								self:SetCenterColor(0, 0, 0, 0)
+							</OnInitialized>
+							
+							<Controls>
+								<Texture name="$(parent)MungeOverlay" textureFile="EsoUI/Art/Tooltips/munge_overlay.dds" addressMode="WRAP">
+									<AnchorFill />
+								</Texture>
+							</Controls>
 						</Backdrop>
 
 						<!-- Used to anchor the first control to the header -->
@@ -418,6 +430,17 @@
 		<Control name="LibScrollableMenu_ScrollContents_BarShown" virtual="true">
 			<Anchor point="TOPLEFT" />
 			<Anchor point="BOTTOMRIGHT" offsetX="-ZO_SCROLL_BAR_WIDTH" />
+		</Control>
+		
+		
+		<Control name="LibScrollableMenu_Clean">
+			<Dimensions x="500" y="200" />
+			
+			<Controls>
+				<Texture name="$(parent)a" textureFile="EsoUI\Art\PregameAnimatedBackground\Dune\bretonCliff_bakedOuroboros.dds" pixelRoundingEnabled="false" level="10">
+					<AnchorFill />
+				</Texture>
+			</Controls>
 		</Control>
 	</Controls>
 </GuiXml>
