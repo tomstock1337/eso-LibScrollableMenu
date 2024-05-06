@@ -1378,8 +1378,6 @@ local narrationEventToLibraryNarrateFunction = {
 
 local function onMouseEnter(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
-
-	--todo: 20240506 Can be replaced by LibScrollableMenu_ComboBox_Behavior XML handler?
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseEnter', data, control)
@@ -1390,8 +1388,6 @@ end
 
 local function onMouseExit(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
-
-	--todo: 20240506 Can be replaced by LibScrollableMenu_ComboBox_Behavior XML handler?
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseExit', data, control)
@@ -3306,10 +3302,12 @@ end
 --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --[API - Custom scrollable ZO_ComboBox menu]
 --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
---Adds a scrollable dropdown to the comboBoxControl, replacing the original dropdown, and enabling scrollable submenus (even with nested scrolable submenus)
+--Adds a scrollable dropdown to the comboBoxControl, replacing the original dropdown, and enabling scrollable submenus (even with nested scrollable submenus)
 --	control parent 							Must be the parent control of the comboBox
---	control comboBoxContainer 				Must be any ZO_ComboBox control (e.g. created from virtual template ZO_ComboBox)
+--	control comboBoxContainer 				Must be any ZO_ComboBox control (e.g. created from virtual template ZO_ComboBox -> Where ZO_ComboBox_ObjectFromContainer can find the m_comboBox object)
+--
 --  table options:optional = {
+--> === Dropdown general customization =================================================================================
 --		number visibleRowsDropdown:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened dropdown
 --		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
 --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically: ZO_SORT_ORDER_UP or ZO_SORT_ORDER_DOWN
@@ -3321,13 +3319,24 @@ end
 --		table headerColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for header entries
 --		table normalColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all normal (enabled) entries
 --		table disabledColor:optional 			table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all disabled entries
+-->  ===Dropdown header/title ==========================================================================================
+--		string titleText:optional				String or function returning a string: Title text to show above the dropdown entries
+--		string subtitleText:optional			String or function returning a string: Sub-title text to show below the titleText and above the dropdown entries
+--		number titleTextAlignment:optional		Number or function returning a number: The title's vertical alignment, e.g. TEXT_ALIGN_CENTER
+--		userdata customHeaderControl:optional	Userdata or function returning Userdata: A custom control thta should be shown above the dropdown entries
+-->  === Dropdown text search & filter =================================================================================
+--		boolean enableFilter:optional			Boolean or function returning boolean which controls if the text search/filter editbox at the dropdown header is shown
+--->  === Dropdown callback functions
 -- 		function preshowDropdownFn:optional 	function function(ctrl) codeHere end: to run before the dropdown shows
---		table	XMLRowTemplates:optional		Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
+--->  === Dropdown's Custom XML virtual row/entry templates ============================================================
+--		table XMLRowTemplates:optional			Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
 --												"template" String = XMLVirtualTemplateName,
 --												rowHeight number = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 --												setupFunc = function(control, data, list)
 --													local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer) -- comboBoxContainer = The ZO_ComboBox control you created via WINDOW_MANAGER:CreateControlFromVirtual("NameHere", yourTopLevelControlToAddAsAChild, "ZO_ComboBox")
 --													comboBox:SetupEntryLabel(control, data, list)
+--													-->See class comboBox_base:SetupEntry* functions above for examples how the setup functions provide the data to the row control
+--													-->Reuse those where possible by calling them via e.g. self:SetupEntryBase(...) and then just adding your additional controls setup routines
 --												end
 --												-->See local table "defaultXMLTemplates" in LibScrollableMenu
 --												-->Attention: If you do not specify all template attributes, the non-specified will be mixedIn from defaultXMLTemplates[entryType_ID] again!
@@ -3336,6 +3345,7 @@ end
 --			[lib.scrollListRowTypes.SUBMENU_ENTRY_ID] = { template = "XMLVirtualTemplateRow_ForSubmenuEntryId", ... },
 --			...
 --		}
+--->  === Narration: UI screen reader, with accessibility mode enabled only ============================================
 --		table	narrate:optional				Table or function returning a table with key = narration event and value = function called for that narration event.
 --												Each functions signature/parameters is shown below!
 --												-> The function either builds your narrateString and narrates it in your addon.
