@@ -1,19 +1,16 @@
 <GuiXml>
 	<Controls>
-		<!-- Highlight for ZO_SortFilterList entries where a submenu got a callback function - Light green
-			Normal highlight is ZO_SelectionHighlight  -light blue -->
-		<Backdrop name="LibScrollableMenu_Highlight_WithOutCallback" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00">
-			<AnchorFill/>
-			<Edge file="EsoUI/Art/Miscellaneous/highlightOverlay_edge_8.dds" edgeFileWidth="64" edgeFileHeight="8" />
-			<Center file="EsoUI/Art/Miscellaneous/highlightOverlay_center.dds" />
-			<Insets left="8" top="8" right="-8" bottom="-8" />
+		<!-- Munge template -->
 			<!--Controls>
 				<Texture name="$(parent)MungeOverlay" textureFile="EsoUI/Art/Tooltips/munge_overlay.dds" layer="CONTROLS" level="1" addressMode="WRAP" hidden="false">
 					<Anchor point="TOPLEFT" offsetY="1" />
 					<Anchor point="BOTTOMRIGHT" offsetY="-2" />
 				</Texture>
 			</Controls-->
-		</Backdrop>
+			
+		<!-- Highlight for ZO_SortFilterList entries where a submenu got a callback function - Light green
+			Normal highlight is ZO_SelectionHighlight  -light blue -->
+		<Backdrop name="LibScrollableMenu_Highlight_Green" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00"/>
 		
 		<!-- Base row template with Multi-Icon -->
 		<Control name="LibScrollableMenu_IconEntry_Template" virtual="true">
@@ -189,13 +186,13 @@
 			
 			<OnShow name="Narrate">
 				if self.object then
-			--		self.object:OnShow(self.object:GetFormattedNarrateEvent('Show'))
+					self.object:OnShow(self.object:GetFormattedNarrateEvent('Show'))
 				end
 			</OnShow>
 			
 			<OnHide name="Narrate">
 				if self.object then
-			--		self.object:OnHide(self.object:GetFormattedNarrateEvent('Hide'))
+					self.object:OnHide(self.object:GetFormattedNarrateEvent('Hide'))
 				end
 			</OnHide>
 		</TopLevelControl>
@@ -406,6 +403,7 @@
 		</TopLevelControl>
 		
 		<!-- ZO_ComboBox -->
+		<!--
 		<Control name="LibScrollableMenu_ComboBox_Behavior" virtual="true">
 			<OnMouseEnter name="Narrate">
 				if self.m_comboBox then
@@ -419,6 +417,7 @@
 				end
 			</OnMouseExit>
 		</Control>
+		-->
 
 		<!-- Scrollbar padding -->
 		<!-- used when scrollbar is hidden -->
@@ -430,17 +429,6 @@
 		<Control name="LibScrollableMenu_ScrollContents_BarShown" virtual="true">
 			<Anchor point="TOPLEFT" />
 			<Anchor point="BOTTOMRIGHT" offsetX="-ZO_SCROLL_BAR_WIDTH" />
-		</Control>
-		
-		
-		<Control name="LibScrollableMenu_Clean">
-			<Dimensions x="500" y="200" />
-			
-			<Controls>
-				<Texture name="$(parent)a" textureFile="EsoUI\Art\PregameAnimatedBackground\Dune\bretonCliff_bakedOuroboros.dds" pixelRoundingEnabled="false" level="10">
-					<AnchorFill />
-				</Texture>
-			</Controls>
 		</Control>
 	</Controls>
 </GuiXml>

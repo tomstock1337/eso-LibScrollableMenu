@@ -1379,7 +1379,8 @@ local narrationEventToLibraryNarrateFunction = {
 
 local function onMouseEnter(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
-	
+
+	--todo: 20240506 Can be replaced by LibScrollableMenu_ComboBox_Behavior XML handler?
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseEnter', data, control)
@@ -1391,6 +1392,7 @@ end
 local function onMouseExit(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
 
+	--todo: 20240506 Can be replaced by LibScrollableMenu_ComboBox_Behavior XML handler?
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseExit', data, control)
@@ -1407,7 +1409,7 @@ local function onMouseUp(control, data, hasSubmenu, button, upInside)
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 			dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
 			lib:FireCallbacks('EntryOnSelected', data, control)
-		dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
+			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
 			
 			if data.callback then
 				dropdown:SelectItemByIndex(control.m_data.m_index, data.ignoreCallback)
@@ -1946,15 +1948,25 @@ function dropdownClass:UpdateHeight()
 	end
 end
 
+function dropdownClass:GetFormattedNarrateEvent(suffix)
+	local formattedNarrateEvent = ''
+	if self.owner then
+		formattedNarrateEvent = sfor('On%s%s', self.owner:GetMenuPrefix(), suffix)
+	end
+	return formattedNarrateEvent
+end
+
 function dropdownClass:OnShow(formattedEventName)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnShow")
 	self.control:BringWindowToTop()
-	
-	throttledCall(function()
-		local anchorRight = self.anchorRight and 'Right' or 'Left'
-		self:Narrate(formattedEventName, self.control, nil, nil, anchorRight)
-		lib:FireCallbacks(formattedEventName, self.control)
-	end, 100)
+
+	if formattedEventName ~= nil then
+		throttledCall(function()
+			local anchorRight = self.anchorRight and 'Right' or 'Left'
+			self:Narrate(formattedEventName, self.control, nil, nil, anchorRight)
+			lib:FireCallbacks(formattedEventName, self.control)
+		end, 100)
+	end
 end
 
 function dropdownClass:OnHide(formattedEventName)
@@ -1963,14 +1975,6 @@ function dropdownClass:OnHide(formattedEventName)
 
 	self:Narrate(formattedEventName, self.control)
 	lib:FireCallbacks(formattedEventName, self.control)
-end
-
-function dropdownClass:GetFormattedNarrateEvent(suffix)
-	local formattedNarrateEvent = ''
-	if self.owner then
-		formattedNarrateEvent = sfor('On%s%s', self.owner:GetMenuPrefix(), suffix)
-	end
-	return formattedNarrateEvent
 end
 
 function dropdownClass:ShowSubmenu(control)
