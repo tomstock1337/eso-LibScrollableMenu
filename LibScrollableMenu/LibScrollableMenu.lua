@@ -2308,6 +2308,7 @@ end
 function comboBox_base:GetBaseHeight(control)
 	-- We need to include the header height to allItemsHeight, or the scroll hight will include the header height.
 	-- Filtering will result in a shorter list with scrollbars that extend byond it.
+	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:GetBaseHeight - control: %s, gotHeader: %s, height: %s", tos(getControlName(control)), tos(control.header ~= nil), tos(control.header ~= nil and control.header:GetHeight() or 0))
 	if control.header then
 		return control.header:GetHeight()--  + ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y
 	end
@@ -2315,6 +2316,7 @@ function comboBox_base:GetBaseHeight(control)
 end
 
 function comboBox_base:GetMaxDropdownHeight()
+	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:GetMaxDropdownHeight - maxDropdownHeight: %s", tos(self.maxDropdownHeight or DROPDOWN_MAX_HEIGHT))
 	return self.maxDropdownHeight or DROPDOWN_MAX_HEIGHT
 end
 
@@ -2467,9 +2469,11 @@ function comboBox_base:UpdateHeight(control)
 	local maxHeight = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 	local maxHeightDebug = maxHeight
 
+	--Is the dropdown using a header control?
 	if control and control.header then
 		maxHeight = maxHeight + self:GetBaseHeight(control)
 	end
+	--Check if the determined dropdown height is > than the screen's height
 	maxHeight = zo_min(maxHeight, self:GetMaxDropdownHeight())
 	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - maxHeight: %s, maxHeightFinal: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, gotHeader: %q", tos(maxHeightDebug), tos(maxHeight),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(control.header ~= nil))
 
