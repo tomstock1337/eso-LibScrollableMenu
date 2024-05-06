@@ -81,7 +81,6 @@ EM:RegisterForEvent(MAJOR .. '_OnScreenResized', EVENT_SCREEN_RESIZED, OnScreenR
 --Entry type settings
 local DIVIDER_ENTRY_HEIGHT = 7
 local HEADER_ENTRY_HEIGHT = 30
-local SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT -- same as in zo_comboBox.lua: 25
 local DEFAULT_SPACING = 0
 local WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = 4
 
@@ -473,7 +472,7 @@ do
 	local TITLE				= headerControls.TITLE
 	local SUBTITLE			= headerControls.SUBTITLE
 	local CENTER_BASELINE	= headerControls.CENTER_BASELINE
-	local TITLE_BASELINE	= headerControls.TITLE_BASELINE
+	--local TITLE_BASELINE	= headerControls.TITLE_BASELINE
 	local DIVIDER_SIMPLE	= headerControls.DIVIDER_SIMPLE
 	local FILTER_CONTAINER	= headerControls.FILTER_CONTAINER
 	local CUSTOM_CONTROL	= headerControls.CUSTOM_CONTROL
@@ -2185,6 +2184,7 @@ end
 
 function comboBox_base:AddCustomEntryTemplates(options)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:AddCustomEntryTemplates - options: %s", tos(options))
+	--The virtual XML templates, with their setup functions for the row controls, for the different row types
 	local defaultXMLTemplates  = {
 		[ENTRY_ID] = {
 			template = 'LibScrollableMenu_ComboBoxEntry',
@@ -2224,39 +2224,44 @@ function comboBox_base:AddCustomEntryTemplates(options)
 			end,
 		},
 	}
-	
 	lib.DefaultXMLTemplates = defaultXMLTemplates
 
-		--Were any options and XMLRowTemplates passed in?
+	--Were any options and options.XMLRowTemplates passed in?
 	local optionTemplates = options and getValueOrCallback(options.XMLRowTemplates, options)
+	--Copy the default XML templates to a new table (protect original one against changes!)
 	local XMLrowTemplatesToUse = ZO_ShallowTableCopy(defaultXMLTemplates)
 
 	--Check if all XML row templates are passed in, and update missing ones with default values
 	if optionTemplates ~= nil then
 		for entryType, defaultData in pairs(defaultXMLTemplates) do
-			if optionTemplates[entryType] ~= nil  then
+			if optionTemplates[entryType] ~= nil then
 				zo_mixin(XMLrowTemplatesToUse[entryType], optionTemplates[entryType])
 			end
 		end
 	end
 
+	--Set the row templates to use to the current object
 	self.XMLrowTemplates = XMLrowTemplatesToUse
 	-- These register the templates and creates a dataType for each.
-	self:AddCustomEntryTemplate(getTemplateData(ENTRY_ID, self.XMLrowTemplates))
-	self:AddCustomEntryTemplate(getTemplateData(SUBMENU_ENTRY_ID, self.XMLrowTemplates))
-	self:AddCustomEntryTemplate(getTemplateData(DIVIDER_ENTRY_ID, self.XMLrowTemplates))
-	self:AddCustomEntryTemplate(getTemplateData(HEADER_ENTRY_ID, self.XMLrowTemplates))
-	self:AddCustomEntryTemplate(getTemplateData(CHECKBOX_ENTRY_ID, self.XMLrowTemplates))
-	
-	-- TODO: we should not rely on these anymore. Instead we should attach them to self if they are still needed
-	SCROLLABLE_ENTRY_TEMPLATE_HEIGHT = self.XMLrowTemplates[ENTRY_ID].rowHeight
-	DIVIDER_ENTRY_HEIGHT = self.XMLrowTemplates[DIVIDER_ENTRY_ID].rowHeight
-	HEADER_ENTRY_HEIGHT = self.XMLrowTemplates[HEADER_ENTRY_ID].rowHeight
-	
-	-- We will use this, per-comboBox, to set max rows.
-	self.baseEntryHeight = self.XMLrowTemplates[ENTRY_ID].rowHeight
+	for entryTypeId, entryTypeIsUsed in ipairs(libraryAllowedEntryTypes) do
+		if entryTypeIsUsed == true then
+			self:AddCustomEntryTemplate(getTemplateData(entryTypeId, XMLrowTemplatesToUse))
+		end
+	end
 
-	dLog(LSM_LOGTYPE_VERBOSE, ">SCROLLABLE_ENTRY_TEMPLATE_HEIGHT: %s, DIVIDER_ENTRY_HEIGHT: %s, HEADER_ENTRY_HEIGHT: %s, baseEntryHeight: %s", tos(SCROLLABLE_ENTRY_TEMPLATE_HEIGHT), tos(DIVIDER_ENTRY_HEIGHT), tos(HEADER_ENTRY_HEIGHT), tos(self.baseEntryHeight))
+	--Update the current object's rowHeight for the different entryTypes
+	local normalEntryHeight = XMLrowTemplatesToUse[ENTRY_ID].rowHeight
+	--[[ todo: 20240506 Is tis still needed?
+	self.XMLrowHeights = self.XMLrowHeights or {}
+	self.XMLrowHeights[ENTRY_ID] = 			normalEntryHeight
+	self.XMLrowHeights[DIVIDER_ENTRY_ID] = 	XMLrowTemplatesToUse[DIVIDER_ENTRY_ID].rowHeight
+	self.XMLrowHeights[HEADER_ENTRY_ID] = 	XMLrowTemplatesToUse[HEADER_ENTRY_ID].rowHeight
+	]]
+
+	-- We will use this, per-comboBox, to set max rows.
+	self.baseEntryHeight = normalEntryHeight
+
+	dLog(LSM_LOGTYPE_VERBOSE, ">NORMAL_ENTRY_HEIGHT %s, DIVIDER_ENTRY_HEIGHT: %s, HEADER_ENTRY_HEIGHT: %s", tos(normalEntryHeight), tos(XMLrowTemplatesToUse[DIVIDER_ENTRY_ID].rowHeight), tos(XMLrowTemplatesToUse[HEADER_ENTRY_ID].rowHeight))
 end
 
 function comboBox_base:BypassOnGlobalMouseUp(button, ...)
