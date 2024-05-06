@@ -329,6 +329,7 @@
 									<Controls>
 										<EditBox name="$(parent)Box" verticalAlignment="CENTER" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
 											<OnTextChanged>
+												ZO_Tooltips_HideTextTooltip()
 												local owningWindow = self:GetOwningWindow()
 												if owningWindow.object then
 													owningWindow.object:SetFilterString(self)
