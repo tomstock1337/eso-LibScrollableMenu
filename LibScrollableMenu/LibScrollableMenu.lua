@@ -767,7 +767,6 @@ local function doMapEntries(entryTable, mapTable, entryTableType)
 			doMapEntries(entry.entries, mapTable)
 		end
 		
-		-- TODO: only map entries with callbacks?
 		if entry.callback then
 			mapTable[entry] = entry
 		end
@@ -1264,10 +1263,10 @@ local function isAccessibilityUIReaderEnabled()
 	return isAccessibilityModeEnabled() and isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_SCREEN_NARRATION)
 end
 
---Currently commented as these functions are used in each addon and the addons only pass in options.narrate table so their
---functions will be called for narration
+--Currently commented as these functions are used in each addon and the addons either pass in options.narrate table so their
+--functions will be called for narration, or not
 local function canNarrate()
-	--todo: Add any other checks, like "Is any menu still showing ..."
+	--todo: Add any other checks, like "Is any LSM menu still showing and narration should still read?"
 	return true
 end
 
@@ -1584,7 +1583,7 @@ end
 --Narration
 function dropdownClass:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Narrate - eventName: %s, ctrl: %s, hasSubmenu: %s, anchorPoint: %s", tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint))
-	self.owner:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
+	self.owner:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint) -->comboBox_base:Narrate(...)
 end
 
 function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
@@ -1795,7 +1794,7 @@ function dropdownClass:OnEntrySelected(control, button, upInside)
 	local data = getControlData(control)
 
 	if data.enabled then
-		if data.enabled and not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
+		if not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
 			--d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
 			zo_comboBoxDropdown_onEntrySelected(self, control)
 		end
@@ -1963,8 +1962,9 @@ function dropdownClass:OnShow(formattedEventName)
 	if formattedEventName ~= nil then
 		throttledCall(function()
 			local anchorRight = self.anchorRight and 'Right' or 'Left'
-			self:Narrate(formattedEventName, self.control, nil, nil, anchorRight)
-			lib:FireCallbacks(formattedEventName, self.control)
+			local ctrl = self.control
+			self:Narrate(formattedEventName, ctrl, nil, nil, anchorRight)
+			lib:FireCallbacks(formattedEventName, ctrl)
 		end, 100)
 	end
 end
@@ -1972,9 +1972,11 @@ end
 function dropdownClass:OnHide(formattedEventName)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnHide")
 --	self.control:BringWindowToTop()
-
-	self:Narrate(formattedEventName, self.control)
-	lib:FireCallbacks(formattedEventName, self.control)
+	if formattedEventName ~= nil then
+		local ctrl = self.control
+		self:Narrate(formattedEventName, ctrl)
+		lib:FireCallbacks(formattedEventName, ctrl)
+	end
 end
 
 function dropdownClass:ShowSubmenu(control)
@@ -2237,8 +2239,9 @@ function comboBox_base:AddCustomEntryTemplates(options)
 
 	--Check if all XML row templates are passed in, and update missing ones with default values
 	if optionTemplates ~= nil then
-		for entryType, defaultData in pairs(defaultXMLTemplates) do
+		for entryType, _ in pairs(defaultXMLTemplates) do
 			if optionTemplates[entryType] ~= nil then
+				--ZOs function overwrites exising table entries!
 				zo_mixin(XMLrowTemplatesToUse[entryType], optionTemplates[entryType])
 			end
 		end
@@ -2312,14 +2315,6 @@ function comboBox_base:GetMaxDropdownHeight()
 	return self.maxDrodownHeight or DROPDOWN_MAX_HEIGHT
 end
 
--- TODO: not used
-function comboBox_base:GetDropdownControl()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetDropdownControl")
-	if self.m_dropdownObject then
-		return self.m_dropdownObject.control
-	end
-end
-
 function comboBox_base:GetDropdownObject(comboBoxContainer, depth)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetDropdownObject - comboBoxContainer: %s, depth: %s", tos(getControlName(comboBoxContainer)), tos(depth))
 	self.m_nextFree = depth + 1
@@ -2370,21 +2365,7 @@ end
 
 ]]
 
--- TODO: not used
---[[
-function comboBox_base:IsMouseOverScrollbarControl()
-	local mocCtrl = moc()
-	if mocCtrl ~= nil then
-		local owner = mocCtrl.owner
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:IsMouseOverScrollbarControl > " ..tos(owner and owner.scrollbar ~= nil))
-		return owner and owner.scrollbar ~= nil
-	end
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:IsMouseOverScrollbarControl > No")
-	
-	return false
-end
-]]
-
+--Narrate (screen UI reader): Read out text based on the narration event fired
 function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:Narrate - eventName: %s, ctrl: %s, hasSubmenu: %s, anchorPoint: %s ", tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint))
 	local narrateData = self.narrateData
@@ -2392,6 +2373,7 @@ function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	local narrateCallbackFuncForEvent = narrateData[eventName]
 	if narrateCallbackFuncForEvent == nil or type(narrateCallbackFuncForEvent) ~= "function" then return end
 
+	--The function parameters signature for the different narration callbacks
 	local eventCallbackFunctionsSignatures = {
 		["OnMenuShow"]			= function() return self, ctrl end,
 		["OnMenuHide"]			= function() return self, ctrl end,
@@ -2405,6 +2387,7 @@ function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 		["OnComboBoxMouseEnter"]= function() return self, ctrl end,
 	}
 	--Create a table with the callback functions parameters
+	if eventCallbackFunctionsSignatures[eventName] == nil then return end
 	local callbackParams = { eventCallbackFunctionsSignatures[eventName]() }
 	--Pass in the callback params to the narrateFunction
 	local narrateText, stopCurrent = narrateCallbackFuncForEvent(unpack(callbackParams))
@@ -3820,6 +3803,11 @@ WORKING ON - Current version: 2.2
 	TESTED: OK
 	- Add entry.m_highlightTemplate
 	TESTED: OK
+	- Test dropdown header
+	TESTED: OPEN
+	- Test dropdown filter editbox and buttons
+	TESTED: OPEN
+
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
 	2. Fixed dropdown filtering. Filtered table reflects m_sortedItems indexing
