@@ -2475,7 +2475,7 @@ function comboBox_base:UpdateHeight(control)
 	end
 	--Check if the determined dropdown height is > than the screen's height
 	maxHeight = zo_min(maxHeight, self:GetMaxDropdownHeight())
-	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - maxHeight: %s, maxHeightFinal: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, gotHeader: %q", tos(maxHeightDebug), tos(maxHeight),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(control.header ~= nil))
+	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - maxHeight: %s, maxHeightFinal: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, gotHeader: %q", tos(maxHeightDebug), tos(maxHeight),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(control ~= nil and control.header ~= nil))
 
 	self:SetHeight(maxHeight)
 end
