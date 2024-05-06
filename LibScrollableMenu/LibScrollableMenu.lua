@@ -2034,7 +2034,12 @@ function dropdownClass:SetFilterString(filterBox)
 end
 
 function dropdownClass:ResetFilters(owningWindow)
-	ClearCustomScrollableMenu()
+	--If not showing the filters at a contextmenu
+	-->Close any opened contextmenu
+	if self.openingControl == nil then
+		ClearCustomScrollableMenu()
+	end
+
 	if not owningWindow.filterBox then return end
 	owningWindow.filterBox:SetText('')
 end
@@ -2517,7 +2522,7 @@ function comboBox_base:UpdateHeight(control)
 	--Check if the determined dropdown height is > than the screen's height: An min to that screen height then
 	local screensMaxDropdownHeight = getScreensMaxDropdownHeight()
 	maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
+	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
 
 	--This will set self.m_height for later usage in self:Show() -> as the dropdown is shown
 	self:SetHeight(maxHeightInTotal)
