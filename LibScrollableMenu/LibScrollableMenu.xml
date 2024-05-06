@@ -403,7 +403,6 @@
 		</TopLevelControl>
 		
 		<!-- ZO_ComboBox -->
-		<!--
 		<Control name="LibScrollableMenu_ComboBox_Behavior" virtual="true">
 			<OnMouseEnter name="Narrate">
 				if self.m_comboBox then
@@ -417,7 +416,6 @@
 				end
 			</OnMouseExit>
 		</Control>
-		-->
 
 		<!-- Scrollbar padding -->
 		<!-- used when scrollbar is hidden -->
