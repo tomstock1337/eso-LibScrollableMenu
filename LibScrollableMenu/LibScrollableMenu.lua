@@ -48,6 +48,7 @@ local g_contextMenu -- The contextMenu (like ZO_Menu): Will be created at onAddo
 
 --Logging
 lib.doDebug = false
+lib.doVerboseDebug = false
 local logger
 local debugPrefix = "[" .. MAJOR .. "]"
 local LSM_LOGTYPE_DEBUG = 1
@@ -359,7 +360,7 @@ local function dLog(debugType, text, ...)
 			logger:Debug(debugText)
 
 		elseif debugType == LSM_LOGTYPE_VERBOSE then
-			if logger.verbose and logger.verbose.isEnabled == true then
+			if lib.doVerboseDebug and logger.verbose and logger.verbose.isEnabled == true then
 				logger:Verbose(debugText)
 			end
 
@@ -3775,12 +3776,14 @@ local function onAddonLoaded(event, name)
 		loadLogger()
 		lib.doDebug = not lib.doDebug
 		if logger then logger:SetEnabled(lib.doDebug) end
+		dLog(LSM_LOGTYPE_DEBUG, "Debugging turned %s", tos(lib.doDebug and "ON" or "OFF"))
 	end
 	SLASH_COMMANDS["/lsmdebugverbose"] = function()
 		loadLogger()
-		lib.doDebug = not lib.doDebug
+		lib.doVerboseDebug = not lib.doVerboseDebug
 		if logger and logger.verbose then
-			logger.verbose:SetEnabled(lib.doDebug)
+			logger.verbose:SetEnabled(lib.doVerboseDebug)
+			dLog(LSM_LOGTYPE_DEBUG, "Verbose debugging turned %s / Debugging: %s", tos(lib.doVerboseDebug and "ON" or "OFF"), tos(lib.doDebug and "ON" or "OFF"))
 		end
 	end
 end
