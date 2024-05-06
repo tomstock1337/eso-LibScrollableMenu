@@ -252,6 +252,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["titleTextAlignment"] =	"titleTextAlignment",
 	["enableFilter"] =			"enableFilter",
 	["narrate"] = 				"narrateData",
+	["maxDropdownHeight"] =		"maxDropdownHeight",
 
 	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
 	-->!!!Attention: Add the entries which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below in this table here too!!!
@@ -2150,7 +2151,6 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 	self:SetDropdownObject(dropdownObject)
 	self:SetupDropdownHeader()
 
---	self.maxDrodownHeight = 250
 	self:UpdateOptions(options, true)
 	self:UpdateHeight()
 end
@@ -2315,7 +2315,7 @@ function comboBox_base:GetBaseHeight(control)
 end
 
 function comboBox_base:GetMaxDropdownHeight()
-	return self.maxDrodownHeight or DROPDOWN_MAX_HEIGHT
+	return self.maxDropdownHeight or DROPDOWN_MAX_HEIGHT
 end
 
 function comboBox_base:GetDropdownObject(comboBoxContainer, depth)
@@ -2465,15 +2465,14 @@ function comboBox_base:UpdateHeight(control)
 	local spacing = self.m_spacing or 0
 	local baseEntryHeight = self.baseEntryHeight
 	local maxHeight = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
-
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - maxHeight: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s", tos(maxHeight), tos(baseEntryHeight), tos(maxRows), tos(spacing))
+	local maxHeightDebug = maxHeight
 
 	if control and control.header then
 		maxHeight = maxHeight + self:GetBaseHeight(control)
 	end
-	
-	maxHeight = zo_min(maxHeight, self:GetMaxDropdownHeight(), DROPDOWN_MAX_HEIGHT)
-	
+	maxHeight = zo_min(maxHeight, self:GetMaxDropdownHeight())
+	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - maxHeight: %s, maxHeightFinal: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, gotHeader: %q", tos(maxHeightDebug), tos(maxHeight),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(control.header ~= nil))
+
 	self:SetHeight(maxHeight)
 end
 
@@ -2996,7 +2995,7 @@ local submenuClass_exposedVariables = {
 	['narrateData'] = true,
 	['m_headerFont'] = true,
 	['XMLrowTemplates'] = true, --TODO: is this being overwritten?
-	['maxDrodownHeight'] = true,
+	['maxDropdownHeight'] = true,
 	['m_headerFontColor'] = true,
 	['m_highlightTemplate'] = true,
 	['visibleRowsSubmenu'] = true, -- we only need this "visibleRowsSubmenu" for the submenus
@@ -3319,6 +3318,7 @@ end
 --> === Dropdown general customization =================================================================================
 --		number visibleRowsDropdown:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened dropdown
 --		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
+--		number maxDropdownHeight				Number or function returning number of total dropdown's maximum height
 --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically. !!!Attention: Default is TRUE (sorting is enabled)!!!
 --		table sortType:optional					table or function returning table for the sort type, e.g. ZO_SORT_BY_NAME, ZO_SORT_BY_NAME_NUMERIC
 --		boolean sortOrder:optional				Boolean or function returning boolean for the sort order ZO_SORT_ORDER_UP or ZO_SORT_ORDER_DOWN
@@ -3837,9 +3837,9 @@ WORKING ON - Current version: 2.2
 	- Consider, highlighting only if nested submenu is opened. This would require backwards highlighting. comboBox < m_submenu < m_submenu
 	- Store each opened submenu's highlight control until shown later?
 	4. Changed filtered "no results" entry color. Since it's a disabled entry, it was bright red.
-	5. Dropdown height now is adjusted by header height. Also supports self.maxDrodownHeight, when option is added.
+	5. Dropdown height now is adjusted by header height. Also supports self.maxDropdownHeight, when option is added.
 	- Default is (screenHeight - 100) - Updates on screen resized. to prevent dropdowns from overtaking the screen.
-	- Added maxDrodownHeight to submenuClass_exposedVariables. We can change that to a submenu specific variable.
+	- Added maxDropdownHeight to submenuClass_exposedVariables. We can change that to a submenu specific variable.
 
 	6. Fixed - Close comboBox if right-clicked on non-comboBox, or descendant, control
 	7. Fixed - Update height on setting visible rows Dropdown
