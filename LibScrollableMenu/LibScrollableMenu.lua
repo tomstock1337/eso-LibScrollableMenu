@@ -1523,6 +1523,7 @@ local handlerFunctions  = {
 					ZO_CheckButton_OnClicked(control.m_checkbox)
 					data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
 					dLog(LSM_LOGTYPE_VERBOSE, "Checkbox onMouseUp - control: %s, button: %s, upInside: %s, isChecked: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(data.checked))
+					hideTooltip(control)
 				end
 			end
 			return true
@@ -2524,7 +2525,7 @@ function comboBox_base:UpdateHeight(control)
 	--Check if the determined dropdown height is > than the screen's height: An min to that screen height then
 	local screensMaxDropdownHeight = getScreensMaxDropdownHeight()
 	maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
-	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
 
 	--This will set self.m_height for later usage in self:Show() -> as the dropdown is shown
 	self:SetHeight(maxHeightInTotal)
@@ -3883,11 +3884,19 @@ WORKING ON - Current version: 2.2
 	- Add LSM_ENTRY_TYPE_SUBMENU and all needed code
 	TESTED: OK
 	- Add entry.m_highlightTemplate
-	TESTED: OK
+	TESTED: OPEN
 	- Test dropdown header
-	TESTED: OPEN
+	TESTED: OK
 	- Test dropdown filter editbox and buttons
-	TESTED: OPEN
+	TESTED: OK
+	-Added support for options.maxDropdownHeight (only main menu, no submenu)
+	TESTED: OK
+	-Fixed height of menu to respect header height proprly
+	TESTED: OK
+	-Fixed checkboxes to hide tooltip on click
+	TESTED: OK
+	-Added translation files for e.g. tooltips at search filter editbox
+	TESTED: OK
 
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
@@ -3909,6 +3918,8 @@ WORKING ON - Current version: 2.2
 	- To allow this to work, had to remove contextMenuClass:HideDropdownInternal() to prevent clearing on hide. ClearCustomScrollableMenu now "must" be used by addons prior to populating the contextmenu
 	10. Bug Entry having a submenu and a callback should show the highlight green again
 	- reverted
+	11. Fixed context menu to close on filterReset, but not at a contextMenu's filter
+
 
 -------------------
 TODO - To check (future versions)
