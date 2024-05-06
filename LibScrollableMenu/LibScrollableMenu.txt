@@ -12,6 +12,10 @@
 ## APIVersion: 101041 101042
 ## OptionalDependsOn: LibDebugLogger>=263
 
+
+lang/en.lua
+lang/$(language).lua
+
 LibScrollableMenu.lua
 LibScrollableMenu.xml
 

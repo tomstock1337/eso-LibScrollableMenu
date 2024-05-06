@@ -297,14 +297,12 @@
 									/>
 
 									<OnMouseEnter>
-										InitializeTooltip(InformationTooltip, self, BOTTOM, 0, 0)
-										SetTooltipText(InformationTooltip, GetString(SI_HOOK_POINT_STORE_RESET))
-									--	InformationTooltip:AddVerticalPadding(10)
+										ZO_Tooltips_ShowTextTooltip(self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET))
 										InformationTooltipTopLevel:BringWindowToTop()
 									</OnMouseEnter>
 
 									<OnMouseExit>
-										ClearTooltip(InformationTooltip)
+										ZO_Tooltips_HideTextTooltip()
 									</OnMouseExit>
 									
 									<OnClicked>
@@ -336,6 +334,15 @@
 													owningWindow.object:SetFilterString(self)
 												end
 											</OnTextChanged>
+
+											<OnMouseEnter>
+												ZO_Tooltips_ShowTextTooltip(self, BOTTOM, GetString(SI_LSM_SEARCH_FILTER_TOOLTIP))
+												InformationTooltipTopLevel:BringWindowToTop()
+											</OnMouseEnter>
+
+											<OnMouseExit>
+												ZO_Tooltips_HideTextTooltip()
+											</OnMouseExit>
 										</EditBox>
 									</Controls>
 								</Backdrop>

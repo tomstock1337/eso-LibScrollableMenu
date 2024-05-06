@@ -2101,6 +2101,8 @@ function dropdownClass:GetFilteredEntries(sourceTable, isSubmenu)
 	return sourceTable
 end
 
+
+
 --[[ Use With xml button to ignore empty matches
 function dropdownClass:GetFilteredEntries(sourceTable, isSubmenu)
 	-- If first entry was disabled due to no result.
