@@ -595,20 +595,20 @@ do
 		
 		g_refreshResults = {}
 		
-		g_refreshResults[TITLE] = header_processData(controls[TITLE], options.titleText)
-		header_setFont(controls[TITLE], options.titleFont, HeaderFontTitle)
+		g_refreshResults[TITLE] = header_processData(controls[TITLE], getValueOrCallback(options.titleText, options))
+		header_setFont(controls[TITLE], getValueOrCallback(options.titleFont, options), HeaderFontTitle)
 		
 		g_refreshResults[SUBTITLE] = header_processData(controls[SUBTITLE], options.subtitleText)
-		header_setFont(controls[SUBTITLE], options.subtitleFont, HeaderFontSubtitle)
+		header_setFont(controls[SUBTITLE], getValueOrCallback(options.subtitleFont, options), HeaderFontSubtitle)
 		
-		header_setAlignment(controls[TITLE], options.titleTextAlignment, TEXT_ALIGN_CENTER)
+		header_setAlignment(controls[TITLE], getValueOrCallback(options.titleTextAlignment, options), TEXT_ALIGN_CENTER)
 		local showTitle = g_refreshResults[TITLE] or g_refreshResults[SUBTITLE] or false
 		
 		local showDivider = false
-		g_refreshResults[FILTER_CONTAINER] = header_processData(controls[FILTER_CONTAINER], options.enableFilter)
+		g_refreshResults[FILTER_CONTAINER] = header_processData(controls[FILTER_CONTAINER], getValueOrCallback(options.enableFilter, options))
 		showDivider = showDivider or g_refreshResults[FILTER_CONTAINER]
 		
-		g_refreshResults[CUSTOM_CONTROL] = header_processControl(controls[CUSTOM_CONTROL], options.customHeaderControl)
+		g_refreshResults[CUSTOM_CONTROL] = header_processControl(controls[CUSTOM_CONTROL], getValueOrCallback(options.customHeaderControl, options))
 		showDivider = showDivider or g_refreshResults[CUSTOM_CONTROL]
 		
 		g_refreshResults[DIVIDER_SIMPLE] = (showDivider and showTitle)
