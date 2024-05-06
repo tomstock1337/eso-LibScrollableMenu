@@ -2036,7 +2036,7 @@ end
 function dropdownClass:ResetFilters(owningWindow)
 	--If not showing the filters at a contextmenu
 	-->Close any opened contextmenu
-	if self.openingControl == nil then
+	if self.m_comboBox ~= nil and self.m_comboBox.openingControl == nil then
 		ClearCustomScrollableMenu()
 	end
 
@@ -2778,7 +2778,7 @@ function comboBoxClass:AddMenuItems()
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:AddMenuItems")
 	self:UpdateItems()
 	self.m_dropdownObject:AnchorToComboBox(self)
-	
+
 	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
 end
 
@@ -2897,7 +2897,7 @@ end
 
 function comboBoxClass:SetFilterString(filterBox)
 	self.filterString = zo_strlower(filterBox:GetText())
-	self:UpdateResults()
+	self:UpdateResults(true)
 end
 
 function comboBoxClass:ShowDropdown()
@@ -2990,11 +2990,11 @@ function comboBoxClass:UpdateOptions(options, onInit)
 	self:AddCustomEntryTemplates(options)
 end
 
-function comboBoxClass:UpdateResults()
+function comboBoxClass:UpdateResults(comingFromFilters)
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 		self.m_submenu:HideDropdown()
 	end
-	self:AddMenuItems()
+	self:AddMenuItems(nil, comingFromFilters)
 end
 
 --Reset internal default values like m_font or LSM defaults like visibleRowsDropdown
@@ -3207,12 +3207,14 @@ function contextMenuClass:AddContextMenuItem(itemEntry, updateOptions)
 --	m_unsortedItems
 end
 
-function contextMenuClass:AddMenuItems()
+function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:AddMenuItems")
 	self:RefreshSortedItems()
 	self:UpdateItems()
 	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
-	self.m_dropdownObject:AnchorToMouse()
+	if not comingFromFilters then
+		self.m_dropdownObject:AnchorToMouse()
+	end
 	self.m_dropdownObject.control:BringWindowToTop()
 end
 

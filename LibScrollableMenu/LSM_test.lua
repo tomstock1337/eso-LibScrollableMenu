@@ -70,13 +70,15 @@ local function test()
 		local options = {
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
+			maxDropdownHeight = 300,
+
 			sortEntries=function() return false end,
 			narrate = narrateOptions,
 			disableFadeGradient = false,
 			headerColor = HEADER_TEXT_COLOR_RED,
 			titleText = function()  return "Custom title text" end,
 			subtitleText = "Custom sub title",
-			enableFilter = function() return true  end,
+			enableFilter = function() return true end,
 
 			--[[ Define in XML:
 				<!-- Normal entry for Custom options.XMLRowTemplates test  -->
@@ -456,9 +458,10 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end)
 					ShowCustomScrollableMenu(nil, {
 						titleText = "Context menu",
-						titleFont = function() return "ZoFontGameSmall" end
+						titleFont = function() return "ZoFontGameSmall" end,
 						--subtitleText = function() return "Test 1" end,
 						--subtitleFont = "ZoFontHeader3", --Same font size as title
+						enableFilter = true,
 					})
 				end,
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
