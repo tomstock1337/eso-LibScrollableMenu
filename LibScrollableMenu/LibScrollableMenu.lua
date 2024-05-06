@@ -507,7 +507,7 @@ do
 
 	local function header_updateAnchors(control, refreshResults)
 		local owningWindow = control:GetOwningWindow()
-		local hasFocus = owningWindow.filterBox:HasFocus()
+		--local hasFocus = owningWindow.filterBox:HasFocus()
 		
 		local headerHeight = 0
 		local controls = control.controls
@@ -1859,7 +1859,11 @@ end
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	dLog(LSM_LOGTYPE_DEBUG, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
 	self.owner = comboBox
-	
+
+	local control = self.control
+	local scrollControl = self.scrollControl
+	local owner = self.owner
+
 	-- comboBox.openingControl ~= nil is a submenu
 	itemTable = self:GetFilteredEntries(itemTable, comboBox.openingControl ~= nil)
 	
@@ -1871,8 +1875,9 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	local dataList = ZO_ScrollList_GetDataList(self.scrollControl)
 
 	local largestEntryWidth = 0
-	--Take control.header's height into account here
-	local allItemsHeight = comboBox:GetBaseHeight(self.control)
+
+	--Take control.header's height into account here as base height too
+	local allItemsHeight = comboBox:GetBaseHeight(control)
 	for i = 1, numItems do
 		local item = itemTable[i]
 		if verifyLabelString(item) then
@@ -1907,7 +1912,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 			local entry = createScrollableComboBoxEntry(self, item, item.index or i, entryType)
 			tins(dataList, entry)
 
-			local fontObject = self.owner:GetDropdownFontObject()
+			local fontObject = owner:GetDropdownFontObject()
 			--Check string width of label (alternative text to show at entry) or name (internal value used)
 			local nameWidth = GetStringWidthScaled(fontObject, item.label or item.name, 1, SPACE_INTERFACE) + widthPadding
 			if nameWidth > largestEntryWidth then
@@ -1922,7 +1927,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 
 	--maxHeight should have been defined before via self:UpdateHeight() -> Settings control:SetHeight() so self.m_height was set
 	local desiredHeight = maxHeight
-	ApplyTemplateToControl(self.scrollControl.contents, getScrollContentsTemplate(allItemsHeight < desiredHeight))
+	ApplyTemplateToControl(scrollControl.contents, getScrollContentsTemplate(allItemsHeight < desiredHeight))
 	-- Add padding one more time to account for potential pixel rounding issues that could cause the scroll bar to appear unnecessarily.
 --	allItemsHeight = allItemsHeight + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)-- + ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y
 --	allItemsHeight = allItemsHeight + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) + ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y
@@ -1937,19 +1942,19 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	-- prevent it from getting any skinnier than the container's initial width
 	local totalDropDownWidth = largestEntryWidth + (ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2) + ZO_SCROLL_BAR_WIDTH
 	if totalDropDownWidth > minWidth then
-		self.control:SetWidth(totalDropDownWidth)
+		control:SetWidth(totalDropDownWidth)
 	else
-		self.control:SetWidth(minWidth)
+		control:SetWidth(minWidth)
 	end
 
 	dLog(LSM_LOGTYPE_VERBOSE, ">totalDropDownWidth: %s, allItemsHeight: %s, desiredHeight: %s", tos(totalDropDownWidth), tos(allItemsHeight), tos(desiredHeight))
 
 
-	ZO_Scroll_SetUseFadeGradient(self.scrollControl, not self.owner.disableFadeGradient )
-	self.control:SetHeight(desiredHeight)
+	ZO_Scroll_SetUseFadeGradient(scrollControl, not owner.disableFadeGradient )
+	control:SetHeight(desiredHeight)
 
-	ZO_ScrollList_SetHeight(self.scrollControl, desiredHeight)
-	ZO_ScrollList_Commit(self.scrollControl)
+	ZO_ScrollList_SetHeight(scrollControl, desiredHeight)
+	ZO_ScrollList_Commit(scrollControl)
 end
 
 function dropdownClass:UpdateHeight()
@@ -2495,10 +2500,11 @@ function comboBox_base:UpdateHeight(control)
 		--Is the dropdown using a header control? Then calculate it's size too
 		--> Attention: This will always be 0 here as control.header is nil until self:UpdateDropdownHeader is called at self:AddMenuItem
 		----> Right before self:Show() will be called, where self.m:maxHeight will be passed in then w/o the actual header's size
-		if control then
-			if control.header == nil then
-				self:UpdateDropdownHeader()
-			end
+		if control ~= nil then
+			--[[
+			--control.header is always nil here! Guess it needs 1 more frame to render...
+			-->Will be there in self:Show function call then
+			]]
 			headerHeight = self:GetBaseHeight(control)
 		end
 
@@ -2509,7 +2515,7 @@ function comboBox_base:UpdateHeight(control)
 	--Check if the determined dropdown height is > than the screen's height: An min to that screen height then
 	local screensMaxDropdownHeight = getScreensMaxDropdownHeight()
 	maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
-	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
+	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
 
 	--This will set self.m_height for later usage in self:Show() -> as the dropdown is shown
 	self:SetHeight(maxHeightInTotal)
@@ -2762,7 +2768,7 @@ end
 
 -- Changed to force updating items and, to set anchor since anchoring was removed from :Show( due to separate anchoring based on comboBox type. (comboBox to self /submenu to row/contextMenu to mouse)
 function comboBoxClass:AddMenuItems()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:AddMenuItems")
+	dLog(LSM_LOGTYPE_DEBUG, "comboBoxClass:AddMenuItems")
 	self:UpdateItems()
 	self.m_dropdownObject:AnchorToComboBox(self)
 	
@@ -2897,7 +2903,6 @@ function comboBoxClass:ShowDropdown()
 		-- Update header only if hidden.
 		self:UpdateDropdownHeader()
 	end
-	--Calls
 	self:ShowDropdownInternal()
 end
 
@@ -2905,8 +2910,10 @@ function comboBoxClass:UpdateDropdownHeader()
 	if ZO_IsTableEmpty(self.options) then return end
 	local dropdownControl = self.m_dropdownObject.control
 	local headerControl = dropdownControl.header
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(self.options))
+	dLog(LSM_LOGTYPE_DEBUG, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(self.options))
 	refreshDropdownHeader(headerControl, self.options)
+
+	self:UpdateHeight(dropdownControl) --> Update self.m_height properly (including the now build header's height)
 end
 
 function comboBoxClass:UpdateOptions(options, onInit)
@@ -3094,7 +3101,6 @@ function submenuClass:AddMenuItems(parentControl)
 	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:AddMenuItems - parentControl: %s", tos(getControlName(parentControl)))
 	self.openingControl = parentControl
 	self:RefreshSortedItems(parentControl)
-	
 	self:UpdateItems()
 	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
 
