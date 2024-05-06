@@ -1857,7 +1857,7 @@ function dropdownClass:SetupEntryLabel(labelControl, data)
 end
 
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
-	dLog(LSM_LOGTYPE_DEBUG, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
 	self.owner = comboBox
 
 	local control = self.control
@@ -2328,7 +2328,7 @@ end
 function comboBox_base:GetBaseHeight(control)
 	-- We need to include the header height to allItemsHeight, or the scroll hight will include the header height.
 	-- Filtering will result in a shorter list with scrollbars that extend byond it.
-	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:GetBaseHeight - control: %s, gotHeader: %s, height: %s", tos(getControlName(control)), tos(control.header ~= nil), tos(control.header ~= nil and control.header:GetHeight() or 0))
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetBaseHeight - control: %s, gotHeader: %s, height: %s", tos(getControlName(control)), tos(control.header ~= nil), tos(control.header ~= nil and control.header:GetHeight() or 0))
 	if control.header then
 		return control.header:GetHeight()--  + ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y
 	end
@@ -2336,7 +2336,7 @@ function comboBox_base:GetBaseHeight(control)
 end
 
 function comboBox_base:GetMaxDropdownHeight()
-	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:GetMaxDropdownHeight - maxDropdownHeight: %s", tos(self.maxHeight))
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetMaxDropdownHeight - maxDropdownHeight: %s", tos(self.maxHeight))
 	return self.maxHeight
 end
 
@@ -2517,7 +2517,7 @@ function comboBox_base:UpdateHeight(control)
 	--Check if the determined dropdown height is > than the screen's height: An min to that screen height then
 	local screensMaxDropdownHeight = getScreensMaxDropdownHeight()
 	maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
-	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
 
 	--This will set self.m_height for later usage in self:Show() -> as the dropdown is shown
 	self:SetHeight(maxHeightInTotal)
@@ -2770,7 +2770,7 @@ end
 
 -- Changed to force updating items and, to set anchor since anchoring was removed from :Show( due to separate anchoring based on comboBox type. (comboBox to self /submenu to row/contextMenu to mouse)
 function comboBoxClass:AddMenuItems()
-	dLog(LSM_LOGTYPE_DEBUG, "comboBoxClass:AddMenuItems")
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:AddMenuItems")
 	self:UpdateItems()
 	self.m_dropdownObject:AnchorToComboBox(self)
 	
@@ -2912,7 +2912,7 @@ function comboBoxClass:UpdateDropdownHeader()
 	if ZO_IsTableEmpty(self.options) then return end
 	local dropdownControl = self.m_dropdownObject.control
 	local headerControl = dropdownControl.header
-	dLog(LSM_LOGTYPE_DEBUG, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(self.options))
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(self.options))
 	refreshDropdownHeader(headerControl, self.options)
 
 	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
