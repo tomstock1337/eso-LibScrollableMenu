@@ -72,13 +72,6 @@ local DEFAULT_VISIBLE_ROWS = 10
 local DEFAULT_SORTS_ENTRIES = true --sort the entries in main- and submenu lists
 
 
-local DROPDOWN_MAX_HEIGHT
-local function OnScreenResized()
-	DROPDOWN_MAX_HEIGHT = GuiRoot:GetHeight() - 100
-end
-OnScreenResized()
-EM:RegisterForEvent(MAJOR .. '_OnScreenResized', EVENT_SCREEN_RESIZED, OnScreenResized)
-	
 --Entry type settings
 local DIVIDER_ENTRY_HEIGHT = 7
 local HEADER_ENTRY_HEIGHT = 30
@@ -253,7 +246,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["titleTextAlignment"] =	"titleTextAlignment",
 	["enableFilter"] =			"enableFilter",
 	["narrate"] = 				"narrateData",
-	["maxDropdownHeight"] =		"maxDropdownHeight",
+	["maxDropdownHeight"] =		"maxHeight",
 
 	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
 	-->!!!Attention: Add the entries which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below in this table here too!!!
@@ -303,6 +296,10 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	end,
 	["visibleRowsDropdown"] = function(comboBoxObject, visibleRows)
 		comboBoxObject.visibleRows = visibleRows
+		comboBoxObject:UpdateHeight(comboBoxObject.m_dropdown)
+	end,
+	["maxDropdownHeight"] = function(comboBoxObject, maxDropdownHeight)
+		comboBoxObject.maxHeight = maxDropdownHeight
 		comboBoxObject:UpdateHeight(comboBoxObject.m_dropdown)
 	end,
 }
@@ -440,6 +437,14 @@ end
 local function getScrollContentsTemplate(barHidden)
 	dLog(LSM_LOGTYPE_VERBOSE, "getScrollContentsTemplate - barHidden: " ..tos(barHidden))
 	return getDropdownTemplate(barHidden, '_ScrollContents', '_BarHidden', '_BarShown')
+end
+
+
+--------------------------------------------------------------------
+-- Screen / UI helper functions
+--------------------------------------------------------------------
+local function getScreensMaxDropdownHeight()
+	return GuiRoot:GetHeight() - 100
 end
 
 
@@ -1852,7 +1857,7 @@ function dropdownClass:SetupEntryLabel(labelControl, data)
 end
 
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
+	dLog(LSM_LOGTYPE_DEBUG, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
 	self.owner = comboBox
 	
 	-- comboBox.openingControl ~= nil is a submenu
@@ -1866,6 +1871,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	local dataList = ZO_ScrollList_GetDataList(self.scrollControl)
 
 	local largestEntryWidth = 0
+	--Take control.header's height into account here
 	local allItemsHeight = comboBox:GetBaseHeight(self.control)
 	for i = 1, numItems do
 		local item = itemTable[i]
@@ -1914,6 +1920,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	-- so just add 5 to make sure we don't truncate at certain screen sizes
 	largestEntryWidth = largestEntryWidth + 5
 
+	--maxHeight should have been defined before via self:UpdateHeight() -> Settings control:SetHeight() so self.m_height was set
 	local desiredHeight = maxHeight
 	ApplyTemplateToControl(self.scrollControl.contents, getScrollContentsTemplate(allItemsHeight < desiredHeight))
 	-- Add padding one more time to account for potential pixel rounding issues that could cause the scroll bar to appear unnecessarily.
@@ -2317,8 +2324,8 @@ function comboBox_base:GetBaseHeight(control)
 end
 
 function comboBox_base:GetMaxDropdownHeight()
-	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:GetMaxDropdownHeight - maxDropdownHeight: %s", tos(self.maxDropdownHeight or DROPDOWN_MAX_HEIGHT))
-	return self.maxDropdownHeight or DROPDOWN_MAX_HEIGHT
+	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:GetMaxDropdownHeight - maxDropdownHeight: %s", tos(self.maxHeight))
+	return self.maxHeight
 end
 
 function comboBox_base:GetDropdownObject(comboBoxContainer, depth)
@@ -2462,23 +2469,50 @@ function comboBox_base:SetupEntryBase(control, data, list)
 end
 
 function comboBox_base:UpdateHeight(control)
-	local maxRows = self:GetMaxRows()
-	
-	-- Add padding to each row then subtract padding for last row
+	local maxHeightInTotal = 0
+
 	local spacing = self.m_spacing or 0
-	local baseEntryHeight = self.baseEntryHeight
-	local maxHeight = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
-	local maxHeightDebug = maxHeight
+	--Maximum height explicitly set by options?
+	local maxDropdownHeight = self:GetMaxDropdownHeight()
 
-	--Is the dropdown using a header control?
-	if control and control.header then
-		maxHeight = maxHeight + self:GetBaseHeight(control)
+	local baseEntryHeight
+	local maxRows
+	local maxHeightByEntries
+	local headerHeight = 0
+
+	--Calculate the maximum height now:
+	---If set as explicit maximum value: Use that
+	if maxDropdownHeight ~= nil then
+		maxHeightInTotal = maxDropdownHeight
+	else
+		--The height of each row
+		baseEntryHeight = self.baseEntryHeight
+		--Calculate maximum visible height based on visibleRowsDrodpdown or visibleRowsSubmenu
+		maxRows = self:GetMaxRows()
+		-- Add spacing to each row then subtract spacing for last row
+		maxHeightByEntries = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
+
+		--Is the dropdown using a header control? Then calculate it's size too
+		--> Attention: This will always be 0 here as control.header is nil until self:UpdateDropdownHeader is called at self:AddMenuItem
+		----> Right before self:Show() will be called, where self.m:maxHeight will be passed in then w/o the actual header's size
+		if control then
+			if control.header == nil then
+				self:UpdateDropdownHeader()
+			end
+			headerHeight = self:GetBaseHeight(control)
+		end
+
+		--Add the header's height first, then add the rows' calculated needed total height
+		maxHeightInTotal = headerHeight + maxHeightByEntries
 	end
-	--Check if the determined dropdown height is > than the screen's height
-	maxHeight = zo_min(maxHeight, self:GetMaxDropdownHeight())
-	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - maxHeight: %s, maxHeightFinal: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, gotHeader: %q", tos(maxHeightDebug), tos(maxHeight),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(control ~= nil and control.header ~= nil))
 
-	self:SetHeight(maxHeight)
+	--Check if the determined dropdown height is > than the screen's height: An min to that screen height then
+	local screensMaxDropdownHeight = getScreensMaxDropdownHeight()
+	maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
+	dLog(LSM_LOGTYPE_DEBUG, "comboBox_base:UpdateHeight - maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
+
+	--This will set self.m_height for later usage in self:Show() -> as the dropdown is shown
+	self:SetHeight(maxHeightInTotal)
 end
 
 do -- Row setup functions
@@ -2863,7 +2897,7 @@ function comboBoxClass:ShowDropdown()
 		-- Update header only if hidden.
 		self:UpdateDropdownHeader()
 	end
-	
+	--Calls
 	self:ShowDropdownInternal()
 end
 
@@ -2871,6 +2905,7 @@ function comboBoxClass:UpdateDropdownHeader()
 	if ZO_IsTableEmpty(self.options) then return end
 	local dropdownControl = self.m_dropdownObject.control
 	local headerControl = dropdownControl.header
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(self.options))
 	refreshDropdownHeader(headerControl, self.options)
 end
 
@@ -2878,7 +2913,7 @@ function comboBoxClass:UpdateOptions(options, onInit)
 	onInit = onInit or false
 	local optionsChanged = self.optionsChanged
 
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateOptions . options: %s, onInit: %s, optionsChanged: %s", tos(options), tos(onInit), tos(optionsChanged))
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateOptions - options: %s, onInit: %s, optionsChanged: %s", tos(options), tos(onInit), tos(optionsChanged))
 
 	--Called from Initialization of the object -> self:ResetToDefaults() was called in comboBoxClass:Initialize() already
 	-->And self:UpdateOptions() is then called via comboBox_base.Initialize(...), from where we get here
