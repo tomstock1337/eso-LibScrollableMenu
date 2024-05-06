@@ -209,7 +209,7 @@
 			</Controls>
 		</TopLevelControl>
 		
-		<TopLevelControl name="LibScrollableMenu_Dropdown_Template_WithHeader"inherits="LibScrollableMenu_Dropdown_Behavior" virtual="true">
+		<TopLevelControl name="LibScrollableMenu_Dropdown_Template_WithHeader" inherits="LibScrollableMenu_Dropdown_Behavior" virtual="true">
 			<OnInitialized>
 			</OnInitialized>
 			<Controls>
@@ -308,7 +308,10 @@
 									</OnMouseExit>
 									
 									<OnClicked>
-										self:GetParent():GetNamedChild('FilterBox'):SetText('')
+										local owningWindow = self:GetOwningWindow()
+										if owningWindow.object then
+											owningWindow.object:ResetFilters(owningWindow)
+										end
 									</OnClicked>
 								</Button>
 								
@@ -357,21 +360,21 @@
 									<OnClicked>
 										ZO_CheckButton_OnClicked(self, button)
 										
-										-- Show updated tooltip on click
+										- Show updated tooltip on click
 										ClearTooltip(InformationTooltip)
 										InitializeTooltip(InformationTooltip, self, BOTTOM, 0, 0)
 										SetTooltipText(InformationTooltip, GetString('LIBSCROLLABLEMENU_SI_MATCHTOOLTIP', self:GetState()))
 										InformationTooltipTopLevel:BringWindowToTop()
 										
-										-- Can't remember what one is 0 and 1
-										-- LIBSCROLLABLEMENU_SI_MATCHTOOLTIP0 = 'Strict'
-										-- LIBSCROLLABLEMENU_SI_MATCHTOOLTIP1 = 'Loose'
+										- Can't remember what one is 0 and 1
+										- LIBSCROLLABLEMENU_SI_MATCHTOOLTIP0 = 'Strict'
+										- LIBSCROLLABLEMENU_SI_MATCHTOOLTIP1 = 'Loose'
 									</OnClicked>
 									
 									<OnEffectivelyShown>
 										local bState = self:GetState()
 										local checked = bState == BSTATE_PRESSED
-										-- get saved button state
+										- get saved button state
 										ZO_CheckButton_SetCheckState(self, checked)
 									</OnEffectivelyShown>
 									

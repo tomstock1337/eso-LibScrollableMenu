@@ -74,6 +74,10 @@ local function test()
 			narrate = narrateOptions,
 			disableFadeGradient = false,
 			headerColor = HEADER_TEXT_COLOR_RED,
+			titleText = function()  return "Custom title text" end,
+			subtitleText = "Custom sub title",
+			enableFilter = function() return true  end,
+
 			--[[ Define in XML:
 				<!-- Normal entry for Custom options.XMLRowTemplates test  -->
 				<Control name="LibScrollableMenu_ComboBoxEntry_TestXMLRowTemplates" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
@@ -450,7 +454,12 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 					end)
 
 					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end)
-					ShowCustomScrollableMenu()
+					ShowCustomScrollableMenu(nil, {
+						titleText = "Context menu",
+						titleFont = function() return "ZoFontGameSmall" end
+						--subtitleText = function() return "Test 1" end,
+						--subtitleFont = "ZoFontHeader3", --Same font size as title
+					})
 				end,
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
 				isNew			= true,

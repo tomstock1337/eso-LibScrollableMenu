@@ -2033,6 +2033,13 @@ function dropdownClass:SetFilterString(filterBox)
 	end
 end
 
+function dropdownClass:ResetFilters(owningWindow)
+	ClearCustomScrollableMenu()
+	if not owningWindow.filterBox then return end
+	owningWindow.filterBox:SetText('')
+end
+
+
 function dropdownClass:IsFilterEnabled()
 	if self.m_comboBox then
 		return self.m_comboBox:IsFilterEnabled()
@@ -2498,13 +2505,8 @@ function comboBox_base:UpdateHeight(control)
 		maxHeightByEntries = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 
 		--Is the dropdown using a header control? Then calculate it's size too
-		--> Attention: This will always be 0 here as control.header is nil until self:UpdateDropdownHeader is called at self:AddMenuItem
-		----> Right before self:Show() will be called, where self.m:maxHeight will be passed in then w/o the actual header's size
+		--> Attention: This will always be 0 here as control.header is not updated with it's controls until self:UpdateDropdownHeader is called at self:AddMenuItem
 		if control ~= nil then
-			--[[
-			--control.header is always nil here! Guess it needs 1 more frame to render...
-			-->Will be there in self:Show function call then
-			]]
 			headerHeight = self:GetBaseHeight(control)
 		end
 
@@ -2913,8 +2915,9 @@ function comboBoxClass:UpdateDropdownHeader()
 	dLog(LSM_LOGTYPE_DEBUG, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(self.options))
 	refreshDropdownHeader(headerControl, self.options)
 
-	self:UpdateHeight(dropdownControl) --> Update self.m_height properly (including the now build header's height)
+	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
 end
+
 
 function comboBoxClass:UpdateOptions(options, onInit)
 	onInit = onInit or false
