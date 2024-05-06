@@ -232,29 +232,36 @@ local defaultComboBoxOptions  = {
 	["font"] = DEFAULT_FONT,
 	["spacing"] = DEFAULT_SPACING,
 	["disableFadeGradient"] = false,
-	["headerColor"] = nil,
-	["preshowDropdownFn"] = nil,
-	--["XMLRowTemplates"] = table, --Will be set at comboBoxClass:UpdateOptions(options) from options
+	--["XMLRowTemplates"] = table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
 
 
 --The mapping between LibScrollableMenu options key and ZO_ComboBox options key. Used in comboBoxClass:UpdateOptions()
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
-	--These callback functions will apply the options directly
+	--All possible options entries must be mapped here (left: options entry / right: ZO_ComboBox relating entry where the value is saved)
+	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
+	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
+	["headerColor"] =			"m_headerFontColor",
+	["normalColor"] = 			"m_normalColor",
+	["disabledColor"] =			"m_disabledColor",
+	["titleText"] = 			"titleText",
+	["titleFont"] = 			"titleFont",
+	["subtitleText"] = 			"subtitleText",
+	["subtitleFont"] = 			"subtitleFont",
+	["titleTextAlignment"] =	"titleTextAlignment",
+	["enableFilter"] =			"enableFilter",
+	["narrate"] = 				"narrateData",
+
+	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
+	-->!!!Attention: Add the entries which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below in this table here too!!!
 	['sortType'] = 				"m_sortType",
 	['sortOrder'] = 			"m_sortOrder",
 	['sortEntries'] = 			"m_sortsItems",
 	['spacing'] = 				"m_spacing",
 	['font'] = 					"m_font",
 	["preshowDropdownFn"] = 	"m_preshowDropdownFn",
-	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
-	["headerColor"] =			"m_headerFontColor",
-	["normalColor"] = 			"m_normalColor",
-	["disabledColor"] =			"m_disabledColor",
 	["visibleRowsDropdown"] =	"visibleRows",
-	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
-	["narrate"] = 				"narrateData",
 }
 lib.LSMOptionsKeyToZO_ComboBoxOptionsKey = LSMOptionsKeyToZO_ComboBoxOptionsKey
 
@@ -598,7 +605,7 @@ do
 		g_refreshResults[TITLE] = header_processData(controls[TITLE], getValueOrCallback(options.titleText, options))
 		header_setFont(controls[TITLE], getValueOrCallback(options.titleFont, options), HeaderFontTitle)
 		
-		g_refreshResults[SUBTITLE] = header_processData(controls[SUBTITLE], options.subtitleText)
+		g_refreshResults[SUBTITLE] = header_processData(controls[SUBTITLE], getValueOrCallback(options.subtitleText, options))
 		header_setFont(controls[SUBTITLE], getValueOrCallback(options.subtitleFont, options), HeaderFontSubtitle)
 		
 		header_setAlignment(controls[TITLE], getValueOrCallback(options.titleTextAlignment, options), TEXT_ALIGN_CENTER)
@@ -3217,10 +3224,12 @@ end
 
 function contextMenuClass:SetOptions(options)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:SetOptions - options: %s", tos(options))
-	
+
+	--[[ --todo 20240506 Still needed? If enabled again it would overwrite the context menu options with defaults (which should be okay?)
 	if ZO_IsTableEmpty(options) then
-	--	self:ResetToDefaults()
+		self:ResetToDefaults()
 	end
+	]]
 	
 	-- self.optionsData is only a temporary table used check for change and to send to UpdateOptions.
 	self.optionsChanged = self.optionsData ~= options
