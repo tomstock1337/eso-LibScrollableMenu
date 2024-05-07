@@ -917,9 +917,11 @@ end
 local function getControlData(control)
 	dLog(LSM_LOGTYPE_VERBOSE, "getControlData - name: " ..tos(getControlName(control)))
 	local data = control.m_sortedItems or control.m_data
-	
-	if data.dataSource then
+
+	if data and data.dataSource then
 		data = data:GetDataSource()
+	else
+		data = data or {}
 	end
 	
 	return data
