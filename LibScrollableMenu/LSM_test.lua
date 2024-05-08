@@ -279,6 +279,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
 				tooltip         = "Header test 1",
 				--icons 			= nil,
+				--entryType	= LSM_ENTRY_TYPE_HEADER,
 			},
 			{
 
@@ -529,10 +530,11 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 				--tooltip         =
 			},
 			{
-				isHeader		= function() return true  end,
+				--isHeader		= function() return true  end,
 				name            = "Header entry 1",
 				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
 				--icons 	     = nil,
+				entryType	= LSM_ENTRY_TYPE_HEADER,
 			},
 			{
 				isCheckbox		= function() return true  end,

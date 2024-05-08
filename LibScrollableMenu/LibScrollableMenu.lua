@@ -991,14 +991,15 @@ local function clearNewStatus(control, data)
 end
 
 local function validateEntryType(item)
-	--Check if any other entryType could be determined
-	local isDivider = (item.label ~= nil and item.label == libDivider) or item.name == libDivider
-	local isHeader = getValueOrCallback(item.isHeader, item)
-	local isCheckbox = getValueOrCallback(item.isCheckbox, item)
-	local hasSubmenu = getValueOrCallback(item.entries, item) ~= nil
-
 	--Prefer passed in entryType (if any provided)
 	local entryType = getValueOrCallback(item.entryType, item)
+
+	--Check if any other entryType could be determined
+	local isDivider = ((item.label ~= nil and item.label == libDivider) or item.name == libDivider) or LSM_ENTRY_TYPE_DIVIDER == entryType
+	local isHeader = (item.isHeader ~= nil and getValueOrCallback(item.isHeader, item)) or LSM_ENTRY_TYPE_HEADER == entryType
+	local isCheckbox = (item.isCheckbox ~= nil and getValueOrCallback(item.isCheckbox, item)) or LSM_ENTRY_TYPE_CHECKBOX == entryType
+	local hasSubmenu = (item.entries ~= nil and getValueOrCallback(item.entries, item) ~= nil) or LSM_ENTRY_TYPE_SUBMENU == entryType
+
 	--If no entryType was passed in: Get the entryType by the before determined data
 	if not entryType or entryType == LSM_ENTRY_TYPE_NORMAL then
 		entryType = hasSubmenu and LSM_ENTRY_TYPE_SUBMENU or
@@ -1020,7 +1021,7 @@ end
 
 --Set the custom XML virtual template for a dropdown entry
 local function setItemEntryCustomTemplate(item, customEntryTemplates)
-	--Get the entrType
+	--Get the entryType
 	validateEntryType(item)
 
 	local entryType = item.entryType
@@ -1040,6 +1041,12 @@ local function updateDataByFunctions(data)
 
 	if data.nameFunction then
 		data.name = data.nameFunction(data)
+	end
+
+	--Compatibility for LibCustomMenu submenus, which only use data.label -> Copy it over to data.name then
+	local label = data.label
+	if label ~= nil and data.name == nil then
+		data.name = label
 	end
 	
 	if data.enabledFunction then
@@ -1095,7 +1102,7 @@ local function verifyLabelString(data)
 	return type(data.name) == 'string'
 end
 
--- We can add any row-type post checks and update dateEntry with static values.
+-- We can add any row-type post checks and update dataEntry with static values.
 local function addItem_Base(self, itemEntry)
 	dLog(LSM_LOGTYPE_VERBOSE, "addItem_Base - itemEntry: " ..tos(itemEntry))
 	--Get/build data.label and/or data.name values
@@ -1103,7 +1110,9 @@ local function addItem_Base(self, itemEntry)
 	
 	if not itemEntry.customEntryTemplate then
 		setItemEntryCustomTemplate(itemEntry, self.XMLrowTemplates)
-		
+
+--dLog(LSM_LOGTYPE_DEBUG, ">name: " .. tos(itemEntry.name) .. ", isHeader: " ..tos(itemEntry.isHeader))
+
 		if itemEntry.hasSubmenu then
 			itemEntry.isNew = areAnyEntriesNew(itemEntry)
 		elseif itemEntry.isHeader then
@@ -3613,7 +3622,8 @@ local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function AddCustomScrollableSubMenuEntry(text, entries)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableSubMenuEntry - text: %s, entries: %s", tos(text), tos(entries))
-	addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_NORMAL, entries, nil)
+
+	addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_SUBMENU, entries, nil)
 end
 
 --Adds a divider line to the context menu entries
@@ -3666,9 +3676,19 @@ function AddCustomScrollableMenuEntries(contextMenuEntries)
 
 	contextMenuEntries = validateContextMenuSubmenuEntries(contextMenuEntries, nil, "AddCustomScrollableMenuEntries")
 	if ZO_IsTableEmpty(contextMenuEntries) then return end
-
 	for _, v in ipairs(contextMenuEntries) do
-		addCustomScrollableMenuEntry(v.label or v.name, v.callback, v.entryType, v.entries, v.additionalData)
+		--If a label was explicitly requested
+		local label = v.label
+		if label ~= nil then
+			--Check if it was requested at the additinalData.label too: If yes, keep that
+			--If no: Add it there for a proper usage in AddCustomScrollableMenuEntry -> newEntry
+			if v.additionalData == nil then
+				v.additionalData = { label = label }
+			elseif v.additionalData.label == nil then
+				v.additionalData.label = label
+			end
+		end
+		addCustomScrollableMenuEntry(v.name, v.callback, v.entryType, v.entries, v.additionalData)
 	end
 	return true
 end
@@ -3899,6 +3919,12 @@ WORKING ON - Current version: 2.2
 	TESTED: OK
 	-Added translation files for e.g. tooltips at search filter editbox
 	TESTED: OK
+	-12	Compatibility fix for LibCustomMenu submenus (which only used data.label as the name): If data.name is missing in submenu but data.label exists -> set data.name = copy of data.label
+	TESTED: TODO - CODE
+	-13 Fix AddCustomScrollableMenuEntries to put v.label to v.additionalData.label -> For a proper usage in AddCustomScrollableMenuEntry -> newEntry
+	TESTED: TODO - CODE
+	-14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox, submenu etc.) to properly get recognized from data tables of entries
+	TESTED: OK
 
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
@@ -3921,7 +3947,9 @@ WORKING ON - Current version: 2.2
 	10. Bug Entry having a submenu and a callback should show the highlight green again
 	- reverted
 	11. Fixed context menu to close on filterReset, but not at a contextMenu's filter
-
+	12. Compatibility fix for LibCustomMenu submenus (which only used data.label as the name): If data.name is missing in submenu but data.label exists -> set data.name = copy of data.label
+	13. Fix AddCustomScrollableMenuEntries to put v.label to v.additionalData.label -> For a proper usage in AddCustomScrollableMenuEntry -> newEntry
+	14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox, submenu etc.) to properly get recognized from data tables of entries
 
 -------------------
 TODO - To check (future versions)
