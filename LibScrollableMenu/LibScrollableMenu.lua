@@ -1434,11 +1434,11 @@ local function onMouseUp(control, data, hasSubmenu, button, upInside)
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseUp - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
 	if upInside then
 		if button == MOUSE_BUTTON_INDEX_LEFT then
-			dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
-			lib:FireCallbacks('EntryOnSelected', data, control)
-			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
-			
 			if data.callback then
+				dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
+				lib:FireCallbacks('EntryOnSelected', data, control)
+				dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
+
 				dropdown:SelectItemByIndex(control.m_data.m_index, data.ignoreCallback)
 			end
 			if control.closeOnSelect then
@@ -2809,7 +2809,7 @@ function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
 	if not self:BypassOnGlobalMouseUp(...) then
 		if self:IsDropdownVisible() then
 			self:HideDropdown()
-			dLog(LSM_LOGTYPE_DEBUG, "<<< OpenMenu was cleared")
+			dLog(LSM_LOGTYPE_VERBOSE, "<<< OpenMenu was cleared")
 			lib.openMenu = nil
 		else
 			if self.m_container:IsHidden() then
@@ -2818,7 +2818,7 @@ function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
 				-- If shown in ShowDropdownInternal, the global mouseup will fire and immediately dismiss the combo box.
 				-- We need to delay showing it until the first one fires.
 				self:ShowDropdownOnMouseUp()
-				dLog(LSM_LOGTYPE_DEBUG, ">>> OpenMenu was set: " ..tos(self.m_name))
+				dLog(LSM_LOGTYPE_VERBOSE, ">>> OpenMenu was set: " ..tos(self.m_name))
 				lib.openMenu = self
 			end
 		end
@@ -3946,7 +3946,7 @@ WORKING ON - Current version: 2.2
 	-15. Fixed ZO_Menu opening does not hide already opened LSM dropdown & contextMenu
 	TESTED: OK
 	16. Bug callback onEntrySelected fires for entries clicked where there is no callback function (entry with hasSubmenu = true but callback = nil)
-	TESTED: TODO coding
+	TESTED: OK
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
 	2. Fixed dropdown filtering. Filtered table reflects m_sortedItems indexing
