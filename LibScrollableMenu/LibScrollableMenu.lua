@@ -670,6 +670,13 @@ function getValueOrCallback(arg, ...)
 end
 lib.GetValueOrCallback = getValueOrCallback
 
+local function hideCurrentlyOpenedLSMAndContextMenu()
+	if lib.openMenu and lib.openMenu:IsDropdownVisible() then
+		ClearCustomScrollableMenu()
+		lib.openMenu:HideDropdown()
+	end
+end
+
 local function clearTimeout()
 	dLog(LSM_LOGTYPE_VERBOSE, "ClearTimeout")
 	EM:UnregisterForUpdate(dropdownCallLaterHandle)
@@ -2802,6 +2809,7 @@ function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
 	if not self:BypassOnGlobalMouseUp(...) then
 		if self:IsDropdownVisible() then
 			self:HideDropdown()
+			dLog(LSM_LOGTYPE_DEBUG, "<<< OpenMenu was cleared")
 			lib.openMenu = nil
 		else
 			if self.m_container:IsHidden() then
@@ -2810,6 +2818,7 @@ function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
 				-- If shown in ShowDropdownInternal, the global mouseup will fire and immediately dismiss the combo box.
 				-- We need to delay showing it until the first one fires.
 				self:ShowDropdownOnMouseUp()
+				dLog(LSM_LOGTYPE_DEBUG, ">>> OpenMenu was set: " ..tos(self.m_name))
 				lib.openMenu = self
 			end
 		end
@@ -3842,10 +3851,18 @@ local function onAddonLoaded(event, name)
 
 	--Register a scene manager callback for the SetInUIMode function so any menu opened/closed closes the context menus of LSM too
 	SecurePostHook(SCENE_MANAGER, 'Show', function(self, ...)
-		if lib.openMenu and lib.openMenu:IsDropdownVisible() then
-			ClearCustomScrollableMenu()
-			lib.openMenu:HideDropdown()
-		end
+		hideCurrentlyOpenedLSMAndContextMenu()
+	end)
+
+	--ZO_Menu - ShowMenu hook: Hide LSM if a ZO_Menu menu opens
+	ZO_PreHook("ShowMenu", function(owner, initialRefCount, menuType)
+		dLog(LSM_LOGTYPE_VERBOSE, "ZO_Menu -> ShowMenu. Items#: " ..tos(#ZO_Menu.items))
+		--No entries in ZO_Menu -> nothign will be shown, abort here
+		if next(ZO_Menu.items) == nil then
+        	return false
+    	end
+		hideCurrentlyOpenedLSMAndContextMenu()
+		return false
 	end)
 
 	SLASH_COMMANDS["/lsmdebug"] = function()
@@ -3865,6 +3882,7 @@ local function onAddonLoaded(event, name)
 end
 EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
+
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Global library reference
@@ -3925,7 +3943,10 @@ WORKING ON - Current version: 2.2
 	TESTED: TODO - CODE
 	-14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox, submenu etc.) to properly get recognized from data tables of entries
 	TESTED: OK
-
+	-15. Fixed ZO_Menu opening does not hide already opened LSM dropdown & contextMenu
+	TESTED: OK
+	16. Bug callback onEntrySelected fires for entries clicked where there is no callback function (entry with hasSubmenu = true but callback = nil)
+	TESTED: TODO coding
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
 	2. Fixed dropdown filtering. Filtered table reflects m_sortedItems indexing
@@ -3950,6 +3971,8 @@ WORKING ON - Current version: 2.2
 	12. Compatibility fix for LibCustomMenu submenus (which only used data.label as the name): If data.name is missing in submenu but data.label exists -> set data.name = copy of data.label
 	13. Fix AddCustomScrollableMenuEntries to put v.label to v.additionalData.label -> For a proper usage in AddCustomScrollableMenuEntry -> newEntry
 	14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox, submenu etc.) to properly get recognized from data tables of entries
+	15. Fixed ZO_Menu opening does not hide already opened LSM dropdown & contextMenu
+	16. Bug callback onEntrySelected fires for entries clicked where there is no callback function (entry with hasSubmenu = true but callback = nil)
 
 -------------------
 TODO - To check (future versions)

@@ -418,7 +418,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 		local wasLabelChangedAtEntry = false
 		local comboBoxMenuEntries = {
 			{
-				name            = function()
+				name = function()
 					if not wasNameChangedAtEntry then
 						wasNameChangedAtEntry = true
 						return "Normal entry 1 (contextMenu)"
@@ -481,6 +481,14 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 			{
 				name            = "-", --Divider
 			},
+
+			{
+
+				name            = "Submenu Entry Test - No entries",
+				entryType = LSM_ENTRY_TYPE_SUBMENU,
+
+			},
+
 			{
 				name            = "Name value", --no name test
 				label           = function()
