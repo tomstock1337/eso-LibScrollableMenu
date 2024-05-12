@@ -83,6 +83,7 @@ local DEFAULT_FONT = "ZoFontGame"
 local HEADER_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED))
 local DEFAULT_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL))
 local DEFAULT_TEXT_HIGHLIGHT = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT))
+local DEFAULT_TEXT_DISABLED_COLOR = ZO_GAMEPAD_UNSELECTED_COLOR
 
 --Height and width
 local DEFAULT_HEIGHT = 250
@@ -193,7 +194,7 @@ local comboBoxDefaults = {
 	--From ZO_ComboBox
 	m_selectedItemData = nil,
 	m_selectedColor = { GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED) },
-	m_disabledColor = ZO_GAMEPAD_UNSELECTED_COLOR, --ZO_ERROR_COLOR,
+	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
 	m_sortOrder = ZO_SORT_ORDER_UP,
 	m_sortType = ZO_SORT_BY_NAME,
 	m_sortsItems = true,
@@ -310,7 +311,7 @@ lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCall
 local noResultsEntry = { 
 	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS),
 	enabled = false,
-	m_disabledColor = DEFAULT_TEXT_COLOR,
+	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
 }
 
 
