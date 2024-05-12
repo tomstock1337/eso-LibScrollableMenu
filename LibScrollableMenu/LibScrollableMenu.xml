@@ -306,6 +306,7 @@
 									</OnMouseExit>
 									
 									<OnClicked>
+										ZO_Tooltips_HideTextTooltip()
 										local owningWindow = self:GetOwningWindow()
 										if owningWindow.object then
 											owningWindow.object:ResetFilters(owningWindow)
