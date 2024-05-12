@@ -507,7 +507,7 @@ do
 	end
 
 	local function header_updateAnchors(control, refreshResults)
-		local owningWindow = control:GetOwningWindow()
+		--local owningWindow = control:GetOwningWindow()
 		--local hasFocus = owningWindow.filterBox:HasFocus()
 		
 		local headerHeight = 0
@@ -672,9 +672,10 @@ end
 lib.GetValueOrCallback = getValueOrCallback
 
 local function hideCurrentlyOpenedLSMAndContextMenu()
-	if lib.openMenu and lib.openMenu:IsDropdownVisible() then
+	local openMenu = lib.openMenu
+	if openMenu and openMenu:IsDropdownVisible() then
 		ClearCustomScrollableMenu()
-		lib.openMenu:HideDropdown()
+		openMenu:HideDropdown()
 	end
 end
 
@@ -1432,10 +1433,19 @@ end
 local function onMouseUp(control, data, hasSubmenu, button, upInside)
 	local dropdown = control.m_dropdownObject
 
+--d("[LSM]onMouseUp-button: " ..tos(button))
+
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseUp - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
 	if upInside then
 		if button == MOUSE_BUTTON_INDEX_LEFT then
-			if data.callback then
+			--LSM Context menu is open and we clicked on a non-context menu entry?
+			--Close the context menu now
+			if g_contextMenu:IsDropdownVisible() and not control.m_owner.isContextMenu then
+				ClearCustomScrollableMenu()
+				return --do not execute the callback of the clicked entry
+			end
+
+			if data.callback and not data.isHeader then
 				dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
 				lib:FireCallbacks('EntryOnSelected', data, control)
 				dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
@@ -1459,7 +1469,7 @@ local no_submenu = false
 local handlerFunctions  = {
 	['onMouseEnter'] = {
 		[ENTRY_ID] = function(control, data, ...)
-			local dropdown = onMouseEnter(control, data, no_submenu)
+			onMouseEnter(control, data, no_submenu)
 			clearNewStatus(control, data)
 			return not control.closeOnSelect
 		end,
@@ -1479,13 +1489,13 @@ local handlerFunctions  = {
 			return false --not control.closeOnSelect
 		end,
 		[CHECKBOX_ENTRY_ID] = function(control, data, ...)
-			local dropdown = onMouseEnter(control, data, no_submenu)
+			onMouseEnter(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
 	},
 	['onMouseExit'] = {
 		[ENTRY_ID] = function(control, data)
-			local dropdown = onMouseExit(control, data, no_submenu)
+			onMouseExit(control, data, no_submenu)
 			return not control.closeOnSelect
 		end,
 		[HEADER_ENTRY_ID] = function(control, data, ...)
@@ -1505,7 +1515,7 @@ local handlerFunctions  = {
 			return false --not control.closeOnSelect
 		end,
 		[CHECKBOX_ENTRY_ID] = function(control, data)
-			local dropdown = onMouseExit(control, data, no_submenu)
+			onMouseExit(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
 	},
@@ -1515,12 +1525,12 @@ local handlerFunctions  = {
 	---> So the parameters for the LibScrollableMenu entry.callback functions will be the same:  (comboBox, itemName, item, selectionChanged, oldItem)
 	['onMouseUp'] = {
 		[ENTRY_ID] = function(control, data, button, upInside)
-			--onMouseUp [ENTRY_ID]')
-			local dropdown = onMouseUp(control, data, no_submenu, button, upInside)
+			--d('onMouseUp [ENTRY_ID]')
+			onMouseUp(control, data, no_submenu, button, upInside)
 			return true
 		end,
 		[HEADER_ENTRY_ID] = function(control, data, button, upInside)
-			local dropdown = onMouseUp(control, data, no_submenu, button, upInside)
+			onMouseUp(control, data, no_submenu, button, upInside)
 			-- Return true to skip the default handler.
 			return true
 		end,
@@ -1529,7 +1539,7 @@ local handlerFunctions  = {
 			return true
 		end,
 		[SUBMENU_ENTRY_ID] = function(control, data, button, upInside)
-			local dropdown = onMouseUp(control, data, has_submenu, button, upInside)
+			onMouseUp(control, data, has_submenu, button, upInside)
 			return true
 		end,
 		[CHECKBOX_ENTRY_ID] = function(control, data, button, upInside)
@@ -1819,13 +1829,13 @@ function dropdownClass:OnMouseExitTimeout(control)
 end
 
 function dropdownClass:OnEntrySelected(control, button, upInside)
+--d("[LSM]dropdownClass:OnEntrySelected")
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntrySelected - control: %s, button: %s, upInside: %s", tos(getControlName(control)), tos(button), tos(upInside))
 
 	local data = getControlData(control)
-
 	if data.enabled then
 		if not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
-			--d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
+--d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
 			zo_comboBoxDropdown_onEntrySelected(self, control)
 		end
 
@@ -1841,6 +1851,7 @@ function dropdownClass:OnEntrySelected(control, button, upInside)
 					dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntrySelected - contextMenuCallback!")
 					control.contextMenuCallback(control)
 				elseif g_contextMenu:IsDropdownVisible() then
+--d(">context menu was visible -> Closing it")
 					ClearCustomScrollableMenu()
 				end
 			end
@@ -2064,6 +2075,34 @@ function dropdownClass:ResetFilters(owningWindow)
 	owningWindow.filterBox:SetText('')
 end
 
+--[[
+local indexOfLSMFilterSettings = {}
+local addMenuItemFunc = AddCustomMenuItem ~= nil and AddCustomMenuItem or AddMenuItem
+function dropdownClass:ShowFilterSettings(owningWindow, settingsButton)
+	if self.m_comboBox ~= nil and self.m_comboBox.openingControl == nil then
+		ClearCustomScrollableMenu()
+	end
+	lib.sv = lib.sv or {}
+
+	ClearMenu()
+	--The index in the table can be used to set the checked state of the ZO_Menu.items[index].checkbox control via ZO_CheckButton_SetCheckState
+	--based on LSM SavedVariables
+	indexOfLSMFilterSettings["IncludeSubmenuEntries"] = addMenuItemFunc("Include submenu entries", function()
+		zo_callLater(function()
+			lib.sv["IncludeSubmenuEntries"] = ZO_CheckButton_IsChecked( ZO_Menu.items[ indexOfLSMFilterSettings["IncludeSubmenuEntries"] ].checkbox)
+		end, 0) --wait for xBox state change
+	end, MENU_ADD_OPTION_CHECKBOX)
+	if indexOfLSMFilterSettings["IncludeSubmenuEntries"] ~= nil then
+		ZO_CheckButton_SetCheckState(ZO_Menu.items[ indexOfLSMFilterSettings["IncludeSubmenuEntries"] ].checkbox, lib.sv["IncludeSubmenuEntries"])
+	end
+	addMenuItemFunc("-", function()  end)
+	addMenuItemFunc("Show LibScrollableMenu settings", function()  end)
+
+	--Prevent LSM Hook at ShowMenu to close LSM
+	lib.preventLSMClosingZO_Menu = true
+	ShowMenu(settingsButton)
+end
+]]
 
 function dropdownClass:IsFilterEnabled()
 	if self.m_comboBox then
@@ -3862,6 +3901,10 @@ local function onAddonLoaded(event, name)
 		if next(ZO_Menu.items) == nil then
         	return false
     	end
+		if lib.preventLSMClosingZO_Menu then
+			lib.preventLSMClosingZO_Menu = nil
+			return
+		end
 		hideCurrentlyOpenedLSMAndContextMenu()
 		return false
 	end)
@@ -3948,6 +3991,12 @@ WORKING ON - Current version: 2.2
 	TESTED: OK
 	16. Bug callback onEntrySelected fires for entries clicked where there is no callback function (entry with hasSubmenu = true but callback = nil)
 	TESTED: OK
+	17. Bug header left clicking selects the header (if not explicitly enabled = false)
+	TESTED: OK
+	18. Bug clicking non-contextMenu entry while context menu is opened: Only close the context menu but do not select any entry
+	TESTED: OK
+
+
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
 	2. Fixed dropdown filtering. Filtered table reflects m_sortedItems indexing
@@ -3974,6 +4023,8 @@ WORKING ON - Current version: 2.2
 	14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox, submenu etc.) to properly get recognized from data tables of entries
 	15. Fixed ZO_Menu opening does not hide already opened LSM dropdown & contextMenu
 	16. Bug callback onEntrySelected fires for entries clicked where there is no callback function (entry with hasSubmenu = true but callback = nil)
+	17. Bug header left clicking selects the header (if not explicitly enabled = false)
+	18. Bug clicking non-contextMenu entry while context menu is opened: Only close the context menu but do not select any entry
 
 -------------------
 TODO - To check (future versions)
