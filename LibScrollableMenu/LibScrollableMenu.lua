@@ -782,7 +782,8 @@ end
 local function doMapEntries(entryTable, mapTable, entryTableType)
 	dLog(LSM_LOGTYPE_VERBOSE, "doMapEntries")
 	if entryTableType == nil then
-		entryTable = getValueOrCallback(entryTable)
+		-- If getValueOrCallback returns nil then return {}
+		entryTable = getValueOrCallback(entryTable) or {}
 	end
 
 	for _, entry in pairs(entryTable) do
