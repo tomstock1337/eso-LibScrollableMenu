@@ -70,7 +70,7 @@ local function test()
 		local options = {
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
-			maxDropdownHeight = 300,
+			maxDropdownHeight = 450,
 
 			sortEntries=function() return false end,
 			narrate = narrateOptions,
