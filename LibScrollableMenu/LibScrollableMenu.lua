@@ -2521,7 +2521,9 @@ end
 --Should exit on PTS already
 if comboBox_base.IsEnabled == nil then
 	function comboBox_base:IsEnabled()
-		return self.m_openDropdown:GetState() ~= BSTATE_DISABLED
+		local isEnabled = (self.m_openDropdown ~= nil and self.m_openDropdown.GetState ~= nil and self.m_openDropdown:GetState() ~= BSTATE_DISABLED) or nil
+		if isEnabled == nil then isEnabled = true end
+		return isEnabled
 	end
 end
 
