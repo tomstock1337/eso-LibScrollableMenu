@@ -1431,7 +1431,7 @@ local function onMouseExit(control, data, hasSubmenu)
 	return dropdown
 end
 
-local function onMouseUp(control, data, hasSubmenu, button, upInside)
+local function onMouseUp(control, data, hasSubmenu, button, upInside, entryType)
 	local dropdown = control.m_dropdownObject
 
 --d("[LSM]onMouseUp-button: " ..tos(button))
@@ -1441,18 +1441,31 @@ local function onMouseUp(control, data, hasSubmenu, button, upInside)
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 			local comboBox = getComboBox(control)
 			if g_contextMenu:IsDropdownVisible() and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
-			elseif data.callback then
-				dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
-				lib:FireCallbacks('EntryOnSelected', data, control)
-				dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
+				--if context menu is shown do not run a selection handler/callback. Just close the context menu first
 
-				dropdown:SelectItemByIndex(control.m_data.m_index, data.ignoreCallback)
+			else
+				--Left clicked any non-checkbox entry
+				if not entryType or entryType ~= CHECKBOX_ENTRY_ID then
+					if data.callback then
+						dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
+						lib:FireCallbacks('EntryOnSelected', data, control)
+						dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
+
+						dropdown:SelectItemByIndex(control.m_data.m_index, data.ignoreCallback)
+					end
+				--Left clicked a checkbox's row
+				elseif entryType == CHECKBOX_ENTRY_ID then
+					playSelectedSoundCheck(dropdown)
+					ZO_CheckButton_OnClicked(control.m_checkbox)
+					data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
+					dLog(LSM_LOGTYPE_VERBOSE, "Checkbox onMouseUp - control: %s, button: %s, upInside: %s, isChecked: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(data.checked))
+				end
 			end
 		--elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 		end
 	end
 
-	hideTooltip()
+	hideTooltip(control)
 	return dropdown
 end
 
@@ -1519,7 +1532,7 @@ local handlerFunctions  = {
 	['onMouseUp'] = {
 		[ENTRY_ID] = function(control, data, button, upInside)
 			--d('onMouseUp [ENTRY_ID]')
-			onMouseUp(control, data, no_submenu, button, upInside)
+			onMouseUp(control, data, no_submenu, button, upInside, ENTRY_ID)
 			return true
 		end,
 		[HEADER_ENTRY_ID] = function(control, data, button, upInside)
@@ -1531,11 +1544,13 @@ local handlerFunctions  = {
 			return true
 		end,
 		[SUBMENU_ENTRY_ID] = function(control, data, button, upInside)
-			onMouseUp(control, data, has_submenu, button, upInside)
+			onMouseUp(control, data, has_submenu, button, upInside, SUBMENU_ENTRY_ID)
 			return true
 		end,
 		[CHECKBOX_ENTRY_ID] = function(control, data, button, upInside)
-			--d( 'onMouseUp [CHECKBOX_ENTRY_ID]')
+			d( 'onMouseUp [CHECKBOX_ENTRY_ID]')
+			onMouseUp(control, data, has_submenu, button, upInside, CHECKBOX_ENTRY_ID)
+			--[[
 			local dropdown = control.m_dropdownObject
 			if upInside then
 				if button == MOUSE_BUTTON_INDEX_LEFT then
@@ -1547,6 +1562,7 @@ local handlerFunctions  = {
 					hideTooltip(control)
 				end
 			end
+			]]
 			return true
 		end,
 	},
@@ -2377,13 +2393,13 @@ function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
 					refCount = refCount - 1
 				else
 				end
-			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
+			--elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 			end
 		elseif comboBox == nil then
 			refCount = refCount - 1
 		else
 			refCount = refCount - 1
-		d( 'BypassOnGlobalMouseUp Ignore')
+		--d( 'BypassOnGlobalMouseUp Ignore')
 		end
 
 		mouseUpRefCounts[self] = refCount
@@ -2527,7 +2543,7 @@ end
 
 -- used for onMouseEnter[submenu] and onMouseUp[contextMenu]
 function comboBox_base:ShowDropdownOnMouseAction(parentControl)
-	d( 'comboBox_base:ShowDropdownOnMouseAction')
+	--d( 'comboBox_base:ShowDropdownOnMouseAction')
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:ShowDropdownOnMouseAction - parentControl: %s " .. tos(getControlName(parentControl)))
 	if self:IsDropdownVisible() then
 		-- If submenu was currently opened, close it so it can reset.
@@ -3317,7 +3333,7 @@ function contextMenuClass:BypassOnGlobalMouseUp(button, ...)
 end
 
 function contextMenuClass:ClearItems()
-	d( 'contextMenuClass:ClearItems()')
+	--d( 'contextMenuClass:ClearItems()')
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ClearItems")
 	self:SetOptions(nil)
 	self:ResetToDefaults()
