@@ -2521,9 +2521,7 @@ end
 --Should exit on PTS already
 if comboBox_base.IsEnabled == nil then
 	function comboBox_base:IsEnabled()
-		local isEnabled = (self.m_openDropdown ~= nil and self.m_openDropdown.GetState ~= nil and self.m_openDropdown:GetState() ~= BSTATE_DISABLED) or nil
-		if isEnabled == nil then isEnabled = true end
-		return isEnabled
+		return self.m_openDropdown:GetState() ~= BSTATE_DISABLED
 	end
 end
 
@@ -3128,7 +3126,7 @@ local submenuClass_exposedVariables = {
 	["m_sortOrder"] = true, --
 	["m_sortsItems"] = true, --
 	["m_sortedItems"] = false, -- for obvious reasons
-	["m_openDropdown"] = false, -- control
+	["m_openDropdown"] = true, -- control, set to true for submenu to make comboBox_base:IsEnabled( function work
 	["m_selectedColor"] = true, --
 	["m_disabledColor"] = true, --
 	["m_selectedItemText"] = false, -- This is handeled by "SelectItem"
