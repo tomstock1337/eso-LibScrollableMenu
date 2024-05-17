@@ -1431,6 +1431,7 @@ local function onMouseExit(control, data, hasSubmenu)
 	return dropdown
 end
 
+--Run the data.callback for normal entries, entries opening a submenu (which got a callback)
 local function selectEntryCallback(dropdown, control, data, hasSubmenu)
 	if not data or not data.callback then return end
 	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
@@ -1440,14 +1441,14 @@ local function selectEntryCallback(dropdown, control, data, hasSubmenu)
 	dropdown:SelectItemByIndex(control.m_data.m_index, data.ignoreCallback)
 end
 
+--Run the data.callback for checkbox entries
 local function selectCheckboxEntryCallback(dropdown, control, data, hasSubmenu)
 	if not data or not data.callback then return end
 	playSelectedSoundCheck(dropdown)
-	ZO_CheckButton_OnClicked(control.m_checkbox)
+	ZO_CheckButton_OnClicked(control.m_checkbox) --> Calls ZO_CheckButton_SetToggleFunction which was passing in data.callback at teh SetupFunction of the checkbox
 	data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
 	dLog(LSM_LOGTYPE_VERBOSE, "Checkbox onMouseUp - control: %s, button: %s, upInside: %s, isChecked: %s", tos(getControlName(control)), tos(MOUSE_BUTTON_INDEX_LEFT), tos(true), tos(data.checked))
 end
-
 
 local function onMouseUp(control, data, hasSubmenu, button, upInside, entryCallbackFunc)
 	local dropdown = control.m_dropdownObject
@@ -1459,8 +1460,10 @@ local function onMouseUp(control, data, hasSubmenu, button, upInside, entryCallb
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 			local comboBox = getComboBox(control)
 			if g_contextMenu:IsDropdownVisible() and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
-				--if context menu is shown do not run a selection handler/callback. Just close the context menu first
+				--If context menu is currently shown do not run a clicked entry's callback of a non-context menu dropdown!
+				-->Just close the context menu first
 			else
+				--Callback function was passed in? Run it then
 				if entryCallbackFunc ~= nil then
 					entryCallbackFunc(dropdown, control, data, hasSubmenu)
 				end
@@ -1495,6 +1498,7 @@ local handlerFunctions  = {
 			--d( 'onMouseEnter [SUBMENU_ENTRY_ID]')
 			local dropdown = onMouseEnter(control, data, has_submenu)
 			clearTimeout()
+			--Show the submenu of the entry
 			dropdown:ShowSubmenu(control)
 			return false --not control.closeOnSelect
 		end,
@@ -1540,11 +1544,11 @@ local handlerFunctions  = {
 			return true
 		end,
 		[HEADER_ENTRY_ID] = function(control, data, button, upInside)
-			-- Return true to skip the default handler.
+			-- Return true to skip the default handler. No left click callback!
 			return true
 		end,
 		[DIVIDER_ENTRY_ID] = function(control, data, button, upInside)
-			-- Return true to skip the default handler.
+			-- Return true to skip the default handler. No left click callback!
 			return true
 		end,
 		[SUBMENU_ENTRY_ID] = function(control, data, button, upInside)
@@ -2731,7 +2735,7 @@ do -- Row setup functions
 	function comboBox_base:SetupCheckbox(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupCheckbox - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 		local function setChecked(checkbox, checked)
-			local checkedData   = ZO_ScrollList_GetData(checkbox:GetParent())
+			local checkedData = ZO_ScrollList_GetData(checkbox:GetParent())
 
 			checkedData.checked = checked
 			if checkedData.callback then
