@@ -1431,7 +1431,25 @@ local function onMouseExit(control, data, hasSubmenu)
 	return dropdown
 end
 
-local function onMouseUp(control, data, hasSubmenu, button, upInside, entryType)
+local function selectEntryCallback(dropdown, control, data, hasSubmenu)
+	if not data or not data.callback then return end
+	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
+	lib:FireCallbacks('EntryOnSelected', data, control)
+	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(MOUSE_BUTTON_INDEX_LEFT), tos(true), tos(hasSubmenu))
+
+	dropdown:SelectItemByIndex(control.m_data.m_index, data.ignoreCallback)
+end
+
+local function selectCheckboxEntryCallback(dropdown, control, data, hasSubmenu)
+	if not data or not data.callback then return end
+	playSelectedSoundCheck(dropdown)
+	ZO_CheckButton_OnClicked(control.m_checkbox)
+	data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
+	dLog(LSM_LOGTYPE_VERBOSE, "Checkbox onMouseUp - control: %s, button: %s, upInside: %s, isChecked: %s", tos(getControlName(control)), tos(MOUSE_BUTTON_INDEX_LEFT), tos(true), tos(data.checked))
+end
+
+
+local function onMouseUp(control, data, hasSubmenu, button, upInside, entryCallbackFunc)
 	local dropdown = control.m_dropdownObject
 
 --d("[LSM]onMouseUp-button: " ..tos(button))
@@ -1442,23 +1460,9 @@ local function onMouseUp(control, data, hasSubmenu, button, upInside, entryType)
 			local comboBox = getComboBox(control)
 			if g_contextMenu:IsDropdownVisible() and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
 				--if context menu is shown do not run a selection handler/callback. Just close the context menu first
-
 			else
-				--Left clicked any non-checkbox entry
-				if not entryType or entryType ~= CHECKBOX_ENTRY_ID then
-					if data.callback then
-						dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
-						lib:FireCallbacks('EntryOnSelected', data, control)
-						dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
-
-						dropdown:SelectItemByIndex(control.m_data.m_index, data.ignoreCallback)
-					end
-				--Left clicked a checkbox's row
-				elseif entryType == CHECKBOX_ENTRY_ID then
-					playSelectedSoundCheck(dropdown)
-					ZO_CheckButton_OnClicked(control.m_checkbox)
-					data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
-					dLog(LSM_LOGTYPE_VERBOSE, "Checkbox onMouseUp - control: %s, button: %s, upInside: %s, isChecked: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(data.checked))
+				if entryCallbackFunc ~= nil then
+					entryCallbackFunc(dropdown, control, data, hasSubmenu)
 				end
 			end
 		--elseif button == MOUSE_BUTTON_INDEX_RIGHT then
@@ -1532,7 +1536,7 @@ local handlerFunctions  = {
 	['onMouseUp'] = {
 		[ENTRY_ID] = function(control, data, button, upInside)
 			--d('onMouseUp [ENTRY_ID]')
-			onMouseUp(control, data, no_submenu, button, upInside, ENTRY_ID)
+			onMouseUp(control, data, no_submenu, button, upInside, selectEntryCallback)
 			return true
 		end,
 		[HEADER_ENTRY_ID] = function(control, data, button, upInside)
@@ -1544,25 +1548,12 @@ local handlerFunctions  = {
 			return true
 		end,
 		[SUBMENU_ENTRY_ID] = function(control, data, button, upInside)
-			onMouseUp(control, data, has_submenu, button, upInside, SUBMENU_ENTRY_ID)
+			onMouseUp(control, data, has_submenu, button, upInside, selectEntryCallback)
 			return true
 		end,
 		[CHECKBOX_ENTRY_ID] = function(control, data, button, upInside)
-			d( 'onMouseUp [CHECKBOX_ENTRY_ID]')
-			onMouseUp(control, data, has_submenu, button, upInside, CHECKBOX_ENTRY_ID)
-			--[[
-			local dropdown = control.m_dropdownObject
-			if upInside then
-				if button == MOUSE_BUTTON_INDEX_LEFT then
-					-- left click on row toggles the checkbox.
-					playSelectedSoundCheck(dropdown)
-					ZO_CheckButton_OnClicked(control.m_checkbox)
-					data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
-					dLog(LSM_LOGTYPE_VERBOSE, "Checkbox onMouseUp - control: %s, button: %s, upInside: %s, isChecked: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(data.checked))
-					hideTooltip(control)
-				end
-			end
-			]]
+			--d( 'onMouseUp [CHECKBOX_ENTRY_ID]')
+			onMouseUp(control, data, has_submenu, button, upInside, selectCheckboxEntryCallback)
 			return true
 		end,
 	},
