@@ -92,9 +92,6 @@ local DEFAULT_HEIGHT = 250
 local SUBMENU_SHOW_TIMEOUT = 500 --350 ms before
 local dropdownCallLaterHandle = MAJOR .. "_Timeout"
 
---Sound settings
-local origSoundComboClicked = SOUNDS.COMBO_CLICK
-local soundComboClickedSilenced = SOUNDS.NONE
 
 --Textures
 local iconNewIcon = ZO_KEYBOARD_NEW_ICON
@@ -184,6 +181,21 @@ lib.scrollListRowTypes = {
 	HEADER_ENTRY_ID = HEADER_ENTRY_ID,
 	SUBMENU_ENTRY_ID = SUBMENU_ENTRY_ID,
 	CHECKBOX_ENTRY_ID = CHECKBOX_ENTRY_ID,
+}
+
+--Sound settings
+local origSoundComboClicked = 	SOUNDS.COMBO_CLICK
+local origSoundDefaultClicked = SOUNDS.DEFAULT_CLICK
+local soundClickedSilenced    = SOUNDS.NONE
+--Sound names of the combobox entry selected sounds
+local entryTypeToSilenceSoundName = {
+	[LSM_ENTRY_TYPE_CHECKBOX]	=	"DEFAULT_CLICK",
+	[LSM_ENTRY_TYPE_NORMAL] 	= 	"COMBO_CLICK",
+}
+--Original sounds of the combobox entry selected sounds
+local entryTypeToOriginalSelectedSound = {
+	[LSM_ENTRY_TYPE_CHECKBOX]	= origSoundDefaultClicked,
+	[LSM_ENTRY_TYPE_NORMAL]		= origSoundComboClicked,
 }
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -737,16 +749,15 @@ local function recursiveOverEntries(entry, callback)
 	return result
 end
 
---(Un)Silence the OnClicked sound of a selected dropdown
-local function silenceComboBoxClickedSound(doSilence)
-	doSilence = doSilence or false
-	dLog(LSM_LOGTYPE_VERBOSE, "silenceComboBoxClickedSound - doSilence: " .. tos(doSilence))
+--(Un)Silence the OnClicked sound of a selected dropdown entry
+local function silenceEntryClickedSound(doSilence, entryType)
+	dLog(LSM_LOGTYPE_VERBOSE, "silenceComboBoxClickedSound - doSilence: " .. tos(doSilence) .. "; entryType: " ..tos(entryType))
+	local soundNameForSilence = entryTypeToSilenceSoundName[entryType]
 	if doSilence == true then
-		--Silence the "selected comboBox sound"
-		SOUNDS.COMBO_CLICK = soundComboClickedSilenced
+		SOUNDS[soundNameForSilence] = soundClickedSilenced
 	else
-		--Unsilence the "selected comboBox sound" again
-		SOUNDS.COMBO_CLICK = origSoundComboClicked
+		local origSound = entryTypeToOriginalSelectedSound[entryType]
+		SOUNDS[soundNameForSilence] = origSound
 	end
 end
 
@@ -757,24 +768,32 @@ local function getOptionsForDropdown(dropdown)
 end
 
 --Check if a sound should be played if a dropdown entry was selected
-local function playSelectedSoundCheck(dropdown)
-	dLog(LSM_LOGTYPE_VERBOSE, "playSelectedSoundCheck")
-	silenceComboBoxClickedSound(false)
+local function playSelectedSoundCheck(dropdown, isCheckbox)
+	isCheckbox = isCheckbox or false
+	local entryType = isCheckbox == true and LSM_ENTRY_TYPE_CHECKBOX or LSM_ENTRY_TYPE_NORMAL
+	dLog(LSM_LOGTYPE_VERBOSE, "playSelectedSoundCheck - isCheckbox: %s, entryType: %s", tos(isCheckbox), tos(entryType))
 
-	local soundToPlay = origSoundComboClicked
+	silenceEntryClickedSound(false, entryType)
+
+	local soundToPlay
+	local soundToPlayOrig = entryTypeToOriginalSelectedSound[entryType]
 	local options = getOptionsForDropdown(dropdown)
-	
+
 	if options ~= nil then
 		--Chosen at options to play no selected sound?
 		if getValueOrCallback(options.selectedSoundDisabled, options) == true then
-			silenceComboBoxClickedSound(true)
+			silenceEntryClickedSound(true, entryType)
 			return
 		else
+			--Custom selected sound passed in?
 			soundToPlay = getValueOrCallback(options.selectedSound, options)
-			soundToPlay = soundToPlay or SOUNDS.COMBO_CLICK
+			--Use default selected sound
+			if soundToPlay == nil then soundToPlay = soundToPlayOrig end
 		end
+	else
+		soundToPlay = soundToPlayOrig
 	end
-	PlaySound(soundToPlay) --SOUNDS.COMBO_CLICK
+	PlaySound(soundToPlay)
 end
 
 --Recursivley map the entries of a submenu and add them to the mapTable
@@ -1444,9 +1463,9 @@ end
 --Run the data.callback for checkbox entries
 local function selectCheckboxEntryCallback(dropdown, control, data, hasSubmenu)
 	if not data or not data.callback then return end
-	playSelectedSoundCheck(dropdown)
-	ZO_CheckButton_OnClicked(control.m_checkbox) --> Calls ZO_CheckButton_SetToggleFunction which was passing in data.callback at teh SetupFunction of the checkbox
-	data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
+	playSelectedSoundCheck(dropdown, true)
+	ZO_CheckButton_OnClicked(control.m_checkbox) --> Calls ZO_CheckButton_SetToggleFunction which was passing in data.callback at the SetupFunction of the checkbox
+	data.checked = ZO_CheckButton_IsChecked(control.m_checkbox) --Most likely not needed as the toogleFunction called from ZO_CheckButton_OnClicked alreay updates the checkedData.checked
 	dLog(LSM_LOGTYPE_VERBOSE, "Checkbox onMouseUp - control: %s, button: %s, upInside: %s, isChecked: %s", tos(getControlName(control)), tos(MOUSE_BUTTON_INDEX_LEFT), tos(true), tos(data.checked))
 end
 
@@ -1962,8 +1981,6 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	local desiredHeight = maxHeight
 	ApplyTemplateToControl(scrollControl.contents, getScrollContentsTemplate(allItemsHeight < desiredHeight))
 	-- Add padding one more time to account for potential pixel rounding issues that could cause the scroll bar to appear unnecessarily.
---	allItemsHeight = allItemsHeight + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)-- + ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y
---	allItemsHeight = allItemsHeight + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) + ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y
 	allItemsHeight = allItemsHeight + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2) + 1
 
 	if allItemsHeight < desiredHeight then
@@ -4014,7 +4031,10 @@ WORKING ON - Current version: 2.2
 	TESTED: OK
 	18. Bug clicking non-contextMenu entry while context menu is opened: Only close the context menu but do not select any entry
 	TESTED: OK
-
+	19. Find out if the checkbox selected toggle function is updating data.checked
+	TESTED: OPEN
+	20. Changed a lot in regards to OnGlobalMouseUp left & right click / context menu clears on right click
+	TESTED: OPEN
 
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
@@ -4046,9 +4066,9 @@ WORKING ON - Current version: 2.2
 	18. Bug clicking non-contextMenu entry while context menu is opened: Only close the context menu but do not select any entry
 	19. Find out if the checkbox selected toggle function is updating data.clicked. I had added this to the handler because it wasn't
 		data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
+	20. Changed a lot in regards to OnGlobalMouseUp / context menu clears on right click
 
-	20. Changed a lot in regards to OnGlobalMouseUp.
-		- context menu clears on
+
 -------------------
 TODO - To check (future versions)
 -------------------
