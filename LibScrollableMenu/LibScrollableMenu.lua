@@ -2485,8 +2485,14 @@ end
 --Keep a context menu opened if we right click an entry of it
 function comboBox_base:PreventRightClickToCloseAll(button, mocCtrl, comboBox, isContextMenu)
 --d("[LSM]comboBox_base:PreventRightClickToCloseAll")
-	if button == MOUSE_BUTTON_INDEX_RIGHT and (isContextMenu or (mocCtrl.m_owner and mocCtrl.m_owner.isContextMenu)) then
-		return true
+	if button == MOUSE_BUTTON_INDEX_RIGHT then
+		local owner = mocCtrl.m_owner
+		if (isContextMenu
+				or (owner and owner.isContextMenu) --main context menu
+				or (owner and owner.openingControl and owner.m_comboBox and owner.m_comboBox.isContextMenu) --submenu in context menu
+		) then
+			return true
+		end
 	end
 	return false
 end
@@ -2504,7 +2510,7 @@ function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				if mocCtrl.closeOnSelect then
 					refCount = refCount - 1
-				else
+				--else
 				end
 				--elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 			end
