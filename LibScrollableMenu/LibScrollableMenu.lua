@@ -2715,36 +2715,45 @@ function comboBox_base:UpdateHeight(control)
 	--Maximum height explicitly set by options?
 	local maxDropdownHeight = self:GetMaxDropdownHeight()
 
-	local baseEntryHeight
+	--The height of each row
+	local baseEntryHeight = self.baseEntryHeight
 	local maxRows
 	local maxHeightByEntries
+
+	--Is the dropdown using a header control? then calculate it's size too
 	local headerHeight = 0
+	if control ~= nil then
+		headerHeight = self:GetBaseHeight(control)
+	end
 
 	--Calculate the maximum height now:
 	---If set as explicit maximum value: Use that
 	if maxDropdownHeight ~= nil then
 		maxHeightInTotal = maxDropdownHeight
 	else
-		--The height of each row
-		baseEntryHeight = self.baseEntryHeight
 		--Calculate maximum visible height based on visibleRowsDrodpdown or visibleRowsSubmenu
 		maxRows = self:GetMaxRows()
 		-- Add spacing to each row then subtract spacing for last row
 		maxHeightByEntries = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 
-		--Is the dropdown using a header control? then calculate it's size too
-		--> Attention: This will always be 0 here as control.header is not updated with it's controls until self:UpdateDropdownHeader is called at self:AddMenuItem
-		if control ~= nil then
-			headerHeight = self:GetBaseHeight(control)
-		end
-
 		--Add the header's height first, then add the rows' calculated needed total height
-		maxHeightInTotal = headerHeight + maxHeightByEntries
+		maxHeightInTotal = maxHeightByEntries
 	end
+
+
+	--The minimum dropdown height is either the height of 1 row, or if a header exists 1 row + header height
+	local minHeight = baseEntryHeight + headerHeight + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
+
+	--Add a possible header's height to the total maximum height
+	maxHeightInTotal = maxHeightInTotal + headerHeight
 
 	--Check if the determined dropdown height is > than the screen's height: An min to that screen height then
 	local screensMaxDropdownHeight = getScreensMaxDropdownHeight()
-	maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
+	--maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
+	--If the height of the total height is below 1 row (+ possible header) then increase it to be at least that high
+	maxHeightInTotal = zo_clamp(maxHeightInTotal, minHeight, screensMaxDropdownHeight)
+
+
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
 
 	--This will set self.m_height for later usage in self:Show() -> as the dropdown is shown
