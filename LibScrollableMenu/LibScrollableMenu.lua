@@ -257,15 +257,28 @@ local defaultComboBoxOptions  = {
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
 
+--The mapping between LibScrollableMenu entry key and ZO_ComboBox entry key. Used in addItem_Base -> updateVariables
+-->Only keys provided in this table will be copied from item.additionalData to item directly!
+local LSMEntryKeyZO_ComboBoxEntryKey = {
+	--ZO_ComboBox keys
+	["normalColor"] =		"m_normalColor",
+	["disabledColor"] =		"m_disabledColor",
+	["highlightColor"] =	"m_highlightColor",
+	["highlightTemplate"] =	"m_highlightTemplate",
+
+	--Keys which can be passed in at API functions like AddCustomScrollableMenuEntry
+	-->Will be taken care of in func updateVariable -> at the else if selfVar[key] == nil then ...
+}
+
 
 --The mapping between LibScrollableMenu options key and ZO_ComboBox options key. Used in comboBoxClass:UpdateOptions()
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	--All possible options entries must be mapped here (left: options entry / right: ZO_ComboBox relating entry where the value is saved)
-	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
 	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
 	["headerColor"] =			"m_headerFontColor",
 	["normalColor"] = 			"m_normalColor",
 	["disabledColor"] =			"m_disabledColor",
+	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
 	["titleText"] = 			"titleText",
 	["titleFont"] = 			"titleFont",
 	["subtitleText"] = 			"subtitleText",
@@ -1082,62 +1095,29 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	end
 end
 
---[[ Holding on to working functions.
-local function updateDataByFunctions(data)
-	dLog(LSM_LOGTYPE_VERBOSE, "updateDataByFunctions - labelFunc: %s, nameFunc: %s", tos(data.labelFunction), tos(data.nameFunction))
-	if data.labelFunction then
-		data.label = data.labelFunction(data)
-	end
 
-	if data.nameFunction then
-		data.name = data.nameFunction(data)
-	end
-
-	--Compatibility for LibCustomMenu submenus, which only use data.label -> Copy it over to data.name then
-	local label = data.label
-	if label ~= nil and data.name == nil then
-		data.name = label
-	end
-	
-	if data.enabledFunction then
-		local isEnabled = data.enabledFunction(data)
-		if isEnabled == nil then
-			-- Evaluate nil to be equivalent to true for backwards compatibility.
-			isEnabled = true
+--Add the entry additionalData value/options value to the "selfVar" object
+local function updateVariable(selfVar, key, value)
+	local zo_ComboBoxEntryKey = LSMEntryKeyZO_ComboBoxEntryKey[key]
+	if zo_ComboBoxEntryKey ~= nil then
+		if type(selfVar[zo_ComboBoxEntryKey]) ~= 'function' then
+			selfVar[zo_ComboBoxEntryKey] = value
 		end
-		data.enabled = isEnabled
-	end
-end
-
-local function processNameString(data)
-	--Passed in an alternative text/function returning a text to show at the label control of the menu entry?
-	local labelData = data.label
-	if type(labelData) == 'function' then
-		--Keep the original label function at the data, data.label will be used as a string directly updated by data.labelFunction(data).
-		data.labelFunction = labelData
-	end
-	
-	--Name: Mandatory! Used interally of ZO_ComboBox and dropdownObject to SetSelectedItemText and run callback on clicked entry with (self, item.name, data, selectionChanged, oldItem)
-	local nameData = data.name
-	if type(nameData) == 'function' then
-		--Keep the original name function at the data, as we need a "String only" text as data.name for ZO_ComboBox internal functions!
-		data.nameFunction = nameData
-	end
-	dLog(LSM_LOGTYPE_VERBOSE, "processNameString - label: %s, name: %s", tos(labelData), tos(nameData))
-
-	local isEnabled = data.enabled
-	if type(isEnabled) == 'function' then
-		--Keep the original label function at the data, data.label will be used as a string directly updated by data.labelFunction(data).
-		data.enabledFunction = isEnabled
 	else
-		if isEnabled == nil then
-			-- Evaluate nil to be equivalent to true for backwards compatibility.
-			data.enabled = true
+		if selfVar[key] == nil then
+			selfVar[key] = value --value could be a function
 		end
 	end
-	updateDataByFunctions(data)
 end
-]]
+
+--Loop at the entries additionalData and add them to the "selfVar" object
+local function updateAdditionalDataVariables(selfVar)
+	local data = selfVar.additionalData
+	if data == nil then return end
+	for key, value in pairs(data) do
+		updateVariable(selfVar, key, value)
+	end
+end
 
 --Add subtable data._LSM and the next level subTable subTB
 --and store a callbackFunction or a value at data._LSM[subTB][key]
@@ -1202,6 +1182,7 @@ local function updateDataValues(data)
 			data[key] = nilOrTrue
 		end
 	end
+
 	--Execute the callbackFunctions of the data[key] now
 	updateDataByFunctions(data)
 end
@@ -1214,12 +1195,20 @@ local function verifyLabelString(data)
 	return type(data.name) == 'string'
 end
 
+
 -- We can add any row-type post checks and update dataEntry with static values.
 local function addItem_Base(self, itemEntry)
 	dLog(LSM_LOGTYPE_VERBOSE, "addItem_Base - itemEntry: " ..tos(itemEntry))
+
+	--Did the addon pass in additionalData for the entry?
+	-->Map the keys from LSM entry to ZO_ComboBox entry and only transfer the relevant entries directly to itemEntry
+	-->so that ZO_ComboBox can use them properly
+	-->Pass on custom added values/functions too
+	updateAdditionalDataVariables(itemEntry)
+
 	--Get/build data.label and/or data.name / data.* values (see table )
 	updateDataValues(itemEntry)
-	
+
 	if not itemEntry.customEntryTemplate then
 		setItemEntryCustomTemplate(itemEntry, self.XMLrowTemplates)
 
@@ -3707,7 +3696,7 @@ lib.getComboBoxsSortedItems = getComboBoxsSortedItems
 --AddCustomScrollableMenuEntry("Test entry 1", function() d("test entry 1 clicked") end, LibScrollableMenu.LSM_ENTRY_TYPE_NORMAL, nil, nil)
 --Example - Normal entry with submenu
 --AddCustomScrollableMenuEntry("Test entry 1", function() d("test entry 1 clicked") end, LibScrollableMenu.LSM_ENTRY_TYPE_NORMAL, {
---	{
+--	[1] = {
 --		label = "Test submenu entry 1", --optional String or function returning a string. If missing: Name will be shown and used for clicked callback value
 --		name = "TestValue1" --String or function returning a string if label is givenm name will be only used for the clicked callback value
 --		isHeader = false, -- optional boolean or function returning a boolean Is this entry a non clickable header control with a headline text?
@@ -3717,7 +3706,10 @@ lib.getComboBoxsSortedItems = getComboBoxsSortedItems
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
 --		contextMenuCallback = function(ctrl) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
 -- }
---}, --[[additionalData]] { isNew = true, normalColor = ZO_ColorDef, highlightColor = ZO_ColorDef, disabledColor = ZO_ColorDef, font = "ZO_FontGame" } )
+--}, --[[additionalData]]
+--	 	{ isNew = true, normalColor = ZO_ColorDef, highlightColor = ZO_ColorDef, disabledColor = ZO_ColorDef, font = "ZO_FontGame", label="test label", name="test value", enabled = true, checked = true, customValue1="foo", cutomValue2="bar", ... }
+--		--[[ Attention: additionalData keys which are maintained in table LSMOptionsKeyToZO_ComboBoxOptionsKey will be mapped to ZO_ComboBox's key and taken over into the entry.data[ZO_ComboBox's key]. All other "custom keys" will stay in entry.data.additionalData[key]! ]]
+--)
 function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additionalData)
 	entryType = entryType or LSM_ENTRY_TYPE_NORMAL
 	local options = g_contextMenu:GetOptions()
@@ -3729,15 +3721,27 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	local isAddDataTypeTable = (addDataType ~= nil and addDataType == "table" and true) or false
 
 	--Generate the entryType from passed in function, or use passed in value
-	local generatedEntryType = getValueOrCallback(entryType, isAddDataTypeTable and additionalData or options)
+	local generatedEntryType = getValueOrCallback(entryType, (isAddDataTypeTable and additionalData) or options)
 
 	--Additional data was passed in as a table, and a label text/function was provided?
-	if isAddDataTypeTable == true and additionalData.label ~= nil then
+	if isAddDataTypeTable == true then
 		--If "text" param and additionalData.name both were provided: text param wins and overwites the additionalData.name!
 		additionalData.name = text
-		--Get/build additionalData.label and/or additionalData.name values (and store additionalData.labelFunc and/or additionalData.nameFunc -> if needed)
-		updateDataValues(additionalData)
-		generatedText = additionalData.label or additionalData.name
+		--Copy the table so we can update it's label, name etc. to get the current string
+		local additionalDataCopy = ZO_ShallowTableCopy(additionalData)
+
+		--Get/build additionalData.label, additionalData.name
+		updateDataValues(additionalDataCopy)
+		--After label and/or name have been build, use the string of them now
+		local label = additionalDataCopy.label
+		local name = additionalDataCopy.name
+		additionalData.name = name
+		additionalData.label = label
+
+		generatedText = label or name
+
+		--Remove the copy of the additionalData table now as it is not needed any longer
+		additionalDataCopy = nil
 	else
 		generatedText = getValueOrCallback(text, options)
 	end
@@ -3783,19 +3787,8 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 
 	--Any other custom params passed in? Mix in missing ones and skip existing (e.g. isNew)
 	if isAddDataTypeTable then
-		--[[ Will add e.g. the following data, if missing in newEntry
-			additionalData.m_normalColor
-			additionalData.m_highlightColor
-			additionalData.m_disabledColor
-			additionalData.m_font
-			additionalData.label
-			...
-			--> and other custom values for your addons
-
-			--Info: The call to updateDataValues has updated additionalData with e.g. _LSM.funcData["label"] already, if
-			--additionalData.label was provided
-		]]
-		mixinTableAndSkipExisting(newEntry, additionalData)
+		--Add whole table to the newEntry, which will be processed at function addItem_Base() then
+		newEntry.additionalData = additionalData
 	end
 
 
