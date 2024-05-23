@@ -3741,7 +3741,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 		--If "text" param and additionalData.name both were provided: text param wins and overwites the additionalData.name!
 		additionalData.name = text
 		--Get/build additionalData.label and/or additionalData.name values (and store additionalData.labelFunc and/or additionalData.nameFunc -> if needed)
-		processNameString(additionalData)
+		updateDataValues(additionalData)
 		generatedText = additionalData.label or additionalData.name
 	else
 		generatedText = getValueOrCallback(text, options)
