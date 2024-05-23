@@ -200,6 +200,20 @@ local entryTypeToOriginalSelectedSound = {
 
 ------------------------------------------------------------------------------------------------------------------------
 
+--Table contains [string key] = defaultValue boolean for the row/entry's data table
+--> If key inside the row's data table (e.g. data["name"]) is a function:
+--> This function will be added to row's data._LSM.funcData subtables and executed upon showing the LSM dropdown.
+--> If the functions return value is nil it will use the value of this table below, if it is true (false oothers will be ignored)
+local nilToTrue = true
+local nilIgnore = false
+local possibleEntryDataWithFunction = {
+	["name"] = 		nilIgnore,
+	["label"] = 	nilIgnore,
+	["checked"] = 	nilIgnore,
+	["enabled"] = 	nilToTrue,
+}
+
+
 --ZO_ComboBox default settings: Will be copied over as default attributes to comboBoxClass and inherited scrollable
 --dropdown helper classes
 local comboBoxDefaults = {
@@ -320,12 +334,18 @@ lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCall
 
 
 -- Search filter 
-local noResultsEntry = { 
+local noEntriesResults = {
 	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS),
 	enabled = false,
 	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
 }
 
+local noEntriesSubmenu = {
+	name = GetString(SI_QUICKSLOTS_EMPTY),
+	enabled = false,
+	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
+--	m_disabledColor = ZO_ERROR_COLOR,
+}
 
 --------------------------------------------------------------------
 -- Debug logging
@@ -1062,6 +1082,7 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	end
 end
 
+--[[ Holding on to working functions.
 local function updateDataByFunctions(data)
 	dLog(LSM_LOGTYPE_VERBOSE, "updateDataByFunctions - labelFunc: %s, nameFunc: %s", tos(data.labelFunction), tos(data.nameFunction))
 	if data.labelFunction then
@@ -1115,27 +1136,88 @@ local function processNameString(data)
 		end
 	end
 	updateDataByFunctions(data)
-	
-	--[[
-	if type(data.name) ~= 'string' then
-		--TODO: implement logging
+end
+]]
+
+--Add subtable data._LSM and the next level subTable subTB
+--and store a callbackFunction or a value at data._LSM[subTB][key]
+local function addEntryLSM(data, subTB, key, valueOrCallbackFunc)
+	if data == nil or subTB == nil or key == nil then return end
+	local _lsm = data._LSM or {}
+	_lsm[subTB] = _lsm[subTB] or {} --create e.g. _LSM["funcData"]
+
+	_lsm[subTB][key] = valueOrCallbackFunc -- add e.g.  _LSM["funcData"]["name"]
+	data._LSM = _lsm --Update the original data's _LSM table
+end
+
+--Execute pre-stored callback functions of the data table, in data._LSM.funcData
+local function updateDataByFunctions(data)
+	dLog(LSM_LOGTYPE_VERBOSE, "updateDataByFunctions - data: %s", tos(data))
+	--If subTable _LSM  (of row's data) contains funcData subTable: This contains the original functions passed in for
+	--example "label" or "name" (instead of passing in strings). Loop the functions and execute those now for each found
+	local lsmData = data._LSM
+	local funcData = lsmData ~= nil and lsmData.funcData or {}
+	if funcData == nil then return end
+
+	--Execute the callback functions for e.g. "name", "label", "checked", "enabled", ... now
+	for _, updateFN in pairs(funcData) do
+		updateFN(data)
 	end
-	]]
+end
+
+
+--Check if any data.* entry is a function (via table possibleEntryDataWithFunctionAndDefaultValue) and add them to
+--subTable data._LSM.funcData
+--> Those functions will be executed at Show of the LSM dropdown via calling function updateDataByFunctions. The functions
+--> will update the data.* keys then with their "currently determined values" properly.
+--> Example: "name" -> function -> prepare as entry is created and store in data._LSM.funcData["name"] -> execute on show
+--> update data["name"] with the returned value from that prestored function in data._LSM.funcData["name"]
+--> If the function does not return anything (nil) the nilOrTrue of table possibleEntryDataWithFunctionAndDefaultValue
+--> will be used IF i is true (e.g. for the "enabled" state of the entry)
+local function updateDataValues(data)
+	for key, nilOrTrue in pairs(possibleEntryDataWithFunction) do
+		local dataValue = data[key] --e.g. data["name"] -> either it's value or it's function
+		if type(dataValue) == 'function' then
+			dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - saving callback func. for key: %s", tos(key))
+
+			--local originalFuncOfDataKey = dataValue
+
+			--Add the _LSM.funcData[key] = function to run on Show of the LSM dropdown now
+			addEntryLSM(data, 'funcData', key, function(p_data)
+				--Run the original function of the data[key] now and pass in the current provided data as params
+				local value = dataValue(p_data)
+				if value == nil and nilOrTrue == true then
+					value = nilOrTrue
+				end
+				dLog(LSM_LOGTYPE_VERBOSE, "Run func. data._LSM.funcData[%q] - value: %s", tos(key), tos(value))
+
+				--Update the current data[key] with the determiend current value
+				p_data[key] = value
+			end)
+		--defaultValue is true and data[*] is nil
+		elseif nilOrTrue == true and dataValue == nil then
+			--e.g. data["enabled"] = true to always enable the row if nothing passed in explicitly
+			dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - key: %s, setting nilOrTrue: %s", tos(key), tos(nilOrTrue))
+			data[key] = nilOrTrue
+		end
+	end
+	--Execute the callbackFunctions of the data[key] now
+	updateDataByFunctions(data)
 end
 
 -- Prevents errors on the off chance a non-string makes it through into ZO_ComboBox
 local function verifyLabelString(data)
 	dLog(LSM_LOGTYPE_VERBOSE, "verifyLabelString")
 	updateDataByFunctions(data)
-	
+	--Only allow the name to be a string
 	return type(data.name) == 'string'
 end
 
 -- We can add any row-type post checks and update dataEntry with static values.
 local function addItem_Base(self, itemEntry)
 	dLog(LSM_LOGTYPE_VERBOSE, "addItem_Base - itemEntry: " ..tos(itemEntry))
-	--Get/build data.label and/or data.name values
-	processNameString(itemEntry)
+	--Get/build data.label and/or data.name / data.* values (see table )
+	updateDataValues(itemEntry)
 	
 	if not itemEntry.customEntryTemplate then
 		setItemEntryCustomTemplate(itemEntry, self.XMLrowTemplates)
@@ -2168,7 +2250,7 @@ function dropdownClass:GetFilteredEntries(sourceTable, isSubmenu)
 						sourceTable[1].wasEnabled = true
 						sourceTable[1].enabled = false
 					end
-					tins(results, noResultsEntry)
+					tins(results, noEntriesResults)
 				end
 			end
 
@@ -2218,7 +2300,7 @@ function dropdownClass:GetFilteredEntries(sourceTable, isSubmenu)
 						sourceTable[1].wasEnabled = true
 						sourceTable[1].enabled = false
 					end
-					tins(results, noResultsEntry)
+					tins(results, noEntriesResults)
 				end
 			end
 
@@ -2598,10 +2680,19 @@ function comboBox_base:RefreshSortedItems(parentControl)
 	ZO_ClearNumericallyIndexedTable(self.m_sortedItems)
 
 	local entries = self:GetEntries()
-	for _, item in ipairs(entries) do
-		item.m_parentControl = parentControl
-		-- update strings by functions will be done in AddItem
-		self:AddItem(item, ZO_COMBOBOX_SUPPRESS_UPDATE)
+	-- Ignore nil entries
+	if entries ~= nil then
+		-- replce empty entries with noEntriesSubmenu item
+		if ZO_IsTableEmpty(entries) then
+			noEntriesSubmenu.m_parentControl = parentControl
+			self:AddItem(noEntriesSubmenu, ZO_COMBOBOX_SUPPRESS_UPDATE)
+		else
+			for _, item in ipairs(entries) do
+				item.m_parentControl = parentControl
+				-- update strings by functions will be done in AddItem
+				self:AddItem(item, ZO_COMBOBOX_SUPPRESS_UPDATE)
+			end
+		end
 	end
 end
 
@@ -2752,7 +2843,7 @@ do -- Row setup functions
 	function comboBox_base:SetupCheckbox(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupCheckbox - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 		local function setChecked(checkbox, checked)
-			local checkedData = ZO_ScrollList_GetData(checkbox:GetParent())
+			local checkedData = getControlData(checkbox:GetParent())
 
 			checkedData.checked = checked
 			if checkedData.callback then
@@ -3237,7 +3328,7 @@ function submenuClass:GetEntries()
 	local data = getControlData(self.openingControl)
 
 	local entries = getValueOrCallback(data.entries, data)
-	return entries or {}
+	return entries
 end
 
 function submenuClass:GetMaxRows()
@@ -4035,6 +4126,10 @@ WORKING ON - Current version: 2.2
 	TESTED: OPEN
 	20. Changed a lot in regards to OnGlobalMouseUp left & right click / context menu clears on right click
 	TESTED: OPEN
+	21. added: nil submenus create blank submenu. empty submenus create a subemnu with "Empty" entry.
+	TESTED: OPEN
+	22. Changed data["name"], "label", "checked", "enabled" of rows to use dynamic control table possibleEntryDataWithFunction
+	TESTED: OPEN
 
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
@@ -4052,10 +4147,11 @@ WORKING ON - Current version: 2.2
 	7. Fixed - Update height on setting visible rows Dropdown
 	8. Fixed - Reset context menu to defaults on "clear"
 	9. Bug Right clicking on context menu entry must open a new context menu (if another was already opened)
-	6.5 if right-clicked on another control that has a combobox, closes current then opens new.
-	- To allow this to work, had to remove contextMenuClass:HideDropdownInternal() to prevent clearing on hide. ClearCustomScrollableMenu now "must" be used by addons prior to populating the contextmenu
+		-> should function correctly
+	6.5 if right-clicked on another control that has a context menu, closes current then opens new.
+		-> To allow this to work, had to remove contextMenuClass:HideDropdownInternal() to prevent clearing on hide. ClearCustomScrollableMenu now "must" be used by addons prior to populating the contextmenu
 	10. Bug Entry having a submenu and a callback should show the highlight green again
-	- reverted
+		-> reverted
 	11. Fixed context menu to close on filterReset, but not at a contextMenu's filter
 	12. Compatibility fix for LibCustomMenu submenus (which only used data.label as the name): If data.name is missing in submenu but data.label exists -> set data.name = copy of data.label
 	13. Fix AddCustomScrollableMenuEntries to put v.label to v.additionalData.label -> For a proper usage in AddCustomScrollableMenuEntry -> newEntry
@@ -4063,11 +4159,15 @@ WORKING ON - Current version: 2.2
 	15. Fixed ZO_Menu opening does not hide already opened LSM dropdown & contextMenu
 	16. Bug callback onEntrySelected fires for entries clicked where there is no callback function (entry with hasSubmenu = true but callback = nil)
 	17. Bug header left clicking selects the header (if not explicitly enabled = false)
+		-> header entries are no longer selectable.
 	18. Bug clicking non-contextMenu entry while context menu is opened: Only close the context menu but do not select any entry
+		-> Closes context menu. does not select.
+
 	19. Find out if the checkbox selected toggle function is updating data.clicked. I had added this to the handler because it wasn't
 		data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
 	20. Changed a lot in regards to OnGlobalMouseUp / context menu clears on right click
-
+	21. added: nil submenus create blank submenu. empty submenus create a subemnu with "Empty" entry.
+	22. Changed data["name"], "label", "checked", "enabled" of rows to use dynamic control table possibleEntryDataWithFunction
 
 -------------------
 TODO - To check (future versions)
@@ -4093,3 +4193,42 @@ UPCOMING FEATURES  - What will be added in the future?
 		making it as a comboBox would not change the current dimminsions. And, it would add dificulties in passing the filter into the parent dropdown
 
 ]]
+--------------------------------------------------------------------------------------
+-- Testing:
+--------------------------------------------------------------------------------------
+
+--[[ IsJustaGhost: Just holding on to the this idea for now.
+
+function dropdownClass:UpdateDataTypeSpacing(spacing)
+	if self.customEntryTemplateInfos then
+		for entryTemplate, customEntryInfo in pairs(self.customEntryTemplateInfos) do
+			local entryHeight = customEntryInfo.entryHeight + spacing
+			ZO_ScrollList_UpdateDataTypeHeight(self.scrollControl, customEntryInfo.typeId, entryHeight)
+		end
+	end
+end
+
+function comboBox_base:SetSpacing(spacing)
+	local spacing = spacing or 0
+	zo_comboBox_base_setSpacing(self, spacing)
+	self.m_dropdownObject:UpdateDataTypeSpacing(spacing)
+
+--	self:UpdateHeight(self.m_dropdownObject.control)
+end
+]]
+
+--[[
+function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
+	comboBox_base.OnGlobalMouseUp(self, ...)
+end
+
+function contextMenuClass:OnGlobalMouseUp(eventCode, ...)
+	comboBox_base.OnGlobalMouseUp(self, ...)
+end
+
+function contextMenuClass:BypassOnGlobalMouseUp(button, ...)
+	return comboBox_base.BypassOnGlobalMouseUp(self, button, ...)
+end
+]]
+
+
