@@ -1142,6 +1142,7 @@ end
 --Add subtable data._LSM and the next level subTable subTB
 --and store a callbackFunction or a value at data._LSM[subTB][key]
 local function addEntryLSM(data, subTB, key, valueOrCallbackFunc)
+	dLog(LSM_LOGTYPE_VERBOSE, "addEntryLSM - data: %s, subTB: %s, key: %q, valueOrCallbackFunc: %s", tos(data), tos(subTB), tos(key), tos(valueOrCallbackFunc))
 	if data == nil or subTB == nil or key == nil then return end
 	local _lsm = data._LSM or {}
 	_lsm[subTB] = _lsm[subTB] or {} --create e.g. _LSM["funcData"]
@@ -1207,9 +1208,9 @@ end
 
 -- Prevents errors on the off chance a non-string makes it through into ZO_ComboBox
 local function verifyLabelString(data)
-	dLog(LSM_LOGTYPE_VERBOSE, "verifyLabelString")
 	updateDataByFunctions(data)
-	--Only allow the name to be a string
+	dLog(LSM_LOGTYPE_VERBOSE, "verifyLabelString - data.name: %s", tos(data.name))
+	--Require the name to be a string
 	return type(data.name) == 'string'
 end
 
@@ -1956,7 +1957,11 @@ function dropdownClass:OnEntrySelected(control, button, upInside)
 					control.contextMenuCallback(control)
 				elseif g_contextMenu:IsDropdownVisible() then
 --d(">context menu was visible -> Closing it")
-					ClearCustomScrollableMenu()
+					--Do not close the context menu if a right click was done inside a context menu!
+					local comboBox = getComboBox(control)
+					if not comboBox:PreventRightClickToCloseAll(self, button, control, comboBox, nil) then
+						ClearCustomScrollableMenu()
+					end
 				end
 			end
 		end
@@ -2143,6 +2148,7 @@ function dropdownClass:ShowTooltip(control, data)
 end
 
 function dropdownClass:HideDropdown()
+--d("dropdownClass:HideDropdown()")
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:HideDropdown")
 	if self.owner then
 		self.owner:HideDropdown()
@@ -2476,8 +2482,21 @@ function comboBox_base:AddCustomEntryTemplates(options)
 	dLog(LSM_LOGTYPE_VERBOSE, ">NORMAL_ENTRY_HEIGHT %s, DIVIDER_ENTRY_HEIGHT: %s, HEADER_ENTRY_HEIGHT: %s", tos(normalEntryHeight), tos(XMLrowTemplatesToUse[DIVIDER_ENTRY_ID].rowHeight), tos(XMLrowTemplatesToUse[HEADER_ENTRY_ID].rowHeight))
 end
 
+--Keep a context menu opened if we right click an entry of it
+function comboBox_base:PreventRightClickToCloseAll(self, button, mocCtrl, comboBox, isContextMenu)
+--d("[LSM]comboBox_base:PreventRightClickToCloseAll")
+	if button == MOUSE_BUTTON_INDEX_RIGHT and (isContextMenu or (mocCtrl.m_owner and mocCtrl.m_owner.isContextMenu)) then
+		return true
+	end
+	return false
+end
+
 function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
+	--d("[LSM]comboBox_base:BypassOnGlobalMouseUp-button: " ..tos(button))
+
 	if button > MOUSE_BUTTON_INDEX_RIGHT then return true end
+	if self:PreventRightClickToCloseAll(self, button, mocCtrl, comboBox, nil) then return true end
+
 	local refCount = mouseUpRefCounts[self]
 
 	if refCount and self:IsDropdownVisible() then
@@ -2487,13 +2506,13 @@ function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
 					refCount = refCount - 1
 				else
 				end
-			--elseif button == MOUSE_BUTTON_INDEX_RIGHT then
+				--elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 			end
 		elseif comboBox == nil then
 			refCount = refCount - 1
 		else
 			refCount = refCount - 1
-		--d( 'BypassOnGlobalMouseUp Ignore')
+			--d( 'BypassOnGlobalMouseUp Ignore')
 		end
 
 		mouseUpRefCounts[self] = refCount
@@ -2504,6 +2523,7 @@ function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
 end
 
 function comboBox_base:OnGlobalMouseUp(eventCode, ...)
+--d("[LSM]comboBox_base:OnGlobalMouseUp")
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:OnGlobalMouseUp")
 	if not self:BypassOnGlobalMouseUp(...) then
 		if self:IsDropdownVisible() then
@@ -3428,6 +3448,7 @@ function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
 end
 
 function contextMenuClass:BypassOnGlobalMouseUp(button, ...)
+--d("[LSM]contextMenuClass:BypassOnGlobalMouseUp-button: " ..tos(button))
 	local mocCtrl = moc()
 	local owningWindow = mocCtrl:GetOwningWindow()
 	local comboBox = getComboBox(owningWindow)
@@ -4168,6 +4189,7 @@ WORKING ON - Current version: 2.2
 	20. Changed a lot in regards to OnGlobalMouseUp / context menu clears on right click
 	21. added: nil submenus create blank submenu. empty submenus create a subemnu with "Empty" entry.
 	22. Changed data["name"], "label", "checked", "enabled" of rows to use dynamic control table possibleEntryDataWithFunction
+
 
 -------------------
 TODO - To check (future versions)
