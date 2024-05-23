@@ -1959,7 +1959,7 @@ function dropdownClass:OnEntrySelected(control, button, upInside)
 --d(">context menu was visible -> Closing it")
 					--Do not close the context menu if a right click was done inside a context menu!
 					local comboBox = getComboBox(control)
-					if not comboBox:PreventRightClickToCloseAll(self, button, control, comboBox, nil) then
+					if not comboBox:PreventRightClickToCloseAll(button, control, comboBox, nil) then
 						ClearCustomScrollableMenu()
 					end
 				end
@@ -2483,7 +2483,7 @@ function comboBox_base:AddCustomEntryTemplates(options)
 end
 
 --Keep a context menu opened if we right click an entry of it
-function comboBox_base:PreventRightClickToCloseAll(self, button, mocCtrl, comboBox, isContextMenu)
+function comboBox_base:PreventRightClickToCloseAll(button, mocCtrl, comboBox, isContextMenu)
 --d("[LSM]comboBox_base:PreventRightClickToCloseAll")
 	if button == MOUSE_BUTTON_INDEX_RIGHT and (isContextMenu or (mocCtrl.m_owner and mocCtrl.m_owner.isContextMenu)) then
 		return true
@@ -2495,7 +2495,7 @@ function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
 	--d("[LSM]comboBox_base:BypassOnGlobalMouseUp-button: " ..tos(button))
 
 	if button > MOUSE_BUTTON_INDEX_RIGHT then return true end
-	if self:PreventRightClickToCloseAll(self, button, mocCtrl, comboBox, nil) then return true end
+	if self:PreventRightClickToCloseAll(button, mocCtrl, comboBox, nil) then return true end
 
 	local refCount = mouseUpRefCounts[self]
 
