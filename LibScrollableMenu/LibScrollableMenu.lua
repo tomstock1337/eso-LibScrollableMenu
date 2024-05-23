@@ -1934,34 +1934,21 @@ function dropdownClass:OnMouseExitTimeout(control)
 end
 
 function dropdownClass:OnEntrySelected(control, button, upInside)
---d("[LSM]dropdownClass:OnEntrySelected")
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntrySelected - control: %s, button: %s, upInside: %s", tos(getControlName(control)), tos(button), tos(upInside))
 
 	local data = getControlData(control)
+	local comboBox = getComboBox(control)
 	if data.enabled then
 		if not runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
---d(">not runHandler: onMouseUp -> Calling zo_comboBoxDropdown_onEntrySelected")
 			zo_comboBoxDropdown_onEntrySelected(self, control)
 		end
-
-	--else
-		--d("[LSM]dropdownClass:OnEntrySelected-name: ".. getControlName(control) .. " NOT ENABLED!")
-		--todo: Still fires the dropdown hide then via global on mouse down/up handler?
-		--todo header entryType does not do that!
 
 		if upInside then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
-				if control.contextMenuCallback then
+				if control.contextMenuCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
 					dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntrySelected - contextMenuCallback!")
 					control.contextMenuCallback(control)
-				elseif g_contextMenu:IsDropdownVisible() then
---d(">context menu was visible -> Closing it")
-					--Do not close the context menu if a right click was done inside a context menu!
-					local comboBox = getComboBox(control)
-					if not comboBox:PreventRightClickToCloseAll(button, control, comboBox, nil) then
-						ClearCustomScrollableMenu()
-					end
 				end
 			end
 		end
@@ -2482,62 +2469,52 @@ function comboBox_base:AddCustomEntryTemplates(options)
 	dLog(LSM_LOGTYPE_VERBOSE, ">NORMAL_ENTRY_HEIGHT %s, DIVIDER_ENTRY_HEIGHT: %s, HEADER_ENTRY_HEIGHT: %s", tos(normalEntryHeight), tos(XMLrowTemplatesToUse[DIVIDER_ENTRY_ID].rowHeight), tos(XMLrowTemplatesToUse[HEADER_ENTRY_ID].rowHeight))
 end
 
---Keep a context menu opened if we right click an entry of it
-function comboBox_base:PreventRightClickToCloseAll(button, mocCtrl, comboBox, isContextMenu)
---d("[LSM]comboBox_base:PreventRightClickToCloseAll")
-	if button == MOUSE_BUTTON_INDEX_RIGHT then
-		local owner = mocCtrl.m_owner
-		if (isContextMenu
-				or (owner and owner.isContextMenu) --main context menu
-				or (owner and owner.openingControl and owner.m_comboBox and owner.m_comboBox.isContextMenu) --submenu in context menu
-		) then
-			return true
-		end
-	end
-	return false
-end
-
 function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
-	--d("[LSM]comboBox_base:BypassOnGlobalMouseUp-button: " ..tos(button))
-
+	--comboBox passed in is the "main" comboBox, determined via function getComboBox -> passed in from each class' :BypassOnGlobalMouseUp call
+	--Any mouse button except left or right was pressed: Prevent those from doing anything
 	if button > MOUSE_BUTTON_INDEX_RIGHT then return true end
-	if self:PreventRightClickToCloseAll(button, mocCtrl, comboBox, nil) then return true end
-
+	--refCount will be set at OnGlobalMouseUp, for each click at the dropdown
 	local refCount = mouseUpRefCounts[self]
-
+	--Some entry was clicked and the dropdown is visible
 	if refCount and self:IsDropdownVisible() then
+		--The clicked entry belongs to the "main" combobox
 		if self.m_dropdownObject:IsOwnedByComboBox(comboBox) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
+				--Clicked entry should close after selection?
 				if mocCtrl.closeOnSelect then
 					refCount = refCount - 1
-				--else
 				end
-				--elseif button == MOUSE_BUTTON_INDEX_RIGHT then
+			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
+				-- bypass right-clicks on the entries. Context menus will be checked and opened at the OnMouseUp handler
+				-->See local function onMouseUp called via runHandler -> from dropdownClass:OnEntrySelected
+				return true
 			end
-		elseif comboBox == nil then
-			refCount = refCount - 1
 		else
+			--Any other control was clicked
 			refCount = refCount - 1
-			--d( 'BypassOnGlobalMouseUp Ignore')
 		end
 
 		mouseUpRefCounts[self] = refCount
+		--Bypass the click if clicked counter is still > 0
 		return refCount > 0
 	end
-
+	--Do not bypass the click
 	return false
 end
 
 function comboBox_base:OnGlobalMouseUp(eventCode, ...)
 --d("[LSM]comboBox_base:OnGlobalMouseUp")
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:OnGlobalMouseUp")
+	--Check if the click should not be recognized
 	if not self:BypassOnGlobalMouseUp(...) then
+		--Click should be recognized: Check if dropdown needs to be hidden/shown
 		if self:IsDropdownVisible() then
 			self:HideDropdown()
 			dLog(LSM_LOGTYPE_VERBOSE, "<<< OpenMenu was cleared")
 			lib.openMenu = nil
 
 		else
+			--Dropdown is not visible: add +1 to the clicked counter
 			updateMouseUpRefCount(self, true)
 
 			if self.m_container:IsHidden() then
@@ -2554,6 +2531,7 @@ function comboBox_base:OnGlobalMouseUp(eventCode, ...)
 		return true
 	else
 		local mocCtrl = moc()
+		--Hide the dropdown of the main combobox if we clicked it and it was showing the dropdown
 		if mocCtrl == self.m_container and self:IsDropdownVisible() then
 			-- hide dropdown if comboBox is right-clicked
 			self:HideDropdown()
@@ -3032,6 +3010,7 @@ function comboBoxClass:BypassOnGlobalMouseUp(button, ...)
 	local owningWindow = mocCtrl:GetOwningWindow()
 	local comboBox = getComboBox(owningWindow)
 
+	--Context menus clicks counter is provided?
 	if mouseUpRefCounts[g_contextMenu] then
 		if comboBox == nil then
 			-- We clicked outside the dropdowns.
@@ -4246,6 +4225,21 @@ end
 ]]
 
 --[[
+
+function comboBoxClass:ShowDropdownInternal()
+    -- Just set the global mouse up handler here... we want the combo box to exhibit the same behvaior
+    -- as a context menu, which is dismissed when the user clicks outside the menu or on a menu item
+    -- (but not in the menu otherwise)
+    self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
+end
+
+function contextMenuClass:ShowDropdownInternal()
+    -- Just set the global mouse up handler here... we want the combo box to exhibit the same behvaior
+    -- as a context menu, which is dismissed when the user clicks outside the menu or on a menu item
+    -- (but not in the menu otherwise)
+    self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
+end
+
 function comboBoxClass:OnGlobalMouseUp(eventCode, ...)
 	comboBox_base.OnGlobalMouseUp(self, ...)
 end
