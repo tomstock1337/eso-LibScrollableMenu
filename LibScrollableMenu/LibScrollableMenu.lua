@@ -2741,8 +2741,9 @@ function comboBox_base:UpdateHeight(control)
 	end
 
 
-	--The minimum dropdown height is either the height of 1 row, or if a header exists 1 row + header height
-	local minHeight = baseEntryHeight + headerHeight + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
+	--The minimum dropdown height is either the height of 1 base row + the y padding (4x because 2 at anchors of ZO_ScrollList and 1x at top of list and 1x at bottom),
+	--> and if a header exists + header height
+	local minHeight = (baseEntryHeight * 1) + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 4) + headerHeight
 
 	--Add a possible header's height to the total maximum height
 	maxHeightInTotal = maxHeightInTotal + headerHeight
@@ -2750,7 +2751,7 @@ function comboBox_base:UpdateHeight(control)
 	--Check if the determined dropdown height is > than the screen's height: An min to that screen height then
 	local screensMaxDropdownHeight = getScreensMaxDropdownHeight()
 	--maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
-	--If the height of the total height is below 1 row (+ possible header) then increase it to be at least that high
+	--If the height of the total height is below minHeight then increase it to be at least that high
 	maxHeightInTotal = zo_clamp(maxHeightInTotal, minHeight, screensMaxDropdownHeight)
 
 
