@@ -1217,8 +1217,8 @@ local function addItem_Base(self, itemEntry)
 		if itemEntry.hasSubmenu then
 			itemEntry.isNew = areAnyEntriesNew(itemEntry)
 		elseif itemEntry.isHeader then
-			itemEntry.font = self.m_headerFont
-			itemEntry.color = self.m_headerFontColor
+			itemEntry.font = itemEntry.font or self.m_headerFont
+			itemEntry.color = itemEntry.color or self.m_headerFontColor
 		--elseif itemEntry.isDivider then
 			-- Placeholder: Divider
 		--elseif itemEntry.isCheckbox then
