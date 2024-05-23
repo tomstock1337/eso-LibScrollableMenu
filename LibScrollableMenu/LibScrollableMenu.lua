@@ -69,7 +69,7 @@ local loggerTypeToName = {
 --Menu settings (main and submenu)
 
 local DEFAULT_VISIBLE_ROWS = 10
-local DEFAULT_SORTS_ENTRIES = true --sort the entries in main- and submenu lists
+local DEFAULT_SORTS_ENTRIES = false --sort the entries in main- and submenu lists (ZO_ComboBox default is true!)
 
 
 --Entry type settings
@@ -223,7 +223,7 @@ local comboBoxDefaults = {
 	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
 	m_sortOrder = ZO_SORT_ORDER_UP,
 	m_sortType = ZO_SORT_BY_NAME,
-	m_sortsItems = true,
+	m_sortsItems = false, --ZO_ComboBox real default is true
 	m_isDropdownVisible = false,
 	m_preshowDropdownFn = nil,
 	m_spacing = DEFAULT_SPACING,
@@ -247,12 +247,12 @@ local comboBoxDefaults = {
 
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
 local defaultComboBoxOptions  = {
-	["visibleRowsDropdown"] = DEFAULT_VISIBLE_ROWS,
-	["visibleRowsSubmenu"] = DEFAULT_VISIBLE_ROWS,
-	["sortEntries"] = DEFAULT_SORTS_ENTRIES,
-	["font"] = DEFAULT_FONT,
-	["spacing"] = DEFAULT_SPACING,
-	["disableFadeGradient"] = false,
+	["visibleRowsDropdown"] = 	DEFAULT_VISIBLE_ROWS,
+	["visibleRowsSubmenu"] = 	DEFAULT_VISIBLE_ROWS,
+	["sortEntries"] = 			DEFAULT_SORTS_ENTRIES,
+	["font"] = 					DEFAULT_FONT,
+	["spacing"] = 				DEFAULT_SPACING,
+	["disableFadeGradient"] = 	false,
 	--["XMLRowTemplates"] = table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
@@ -3784,18 +3784,16 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	--Any other custom params passed in? Mix in missing ones and skip existing (e.g. isNew)
 	if isAddDataTypeTable then
 		--[[ Will add e.g. the following data, if missing in newEntry
-			additionalData.normalColor
-			additionalData.highlightColor
-			additionalData.disabledColor
-			additionalData.font
+			additionalData.m_normalColor
+			additionalData.m_highlightColor
+			additionalData.m_disabledColor
+			additionalData.m_font
 			additionalData.label
 			...
 			--> and other custom values for your addons
 
-			--Info: The call to processNameString has updated addiitonalData with nameFunc and labelFunc already, if
+			--Info: The call to updateDataValues has updated additionalData with e.g. _LSM.funcData["label"] already, if
 			--additionalData.label was provided
-			additionalData.labelFunc
-			additionalData.nameFunc
 		]]
 		mixinTableAndSkipExisting(newEntry, additionalData)
 	end
@@ -3824,6 +3822,21 @@ function AddCustomScrollableMenuDivider()
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuDivider")
 	addCustomScrollableMenuEntry(libDivider, nil, LSM_ENTRY_TYPE_DIVIDER, nil, nil)
 end
+
+--Adds a header line to the context menu entries
+--Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+function AddCustomScrollableMenuHeader(text, additionalData)
+	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuHeader-text: %s", tos(text))
+	addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_HEADER, nil, additionalData)
+end
+
+--Adds a checkbox line to the context menu entries
+--Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+function AddCustomScrollableMenuCheckbox(text, callback, checked, additionalData)
+	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuCheckbox-text: %s, checked: %s", tos(text), tos(checked))
+	addCustomScrollableMenuEntry(text, callback, LSM_ENTRY_TYPE_CHECKBOX, nil, additionalData)
+end
+
 
 --Set the options (visible rows max, etc.) for the scrollable context menu, or any passed in 2nd param comboBoxContainer
 -->See possible options above AddCustomScrollableComboBoxDropdownMenu
