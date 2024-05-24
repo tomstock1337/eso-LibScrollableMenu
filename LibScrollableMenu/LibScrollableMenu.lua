@@ -3722,28 +3722,24 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	local generatedText
 
 	--Additional data table was passed in? e.g. containing  gotAdditionalData.isNew = function or boolean
-	local gotAdditionalData = (additionalData ~= nil and true) or false
-	local addDataType = gotAdditionalData and type(additionalData)
+	local addDataType = additionalData ~= nil and type(additionalData) or nil
 	local isAddDataTypeTable = (addDataType ~= nil and addDataType == "table" and true) or false
 
 	--Generate the entryType from passed in function, or use passed in value
 	local generatedEntryType = getValueOrCallback(entryType, (isAddDataTypeTable and additionalData) or options)
 
-	--Additional data was passed in as a table, and a label text/function was provided?
-	if isAddDataTypeTable == true and additionalData.label ~= nil then
-		--If "text" param AND additionalData.name both were provided: text param wins and overwites the additionalData.name!
-		additionalData.name = text
-		--Get/build additionalData.label, additionalData.name, additionalData.enabled, additionalData.checked, ...
-		updateDataValues(additionalData, {"label", "name"})
-		--After label and/or name etc. have been checked for functions (which have been executed and data["name"] etc.
-		--were updated then), use the returned string of them now
-		generatedText = additionalData.label or additionalData.name
-	else
-		generatedText = getValueOrCallback(text, options)
+	--Additional data was passed in as a table: Check if label and/or name were provided and get their string value for the assert check
+	if isAddDataTypeTable == true then
+		--text and additionalData.name are provided: text wins
+		if text ~= nil then
+			additionalData.name = text
+		end
+		generatedText = getValueOrCallback(additionalData.label or additionalData.name, additionalData)
 	end
+	generatedText = generatedText or ((text ~= nil and getValueOrCallback(text, options)) or nil)
 
 	--Text, or label, checks
-	assert(generatedText ~= nil and generatedText ~= "" and generatedEntryType ~= nil, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] text: String or function returning a string, got %q; entryType: number LSM_ENTRY_TYPE_* or functon returning the entryType expected, got %q', tos(generatedText), tos(generatedEntryType)))
+	assert(generatedText ~= nil and generatedText ~= "" and generatedEntryType ~= nil, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] text/additionalData.label/additionalData.name: String or function returning a string, got %q; entryType: number LSM_ENTRY_TYPE_* or function returning the entryType expected, got %q', tos(generatedText), tos(generatedEntryType)))
 	--EntryType checks: Allowed entryType for context menu?
 	assert(allowedEntryTypesForContextMenu[generatedEntryType] == true, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] entryType %q is not allowed', tos(generatedEntryType)))
 
@@ -3766,7 +3762,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 		--The shown text line of the entry
 		label			= (isAddDataTypeTable and additionalData.label) or nil,
 		--The value line of the entry (or shown text too, if label is missing)
-		name			= text,
+		name			= (isAddDataTypeTable and additionalData.name) or text,
 
 		--Callback function as context menu entry get's selected. Will also work for an entry where a submenu is available (but usually is not provided in that case)
 		--Parameters for the callback function are:
