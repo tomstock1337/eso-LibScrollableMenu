@@ -1156,7 +1156,7 @@ end
 --> If the function does not return anything (nil) the nilOrTrue of table possibleEntryDataWithFunctionAndDefaultValue
 --> will be used IF i is true (e.g. for the "enabled" state of the entry)
 local function updateDataValues(data)
-	for key, nilOrTrue in pairs(possibleEntryDataWithFunction) do
+	for key, nilToTrue in pairs(possibleEntryDataWithFunction) do
 		local dataValue = data[key] --e.g. data["name"] -> either it's value or it's function
 		if type(dataValue) == 'function' then
 			dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - saving callback func. for key: %s", tos(key))
@@ -1167,8 +1167,8 @@ local function updateDataValues(data)
 			addEntryLSM(data, 'funcData', key, function(p_data)
 				--Run the original function of the data[key] now and pass in the current provided data as params
 				local value = dataValue(p_data)
-				if value == nil and nilOrTrue == true then
-					value = nilOrTrue
+				if value == nil and nilToTrue == true then
+					value = nilToTrue
 				end
 				dLog(LSM_LOGTYPE_VERBOSE, "Run func. data._LSM.funcData[%q] - value: %s", tos(key), tos(value))
 
@@ -1176,10 +1176,10 @@ local function updateDataValues(data)
 				p_data[key] = value
 			end)
 		--defaultValue is true and data[*] is nil
-		elseif nilOrTrue == true and dataValue == nil then
+		elseif nilToTrue == true and dataValue == nil then
 			--e.g. data["enabled"] = true to always enable the row if nothing passed in explicitly
-			dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - key: %s, setting nilOrTrue: %s", tos(key), tos(nilOrTrue))
-			data[key] = nilOrTrue
+			dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - key: %s, setting nilToTrue: %s", tos(key), tos(nilToTrue))
+			data[key] = nilToTrue
 		end
 	end
 
