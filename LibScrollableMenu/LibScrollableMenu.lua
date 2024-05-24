@@ -1195,6 +1195,7 @@ end
 
 -- Prevents errors on the off chance a non-string makes it through into ZO_ComboBox
 local function verifyLabelString(data)
+	--Check for data.* keys to run any function and update data[key] with actual values
 	updateDataByFunctions(data)
 	dLog(LSM_LOGTYPE_VERBOSE, "verifyLabelString - data.name: %s", tos(data.name))
 	--Require the name to be a string
@@ -2001,6 +2002,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	local allItemsHeight = comboBox:GetBaseHeight(control)
 	for i = 1, numItems do
 		local item = itemTable[i]
+		--Check if the data.name / data.label are provided (And also check all other data.* keys if functions need to be executed
 		if verifyLabelString(item) then
 			local isLastEntry = i == numItems
 			local entryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
