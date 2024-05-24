@@ -1146,7 +1146,6 @@ local function updateDataByFunctions(data)
 	end
 end
 
-
 --Check if any data.* entry is a function (via table possibleEntryDataWithFunctionAndDefaultValue) and add them to
 --subTable data._LSM.funcData
 --> Those functions will be executed at Show of the LSM dropdown via calling function updateDataByFunctions. The functions
@@ -1155,31 +1154,38 @@ end
 --> update data["name"] with the returned value from that prestored function in data._LSM.funcData["name"]
 --> If the function does not return anything (nil) the nilOrTrue of table possibleEntryDataWithFunctionAndDefaultValue
 --> will be used IF i is true (e.g. for the "enabled" state of the entry)
-local function updateDataValues(data)
+local function updateDataValues(data, onlyTheseEntries)
+	local checkOnlyProvidedKeys = not ZO_IsTableEmpty(onlyTheseEntries)
 	for key, nilToTrue in pairs(possibleEntryDataWithFunction) do
-		local dataValue = data[key] --e.g. data["name"] -> either it's value or it's function
-		if type(dataValue) == 'function' then
-			dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - saving callback func. for key: %s", tos(key))
+		local goOn = true
+		if checkOnlyProvidedKeys == true and not ZO_IsElementInNumericallyIndexedTable(onlyTheseEntries, key) then
+			goOn = false
+		end
+		if goOn then
+			local dataValue = data[key] --e.g. data["name"] -> either it's value or it's function
+			if type(dataValue) == 'function' then
+				dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - saving callback func. for key: %s", tos(key))
 
-			--local originalFuncOfDataKey = dataValue
+				--local originalFuncOfDataKey = dataValue
 
-			--Add the _LSM.funcData[key] = function to run on Show of the LSM dropdown now
-			addEntryLSM(data, 'funcData', key, function(p_data)
-				--Run the original function of the data[key] now and pass in the current provided data as params
-				local value = dataValue(p_data)
-				if value == nil and nilToTrue == true then
-					value = nilToTrue
-				end
-				dLog(LSM_LOGTYPE_VERBOSE, "Run func. data._LSM.funcData[%q] - value: %s", tos(key), tos(value))
+				--Add the _LSM.funcData[key] = function to run on Show of the LSM dropdown now
+				addEntryLSM(data, 'funcData', key, function(p_data)
+					--Run the original function of the data[key] now and pass in the current provided data as params
+					local value = dataValue(p_data)
+					if value == nil and nilToTrue == true then
+						value = nilToTrue
+					end
+					dLog(LSM_LOGTYPE_VERBOSE, "Run func. data._LSM.funcData[%q] - value: %s", tos(key), tos(value))
 
-				--Update the current data[key] with the determiend current value
-				p_data[key] = value
-			end)
-		--defaultValue is true and data[*] is nil
-		elseif nilToTrue == true and dataValue == nil then
-			--e.g. data["enabled"] = true to always enable the row if nothing passed in explicitly
-			dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - key: %s, setting nilToTrue: %s", tos(key), tos(nilToTrue))
-			data[key] = nilToTrue
+					--Update the current data[key] with the determiend current value
+					p_data[key] = value
+				end)
+				--defaultValue is true and data[*] is nil
+			elseif nilToTrue == true and dataValue == nil then
+				--e.g. data["enabled"] = true to always enable the row if nothing passed in explicitly
+				dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - key: %s, setting nilToTrue: %s", tos(key), tos(nilToTrue))
+				data[key] = nilToTrue
+			end
 		end
 	end
 
@@ -3724,24 +3730,14 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	local generatedEntryType = getValueOrCallback(entryType, (isAddDataTypeTable and additionalData) or options)
 
 	--Additional data was passed in as a table, and a label text/function was provided?
-	if isAddDataTypeTable == true then
-		--If "text" param and additionalData.name both were provided: text param wins and overwites the additionalData.name!
+	if isAddDataTypeTable == true and additionalData.label ~= nil then
+		--If "text" param AND additionalData.name both were provided: text param wins and overwites the additionalData.name!
 		additionalData.name = text
-		--Copy the table so we can update it's label, name etc. to get the current string
-		local additionalDataCopy = ZO_ShallowTableCopy(additionalData)
-
-		--Get/build additionalData.label, additionalData.name
-		updateDataValues(additionalDataCopy)
-		--After label and/or name have been build, use the string of them now
-		local label = additionalDataCopy.label
-		local name = additionalDataCopy.name
-		additionalData.name = name
-		additionalData.label = label
-
-		generatedText = label or name
-
-		--Remove the copy of the additionalData table now as it is not needed any longer
-		additionalDataCopy = nil
+		--Get/build additionalData.label, additionalData.name, additionalData.enabled, additionalData.checked, ...
+		updateDataValues(additionalData, {"label", "name"})
+		--After label and/or name etc. have been checked for functions (which have been executed and data["name"] etc.
+		--were updated then), use the returned string of them now
+		generatedText = additionalData.label or additionalData.name
 	else
 		generatedText = getValueOrCallback(text, options)
 	end
@@ -3787,7 +3783,8 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 
 	--Any other custom params passed in? Mix in missing ones and skip existing (e.g. isNew)
 	if isAddDataTypeTable then
-		--Add whole table to the newEntry, which will be processed at function addItem_Base() then
+		--Add whole table to the newEntry, which will be processed at function addItem_Base() then, keys will be read
+		--and mapped to ZO_ComboBox kyes (e.g. "font" -> "m_font"), or non-combobox keys will be taken 1:1 to the entry.data
 		newEntry.additionalData = additionalData
 	end
 
