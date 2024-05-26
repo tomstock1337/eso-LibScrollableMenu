@@ -979,7 +979,7 @@ local function updateIcons(control, data)
 		end
 
 	end
-	multiIconCtrl:SetMouseEnabled(anyIconWasAdded)
+	multiIconCtrl:SetMouseEnabled(anyIconWasAdded) --todo 20240527 Make that dependent on getValueOrCallback(data.enabled, data) ?! And update via multiIconCtrl:Hide()/multiIconCtrl:Show() on each show of menu!
 	multiIconCtrl:SetDrawTier(DT_MEDIUM)
 	multiIconCtrl:SetDrawLayer(DL_CONTROLS)
 	multiIconCtrl:SetDrawLevel(10)
@@ -991,7 +991,7 @@ local function updateIcons(control, data)
 		end)
 		multiIconCtrl:SetHandler("OnMouseExit", ZO_Options_OnMouseExit)
 
-		multiIconCtrl:Show()
+		multiIconCtrl:Show() --todo 20240527 Make that dependent on getValueOrCallback(data.enabled, data) ?! And update via multiIconCtrl:Hide()/multiIconCtrl:Show() on each show of menu!
 	end
 
 
@@ -1205,6 +1205,11 @@ end
 --> If the function does not return anything (nil) the nilOrTrue of table possibleEntryDataWithFunctionAndDefaultValue
 --> will be used IF i is true (e.g. for the "enabled" state of the entry)
 local function updateDataValues(data, onlyTheseEntries)
+	--Compatibility fix for missing name in data -> Use label (e.g. sumenus of LibCustomMenu only have "label" and no "name")
+	if data.name == nil and data.label then
+		data.name = data.label
+	end
+
 	local checkOnlyProvidedKeys = not ZO_IsTableEmpty(onlyTheseEntries)
 	for key, nilToTrue in pairs(possibleEntryDataWithFunction) do
 		local goOn = true
@@ -3807,6 +3812,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	--Fallback vor old verions of LSM <2.1 where additionalData table was missing and isNew was used as the same parameter
 	local isNew = (isAddDataTypeTable and additionalData.isNew) or (not isAddDataTypeTable and additionalData) or false
 
+	--The entryData for the new item
 	local newEntry = {
 		--The entry type
 		entryType 		= entryType,
@@ -3849,7 +3855,6 @@ local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function AddCustomScrollableSubMenuEntry(text, entries)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableSubMenuEntry - text: %s, entries: %s", tos(text), tos(entries))
-
 	addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_SUBMENU, entries, nil)
 end
 
