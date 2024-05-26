@@ -4200,6 +4200,10 @@ WORKING ON - Current version: 2.2
 	TESTED: OPEN
 	22. Changed data["name"], "label", "checked", "enabled" of rows to use dynamic control table possibleEntryDataWithFunction
 	TESTED: OPEN
+	23. Fixed multiIcon usage of many icons and tooltips
+	TESTED: OPEN
+	24. Fixed disabled entries not closing the dropdown if clicked on them
+	TESTED: OPEN
 
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
@@ -4238,7 +4242,8 @@ WORKING ON - Current version: 2.2
 	20. Changed a lot in regards to OnGlobalMouseUp / context menu clears on right click
 	21. added: nil submenus create blank submenu. empty submenus create a subemnu with "Empty" entry.
 	22. Changed data["name"], "label", "checked", "enabled" of rows to use dynamic control table possibleEntryDataWithFunction
-
+	23. Fixed multiIcon usage of many icons and tooltips
+	24. Fixed disabled entries not closing the dropdown if clicked on them
 
 -------------------
 TODO - To check (future versions)
