@@ -143,7 +143,6 @@ local function test()
 			},
 			{
 				name            =	"-",
-				entryType		= LSM_ENTRY_TYPE_DIVIDER,
 			},
 			{
 
@@ -169,7 +168,34 @@ local function test()
 				--icon 			= nil,
 				icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" }
 			},
+			{
+				name = function() return "-" end,
+			},
+			{
 
+				name            = "CntxtMenu - Submenu entry with 2 icon 1:4",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("CntxtMenu - Submenu entry 1:3")
+				end,
+				--tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
+				--isNew			= true,
+				--icon 			= nil,
+				icon =			{ { iconTexture = "/esoui/art/inventory/inventory_trait_ornate_icon.dds", width = 32, height = 32, tooltip = "Hello world" }, "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", { iconTexture = "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds", width = 16, height = 16, tooltip = "Hello world - 2nd tooltip" }  }
+			},
+			{
+				name            =	"bla blubb",
+				entryType		= LSM_ENTRY_TYPE_DIVIDER,
+			},
+			{
+
+				name            = "CntxtMenu - Submenu entry 1:5",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("CntxtMenu - Submenu entry 1:5")
+				end,
+				--tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
+				--isNew			= false,
+				--icon 			= nil,
+			},
 		}
 
 		--LibScrollableMenu - LSM entry - Submenu normal
@@ -492,6 +518,13 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 					end)
 
 					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end)
+
+					AddCustomScrollableMenuEntry("Context menu Normal entry 3", function() d('Context menu Normal entry 3') end)
+
+					AddCustomScrollableMenuEntry("Context menu Normal entry 4", function() d('Context menu Normal entry 4') end)
+
+					AddCustomScrollableMenuEntry("Context menu Normal entry 5", function() d('Context menu Normal entry 5') end)
+
 					ShowCustomScrollableMenu(nil, {
 						--titleText = "Context menu",
 						--titleFont = function() return "ZoFontGameSmall" end,
@@ -499,8 +532,8 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 						--subtitleFont = "ZoFontHeader3", --Same font size as title
 						--enableFilter = true,
 						--headerColor = HEADER_TEXT_COLOR_RED,
-						visibleRowsDropdown = 3,
-						visibleRowsSubmenu = 5,
+						visibleRowsDropdown = 5,
+						visibleRowsSubmenu = 4,
 						--maxDropdownHeight = 250,
 						--sortEntries = false,
 					})
@@ -556,7 +589,8 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 					d("Entry having submenu 1")
 				end,
 				entries         = function() gotSubmenuEntries = not gotSubmenuEntries if gotSubmenuEntries == true then return submenuEntries else return nil end end,
-				tooltip         = 'Submenu test tooltip.'
+				tooltip         = 'Submenu test tooltip.',
+				icon =			{ { iconTexture = "/esoui/art/inventory/inventory_trait_ornate_icon.dds", width = 32, height = 32, tooltip = "Hello world" }, "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", { iconTexture = "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds", width = 16, height = 16, tooltip = "Hello world - 2nd tooltip" }  }
 			},
 			{
 				name            = "Normal entry 2 (contextMenu)",

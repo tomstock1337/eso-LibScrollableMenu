@@ -900,7 +900,8 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 	local iconWidth = visible and iconHeight or WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
 
 	if visible == true then
-		control.m_icon.data = control.m_icon.data or {}
+		multiIconCtrl.data = multiIconCtrl.data or {}
+		if iconIdx == 1 then multiIconCtrl.data.tooltipText = nil end
 
 		--Icon's height and width
 		if singleIconDataOrTab.width ~= nil then
@@ -910,30 +911,36 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 			iconHeight = zo_clamp(getValueOrCallback(singleIconDataOrTab.height, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
 		end
 
-		--Icon's tooltip? Reusing default tooltip functions of controls: ZO_Options_OnMouseEnter and ZO_Options_OnMouseExit
-		multiIconCtrl.data.tooltipText = nil
-		local tooltipForIcon = visible and getValueOrCallback(singleIconDataOrTab.tooltip, data) or nil
-		if tooltipForIcon ~= nil and tooltipForIcon ~= "" then
-			multiIconCtrl.data.tooltipText = tooltipForIcon
-		end
-
 		if isNewValue == true then
 			multiIconCtrl:AddIcon(iconNewIcon, nil, iconNarrationNewValue)
 			dLog(LSM_LOGTYPE_VERBOSE, "updateIcon - Adding \'new icon\'")
---d("[LSM]updateIcon - Adding \'new icon\'")
+			--d("[LSM]updateIcon - Adding \'new icon\'")
 		end
 		if iconValue ~= nil then
-		--Icon's color
+			--Icon's color
 			local iconTint = getValueOrCallback(singleIconDataOrTab.iconTint, data)
 			if type(iconTint) == "string" then
 				local iconColorDef = ZO_ColorDef:New(iconTint)
 				iconTint = iconColorDef
 			end
-			--Icon's narration=
+
+			--Icon's tooltip? Reusing default tooltip functions of controls: ZO_Options_OnMouseEnter and ZO_Options_OnMouseExit
+			-->Just add each icon as identifier and then the tooltipText (1 line = 1 icon)
+			local tooltipForIcon = visible and getValueOrCallback(singleIconDataOrTab.tooltip, data) or nil
+			if tooltipForIcon ~= nil and tooltipForIcon ~= "" then
+				local tooltipTextAtMultiIcon = multiIconCtrl.data.tooltipText
+				if tooltipTextAtMultiIcon == nil then
+					tooltipTextAtMultiIcon =  zo_iconTextFormat(iconValue, 24, 24, tooltipForIcon, iconTint)
+				else
+					tooltipTextAtMultiIcon = tooltipTextAtMultiIcon .. "\n" .. zo_iconTextFormat(iconValue, 24, 24, tooltipForIcon, iconTint)
+				end
+				multiIconCtrl.data.tooltipText = tooltipTextAtMultiIcon
+			end
+
+			--Icon's narration
 			local iconNarration = getValueOrCallback(singleIconDataOrTab.iconNarration, data)
 			multiIconCtrl:AddIcon(iconValue, iconTint, iconNarration)
 			dLog(LSM_LOGTYPE_VERBOSE, "updateIcon - iconIdx %s, visible: %s, texture: %s, tint: %s, width: %s, height: %s, narration: %s", tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration))
-df("[LSM]updateIcon - iconIdx %s, visible: %s, texture: %s, tint: %s, width: %s, height: %s, narration: %s", tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration))
 		end
 
 		return true, iconWidth, iconHeight
