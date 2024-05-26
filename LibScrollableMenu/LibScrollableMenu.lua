@@ -1145,7 +1145,6 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	end
 end
 
-
 --Add the entry additionalData value/options value to the "selfVar" object
 local function updateVariable(selfVar, key, value)
 	local zo_ComboBoxEntryKey = LSMEntryKeyZO_ComboBoxEntryKey[key]
@@ -2019,15 +2018,6 @@ local function createScrollableComboBoxEntry(self, item, index, entryType)
 	return entryData
 end
 
-function dropdownClass:SetupEntryLabel(labelControl, data)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:SetupEntryLabel - labelControl: %s", tos(getControlName(labelControl)))
-	labelControl:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
-	labelControl:SetFont(self.owner:GetDropdownFont())
-	local color = self.owner:GetItemNormalColor(data)
-	labelControl:SetColor(color:UnpackRGBA())
-	labelControl:SetHorizontalAlignment(self.horizontalAlignment)
-end
-
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
 	self.owner = comboBox
@@ -2736,7 +2726,7 @@ function comboBox_base:RefreshSortedItems(parentControl)
 	local entries = self:GetEntries()
 	-- Ignore nil entries
 	if entries ~= nil then
-		-- replce empty entries with noEntriesSubmenu item
+		-- replace empty entries with noEntriesSubmenu item
 		if ZO_IsTableEmpty(entries) then
 			noEntriesSubmenu.m_parentControl = parentControl
 			self:AddItem(noEntriesSubmenu, ZO_COMBOBOX_SUPPRESS_UPDATE)
