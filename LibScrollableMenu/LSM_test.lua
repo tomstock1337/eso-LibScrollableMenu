@@ -132,14 +132,14 @@ local function test()
 		local submenuEntriesForContextMenu = {
 
 			{
-				
+
 				--name            = "CntxtMenu - Submenu entry 1:1",
 				label = 			"Test name missing - only label",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("CntxtMenu - Submenu entry 1:1")
 				end,
 				tooltip         = 	"CntxtMenu - Submenu Entry Test 1:1",
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 				name            =	"-",
@@ -153,21 +153,21 @@ local function test()
 				end,
 				tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
 				isNew			= true,
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_DIVIDER,
 			},
 			{
 
-				name            = "CntxtMenu - Submenu entry with 3 icons 1:3",
+				name            = "CntxtMenu - Submenu entry with 3 icon 1:3",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("CntxtMenu - Submenu entry 1:3")
 				end,
 				--tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
 				--isNew			= true,
-				--icons 			= nil,
-				icons =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" }
+				--icon 			= nil,
+				icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" }
 			},
 
 		}
@@ -209,7 +209,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
 				end,
 				--tooltip         = "Submenu Entry Test 1",
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 
@@ -243,18 +243,18 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
 				end,
 				isNew			= true,
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 				isCheckbox		= function() isCheckBoxNow = not isCheckBoxNow return isCheckBoxNow end,
-				name            = "Checkbox submenu entry 1 with 3 icons - isCheckbox = func",
+				name            = "Checkbox submenu entry 1 with 3 icon - isCheckbox = func",
 				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Checkbox entry 1")
 				end,
 				--	tooltip         = function() return "Checkbox entry 1"  end
 				tooltip         = "Checkbox entry 1",
-				icons =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" }
+				icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" }
 			},
 			{
 				name            = "-", --Divider
@@ -280,7 +280,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					--Dividers do not use any callback
 				end,
 				tooltip         = "Submenu Divider Test 1",
-				--icons 			= nil,
+				--icon 			= nil,
 				entryType		= LSM_ENTRY_TYPE_DIVIDER,
 			},
 			{
@@ -291,14 +291,14 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				end,
 				isNew			= true,
 				--tooltip         = "Submenu Entry Test 3",
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 				isHeader        = true, --Enables the header at LSM
 				name            = "Header Test 1 - isHeader",
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
 				tooltip         = "Header test 1",
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 
@@ -307,7 +307,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 4")
 				end,
 				tooltip         = function() return "Submenu Entry Test 4"  end,
-				--icons 			= nil,
+				--icon 			= nil,
 				entryType		= LSM_ENTRY_TYPE_NORMAL,
 			},
 			{
@@ -317,7 +317,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 4")
 				end,
 				tooltip         = function() return "Submenu Entry Test 4"  end,
-				--icons 			= nil,
+				--icon 			= nil,
 				entryType		= LSM_ENTRY_TYPE_NORMAL,
 				entries 		= {}, --does that match together with entryType = LSM_ENTRY_TYPE_NORMAL? Or LSM_ENTRY_TYPE_SUBMENU needed?
 			},
@@ -328,7 +328,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 5")
 				end,
 				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 				name            = "Submenu entry 6",
@@ -343,7 +343,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 							d("Submenu entry 6 1:1")
 						end,
 						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
+						--icon 			= nil,
 					},
 					{
 
@@ -355,12 +355,12 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 						entries         = {
 							{
 
-								name            = "Submenu entry 6 with 3 icons 2:1",
+								name            = "Submenu entry 6 with 3 icon 2:1",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:1")
 								end,
 								--tooltip         = "Submenu Entry Test 1",
-								icons =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" }
+								icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" }
 							},
 							{
 
@@ -377,7 +377,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 											d("Normal entry 6 2:1")
 										end,
 										--tooltip         = "Submenu Entry Test 1",
-										--icons 			= nil,
+										--icon 			= nil,
 									},
 									{
 
@@ -387,7 +387,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 										end,
 										tooltip         = "Normal entry 6 2:2",
 										isNew			= true,
-										--icons 			= nil,
+										--icon 			= nil,
 									},
 								},
 							},
@@ -400,7 +400,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 							d("Normal entry 6 1:2")
 						end,
 						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
+						--icon 			= nil,
 					},
 				},
 				--	tooltip         = function() return "Submenu entry 6"  end
@@ -413,7 +413,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 7")
 				end,
 				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 
@@ -422,7 +422,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 8")
 				end,
 				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 
@@ -431,7 +431,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 9")
 				end,
 				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 
@@ -440,7 +440,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 10")
 				end,
 				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				--icon 			= nil,
 			}
 		}
 
@@ -448,6 +448,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 		local wasNameChangedAtEntry = false
 		local wasLabelChangedAtEntry = false
 		local isEnabledNow = false
+		local gotSubmenuEntries = false
 		local comboBoxMenuEntries          = {
 			{
 				name = function()
@@ -550,11 +551,11 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 				name            = "-", --Divider
 			},
 			{
-				name            = "Entry having submenu 1 (function)",
+				name            = "Entry having submenu 1 - entries = function",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Entry having submenu 1")
 				end,
-				entries         = function() return submenuEntries end,
+				entries         = function() gotSubmenuEntries = not gotSubmenuEntries if gotSubmenuEntries == true then return submenuEntries else return nil end end,
 				tooltip         = 'Submenu test tooltip.'
 			},
 			{
@@ -579,7 +580,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 				--isHeader		= function() return true  end,
 				name            = "Header entry 1 - LSM_ENTRY_TYPE_HEADER",
 				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
-				--icons 	     = nil,
+				--icon 	     = nil,
 				entryType	= LSM_ENTRY_TYPE_HEADER,
 			},
 			{
@@ -621,11 +622,11 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 				tooltip         = "Normal entry 4"
 			},
 			{
-				name            = "Normal entry 5 with 3 icons",
+				name            = "Normal entry 5 with 3 icon",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Normal entry 5")
 				end,
-				icons =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
+				icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
 				--entries         = submenuEntries,
 				--	tooltip         = function() return "Normal entry 5"  end
 				tooltip         = "Normal entry 5"
@@ -641,7 +642,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 							d("Submenu entry 6 1:1")
 						end,
 						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
+						--icon 			= nil,
 					},
 					{
 
@@ -658,7 +659,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 									d("Submenu entry 6 2:1")
 								end,
 								--tooltip         = "Submenu Entry Test 1",
-								--icons 			= nil,
+								--icon 			= nil,
 							},
 							{
 
@@ -675,7 +676,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 											d("Normal entry 6 2:1")
 										end,
 										--tooltip         = "Submenu Entry Test 1",
-										--icons 			= nil,
+										--icon 			= nil,
 									},
 									{
 
@@ -685,7 +686,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 										end,
 										tooltip         = "Normal entry 6 2:2",
 										isNew			= true,
-										--icons 			= nil,
+										--icon 			= nil,
 									},
 								},
 							},
@@ -698,7 +699,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 							d("Normal entry 6 1:2")
 						end,
 						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
+						--icon 			= nil,
 					},
 				},
 				--	tooltip         = function() return "Submenu entry 6"  end

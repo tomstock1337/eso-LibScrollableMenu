@@ -874,31 +874,23 @@ local function mapEntries(entryTable, mapTable, blank)
 end
 lib.MapEntries = mapEntries
 
---Update the icons of a dropdown entry's MultiIcon control
-local function updateIcons(control, data)
+local function updateIcon(control, data, iconIdx, iconData, multiIconCtrl, parentHeight)
 	local isNewValue = getValueOrCallback(data.isNew, data)
-	local iconData = getValueOrCallback(data.icon, data)
-	--If only a "any.dds" texture was passed in
-	if type(iconData) ~= 'table' then
-		iconData = { iconTexture = iconData }
+	--Is the iconData just a table with [1] = "texture path to .dds here"; or a table containing more info like iconTexture,
+	--width, height, ...
+	local iconValue
+	if iconData[1] ~= nil then
+		iconValue = getValueOrCallback(iconData[1], data)
+	else
+		iconValue = getValueOrCallback(iconData.iconTexture, data)
 	end
-	local iconValue = iconData ~= nil and getValueOrCallback(iconData.iconTexture, data)
 	local visible = isNewValue == true or iconValue ~= nil
 
-	local tooltipForIcon = getValueOrCallback(iconData.tooltip, data)
-	local iconNarration = visible and iconData.iconNarration
-
-	local multiIconContainerCtrl = control.m_iconContainer
-	local multiIconCtrl = control.m_icon
-
-	local parentHeight = multiIconCtrl:GetParent():GetHeight()
 	local iconHeight = parentHeight
+
 	-- This leaves a padding to keep the label from being too close to the edge
 	local iconWidth = visible and iconHeight or WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
 
-	dLog(LSM_LOGTYPE_VERBOSE, "updateIcons - iconValue: %s, visible: %s, isNew: %s, tooltip: %s, narration: %s", tos(iconValue), tos(visible), tos(isNewValue), tos(tooltipForIcon), tos(iconNarration))
-
-	multiIconCtrl:ClearIcons()
 	if visible == true then
 		control.m_icon.data = control.m_icon.data or {}
 
@@ -909,28 +901,76 @@ local function updateIcons(control, data)
 		if iconData.height ~= nil then
 			iconHeight = zo_clamp(getValueOrCallback(iconData.height, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
 		end
-		--Icon's color
-		local iconTint = getValueOrCallback(iconData.iconTint, data)
-		if type(iconTint) == "string" then
-			local iconColorDef = ZO_ColorDef:New(iconTint)
-			iconTint = iconColorDef
-		end
+
 		--Icon's tooltip? Reusing default tooltip functions of controls: ZO_Options_OnMouseEnter and ZO_Options_OnMouseExit
 		multiIconCtrl.data.tooltipText = nil
+		local tooltipForIcon = visible and getValueOrCallback(iconData.tooltip, data) or nil
 		if tooltipForIcon ~= nil and tooltipForIcon ~= "" then
 			multiIconCtrl.data.tooltipText = tooltipForIcon
 		end
 
-		--Icon's narration=
-		iconNarration = getValueOrCallback(iconData.iconNarration, data)
-
 		if isNewValue == true then
 			multiIconCtrl:AddIcon(iconNewIcon, nil, iconNarrationNewValue)
+			dLog(LSM_LOGTYPE_VERBOSE, "updateIcon - Adding \'new icon\'")
+--d("[LSM]updateIcon - Adding \'new icon\'")
 		end
 		if iconValue ~= nil then
+		--Icon's color
+			local iconTint = getValueOrCallback(iconData.iconTint, data)
+			if type(iconTint) == "string" then
+				local iconColorDef = ZO_ColorDef:New(iconTint)
+				iconTint = iconColorDef
+			end
+			--Icon's narration=
+			local iconNarration = getValueOrCallback(iconData.iconNarration, data)
 			multiIconCtrl:AddIcon(iconValue, iconTint, iconNarration)
+			dLog(LSM_LOGTYPE_VERBOSE, "updateIcon - iconIdx %s, visible: %s, texture: %s, tint: %s, width: %s, height: %s, narration: %s", tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration))
+df("[LSM]updateIcon - iconIdx %s, visible: %s, texture: %s, tint: %s, width: %s, height: %s, narration: %s", tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration))
 		end
 
+		return true, iconWidth, iconHeight
+	end
+	return false, iconWidth, iconHeight
+end
+
+--Update the icons of a dropdown entry's MultiIcon control
+local function updateIcons(control, data)
+	local multiIconContainerCtrl = control.m_iconContainer
+	local multiIconCtrl = control.m_icon
+	multiIconCtrl:ClearIcons()
+
+	local iconWidth = WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
+	local parentHeight = multiIconCtrl:GetParent():GetHeight()
+	local iconHeight = parentHeight
+
+	local iconData = getValueOrCallback(data.icon, data)
+	dLog(LSM_LOGTYPE_VERBOSE, "updateIcons - numIcons %s", tos(iconData ~= nil and #iconData or 0))
+
+	local anyIconWasAdded = false
+	local iconDataType = type(iconData)
+	if iconDataType ~= nil then
+		if iconDataType ~= 'table' then
+			--If only a "any.dds" texture was passed in
+			iconData = { iconTexture = iconData }
+			anyIconWasAdded, iconWidth, iconHeight = updateIcon(control, data, 1, iconData, multiIconCtrl, parentHeight)
+		else
+			--Multiple .dds textures were maybe passed in?
+			for iconIdx, singleIconData in ipairs(iconData) do
+				local l_anyIconWasAdded, l_iconWidth, l_iconHeight = updateIcon(control, data, iconIdx, iconData, multiIconCtrl, parentHeight)
+				if l_anyIconWasAdded == true then
+					anyIconWasAdded = true
+				end
+				if l_iconWidth > iconWidth then iconWidth = l_iconWidth end
+				if l_iconHeight > iconHeight then iconHeight = l_iconHeight end
+			end
+		end
+	end
+	multiIconCtrl:SetMouseEnabled(anyIconWasAdded)
+	multiIconCtrl:SetDrawTier(DT_MEDIUM)
+	multiIconCtrl:SetDrawLayer(DL_CONTROLS)
+	multiIconCtrl:SetDrawLevel(10)
+
+	if anyIconWasAdded then
 		multiIconCtrl:SetHandler("OnMouseEnter", function(...)
 			ZO_Options_OnMouseEnter(...)
 			InformationTooltipTopLevel:BringWindowToTop()
@@ -939,17 +979,14 @@ local function updateIcons(control, data)
 
 		multiIconCtrl:Show()
 	end
-	multiIconCtrl:SetMouseEnabled(tooltipForIcon ~= nil)
-	multiIconCtrl:SetDrawTier(DT_MEDIUM)
-	multiIconCtrl:SetDrawLayer(DL_CONTROLS)
-	multiIconCtrl:SetDrawLevel(10)
+
 
 	-- Using the control also as a padding. if no icon then shrink it
 	-- This also allows for keeping the icon in size with the row height.
 	multiIconContainerCtrl:SetDimensions(iconWidth, iconHeight)
---TODO: see how this effects it 
---	multiIconCtrl:SetDimensions(iconWidth, iconHeight)
-	multiIconCtrl:SetHidden(not visible)
+	--TODO: see how this effects it
+	--	multiIconCtrl:SetDimensions(iconWidth, iconHeight)
+	multiIconCtrl:SetHidden(not anyIconWasAdded)
 end
 
 local function getComboBox(control)
