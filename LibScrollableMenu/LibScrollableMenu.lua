@@ -211,6 +211,7 @@ local possibleEntryDataWithFunction = {
 	["label"] = 	nilIgnore,
 	["checked"] = 	nilIgnore,
 	["enabled"] = 	nilToTrue,
+	["font"] = 		nilIgnore,
 }
 
 

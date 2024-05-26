@@ -140,6 +140,7 @@ local function test()
 				end,
 				tooltip         = 	"CntxtMenu - Submenu Entry Test 1:1",
 				--icon 			= nil,
+				enabled 		= true,
 			},
 			{
 				name            =	"-",
@@ -153,6 +154,7 @@ local function test()
 				tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
 				isNew			= true,
 				--icon 			= nil,
+				enabled 		= function() return true end,
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_DIVIDER,
@@ -166,7 +168,8 @@ local function test()
 				--tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
 				--isNew			= true,
 				--icon 			= nil,
-				icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" }
+				icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
+				--enabled 		= function() return false end,
 			},
 			{
 				name = function() return "-" end,
@@ -180,7 +183,8 @@ local function test()
 				--tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
 				--isNew			= true,
 				--icon 			= nil,
-				icon =			{ { iconTexture = "/esoui/art/inventory/inventory_trait_ornate_icon.dds", width = 32, height = 32, tooltip = "Hello world" }, "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", { iconTexture = "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds", width = 16, height = 16, tooltip = "Hello world - 2nd tooltip" }  }
+				icon =			{ { iconTexture = "/esoui/art/inventory/inventory_trait_ornate_icon.dds", width = 32, height = 32, tooltip = "Hello world" }, "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", { iconTexture = "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds", width = 16, height = 16, tooltip = "Hello world - 2nd tooltip" }  },
+				--enabled 		= false,
 			},
 			{
 				name            =	"bla blubb",
@@ -473,10 +477,13 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 		--Normal entries
 		local wasNameChangedAtEntry = false
 		local wasLabelChangedAtEntry = false
+		local isEnabledNowMain = false
 		local isEnabledNow = false
 		local gotSubmenuEntries = false
 		local comboBoxMenuEntries          = {
 			{
+				font = function() return "ZoFontBookLetter" end,
+				enabled = function() isEnabledNowMain = not isEnabledNowMain return isEnabledNowMain end,
 				name = function()
 					if not wasNameChangedAtEntry then
 						wasNameChangedAtEntry = true
@@ -490,7 +497,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				callback        =   function(self)
 					d("Normal entry 1")
 				end,
-				entryType = lib.LSM_ENTRY_TYPE_CHECKBOX,
+				--entryType = lib.LSM_ENTRY_TYPE_CHECKBOX,
 				contextMenuCallback =   function(self)
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
@@ -505,7 +512,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 
 						local function myAddonCallbackFunc(p_comboBox, p_item, entriesFound, ...) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
-d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+							d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
 							for k, v in ipairs(entriesFound) do
 								local name = v.label or v.name
 								d(">name of checkbox: " .. tostring(name).. ", checked: " .. tostring(v.checked))
