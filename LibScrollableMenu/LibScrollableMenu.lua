@@ -4126,11 +4126,11 @@ WORKING ON - Current version: 2.2
 	-Added translation files for e.g. tooltips at search filter editbox
 	TESTED: OK
 	-12	Compatibility fix for LibCustomMenu submenus (which only used data.label as the name): If data.name is missing in submenu but data.label exists -> set data.name = copy of data.label
-	TESTED: TODO - CODE
+	TESTED: TODO
 	-13 Fix AddCustomScrollableMenuEntries to put v.label to v.additionalData.label -> For a proper usage in AddCustomScrollableMenuEntry -> newEntry
-	TESTED: TODO - CODE
+	TESTED: TODO
 	-14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox, submenu etc.) to properly get recognized from data tables of entries
-	TESTED: OK
+	TESTED: TODO
 	-15. Fixed ZO_Menu opening does not hide already opened LSM dropdown & contextMenu
 	TESTED: OK
 	16. Bug callback onEntrySelected fires for entries clicked where there is no callback function (entry with hasSubmenu = true but callback = nil)
