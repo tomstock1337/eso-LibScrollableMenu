@@ -2522,7 +2522,10 @@ function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				--Clicked entry should close after selection?
 				if mocCtrl.closeOnSelect then
-					refCount = refCount - 1
+					local data = getControlData(mocCtrl)
+					if data == nil or data.enabled == true then
+						refCount = refCount - 1
+					end
 				end
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 				-- bypass right-clicks on the entries. Context menus will be checked and opened at the OnMouseUp handler
