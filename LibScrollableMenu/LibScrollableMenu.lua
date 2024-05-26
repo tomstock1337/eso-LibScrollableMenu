@@ -874,20 +874,28 @@ local function mapEntries(entryTable, mapTable, blank)
 end
 lib.MapEntries = mapEntries
 
-local function updateIcon(control, data, iconIdx, iconData, multiIconCtrl, parentHeight)
-	local isNewValue = getValueOrCallback(data.isNew, data)
-	--Is the iconData just a table with [1] = "texture path to .dds here"; or a table containing more info like iconTexture,
-	--width, height, ...
+local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIconCtrl, parentHeight)
+	--singleIconDataTab can be a table or any other format (supported: string or function returning a string)
 	local iconValue
-	if iconData[1] ~= nil then
-		iconValue = getValueOrCallback(iconData[1], data)
+	local iconDataType = type(singleIconDataOrTab)
+	--Is the passed in iconData a table?
+	if iconDataType == "table" then
+		--table of format { [1] = "texture path to .dds here or a function returning the path" }
+		if singleIconDataOrTab[1] ~= nil then
+			iconValue = getValueOrCallback(singleIconDataOrTab[1], data)
+		--or a table containing more info like { [1]= {iconTexture = "path or funciton returning a path", width=24, height=24, tint=ZO_ColorDef, narration="", tooltip=function return "tooltipText" end}, [2] = { ... } }
+		else
+			iconValue = getValueOrCallback(singleIconDataOrTab.iconTexture, data)
+		end
 	else
-		iconValue = getValueOrCallback(iconData.iconTexture, data)
+		--No table, only  e.g. String or function returning a string
+		iconValue = getValueOrCallback(singleIconDataOrTab, data)
 	end
+
+	local isNewValue = getValueOrCallback(data.isNew, data)
 	local visible = isNewValue == true or iconValue ~= nil
 
 	local iconHeight = parentHeight
-
 	-- This leaves a padding to keep the label from being too close to the edge
 	local iconWidth = visible and iconHeight or WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
 
@@ -895,16 +903,16 @@ local function updateIcon(control, data, iconIdx, iconData, multiIconCtrl, paren
 		control.m_icon.data = control.m_icon.data or {}
 
 		--Icon's height and width
-		if iconData.width ~= nil then
-			iconWidth = zo_clamp(getValueOrCallback(iconData.width, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
+		if singleIconDataOrTab.width ~= nil then
+			iconWidth = zo_clamp(getValueOrCallback(singleIconDataOrTab.width, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
 		end
-		if iconData.height ~= nil then
-			iconHeight = zo_clamp(getValueOrCallback(iconData.height, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
+		if singleIconDataOrTab.height ~= nil then
+			iconHeight = zo_clamp(getValueOrCallback(singleIconDataOrTab.height, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
 		end
 
 		--Icon's tooltip? Reusing default tooltip functions of controls: ZO_Options_OnMouseEnter and ZO_Options_OnMouseExit
 		multiIconCtrl.data.tooltipText = nil
-		local tooltipForIcon = visible and getValueOrCallback(iconData.tooltip, data) or nil
+		local tooltipForIcon = visible and getValueOrCallback(singleIconDataOrTab.tooltip, data) or nil
 		if tooltipForIcon ~= nil and tooltipForIcon ~= "" then
 			multiIconCtrl.data.tooltipText = tooltipForIcon
 		end
@@ -916,13 +924,13 @@ local function updateIcon(control, data, iconIdx, iconData, multiIconCtrl, paren
 		end
 		if iconValue ~= nil then
 		--Icon's color
-			local iconTint = getValueOrCallback(iconData.iconTint, data)
+			local iconTint = getValueOrCallback(singleIconDataOrTab.iconTint, data)
 			if type(iconTint) == "string" then
 				local iconColorDef = ZO_ColorDef:New(iconTint)
 				iconTint = iconColorDef
 			end
 			--Icon's narration=
-			local iconNarration = getValueOrCallback(iconData.iconNarration, data)
+			local iconNarration = getValueOrCallback(singleIconDataOrTab.iconNarration, data)
 			multiIconCtrl:AddIcon(iconValue, iconTint, iconNarration)
 			dLog(LSM_LOGTYPE_VERBOSE, "updateIcon - iconIdx %s, visible: %s, texture: %s, tint: %s, width: %s, height: %s, narration: %s", tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration))
 df("[LSM]updateIcon - iconIdx %s, visible: %s, texture: %s, tint: %s, width: %s, height: %s, narration: %s", tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration))
@@ -950,20 +958,18 @@ local function updateIcons(control, data)
 	local iconDataType = type(iconData)
 	if iconDataType ~= nil then
 		if iconDataType ~= 'table' then
-			--If only a "any.dds" texture was passed in
-			iconData = { iconTexture = iconData }
-			anyIconWasAdded, iconWidth, iconHeight = updateIcon(control, data, 1, iconData, multiIconCtrl, parentHeight)
-		else
-			--Multiple .dds textures were maybe passed in?
-			for iconIdx, singleIconData in ipairs(iconData) do
-				local l_anyIconWasAdded, l_iconWidth, l_iconHeight = updateIcon(control, data, iconIdx, iconData, multiIconCtrl, parentHeight)
-				if l_anyIconWasAdded == true then
-					anyIconWasAdded = true
-				end
-				if l_iconWidth > iconWidth then iconWidth = l_iconWidth end
-				if l_iconHeight > iconHeight then iconHeight = l_iconHeight end
-			end
+			--If only a "any.dds" texture path or a function returning this was passed in
+			iconData = { [1] = { iconTexture = iconData } }
 		end
+		for iconIdx, singleIconData in ipairs(iconData) do
+			local l_anyIconWasAdded, l_iconWidth, l_iconHeight = updateIcon(control, data, iconIdx, singleIconData, multiIconCtrl, parentHeight)
+			if l_anyIconWasAdded == true then
+				anyIconWasAdded = true
+			end
+			if l_iconWidth > iconWidth then iconWidth = l_iconWidth end
+			if l_iconHeight > iconHeight then iconHeight = l_iconHeight end
+		end
+
 	end
 	multiIconCtrl:SetMouseEnabled(anyIconWasAdded)
 	multiIconCtrl:SetDrawTier(DT_MEDIUM)
