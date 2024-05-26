@@ -204,6 +204,7 @@ local function test()
 
 		--LibScrollableMenu - LSM entry - Submenu normal
 		local isCheckBoxNow = false
+		local isCheckBoxNow2 = false
 		local submenuEntries               = {
 			{
 
@@ -276,7 +277,8 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				--icon 			= nil,
 			},
 			{
-				isCheckbox		= function() isCheckBoxNow = not isCheckBoxNow return isCheckBoxNow end,
+				--isCheckbox		= function() isCheckBoxNow = not isCheckBoxNow d("isCheckBoxNow = " ..tostring(isCheckBoxNow)) return isCheckBoxNow end,
+				entryType = 	function() isCheckBoxNow = not isCheckBoxNow d("isCheckBoxNow = " ..tostring(isCheckBoxNow)) return isCheckBoxNow and LSM_ENTRY_TYPE_CHECKBOX or LSM_ENTRY_TYPE_NORMAL end,
 				name            = "Checkbox submenu entry 1 with 3 icon - isCheckbox = func",
 				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
@@ -625,7 +627,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				entryType	= LSM_ENTRY_TYPE_HEADER,
 			},
 			{
-				isCheckbox		= function() isCheckBoxNow = not isCheckBoxNow return isCheckBoxNow end,
+				isCheckbox		= function() isCheckBoxNow2 = not isCheckBoxNow2 d("isCheckBoxNow2 = " ..tostring(isCheckBoxNow2)) return isCheckBoxNow2 end,
 				name            = "Checkbox entry 1 - isCheckbox func",
 				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)

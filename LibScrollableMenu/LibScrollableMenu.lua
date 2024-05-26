@@ -212,6 +212,12 @@ local possibleEntryDataWithFunction = {
 	["checked"] = 	nilIgnore,
 	["enabled"] = 	nilToTrue,
 	["font"] = 		nilIgnore,
+
+	--todo: 20240527 are those needed to update on each show of the entries? Or should the entryType stay the same?
+	--["isDivider"] = nilIgnore,
+	--["isHeader"] = 	nilIgnore,
+	--["isCheckbox"] =nilIgnore,
+	--["entryType"] = nilIgnore,
 }
 
 
