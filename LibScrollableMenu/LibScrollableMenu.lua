@@ -2075,7 +2075,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 			local entry = createScrollableComboBoxEntry(self, item, item.index or i, entryType)
 			tins(dataList, entry)
 
-			local fontObject = owner:GetDropdownFontObject()
+			local fontObject = owner:GetItemFontObject(item) --owner:GetDropdownFontObject()
 			--Check string width of label (alternative text to show at entry) or name (internal value used)
 			local nameWidth = GetStringWidthScaled(fontObject, item.label or item.name, 1, SPACE_INTERFACE) + widthPadding
 			if nameWidth > largestEntryWidth then
@@ -2414,6 +2414,11 @@ function comboBox_base:AddCustomEntryTemplate(entryTemplate, entryHeight, setupF
 	self.m_customEntryTemplateInfos[entryTemplate] = customEntryInfo
 
 	self.m_dropdownObject:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
+end
+
+function comboBox_base:GetItemFontObject(item)
+	local font = item.font or self:GetDropdownFont() --self.m_font
+    return _G[font]
 end
 
 -- >> template, height, setupFunction
