@@ -11,6 +11,7 @@
 ## Author: IsJustaGhost, Baertram, tomstock (, Kyoma)
 ## APIVersion: 101041 101042
 ## OptionalDependsOn: LibDebugLogger>=263
+## SavedVariables: LSM_TEST_SV
 
 
 lang/en.lua

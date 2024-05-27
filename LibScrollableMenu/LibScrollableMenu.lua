@@ -1082,19 +1082,22 @@ end
 -- Local entryData functions
 --------------------------------------------------------------------
 
+local NIL_CHECK_TABLE = {}
+local function getDataSource(data)
+	if data and data.dataSource then
+		return data:GetDataSource()
+	end
+	return data or NIL_CHECK_TABLE
+end
+
 -- >> data, dataEntry
 local function getControlData(control)
 	dLog(LSM_LOGTYPE_VERBOSE, "getControlData - name: " ..tos(getControlName(control)))
 	local data = control.m_sortedItems or control.m_data
 
-	if data and data.dataSource then
-		data = data:GetDataSource()
-	else
-		data = data or {}
-	end
-	
-	return data
+	return getDataSource(data)
 end
+
 
 --Check if an entry got the isNew set
 local function getIsNew(_entry)
@@ -1239,12 +1242,13 @@ end
 
 --Execute pre-stored callback functions of the data table, in data._LSM.funcData
 local function updateDataByFunctions(data)
+	data = getDataSource(data)
+
 	dLog(LSM_LOGTYPE_VERBOSE, "updateDataByFunctions - data: %s", tos(data))
 	--If subTable _LSM  (of row's data) contains funcData subTable: This contains the original functions passed in for
 	--example "label" or "name" (instead of passing in strings). Loop the functions and execute those now for each found
-	local lsmData = data._LSM
-	local funcData = lsmData ~= nil and lsmData.funcData or {}
-	if funcData == nil then return end
+	local lsmData = data._LSM or NIL_CHECK_TABLE
+	local funcData = lsmData.funcData or NIL_CHECK_TABLE
 
 	--Execute the callback functions for e.g. "name", "label", "checked", "enabled", ... now
 	for _, updateFN in pairs(funcData) do
@@ -2969,11 +2973,11 @@ do -- Row setup functions
 			checkedData.checked = checked
 			if checkedData.callback then
 				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
-				checkedData.callback(checked, checkedData)
+				checkedData.callback(control, checkedData, checked)
 			end
 
 			self:Narrate("OnCheckboxUpdated", checkbox, checkedData, nil)
-			lib:FireCallbacks('CheckboxUpdated', checked, checkedData, checkbox)
+			lib:FireCallbacks('CheckboxUpdated', control, checkedData, checked)
 			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: CheckboxUpdated - control: %q, checked: %s", tos(getControlName(checkbox)), tos(checked))
 		end
 
