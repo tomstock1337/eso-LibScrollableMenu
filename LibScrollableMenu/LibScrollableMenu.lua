@@ -211,6 +211,7 @@ local possibleEntryDataWithFunction = {
 	["label"] = 	nilIgnore,
 	["checked"] = 	nilIgnore,
 	["enabled"] = 	nilToTrue,
+	["visible"] = 	nilToTrue,
 	["font"] = 		nilIgnore,
 
 	--todo: 20240527 are those needed to update on each show of the entries? Or should the entryType stay the same?
@@ -355,8 +356,9 @@ lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCall
 
 -- Search filter 
 local noEntriesResults = {
-	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS),
+	visible = true,
 	enabled = false,
+	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS),
 	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
 }
 
@@ -365,6 +367,10 @@ local noEntriesSubmenu = {
 	enabled = false,
 	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
 --	m_disabledColor = ZO_ERROR_COLOR,
+}
+
+local NO_RESULTS_TABLE = {
+	noEntriesResults
 }
 
 --------------------------------------------------------------------
@@ -2109,7 +2115,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	for i = 1, numItems do
 		local item = itemTable[i]
 		--Check if the data.name / data.label are provided (And also check all other data.* keys if functions need to be executed
-		if verifyLabelString(item) then
+		if verifyLabelString(item) and item.visible ~= false then
 			local isLastEntry = i == numItems
 			local entryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
 			local entryType = ENTRY_ID
@@ -2138,7 +2144,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 
 			allItemsHeight = allItemsHeight + entryHeight
 
-			local entry = createScrollableComboBoxEntry(self, item, item.index or i, entryType)
+			local entry = createScrollableComboBoxEntry(self, item, i, entryType)
 			tins(dataList, entry)
 
 			local fontObject = owner:GetItemFontObject(item) --owner:GetDropdownFontObject()
@@ -2184,6 +2190,76 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	ZO_ScrollList_Commit(scrollControl)
 end
 
+do
+	local resultCount = 0
+	local ignoreSubmenu, filterString
+
+	local emptyString = GetString(SI_QUICKSLOTS_EMPTY)
+	local function filterNameExempt(name, filterString)
+		if filterString ~= '' then
+			return name == nil or name == '' or name == emptyString
+		else
+			return true
+		end
+	end
+
+	local function filterResults(item)
+		if not filterNameExempt(item.name, filterString) then
+			local name = zo_strlower(item.name)
+			return name:find(filterString) ~= nil
+		else
+			return true
+		end
+	end
+
+	local function setVisible(item, visible, isSubmenu)
+		if isSubmenu and ignoreSubmenu then
+			item.visible = true
+		else
+			item.visible = visible
+		end
+
+		if item.visible then
+			resultCount = resultCount + 1
+		end
+	end
+
+	function dropdownClass:GetFilteredEntries(sourceTable, isSubmenu)
+		if not ZO_IsTableEmpty(sourceTable) then
+			if self:IsFilterEnabled() then
+				self.filterEnabled = true
+
+			 ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
+				filterString = filterString or ''
+				-- Convert ignoreSubmenu to bool
+				ignoreSubmenu = ignoreSubmenu == '/'
+
+				resultCount = 0
+
+				for k, item in ipairs(sourceTable) do
+					local visible = true
+					if not recursiveOverEntries(item, filterResults) then
+						visible = false
+					end
+					setVisible(item, visible, isSubmenu)
+				end
+
+				-- If no filter results
+				if resultCount == 0 and #sourceTable > 0 then
+					return NO_RESULTS_TABLE
+				end
+			elseif self.filterEnabled then
+				self.filterEnabled = false
+				-- If filtering was disabled, ensure all entries are visible.
+				for k, item in ipairs(sourceTable) do
+				--	item.visible = true
+					item.visible = getDataSource(item).visible or true
+				end
+			end
+		end
+		return sourceTable
+	end
+end
 function dropdownClass:UpdateHeight()
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:UpdateHeight")
 	if self.owner then
@@ -2305,56 +2381,6 @@ function dropdownClass:IsFilterEnabled()
 	if self.m_comboBox then
 		return self.m_comboBox:IsFilterEnabled()
 	end
-end
-
-function dropdownClass:GetFilteredEntries(sourceTable, isSubmenu)
-	-- If first entry was disabled due to no result.
-	if not ZO_IsTableEmpty(sourceTable) then
-		if sourceTable[1].wasEnabled then
-			sourceTable[1].enabled = true
-			sourceTable[1].wasEnabled = nil
-		end
-	end
-
-	if self:IsFilterEnabled() then
-		local ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
-		filterString = filterString or ''
-		ignoreSubmenu = ignoreSubmenu == '/'
-
-		if filterString ~= '' then
-			local function filterResults(item)
-				local name = zo_strlower(item.name)
-				return name:find(filterString) ~= nil
-			end
-
-			local results = {}
-
-			for index, item in ipairs(sourceTable) do
-				if recursiveOverEntries(item, filterResults) then
-					item.index = index
-					table.insert(results, item)
-				end
-			end
-
-			-- If it's still empty, Add no result entry.
-			if ZO_IsTableEmpty(results) then
-				if isSubmenu and ignoreSubmenu then
-					-- The parent matched filterString but, nothing in the submenu did, because the / switch was used, return unfiltered  submenu.
-					return sourceTable
-				else
-					if sourceTable[1].enabled ~= false then
-						sourceTable[1].wasEnabled = true
-						sourceTable[1].enabled = false
-					end
-					tins(results, noEntriesResults)
-				end
-			end
-
-			return results
-		end
-	end
-
-	return sourceTable
 end
 
 --[[ Use With xml button to ignore empty matches
