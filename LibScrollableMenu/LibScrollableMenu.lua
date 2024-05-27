@@ -2098,8 +2098,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	local scrollControl = self.scrollControl
 	local owner = self.owner
 
-	-- comboBox.openingControl ~= nil is a submenu
-	itemTable = self:GetFilteredEntries(itemTable, comboBox.openingControl ~= nil)
+	itemTable = self:GetFilteredEntries(itemTable, comboBox.isSubmenu)
 
 	ZO_ScrollList_Clear(self.scrollControl)
 
