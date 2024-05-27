@@ -723,6 +723,49 @@ function getValueOrCallback(arg, ...)
 end
 lib.GetValueOrCallback = getValueOrCallback
 
+local function checkEntryType(text, entryType, additionalData, isAddDataTypeTable, options)
+--df("[LSM]checkEntryType - text: %s, entryType: %s, isAddDataTypeTable: %s", tos(text), tos(entryType), tos(isAddDataTypeTable))
+	if entryType == nil then
+		if text ~= nil then
+			if getValueOrCallback(text, (isAddDataTypeTable and additionalData or options)) == libDivider then
+				return LSM_ENTRY_TYPE_DIVIDER
+			end
+		end
+		if additionalData ~= nil and isAddDataTypeTable then
+			if additionalData.entryType ~= nil then
+				return getValueOrCallback(additionalData.entryType, additionalData)
+			end
+
+			if additionalData.isCheckbox ~= nil then
+				if getValueOrCallback(additionalData.isCheckbox, additionalData) == true then
+					return LSM_ENTRY_TYPE_CHECKBOX
+				end
+			elseif additionalData.isDivider ~= nil then
+				if getValueOrCallback(additionalData.isDivider, additionalData) == true then
+					return LSM_ENTRY_TYPE_DIVIDER
+				end
+			elseif additionalData.isHeader ~= nil then
+				if getValueOrCallback(additionalData.isHeader, additionalData) == true then
+					return LSM_ENTRY_TYPE_HEADER
+				end
+			end
+
+			local name = additionalData.name
+			if name ~= nil then
+				if getValueOrCallback(additionalData.name, additionalData) == libDivider then
+					return LSM_ENTRY_TYPE_DIVIDER
+				end
+			end
+			if additionalData.label ~= nil and name == nil then
+				if getValueOrCallback(additionalData.label, additionalData) == libDivider then
+					return LSM_ENTRY_TYPE_DIVIDER
+				end
+			end
+		end
+	end
+	return entryType
+end
+
 local function hideCurrentlyOpenedLSMAndContextMenu()
 	local openMenu = lib.openMenu
 	if openMenu and openMenu:IsDropdownVisible() then
@@ -885,6 +928,7 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 	--singleIconDataTab can be a table or any other format (supported: string or function returning a string)
 	local iconValue
 	local iconDataType = type(singleIconDataOrTab)
+	local iconDataGotMoreParams = false
 	--Is the passed in iconData a table?
 	if iconDataType == "table" then
 		--table of format { [1] = "texture path to .dds here or a function returning the path" }
@@ -892,6 +936,7 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 			iconValue = getValueOrCallback(singleIconDataOrTab[1], data)
 		--or a table containing more info like { [1]= {iconTexture = "path or funciton returning a path", width=24, height=24, tint=ZO_ColorDef, narration="", tooltip=function return "tooltipText" end}, [2] = { ... } }
 		else
+			iconDataGotMoreParams = true
 			iconValue = getValueOrCallback(singleIconDataOrTab.iconTexture, data)
 		end
 	else
@@ -910,12 +955,14 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 		multiIconCtrl.data = multiIconCtrl.data or {}
 		if iconIdx == 1 then multiIconCtrl.data.tooltipText = nil end
 
-		--Icon's height and width
-		if singleIconDataOrTab.width ~= nil then
-			iconWidth = zo_clamp(getValueOrCallback(singleIconDataOrTab.width, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
-		end
-		if singleIconDataOrTab.height ~= nil then
-			iconHeight = zo_clamp(getValueOrCallback(singleIconDataOrTab.height, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
+		if iconDataGotMoreParams then
+			--Icon's height and width
+			if singleIconDataOrTab.width ~= nil then
+				iconWidth = zo_clamp(getValueOrCallback(singleIconDataOrTab.width, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
+			end
+			if singleIconDataOrTab.height ~= nil then
+				iconHeight = zo_clamp(getValueOrCallback(singleIconDataOrTab.height, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
+			end
 		end
 
 		if isNewValue == true then
@@ -925,15 +972,18 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 		end
 		if iconValue ~= nil then
 			--Icon's color
-			local iconTint = getValueOrCallback(singleIconDataOrTab.iconTint, data)
-			if type(iconTint) == "string" then
-				local iconColorDef = ZO_ColorDef:New(iconTint)
-				iconTint = iconColorDef
+			local iconTint
+			if iconDataGotMoreParams then
+				iconTint = getValueOrCallback(singleIconDataOrTab.iconTint, data)
+				if type(iconTint) == "string" then
+					local iconColorDef = ZO_ColorDef:New(iconTint)
+					iconTint = iconColorDef
+				end
 			end
 
 			--Icon's tooltip? Reusing default tooltip functions of controls: ZO_Options_OnMouseEnter and ZO_Options_OnMouseExit
 			-->Just add each icon as identifier and then the tooltipText (1 line = 1 icon)
-			local tooltipForIcon = visible and getValueOrCallback(singleIconDataOrTab.tooltip, data) or nil
+			local tooltipForIcon = (visible and iconDataGotMoreParams and getValueOrCallback(singleIconDataOrTab.tooltip, data)) or nil
 			if tooltipForIcon ~= nil and tooltipForIcon ~= "" then
 				local tooltipTextAtMultiIcon = multiIconCtrl.data.tooltipText
 				if tooltipTextAtMultiIcon == nil then
@@ -945,7 +995,7 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 			end
 
 			--Icon's narration
-			local iconNarration = getValueOrCallback(singleIconDataOrTab.iconNarration, data)
+			local iconNarration = (iconDataGotMoreParams and getValueOrCallback(singleIconDataOrTab.iconNarration, data)) or nil
 			multiIconCtrl:AddIcon(iconValue, iconTint, iconNarration)
 			dLog(LSM_LOGTYPE_VERBOSE, "updateIcon - iconIdx %s, visible: %s, texture: %s, tint: %s, width: %s, height: %s, narration: %s", tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration))
 		end
@@ -3724,7 +3774,6 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 --Local context menu helper functions
 ------------------------------------------------------------------------------------------------------------------------
-
 local function validateContextMenuSubmenuEntries(entries, options, calledByStr)
 	--Passed in contextMenuEntries are a function -> Must return a table then
 	local entryTableType = type(entries)
@@ -3779,13 +3828,17 @@ lib.getComboBoxsSortedItems = getComboBoxsSortedItems
 --		--[[ Attention: additionalData keys which are maintained in table LSMOptionsKeyToZO_ComboBoxOptionsKey will be mapped to ZO_ComboBox's key and taken over into the entry.data[ZO_ComboBox's key]. All other "custom keys" will stay in entry.data.additionalData[key]! ]]
 --)
 function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additionalData)
-	entryType = entryType or LSM_ENTRY_TYPE_NORMAL
+	--Special handling for dividers
 	local options = g_contextMenu:GetOptions()
-	local generatedText
 
 	--Additional data table was passed in? e.g. containing  gotAdditionalData.isNew = function or boolean
 	local addDataType = additionalData ~= nil and type(additionalData) or nil
 	local isAddDataTypeTable = (addDataType ~= nil and addDataType == "table" and true) or false
+
+	--Determine the entryType based on text, passed in entryType, and/or additionalData table
+	entryType = checkEntryType(text, entryType, additionalData, isAddDataTypeTable, options)
+	entryType = entryType or LSM_ENTRY_TYPE_NORMAL
+	local generatedText
 
 	--Generate the entryType from passed in function, or use passed in value
 	local generatedEntryType = getValueOrCallback(entryType, (isAddDataTypeTable and additionalData) or options)
@@ -3882,6 +3935,10 @@ end
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function AddCustomScrollableMenuCheckbox(text, callback, checked, additionalData)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuCheckbox-text: %s, checked: %s", tos(text), tos(checked))
+	if checked ~= nil then
+		additionalData = additionalData or {}
+		additionalData.checked = checked
+	end
 	addCustomScrollableMenuEntry(text, callback, LSM_ENTRY_TYPE_CHECKBOX, nil, additionalData)
 end
 
