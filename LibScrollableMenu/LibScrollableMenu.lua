@@ -4247,11 +4247,11 @@ WORKING ON - Current version: 2.2
 	-Added translation files for e.g. tooltips at search filter editbox
 	TESTED: OK
 	-12	Compatibility fix for LibCustomMenu submenus (which only used data.label as the name): If data.name is missing in submenu but data.label exists -> set data.name = copy of data.label
-	TESTED: TODO
+	TESTED: OK
 	-13 Fix AddCustomScrollableMenuEntries to put v.label to v.additionalData.label -> For a proper usage in AddCustomScrollableMenuEntry -> newEntry
 	TESTED: TODO
-	-14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox, submenu etc.) to properly get recognized from data tables of entries
-	TESTED: TODO
+	-14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox) to properly get recognized from data tables of entries
+	TESTED: OK
 	-15. Fixed ZO_Menu opening does not hide already opened LSM dropdown & contextMenu
 	TESTED: OK
 	16. Bug callback onEntrySelected fires for entries clicked where there is no callback function (entry with hasSubmenu = true but callback = nil)
@@ -4261,17 +4261,19 @@ WORKING ON - Current version: 2.2
 	18. Bug clicking non-contextMenu entry while context menu is opened: Only close the context menu but do not select any entry
 	TESTED: OK
 	19. Find out if the checkbox selected toggle function is updating data.checked
-	TESTED: OPEN
+	TESTED: Main and submenu OK / ContextMenu NOT OK
 	20. Changed a lot in regards to OnGlobalMouseUp left & right click / context menu clears on right click
-	TESTED: OPEN
+	TESTED: OK
 	21. added: nil submenus create blank submenu. empty submenus create a subemnu with "Empty" entry.
-	TESTED: OPEN
+	TESTED: OK
 	22. Changed data["name"], "label", "checked", "enabled" of rows to use dynamic control table possibleEntryDataWithFunction
 	TESTED: OPEN
 	23. Fixed multiIcon usage of many icons and tooltips
-	TESTED: OPEN
+	TESTED: OK
 	24. Fixed disabled entries not closing the dropdown if clicked on them
-	TESTED: OPEN
+	TESTED: OK
+	25. Changed checkbox callback params order
+	TESTED: OK
 
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
@@ -4312,6 +4314,7 @@ WORKING ON - Current version: 2.2
 	22. Changed data["name"], "label", "checked", "enabled" of rows to use dynamic control table possibleEntryDataWithFunction
 	23. Fixed multiIcon usage of many icons and tooltips
 	24. Fixed disabled entries not closing the dropdown if clicked on them
+	25. Changed checkbox callback params order
 
 -------------------
 TODO - To check (future versions)
