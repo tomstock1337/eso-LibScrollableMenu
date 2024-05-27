@@ -73,7 +73,12 @@ local function test()
 		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
 		-->LibScrollableMenu.lua
 		local HEADER_TEXT_COLOR_RED = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_FAILED))
+		local CUSTOM_DISABLED_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_GAME_REPRESENTATIVE))
+		local CUSTOM_HIGHLIGHT_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_TOOLTIP_INSTRUCTIONAL))
 
+		--==============================================================================================================
+		-- Options for the main combobox menu
+		--==============================================================================================================
 		local options = {
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
@@ -85,7 +90,7 @@ local function test()
 			--headerColor = HEADER_TEXT_COLOR_RED,
 			--titleText = function()  return "Custom title text" end,
 			--subtitleText = "Custom sub title",
-			--enableFilter = function() return true end,
+			enableFilter = function() return true end,
 
 			--[[ Define in XML:
 				<!-- Normal entry for Custom options.XMLRowTemplates test  -->
@@ -136,8 +141,10 @@ local function test()
 
 		--Prepare and add the text entries in the dropdown's comboBox
 
+		--==============================================================================================================
+		-- Submenu entries within contextMenus
+		--==============================================================================================================
 		local submenuEntriesForContextMenu = {
-
 			{
 
 				--name            = "CntxtMenu - Submenu entry 1:1",
@@ -209,6 +216,9 @@ local function test()
 			},
 		}
 
+		--==============================================================================================================
+		-- Submenu entries
+		--==============================================================================================================
 		--LibScrollableMenu - LSM entry - Submenu normal
 		local isCheckBoxNow = false
 		local isCheckBoxNow2 = false
@@ -309,6 +319,15 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				--tooltip         = function() return "Checkbox entry 2" end
 				tooltip         = "Checkbox entry 2",
 				entryType		= LSM_ENTRY_TYPE_CHECKBOX,
+				--[[
+				additionalData = {
+						normalColor =		GetClassColor(GetUnitClassId("player")),
+						disabledColor =		CUSTOM_DISABLED_TEXT_COLOR,
+						highlightColor =	CUSTOM_HIGHLIGHT_TEXT_COLOR,
+						highlightTemplate =	"ZO_TallListSelectedHighlight",
+						font = function() return "ZoFontBookLetter" end,
+					}
+					]]
 			},
 			{
 				name            = "-", --Divider
@@ -492,6 +511,9 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 		local gotSubmenuEntries = false
 		local isChecked = false
 
+		--==============================================================================================================
+		-- Main combobox menu entries
+		--==============================================================================================================
 		local comboBoxMenuEntries          = {
 			{
 				isHeader        = function() return true end, --Enables the header at LSM
@@ -500,7 +522,14 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				--icon 			= nil,
 			},
 			{
-				font = function() return "ZoFontBookLetter" end,
+				additionalData = {
+					normalColor =		GetClassColor(GetUnitClassId("player")),
+					disabledColor =		CUSTOM_DISABLED_TEXT_COLOR,
+					highlightColor =	CUSTOM_HIGHLIGHT_TEXT_COLOR,
+					highlightTemplate =	"ZO_TallListSelectedHighlight",
+					font = 				function() return "ZoFontBookLetter" end,
+				},
+
 				enabled = function() isEnabledNowMain = not isEnabledNowMain return isEnabledNowMain end,
 				name = function()
 					if not wasNameChangedAtEntry then
@@ -542,7 +571,13 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, { LSM_ENTRY_TYPE_CHECKBOX }, true, "customParam1", "customParam2")
 					end)
 
-					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end)
+					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end, nil, nil, {
+						normalColor =		GetClassColor(GetUnitClassId("player")),
+						disabledColor =		CUSTOM_DISABLED_TEXT_COLOR,
+						highlightColor =	CUSTOM_HIGHLIGHT_TEXT_COLOR,
+						highlightTemplate =	"ZO_TallListSelectedHighlight",
+						font = function() return "ZoFontBookLetter" end,
+					})
 
 					AddCustomScrollableMenuEntry("Context menu Normal entry 3", function() d('Context menu Normal entry 3') end)
 

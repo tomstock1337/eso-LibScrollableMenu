@@ -3853,7 +3853,8 @@ lib.getComboBoxsSortedItems = getComboBoxsSortedItems
 --		contextMenuCallback = function(ctrl) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
 -- }
 --}, --[[additionalData]]
---	 	{ isNew = true, normalColor = ZO_ColorDef, highlightColor = ZO_ColorDef, disabledColor = ZO_ColorDef, font = "ZO_FontGame", label="test label", name="test value", enabled = true, checked = true, customValue1="foo", cutomValue2="bar", ... }
+--	 	{ isNew = true, normalColor = ZO_ColorDef, highlightColor = ZO_ColorDef, disabledColor = ZO_ColorDef, highlightTemplate = "ZO_SelectionHighlight",
+--		   font = "ZO_FontGame", label="test label", name="test value", enabled = true, checked = true, customValue1="foo", cutomValue2="bar", ... }
 --		--[[ Attention: additionalData keys which are maintained in table LSMOptionsKeyToZO_ComboBoxOptionsKey will be mapped to ZO_ComboBox's key and taken over into the entry.data[ZO_ComboBox's key]. All other "custom keys" will stay in entry.data.additionalData[key]! ]]
 --)
 function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additionalData)
@@ -4257,8 +4258,8 @@ WORKING ON - Current version: 2.2
 	TESTED: OK
 	- Add LSM_ENTRY_TYPE_SUBMENU and all needed code
 	TESTED: OK
-	- Add entry.m_highlightTemplate
-	TESTED: OPEN
+	- Add entry.m_highlightTemplate -> Add to entry.additionalData { highlightColor = ... , }
+	TESTED: OK
 	- Test dropdown header
 	TESTED: OK
 	- Test dropdown filter editbox and buttons
@@ -4274,7 +4275,7 @@ WORKING ON - Current version: 2.2
 	-12	Compatibility fix for LibCustomMenu submenus (which only used data.label as the name): If data.name is missing in submenu but data.label exists -> set data.name = copy of data.label
 	TESTED: OK
 	-13 Fix AddCustomScrollableMenuEntries to put v.label to v.additionalData.label -> For a proper usage in AddCustomScrollableMenuEntry -> newEntry
-	TESTED: TODO
+	TESTED: OK
 	-14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox) to properly get recognized from data tables of entries
 	TESTED: OK
 	-15. Fixed ZO_Menu opening does not hide already opened LSM dropdown & contextMenu
@@ -4292,7 +4293,7 @@ WORKING ON - Current version: 2.2
 	21. added: nil submenus create blank submenu. empty submenus create a subemnu with "Empty" entry.
 	TESTED: OK
 	22. Changed data["name"], "label", "checked", "enabled" of rows to use dynamic control table possibleEntryDataWithFunction
-	TESTED: OPEN
+	TESTED: OK
 	23. Fixed multiIcon usage of many icons and tooltips
 	TESTED: OK
 	24. Fixed disabled entries not closing the dropdown if clicked on them
