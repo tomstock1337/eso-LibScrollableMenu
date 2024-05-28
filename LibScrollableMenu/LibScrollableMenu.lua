@@ -2202,10 +2202,20 @@ do
 		end
 	end
 
+	local lastEntry = true
 	local function filterResults(item)
-		if not filterNameExempt(item.name, filterString) then
-			local name = zo_strlower(item.name)
-			return name:find(filterString) ~= nil
+		local name = item.label or item.name
+
+		if item.entryType == LSM_ENTRY_TYPE_DIVIDER or item.isDivider then
+			if lastEntry then
+				return true
+			else
+				return false
+			end
+		end
+
+		if not filterNameExempt(name, filterString) then
+			return zo_strlower(name):find(filterString) ~= nil
 		else
 			return true
 		end
@@ -2228,7 +2238,7 @@ do
 			if self:IsFilterEnabled() then
 				self.filterEnabled = true
 
-			 ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
+				ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
 				filterString = filterString or ''
 				-- Convert ignoreSubmenu to bool
 				ignoreSubmenu = ignoreSubmenu == '/'
@@ -2240,10 +2250,12 @@ do
 					if not recursiveOverEntries(item, filterResults) then
 						visible = false
 					end
+					lastEntry = visible
 					setVisible(item, visible, isSubmenu)
 				end
 
 				-- If no filter results
+				d( 'resultCount ' .. tos(resultCount))
 				if resultCount == 0 and #sourceTable > 0 then
 					return NO_RESULTS_TABLE
 				end
@@ -2259,6 +2271,7 @@ do
 		return sourceTable
 	end
 end
+
 function dropdownClass:UpdateHeight()
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:UpdateHeight")
 	if self.owner then
@@ -2944,6 +2957,7 @@ do -- Row setup functions
 		control.typeId = DIVIDER_ENTRY_ID
 		addDivider(control, data, list)
 		self:SetupEntryBase(control, data, list)
+		control.isDivider = true
 	end
 
 	function comboBox_base:SetupEntryLabelBase(control, data, list)
