@@ -2245,7 +2245,7 @@ do
 
 				resultCount = 0
 
-				for k, item in ipairs(sourceTable) do
+				for _, item in ipairs(sourceTable) do
 					local visible = true
 					if not recursiveOverEntries(item, filterResults) then
 						visible = false
@@ -2255,14 +2255,13 @@ do
 				end
 
 				-- If no filter results
-				d( 'resultCount ' .. tos(resultCount))
 				if resultCount == 0 and #sourceTable > 0 then
 					return NO_RESULTS_TABLE
 				end
 			elseif self.filterEnabled then
 				self.filterEnabled = false
 				-- If filtering was disabled, ensure all entries are visible.
-				for k, item in ipairs(sourceTable) do
+				for _, item in ipairs(sourceTable) do
 				--	item.visible = true
 					item.visible = getDataSource(item).visible or true
 				end
