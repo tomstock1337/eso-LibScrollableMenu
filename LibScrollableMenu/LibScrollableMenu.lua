@@ -2212,7 +2212,7 @@ end
 do
 	--local helper variables for string filter functions
 	local ignoreSubmenu 			--if using / prefix submenu entries not matching the search term should still be shown
-	local showEntryInResults = true	--Constant: Show the entry in the results list?
+	local lastEntryVisible  = true	--Was the last entry processed visible at the results list? Used to e.g. show the divider below too
 	local resultCount        = 0 	--found filtered entries
 	local filterString				--the search string
 
@@ -2237,8 +2237,9 @@ do
 				--Not excluded, do the string comparison now
 				return zo_strlower(name):find(filterString) ~= nil
 			end
+		else
+			return lastEntryVisible
 		end
-		return showEntryInResults
 	end
 
 	--Update the visible tag of the item: Visible items wil be shown in the results list
@@ -2261,6 +2262,7 @@ do
 			--options.enableFilter == true?
 			if self:IsFilterEnabled() then
 				self.filterEnabled = true
+				lastEntryVisible = true
 
 				ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
 				filterString = filterString or ''
@@ -2276,7 +2278,7 @@ do
 					if not recursiveOverEntries(item, filterResults) then
 						visible = false
 					end
-					lastEntry = visible
+					lastEntryVisible = visible
 					setVisible(item, visible, isSubmenu)
 				end
 
