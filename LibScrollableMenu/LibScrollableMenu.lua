@@ -373,6 +373,24 @@ local NO_RESULTS_TABLE = {
 	noEntriesResults
 }
 
+--LSM entryTypes which should be processed by the text search/filter
+local filteredEntryTypes = {
+	[LSM_ENTRY_TYPE_NORMAL] = true,
+	[LSM_ENTRY_TYPE_SUBMENU] = true,
+	[LSM_ENTRY_TYPE_CHECKBOX] = true,
+	[LSM_ENTRY_TYPE_HEADER] = true,
+	--[LSM_ENTRY_TYPE_DIVIDER] = false,
+}
+--Table defines if some names of the entries count as "to search" or not
+local filterNamesExempts = {
+	--Direct check via "name" string
+	[''] = true,
+	[noEntriesSubmenu.name] = true, -- "Empty"
+	--Check via type(name)
+	--['nil'] = true,
+}
+
+
 --------------------------------------------------------------------
 -- Debug logging
 --------------------------------------------------------------------
@@ -2098,6 +2116,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	local scrollControl = self.scrollControl
 	local owner = self.owner
 
+	--If options.enableFilter then check if any filter string was entered and only return matching entries
 	itemTable = self:GetFilteredEntries(itemTable, comboBox.isSubmenu)
 
 	ZO_ScrollList_Clear(self.scrollControl)
@@ -2189,64 +2208,71 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	ZO_ScrollList_Commit(scrollControl)
 end
 
+--String search/filter in dropdowns
 do
-	local resultCount = 0
-	local ignoreSubmenu, filterString
+	--local helper variables for string filter functions
+	local ignoreSubmenu 			--if using / prefix submenu entries not matching the search term should still be shown
+	local showEntryInResults = true	--Constant: Show the entry in the results list?
+	local resultCount        = 0 	--found filtered entries
+	local filterString				--the search string
 
-	local emptyString = GetString(SI_QUICKSLOTS_EMPTY)
-	local function filterNameExempt(name, filterString)
+
+	--Check if name of entry counts as "to search", or not
+	-->Returning true: item's name does not need to be searched / false: search the item's name
+	local function filterNameExempt(name)
 		if filterString ~= '' then
-			return name == nil or name == '' or name == emptyString
+		--	if name == '' or name == GetString(SI_QUICKSLOTS_EMPTY), or name == nil
+			return filterNamesExempts[name] or name == nil --filterNamesExempts[type(name)]
 		else
 			return true
 		end
 	end
 
-	local lastEntry = true
+	--Search the item's label or name now, if the entryType of the item should be processed by text search
 	local function filterResults(item)
-		local name = item.label or item.name
-
-		if item.entryType == LSM_ENTRY_TYPE_DIVIDER or item.isDivider then
-			if lastEntry then
-				return true
-			else
-				return false
+		local entryType = item.entryType
+		if not entryType or filteredEntryTypes[entryType] then
+			local name = item.label or item.name
+			if not filterNameExempt(name) then
+				--Not excluded, do the string comparison now
+				return zo_strlower(name):find(filterString) ~= nil
 			end
 		end
-
-		if not filterNameExempt(name, filterString) then
-			return zo_strlower(name):find(filterString) ~= nil
-		else
-			return true
-		end
+		return showEntryInResults
 	end
 
+	--Update the visible tag of the item: Visible items wil be shown in the results list
 	local function setVisible(item, visible, isSubmenu)
+		local isVisible = item.visible
 		if isSubmenu and ignoreSubmenu then
-			item.visible = true
+			isVisible = true
 		else
-			item.visible = visible
+			isVisible = visible
 		end
 
-		if item.visible then
+		if isVisible then
 			resultCount = resultCount + 1
 		end
 	end
 
+	--String filter the visible results, if options.enableFilter == true
 	function dropdownClass:GetFilteredEntries(sourceTable, isSubmenu)
 		if not ZO_IsTableEmpty(sourceTable) then
+			--options.enableFilter == true?
 			if self:IsFilterEnabled() then
 				self.filterEnabled = true
 
 				ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
 				filterString = filterString or ''
 				-- Convert ignoreSubmenu to bool
+				-->If ignoreSubmenu == true: Show submenu entries even if they do not match the search term (as long as the submenu name matches the search term)
 				ignoreSubmenu = ignoreSubmenu == '/'
 
 				resultCount = 0
 
 				for _, item in ipairs(sourceTable) do
 					local visible = true
+					--Recursively check menu entries (submenu and nested submenu entries) for the matching search string
 					if not recursiveOverEntries(item, filterResults) then
 						visible = false
 					end
@@ -2258,11 +2284,12 @@ do
 				if resultCount == 0 and #sourceTable > 0 then
 					return NO_RESULTS_TABLE
 				end
+
+			--Disable the filters again (if enabled) and show all items again
 			elseif self.filterEnabled then
 				self.filterEnabled = false
 				-- If filtering was disabled, ensure all entries are visible.
 				for _, item in ipairs(sourceTable) do
-				--	item.visible = true
 					item.visible = getDataSource(item).visible or true
 				end
 			end
