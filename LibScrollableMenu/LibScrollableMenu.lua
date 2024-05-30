@@ -1841,7 +1841,8 @@ end
 local function itemPassesFilter(item, isSubmenu)
 	--Check if the data.name / data.label are provided (And also check all other data.* keys if functions need to be executed
 	if verifyLabelString(item) then
-		if isSubmenu and ignoreSubmenu then
+		--No filter text entered in text search box, or it's a submenu and non-matching entries should show too (via prefix / in text search editbox)
+		if filterString == "" or (isSubmenu and ignoreSubmenu) then
 			return true
 		else
 			--Recursively check menu entries (submenu and nested submenu entries) for the matching search string
