@@ -40,6 +40,7 @@ local LDL = LibDebugLogger
 --ZO_ComboBox function references
 local zo_comboBox_base_addItem = ZO_ComboBox_Base.AddItem
 local zo_comboBox_base_hideDropdown = ZO_ComboBox_Base.HideDropdown
+local zo_comboBox_base_updateItems = ZO_ComboBox_Base.UpdateItems
 
 local zo_comboBox_setItemEntryCustomTemplate = ZO_ComboBox.SetItemEntryCustomTemplate
 
@@ -112,7 +113,10 @@ local UINarrationUpdaterName = MAJOR .. "_UINarrationUpdater_"
 local throttledCallDelayName = MAJOR .. '_throttledCallDelay'
 local throttledCallDelay = 10
 
+local NIL_CHECK_TABLE = {}
 local getValueOrCallback
+local getDataSource
+
 
 ------------------------------------------------------------------------------------------------------------------------
 --Menu types for the different scrollable menus
@@ -712,7 +716,6 @@ end
 --------------------------------------------------------------------
 -- Local functions
 --------------------------------------------------------------------
-
 local function getControlName(control, alternativeControl)
 	local ctrlName = control ~= nil and (control.name or (control.GetName ~= nil and control:GetName()))
 	if ctrlName == nil and alternativeControl ~= nil then
@@ -835,7 +838,138 @@ local function defaultRecursiveCallback()
 	return false
 end
 
-local updateAdditionalDataVariables, updateDataValues
+--Add the entry additionalData value/options value to the "selfVar" object
+local function updateVariable(selfVar, key, value)
+	local zo_ComboBoxEntryKey = LSMEntryKeyZO_ComboBoxEntryKey[key]
+	if zo_ComboBoxEntryKey ~= nil then
+		if type(selfVar[zo_ComboBoxEntryKey]) ~= 'function' then
+			selfVar[zo_ComboBoxEntryKey] = value
+		end
+	else
+		if selfVar[key] == nil then
+			selfVar[key] = value --value could be a function
+		end
+	end
+end
+
+--Loop at the entries additionalData and add them to the "selfVar" object
+local function updateAdditionalDataVariables(selfVar)
+	local data = selfVar.additionalData
+	if data == nil then return end
+	for key, value in pairs(data) do
+		updateVariable(selfVar, key, value)
+	end
+end
+
+--Add subtable data._LSM and the next level subTable subTB
+--and store a callbackFunction or a value at data._LSM[subTB][key]
+local function addEntryLSM(data, subTB, key, valueOrCallbackFunc)
+	dLog(LSM_LOGTYPE_VERBOSE, "addEntryLSM - data: %s, subTB: %s, key: %q, valueOrCallbackFunc: %s", tos(data), tos(subTB), tos(key), tos(valueOrCallbackFunc))
+	if data == nil or subTB == nil or key == nil then return end
+	local _lsm = data._LSM or {}
+	_lsm[subTB] = _lsm[subTB] or {} --create e.g. _LSM["funcData"]
+
+	_lsm[subTB][key] = valueOrCallbackFunc -- add e.g.  _LSM["funcData"]["name"]
+	data._LSM = _lsm --Update the original data's _LSM table
+end
+
+--Execute pre-stored callback functions of the data table, in data._LSM.funcData
+local function updateDataByFunctions(data)
+	data = getDataSource(data)
+
+	dLog(LSM_LOGTYPE_VERBOSE, "updateDataByFunctions - data: %s", tos(data))
+	--If subTable _LSM  (of row's data) contains funcData subTable: This contains the original functions passed in for
+	--example "label" or "name" (instead of passing in strings). Loop the functions and execute those now for each found
+	local lsmData = data._LSM or NIL_CHECK_TABLE
+	local funcData = lsmData.funcData or NIL_CHECK_TABLE
+
+	--Execute the callback functions for e.g. "name", "label", "checked", "enabled", ... now
+	for _, updateFN in pairs(funcData) do
+		updateFN(data)
+	end
+end
+
+--Check if any data.* entry is a function (via table possibleEntryDataWithFunctionAndDefaultValue) and add them to
+--subTable data._LSM.funcData
+--> Those functions will be executed at Show of the LSM dropdown via calling function updateDataByFunctions. The functions
+--> will update the data.* keys then with their "currently determined values" properly.
+--> Example: "name" -> function -> prepare as entry is created and store in data._LSM.funcData["name"] -> execute on show
+--> update data["name"] with the returned value from that prestored function in data._LSM.funcData["name"]
+--> If the function does not return anything (nil) the nilOrTrue of table possibleEntryDataWithFunctionAndDefaultValue
+--> will be used IF i is true (e.g. for the "enabled" state of the entry)
+local function updateDataValues(data, onlyTheseEntries)
+	--Did the addon pass in additionalData for the entry?
+	-->Map the keys from LSM entry to ZO_ComboBox entry and only transfer the relevant entries directly to itemEntry
+	-->so that ZO_ComboBox can use them properly
+	-->Pass on custom added values/functions too
+	updateAdditionalDataVariables(data)
+
+	--Compatibility fix for missing name in data -> Use label (e.g. sumenus of LibCustomMenu only have "label" and no "name")
+	if data.name == nil and data.label then
+		data.name = data.label
+	end
+
+	local checkOnlyProvidedKeys = not ZO_IsTableEmpty(onlyTheseEntries)
+	for key, l_nilToTrue in pairs(possibleEntryDataWithFunction) do
+		local goOn = true
+		if checkOnlyProvidedKeys == true and not ZO_IsElementInNumericallyIndexedTable(onlyTheseEntries, key) then
+			goOn = false
+		end
+		if goOn then
+			local dataValue = data[key] --e.g. data["name"] -> either it's value or it's function
+			if type(dataValue) == 'function' then
+				dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - saving callback func. for key: %s", tos(key))
+
+				--local originalFuncOfDataKey = dataValue
+
+				--Add the _LSM.funcData[key] = function to run on Show of the LSM dropdown now
+				addEntryLSM(data, 'funcData', key, function(p_data)
+					--Run the original function of the data[key] now and pass in the current provided data as params
+					local value = dataValue(p_data)
+					if value == nil and l_nilToTrue == true then
+						value = l_nilToTrue
+					end
+					dLog(LSM_LOGTYPE_VERBOSE, "Run func. data._LSM.funcData[%q] - value: %s", tos(key), tos(value))
+
+					--Update the current data[key] with the determiend current value
+					p_data[key] = value
+				end)
+				--defaultValue is true and data[*] is nil
+			elseif l_nilToTrue == true and dataValue == nil then
+				--e.g. data["enabled"] = true to always enable the row if nothing passed in explicitly
+				dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - key: %s, setting nilToTrue: %s", tos(key), tos(l_nilToTrue))
+				data[key] = l_nilToTrue
+			end
+		end
+	end
+
+	--Execute the callbackFunctions of the data[key] now
+	updateDataByFunctions(data)
+end
+
+--Check if an entry got the isNew set
+local function getIsNew(_entry)
+	dLog(LSM_LOGTYPE_VERBOSE, "getIsNew")
+	return getValueOrCallback(_entry.isNew, _entry) or false
+end
+
+local function preUpdateSubItems(item)
+	if not item._LSM then
+		--Get/build the additionalData table, and name/label etc. functions' texts and data
+		updateDataValues(item)
+	end
+	--Return if the data got a new flag
+	return getIsNew(item)
+end
+
+-- Prevents errors on the off chance a non-string makes it through into ZO_ComboBox
+local function verifyLabelString(data)
+	--Check for data.* keys to run any function and update data[key] with actual values
+	updateDataByFunctions(data)
+	dLog(LSM_LOGTYPE_VERBOSE, "verifyLabelString - data.name: %s", tos(data.name))
+	--Require the name to be a string
+	return type(data.name) == 'string'
+end
 
 -- Recursively loop over drdopdown entries, and submenu dropdown entries of that parent dropdown, and check if e.g. isNew needs to be updated
 local function recursiveOverEntries(entry, callback, updateSubmenuValues)
@@ -848,16 +982,12 @@ local function recursiveOverEntries(entry, callback, updateSubmenuValues)
 	--assert(submenuType == 'table', sfor('['..MAJOR..':recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
 	if  type(submenu) == "table" and #submenu > 0 then
 		for _, subEntry in pairs(submenu) do
-			local subEntryResult = recursiveOverEntries(subEntry, callback)
+			local subEntryResult = recursiveOverEntries(subEntry, callback, updateSubmenuValues)
 			if subEntryResult then
 				result = subEntryResult
 			end
 			if updateSubmenuValues then
-				--Get/build addiitonalData for submenu entries
-				updateAdditionalDataVariables(subEntry)
-
-				--Get/build data.label and/or data.name / data.* values (see table) for submenu entries
-				updateDataValues(subEntry)
+				preUpdateSubItems(subEntry)
 			end
 		end
 	end
@@ -1115,8 +1245,7 @@ end
 -- Local entryData functions
 --------------------------------------------------------------------
 
-local NIL_CHECK_TABLE = {}
-local function getDataSource(data)
+function getDataSource(data)
 	if data and data.dataSource then
 		return data:GetDataSource()
 	end
@@ -1132,17 +1261,14 @@ local function getControlData(control)
 end
 
 
---Check if an entry got the isNew set
-local function getIsNew(_entry)
-	dLog(LSM_LOGTYPE_VERBOSE, "getIsNew")
-	return getValueOrCallback(_entry.isNew, _entry) or false
-end
-
 -- Recursively check for new entries.
+-->Dnone within preUpdateSubItems func now
+--[[
 local function areAnyEntriesNew(entry)
 	dLog(LSM_LOGTYPE_VERBOSE, "areAnyEntriesNew")
 	return recursiveOverEntries(entry, getIsNew, true)
 end
+]]
 
 -- Add/Remove the new status of a dropdown entry.
 -- This works up from the mouse-over entry's submenu up to the dropdown,
@@ -1238,128 +1364,9 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	end
 end
 
---Add the entry additionalData value/options value to the "selfVar" object
-local function updateVariable(selfVar, key, value)
-	local zo_ComboBoxEntryKey = LSMEntryKeyZO_ComboBoxEntryKey[key]
-	if zo_ComboBoxEntryKey ~= nil then
-		if type(selfVar[zo_ComboBoxEntryKey]) ~= 'function' then
-			selfVar[zo_ComboBoxEntryKey] = value
-		end
-	else
-		if selfVar[key] == nil then
-			selfVar[key] = value --value could be a function
-		end
-	end
-end
-
---Loop at the entries additionalData and add them to the "selfVar" object
-function updateAdditionalDataVariables(selfVar)
-	local data = selfVar.additionalData
-	if data == nil then return end
-	for key, value in pairs(data) do
-		updateVariable(selfVar, key, value)
-	end
-end
-
---Add subtable data._LSM and the next level subTable subTB
---and store a callbackFunction or a value at data._LSM[subTB][key]
-local function addEntryLSM(data, subTB, key, valueOrCallbackFunc)
-	dLog(LSM_LOGTYPE_VERBOSE, "addEntryLSM - data: %s, subTB: %s, key: %q, valueOrCallbackFunc: %s", tos(data), tos(subTB), tos(key), tos(valueOrCallbackFunc))
-	if data == nil or subTB == nil or key == nil then return end
-	local _lsm = data._LSM or {}
-	_lsm[subTB] = _lsm[subTB] or {} --create e.g. _LSM["funcData"]
-
-	_lsm[subTB][key] = valueOrCallbackFunc -- add e.g.  _LSM["funcData"]["name"]
-	data._LSM = _lsm --Update the original data's _LSM table
-end
-
---Execute pre-stored callback functions of the data table, in data._LSM.funcData
-local function updateDataByFunctions(data)
-	data = getDataSource(data)
-
-	dLog(LSM_LOGTYPE_VERBOSE, "updateDataByFunctions - data: %s", tos(data))
-	--If subTable _LSM  (of row's data) contains funcData subTable: This contains the original functions passed in for
-	--example "label" or "name" (instead of passing in strings). Loop the functions and execute those now for each found
-	local lsmData = data._LSM or NIL_CHECK_TABLE
-	local funcData = lsmData.funcData or NIL_CHECK_TABLE
-
-	--Execute the callback functions for e.g. "name", "label", "checked", "enabled", ... now
-	for _, updateFN in pairs(funcData) do
-		updateFN(data)
-	end
-end
-
---Check if any data.* entry is a function (via table possibleEntryDataWithFunctionAndDefaultValue) and add them to
---subTable data._LSM.funcData
---> Those functions will be executed at Show of the LSM dropdown via calling function updateDataByFunctions. The functions
---> will update the data.* keys then with their "currently determined values" properly.
---> Example: "name" -> function -> prepare as entry is created and store in data._LSM.funcData["name"] -> execute on show
---> update data["name"] with the returned value from that prestored function in data._LSM.funcData["name"]
---> If the function does not return anything (nil) the nilOrTrue of table possibleEntryDataWithFunctionAndDefaultValue
---> will be used IF i is true (e.g. for the "enabled" state of the entry)
-function updateDataValues(data, onlyTheseEntries)
-	--Compatibility fix for missing name in data -> Use label (e.g. sumenus of LibCustomMenu only have "label" and no "name")
-	if data.name == nil and data.label then
-		data.name = data.label
-	end
-
-	local checkOnlyProvidedKeys = not ZO_IsTableEmpty(onlyTheseEntries)
-	for key, nilToTrue in pairs(possibleEntryDataWithFunction) do
-		local goOn = true
-		if checkOnlyProvidedKeys == true and not ZO_IsElementInNumericallyIndexedTable(onlyTheseEntries, key) then
-			goOn = false
-		end
-		if goOn then
-			local dataValue = data[key] --e.g. data["name"] -> either it's value or it's function
-			if type(dataValue) == 'function' then
-				dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - saving callback func. for key: %s", tos(key))
-
-				--local originalFuncOfDataKey = dataValue
-
-				--Add the _LSM.funcData[key] = function to run on Show of the LSM dropdown now
-				addEntryLSM(data, 'funcData', key, function(p_data)
-					--Run the original function of the data[key] now and pass in the current provided data as params
-					local value = dataValue(p_data)
-					if value == nil and nilToTrue == true then
-						value = nilToTrue
-					end
-					dLog(LSM_LOGTYPE_VERBOSE, "Run func. data._LSM.funcData[%q] - value: %s", tos(key), tos(value))
-
-					--Update the current data[key] with the determiend current value
-					p_data[key] = value
-				end)
-				--defaultValue is true and data[*] is nil
-			elseif nilToTrue == true and dataValue == nil then
-				--e.g. data["enabled"] = true to always enable the row if nothing passed in explicitly
-				dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - key: %s, setting nilToTrue: %s", tos(key), tos(nilToTrue))
-				data[key] = nilToTrue
-			end
-		end
-	end
-
-	--Execute the callbackFunctions of the data[key] now
-	updateDataByFunctions(data)
-end
-
--- Prevents errors on the off chance a non-string makes it through into ZO_ComboBox
-local function verifyLabelString(data)
-	--Check for data.* keys to run any function and update data[key] with actual values
-	updateDataByFunctions(data)
-	dLog(LSM_LOGTYPE_VERBOSE, "verifyLabelString - data.name: %s", tos(data.name))
-	--Require the name to be a string
-	return type(data.name) == 'string'
-end
-
-
 -- We can add any row-type post checks and update dataEntry with static values.
 local function addItem_Base(self, itemEntry)
 	dLog(LSM_LOGTYPE_VERBOSE, "addItem_Base - itemEntry: " ..tos(itemEntry))
-
-	--Did the addon pass in additionalData for the entry?
-	-->Map the keys from LSM entry to ZO_ComboBox entry and only transfer the relevant entries directly to itemEntry
-	-->so that ZO_ComboBox can use them properly
-	-->Pass on custom added values/functions too
-	updateAdditionalDataVariables(itemEntry)
 
 	--Get/build data.label and/or data.name / data.* values (see table )
 	updateDataValues(itemEntry)
@@ -1370,7 +1377,8 @@ local function addItem_Base(self, itemEntry)
 --dLog(LSM_LOGTYPE_DEBUG, ">name: " .. tos(itemEntry.name) .. ", isHeader: " ..tos(itemEntry.isHeader))
 
 		if itemEntry.hasSubmenu then
-			itemEntry.isNew = areAnyEntriesNew(itemEntry)
+			--itemEntry.isNew = areAnyEntriesNew(itemEntry)
+			itemEntry.isNew = recursiveOverEntries(itemEntry, preUpdateSubItems)
 		elseif itemEntry.isHeader then
 			itemEntry.font = itemEntry.font or self.m_headerFont
 			itemEntry.color = itemEntry.color or self.m_headerFontColor
@@ -2416,15 +2424,18 @@ function dropdownClass:WasTextSearchContextMenuEntryClicked(mocCtrl)
 end
 
 function dropdownClass:SetFilterString(filterBox)
+ d("dropdownClass:SetFilterString")
 	if self.m_comboBox then
 		-- It probably does not need this but, added it to prevent lagging from fast typing.
 		throttledCall(function()
 			local text = filterBox:GetText()
+d(">throttledCall 1 - text: " ..tos(text))
 			self.m_comboBox:SetFilterString(filterBox, text)
 
 			--Delay the addition of a new text search history entry to take place after 1 second so we do not add
 			--parts of currently typed characters
 			throttledCall(function()
+d(">throttledCall 2 - Text search history")
 				addTextSearchEditBoxTextToHistory(self.m_comboBox, filterBox, text)
 			end, 990)
 		end)
@@ -2473,14 +2484,19 @@ function dropdownClass:OnFilterEditBoxMouseUp(filterBox, button, upInside)
 end
 
 function dropdownClass:ResetFilters(owningWindow)
+d("dropdownClass:ResetFilters")
 	--If not showing the filters at a contextmenu
 	-->Close any opened contextmenu
 	if self.m_comboBox ~= nil and self.m_comboBox.openingControl == nil then
+d(">>ClearCustomScrollableMenu")
 		ClearCustomScrollableMenu()
 	end
 
-	if not owningWindow.filterBox then return end
+	if not owningWindow or not owningWindow.filterBox then return end
+d("<<CLEARING filterBox text")
 	owningWindow.filterBox:SetText('')
+	--todo 20240531 This won't update the shown list of contextMenu properly if a new context menu is shown (and a before one was filtered)
+	-->todo see  contextMenuClass:ShowSubmenu(parentControl)
 end
 
 function dropdownClass:IsFilterEnabled()
@@ -2488,6 +2504,7 @@ function dropdownClass:IsFilterEnabled()
 		return self.m_comboBox:IsFilterEnabled()
 	end
 end
+
 
 --[[ Used via XML button to I (include) submenu entries. Currently disabled, only available via text search prefix "/"
 function dropdownClass:SetFilterIgnore(ignore)
@@ -2898,6 +2915,16 @@ function comboBox_base:RefreshSortedItems(parentControl)
 				-- update strings by functions will be done in AddItem
 				self:AddItem(item, ZO_COMBOBOX_SUPPRESS_UPDATE)
 			end
+		end
+	end
+end
+
+function comboBox_base:UpdateItems()
+	zo_comboBox_base_updateItems(self)
+
+	for _, itemEntry in pairs(self.m_sortedItems) do
+		if itemEntry.hasSubmenu then
+			recursiveOverEntries(itemEntry, preUpdateSubItems)
 		end
 	end
 end
@@ -3715,8 +3742,15 @@ end
 
 function contextMenuClass:ShowContextMenu(parentControl)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ShowContextMenu - parentControl: %s", tos(getControlName(parentControl)))
-	self.openingControl = parentControl
 
+	local openingControlOld = self.openingControl
+LSM_debug = {
+	self = self,
+	parentControl = parentControl,
+	openingControl = openingControlOld,
+}
+
+	self.openingControl = parentControl
 	if self.openingControl then
 		highlightControl(self, self.openingControl)
 	end
@@ -3733,6 +3767,16 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	end
 
 	self:UpdateOptions(self.optionsData)
+
+	if openingControlOld ~= parentControl then
+d("[LSM]ContextMenuClass:ShowContextMenu - openingControl changed!")
+		if self:IsFilterEnabled() then
+d(">>resetting filters now")
+			local dropdown = self.m_dropdown
+			dropdown.object:ResetFilters(dropdown)
+		end
+	end
+
 	self:ShowDropdown()
 end
 
@@ -4275,11 +4319,14 @@ local function onAddonLoaded(event, name)
 
 	--ZO_Menu - ShowMenu hook: Hide LSM if a ZO_Menu menu opens
 	ZO_PreHook("ShowMenu", function(owner, initialRefCount, menuType)
-		dLog(LSM_LOGTYPE_VERBOSE, "ZO_Menu -> ShowMenu. Items#: " ..tos(#ZO_Menu.items))
+		dLog(LSM_LOGTYPE_VERBOSE, "ZO_Menu -> ShowMenu. Items#: " ..tos(#ZO_Menu.items) .. ", menuType: " ..tos(menuType))
+		--Do not close on other menu types (only default menu type supported)
+		if menuType ~= nil and menuType ~= MENU_TYPE_DEFAULT then return end
+
 		--No entries in ZO_Menu -> nothign will be shown, abort here
 		if next(ZO_Menu.items) == nil then
-        	return false
-    	end
+			return false
+		end
 		--Should the ZO_Menu not close any opened LSM? e.g. to show the textSearchHistory at the LSM text filter search box
 		if lib.preventLSMClosingZO_Menu then
 			lib.preventLSMClosingZO_Menu = nil

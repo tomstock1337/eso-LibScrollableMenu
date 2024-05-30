@@ -187,6 +187,8 @@ local function test()
 			},
 			{
 				name = function() return "-" end,
+				customValue1 = "test",
+				--entryType = LSM_ENTRY_TYPE_DIVIDER,
 			},
 			{
 
@@ -254,7 +256,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 
 					AddCustomScrollableMenuEntry("Context Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 
-					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
+					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, enableFilter = true })
 				end,
 				--tooltip         = "Submenu Entry Test 1",
 				--icon 			= nil,
@@ -590,7 +592,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 						--titleFont = function() return "ZoFontGameSmall" end,
 						--subtitleText = function() return "Test 1" end,
 						--subtitleFont = "ZoFontHeader3", --Same font size as title
-						--enableFilter = true,
+						enableFilter = true,
 						--headerColor = HEADER_TEXT_COLOR_RED,
 						visibleRowsDropdown = 5,
 						visibleRowsSubmenu = 4,
@@ -808,7 +810,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 								--subtitleText = "Custom sub title",
 								enableFilter = true,
 							}
-							ShowCustomScrollableMenu(self:GetOwningWindow(), optionsContextMenu)
+							ShowCustomScrollableMenu(nil, optionsContextMenu)
 						end,
 					},
 					{
