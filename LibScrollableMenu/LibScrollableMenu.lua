@@ -726,12 +726,14 @@ local function getControlName(control, alternativeControl)
 end
 lib.GetControlName = getControlName
 
-local function throttledCall(callback, delay)
+local function throttledCall(callback, delay, throttledCallNameSuffix)
 	delay = delay or throttledCallDelay
+	throttledCallNameSuffix = throttledCallNameSuffix or ""
 	dLog(LSM_LOGTYPE_VERBOSE, "REGISTERING throttledCall - callback: %s, delay: %s", tos(callback), tos(delay))
-	EM:UnregisterForUpdate(throttledCallDelayName)
-	EM:RegisterForUpdate(throttledCallDelayName, delay, function()
-		EM:UnregisterForUpdate(throttledCallDelayName)
+	local throttledCallDelayTotalName = throttledCallDelayName .. throttledCallNameSuffix
+	EM:UnregisterForUpdate(throttledCallDelayTotalName)
+	EM:RegisterForUpdate(throttledCallDelayTotalName, delay, function()
+		EM:UnregisterForUpdate(throttledCallDelayTotalName)
 		dLog(LSM_LOGTYPE_VERBOSE, "DELAYED throttledCall -> CALLING callback now: %s", tos(callback))
 		callback()
 	end)
@@ -2328,7 +2330,7 @@ function dropdownClass:OnShow(formattedEventName)
 			local ctrl = self.control
 			self:Narrate(formattedEventName, ctrl, nil, nil, anchorRight)
 			lib:FireCallbacks(formattedEventName, ctrl)
-		end, 100)
+		end, 100, "_DropdownClassOnShow")
 	end
 end
 
@@ -2423,22 +2425,23 @@ function dropdownClass:WasTextSearchContextMenuEntryClicked(mocCtrl)
 	return false
 end
 
+local throttledCallDropdownClassSetFilterStringSuffix =  "_DropdownClass_SetFilterString"
 function dropdownClass:SetFilterString(filterBox)
- d("dropdownClass:SetFilterString")
+ --d("dropdownClass:SetFilterString")
 	if self.m_comboBox then
 		-- It probably does not need this but, added it to prevent lagging from fast typing.
 		throttledCall(function()
 			local text = filterBox:GetText()
-d(">throttledCall 1 - text: " ..tos(text))
+--d(">throttledCall 1 - text: " ..tos(text))
 			self.m_comboBox:SetFilterString(filterBox, text)
 
 			--Delay the addition of a new text search history entry to take place after 1 second so we do not add
 			--parts of currently typed characters
 			throttledCall(function()
-d(">throttledCall 2 - Text search history")
+--d(">throttledCall 2 - Text search history")
 				addTextSearchEditBoxTextToHistory(self.m_comboBox, filterBox, text)
-			end, 990)
-		end)
+			end, 990, throttledCallDropdownClassSetFilterStringSuffix)
+		end, 10, throttledCallDropdownClassSetFilterStringSuffix)
 	end
 end
 
@@ -2484,19 +2487,16 @@ function dropdownClass:OnFilterEditBoxMouseUp(filterBox, button, upInside)
 end
 
 function dropdownClass:ResetFilters(owningWindow)
-d("dropdownClass:ResetFilters")
+--d("dropdownClass:ResetFilters")
 	--If not showing the filters at a contextmenu
 	-->Close any opened contextmenu
 	if self.m_comboBox ~= nil and self.m_comboBox.openingControl == nil then
-d(">>ClearCustomScrollableMenu")
+--d(">>ClearCustomScrollableMenu")
 		ClearCustomScrollableMenu()
 	end
 
 	if not owningWindow or not owningWindow.filterBox then return end
-d("<<CLEARING filterBox text")
-	owningWindow.filterBox:SetText('')
-	--todo 20240531 This won't update the shown list of contextMenu properly if a new context menu is shown (and a before one was filtered)
-	-->todo see  contextMenuClass:ShowSubmenu(parentControl)
+	owningWindow.filterBox:SetText('') --calls dropdownClass:SetFilterString(filterBox)
 end
 
 function dropdownClass:IsFilterEnabled()
@@ -3744,12 +3744,6 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ShowContextMenu - parentControl: %s", tos(getControlName(parentControl)))
 
 	local openingControlOld = self.openingControl
-LSM_debug = {
-	self = self,
-	parentControl = parentControl,
-	openingControl = openingControlOld,
-}
-
 	self.openingControl = parentControl
 	if self.openingControl then
 		highlightControl(self, self.openingControl)
@@ -3768,16 +3762,18 @@ LSM_debug = {
 
 	self:UpdateOptions(self.optionsData)
 
-	if openingControlOld ~= parentControl then
-d("[LSM]ContextMenuClass:ShowContextMenu - openingControl changed!")
-		if self:IsFilterEnabled() then
-d(">>resetting filters now")
-			local dropdown = self.m_dropdown
-			dropdown.object:ResetFilters(dropdown)
-		end
-	end
-
 	self:ShowDropdown()
+
+--d("[LSM]ContextMenuClass:ShowContextMenu - openingControl changed!")
+	throttledCall(function()
+		if openingControlOld ~= parentControl then
+			if self:IsFilterEnabled() then
+	--d(">>resetting filters now")
+				local dropdown = self.m_dropdown
+				dropdown.object:ResetFilters(dropdown)
+			end
+		end
+  	end, 10, "_ContextMenuClass_ShowContextMenu")
 end
 
 function contextMenuClass:SetOptions(options)
@@ -4440,6 +4436,8 @@ WORKING ON - Current version: 2.2
 	TESTED: OK
 	27. Added context menu to search editbox -> history of last 10 searched texts
 	TESTED: OK
+	28. Search editbox does not reset on context menus, if another parentControl (openingControl) was used
+	TESTED: OK
 
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
@@ -4483,6 +4481,7 @@ WORKING ON - Current version: 2.2
 	25. Changed checkbox callback params order
 	26. Changed filter functions for the results list
 	27. Added context menu to search editbox -> history of last 10 searched texts
+	28. Search editbox does not reset on context menus, if another parentControl (openingControl) was used
 
 -------------------
 TODO - To check (future versions)
