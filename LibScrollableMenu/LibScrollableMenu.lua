@@ -1845,14 +1845,6 @@ local function filterResults(item)
 		local name = item.label or item.name
 		if not filterNameExempt(name) then
 			--Not excluded, do the string comparison now
-
-			if type(name) ~= "string" then
-LSM_debug = LSM_debug or {}
-LSM_debug.filterResultsItems = LSM_debug.filterResultsItems or {}
-local itemCopy = ZO_DeepTableCopy(item)
-table.inser(LSM_debug.filterResultsItems, itemCopy)
-			end
-
 			return zo_strlower(name):find(filterString) ~= nil
 		end
 	else
