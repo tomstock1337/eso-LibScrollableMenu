@@ -2654,7 +2654,7 @@ function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
 		local dropdownObject = self.m_dropdownObject
 		--The clicked entry belongs to the "main" combobox, or a contextMenu entry (ZO_Menu) of the textSearch editbox of this combobox was selected?
 		if dropdownObject:IsOwnedByComboBox(comboBox) or dropdownObject:WasTextSearchContextMenuEntryClicked() then
-d(">owned by combobox")
+--d(">owned by combobox")
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				--Clicked entry should close after selection?
 				if mocCtrl.closeOnSelect then
@@ -2669,7 +2669,7 @@ d(">owned by combobox")
 				return true
 			end
 		else
-d(">Any other control was clicked")
+--d(">Any other control was clicked")
 			--Any other control was clicked
 			refCount = refCount - 1
 		end
@@ -2683,14 +2683,14 @@ d(">Any other control was clicked")
 end
 
 function comboBox_base:OnGlobalMouseUp(eventCode, ...)
-d("[LSM]comboBox_base:OnGlobalMouseUp")
+--d("[LSM]comboBox_base:OnGlobalMouseUp")
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:OnGlobalMouseUp")
 	--Check if the click should not be recognized
 	if not self:BypassOnGlobalMouseUp(...) then
-d(">not BypassOnGlobalMouseUp")
+--d(">not BypassOnGlobalMouseUp")
 		--Click should be recognized: Check if dropdown needs to be hidden/shown
 		if self:IsDropdownVisible() then
-d(">IsDropdownVisible -> Hide now")
+--d(">IsDropdownVisible -> Hide now")
 			self:HideDropdown()
 			dLog(LSM_LOGTYPE_VERBOSE, "<<< OpenMenu was cleared")
 			lib.openMenu = nil
@@ -2712,11 +2712,11 @@ d(">IsDropdownVisible -> Hide now")
 		end
 		return true
 	else
-d(">!!! BypassOnGlobalMouseUp")
+--d(">!!! BypassOnGlobalMouseUp")
 		local mocCtrl = moc()
 		--Hide the dropdown of the main combobox if we clicked it and it was showing the dropdown
 		if mocCtrl == self.m_container and self:IsDropdownVisible() then
-d(">>clicked on m_container")
+--d(">>clicked on m_container")
 			-- hide dropdown if comboBox is right-clicked
 			self:HideDropdown()
 		end
