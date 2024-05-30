@@ -2390,9 +2390,17 @@ local function addTextSearchEditBoxTextToHistory(comboBox, filterBox, historyTex
 	end
 end
 
-function dropdownClass:WasTextSearchContextMenuEntryClicked(comboBox, mocCtrl)
+function dropdownClass:WasTextSearchContextMenuEntryClicked(mocCtrl)
+	--d("dropdownClass:WasTextSearchContextMenuEntryClicked - wasTextSearchContextMenuEntryClicked: " ..tos(self.wasTextSearchContextMenuEntryClicked))
+	--Internal variable was set as we selected a ZO_Menu entry?
 	if self.wasTextSearchContextMenuEntryClicked then
 		self.wasTextSearchContextMenuEntryClicked = nil
+--d(">wasTextSearchContextMenuEntryClicked was TRUE")
+		return true
+	end
+	--Clicked control is known and the owner is ZO_Menus -> Then assume we did open the ZO_Menu above an LSM and need the LSM to stay open
+	if mocCtrl ~= nil and mocCtrl:GetOwningWindow() == ZO_Menus then
+--d(">ZO_Menus entry clicked!")
 		return true
 	end
 	return false
@@ -2415,6 +2423,7 @@ function dropdownClass:SetFilterString(filterBox)
 end
 
 function dropdownClass:ShowFilterEditBoxHistory(filterBox)
+	local selfVar = self
 	local comboBox = self.m_comboBox
 	if comboBox ~= nil then
 		local comboBoxContainerName = comboBox.m_name
@@ -2422,12 +2431,12 @@ function dropdownClass:ShowFilterEditBoxHistory(filterBox)
 		--Get the last saved text search (history) and show them as context menu
 		local textSearchHistory = sv.textSearchHistory[comboBoxContainerName]
 		if textSearchHistory ~= nil then
-			self.wasTextSearchContextMenuEntryClicked = false
+			self.wasTextSearchContextMenuEntryClicked = nil
 			ClearMenu()
 			for idx, textSearched in ipairs(textSearchHistory) do
 				if textSearched ~= "" then
 					AddMenuItem(tos(idx) .. ". " .. textSearched, function()
-						setTextSearchEditBoxText(self, filterBox, textSearched)
+						setTextSearchEditBoxText(selfVar, filterBox, textSearched)
 					end)
 				end
 			end
@@ -2435,7 +2444,7 @@ function dropdownClass:ShowFilterEditBoxHistory(filterBox)
 				AddCustomMenuItem("-") --divider
 			end
 			AddMenuItem("- " .. GetString(SI_STATS_CLEAR_ALL_ATTRIBUTES_BUTTON) .." - ", function()
-				clearTextSearchHistory(self, comboBoxContainerName)
+				clearTextSearchHistory(selfVar, comboBoxContainerName)
 			end)
 
 			--Prevent LSM Hook at ShowMenu to close LSM!!!
@@ -3201,6 +3210,7 @@ function comboBoxClass:AddMenuItems()
 end
 
 function comboBoxClass:BypassOnGlobalMouseUp(button, ...)
+--d("comboBoxClass:BypassOnGlobalMouseUp")
 	local mocCtrl = moc()
 	local owningWindow = mocCtrl:GetOwningWindow()
 	local comboBox = getComboBox(owningWindow)
@@ -3208,14 +3218,15 @@ function comboBoxClass:BypassOnGlobalMouseUp(button, ...)
 	--Context menus clicks counter is provided?
 	if mouseUpRefCounts[g_contextMenu] then
 		if comboBox == nil then
+			if self.m_dropdownObject:WasTextSearchContextMenuEntryClicked(mocCtrl) then return true end
 			-- We clicked outside the dropdowns.
 			updateMouseUpRefCount(self)
 		else
+			d(">we clicked in the context menu or the combobox dropdown")
 			-- If we clicked in the context menu or the combobox dropdown, let's just ignore it for now.
 			return mouseUpRefCounts[g_contextMenu] > 0
 		end
 	end
-
 	return comboBox_base.BypassOnGlobalMouseUp(self, button, mocCtrl, comboBox, ...)
 end
 
@@ -3628,7 +3639,7 @@ function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
 end
 
 function contextMenuClass:BypassOnGlobalMouseUp(button, ...)
---d("[LSM]contextMenuClass:BypassOnGlobalMouseUp-button: " ..tos(button))
+d("[LSM]contextMenuClass:BypassOnGlobalMouseUp-button: " ..tos(button))
 	local mocCtrl = moc()
 	local owningWindow = mocCtrl:GetOwningWindow()
 	local comboBox = getComboBox(owningWindow)
