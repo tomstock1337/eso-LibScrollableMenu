@@ -224,7 +224,7 @@
 							[headerControls.CENTER_BASELINE] = self:GetNamedChild("CenterAnchor"),
 							[headerControls.TITLE_BASELINE] = titleContainer,
 							[headerControls.DIVIDER_SIMPLE] = self:GetNamedChild("DividerSimple"),
-							[headerControls.FILTER_CONTAINER] = self:GetNamedChild("FilterContrainer"),
+							[headerControls.FILTER_CONTAINER] = self:GetNamedChild("FilterContainer"),
 							[headerControls.CUSTOM_CONTROL] = self:GetNamedChild("CustomControl"),
 						}
 						self:GetParent().header = self
@@ -283,7 +283,7 @@
 							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetY="ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y" />
 						</Control>
 						
-						<Control name="$(parent)FilterContrainer" resizeToFitDescendents="false" hidden="true">
+						<Control name="$(parent)FilterContainer" resizeToFitDescendents="false" hidden="true">
 							<Dimensions y="36" />
 							<Controls>
 								<Button name="$(parent)Reset" inherits="ZO_ButtonBehaviorClickSound">
@@ -316,7 +316,7 @@
 								
 								<Backdrop name="$(parent)Filter" hidden="false" tier="HIGH" inherits="ZO_SingleLineEditBackdrop_Keyboard">
 									<OnInitialized>
-										-- Add the filter contrls to the dropdown control.
+										-- Add the filter controls to the dropdown control.
 										local owningWindow = self:GetOwningWindow()
 										owningWindow.filter = self
 										owningWindow.filterBox = self:GetNamedChild('Box')
@@ -331,6 +331,7 @@
 										<EditBox name="$(parent)Box" verticalAlignment="CENTER" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
 											<OnTextChanged>
 												ZO_Tooltips_HideTextTooltip()
+												ClearMenu()
 												local owningWindow = self:GetOwningWindow()
 												if owningWindow.object then
 													owningWindow.object:SetFilterString(self)
@@ -345,6 +346,15 @@
 											<OnMouseExit>
 												ZO_Tooltips_HideTextTooltip()
 											</OnMouseExit>
+
+											<OnMouseUp>
+												ZO_Tooltips_HideTextTooltip()
+												ClearMenu()
+												local owningWindow = self:GetOwningWindow()
+												if owningWindow.object then
+													owningWindow.object:OnFilterEditBoxMouseUp(self, button, upInside)
+												end
+											</OnMouseUp>
 										</EditBox>
 									</Controls>
 								</Backdrop>

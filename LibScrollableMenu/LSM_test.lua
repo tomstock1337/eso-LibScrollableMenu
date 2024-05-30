@@ -6,7 +6,7 @@ local MAJOR = lib.name
 ------------------------------------------------------------------------------------------------------------------------
 local function test()
 	if lib.testComboBoxContainer == nil then
-		local testSV = ZO_SavedVars:NewAccountWide("LSM_TEST_SV", 1, nil,
+		local testSV = ZO_SavedVars:NewAccountWide("LibScrollableMenu_SavedVars", 1, "LSM_Test",
 				{ cbox1 = false, cbox2 = false, cbox3 = false,
 				  cboxSubmenu1 = false, cboxSubmenu2 = false, cboxSubmenu3 = false,
 				  cboxContextmenu1 = false, cboxContextmenu2 = false, cboxContextmenu3 = false },
@@ -620,7 +620,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 
 			},
 			{
-				name            = "Main checkbox - checked (toogle func)",
+				name            = "Main checkbox - checked (toggle func)",
 				checked           = function() isChecked = not isChecked return isChecked end,
 				callback        =   function(control, checkedData, checked)
 					d("Main checkbox! checked: " ..tostring(checked))

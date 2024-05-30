@@ -13,6 +13,11 @@ if not lib then return end
 lib.DIVIDER = "-"
 local libDivider = lib.DIVIDER
 
+--SavedVariables
+lib.SV = {}
+local sv = lib.SV
+
+
 --------------------------------------------------------------------
 -- Locals
 --------------------------------------------------------------------
@@ -23,6 +28,7 @@ local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
 local sfor = string.format
 local tins = table.insert
+local trem = table.remove
 
 --------------------------------------------------------------------
 -- Libraries
@@ -1838,18 +1844,19 @@ local function filterResults(item)
 end
 
 --String filter the visible results, if options.enableFilter == true
-local function itemPassesFilter(item, isSubmenu)
-	--Check if the data.name / data.label are provided (And also check all other data.* keys if functions need to be executed
+-->if doFilter is true the text search will be executed, else textsearch is not executed -> Item should be shown directly
+local function itemPassesFilter(item, doFilter)
+	--Check if the data.name / data.label are provided (also check all other data.* keys if functions need to be executed)
 	if verifyLabelString(item) then
-		--No filter text entered in text search box, or it's a submenu and non-matching entries should show too (via prefix / in text search editbox)
-		if filterString == "" or (isSubmenu and ignoreSubmenu) then
-			return true
-		else
+		if doFilter then
 			--Recursively check menu entries (submenu and nested submenu entries) for the matching search string
 			return recursiveOverEntries(item, filterResults)
+		else
+			return true
 		end
 	end
 end
+
 
 --------------------------------------------------------------------
 -- Dropdown entry functions
@@ -2206,6 +2213,13 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 		ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
 	end
 	filterString = filterString or ''
+
+	local textSearchEnabled = filterString ~= ''
+	if textSearchEnabled and comboBox.isSubmenu then
+		textSearchEnabled = not ignoreSubmenu
+	end
+
+
 	-- Convert ignoreSubmenu to bool
 	-->If ignoreSubmenu == true: Show submenu entries even if they do not match the search term (as long as the submenu name matches the search term)
 	ignoreSubmenu = ignoreSubmenu == '/'
@@ -2226,13 +2240,13 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	for i = 1, numItems do
 		local item = itemTable[i]
 		local isLastEntry = i == numItems
-		if itemPassesFilter(item, comboBox.isSubmenu) then
+		if itemPassesFilter(item, textSearchEnabled) then
 			allItemsHeight, largestEntryWidth = addEntryToScrollList(self, item, dataList, i, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
 			lastEntryVisible = true
 		else
 			lastEntryVisible = false
 			if isLastEntry and ZO_IsTableEmpty(dataList) then
-				-- If no item passes filter.
+				-- If no item passes filter: Show "No items found with search term" entry
 				allItemsHeight, largestEntryWidth = addEntryToScrollList(self, noEntriesResults, dataList, i, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
 			end
 		end
@@ -2340,13 +2354,104 @@ function dropdownClass:HideSubmenu()
 	end
 end
 
+--------------------------------------------------------------------
+-- Dropdown text search functions
+--------------------------------------------------------------------
+
+local function setTextSearchEditBoxText(selfVar, filterBox, newText)
+	selfVar.wasTextSearchContextMenuEntryClicked = true
+	filterBox:SetText(newText) --will call dropdownClass:SetFilterString() then
+end
+
+local function clearTextSearchHistory(self, comboBoxContainerName)
+	self.wasTextSearchContextMenuEntryClicked = true
+	if comboBoxContainerName == nil or comboBoxContainerName == "" then return end
+	if ZO_IsTableEmpty(sv.textSearchHistory[comboBoxContainerName]) then return end
+	sv.textSearchHistory[comboBoxContainerName] = nil
+end
+
+local function addTextSearchEditBoxTextToHistory(comboBox, filterBox, historyText)
+	historyText = historyText or filterBox:GetText()
+	if comboBox == nil or historyText == nil or historyText == "" then return end
+	local comboBoxContainerName = comboBox.m_name
+	if comboBoxContainerName == nil or comboBoxContainerName == "" then return end
+
+	sv.textSearchHistory[comboBoxContainerName] = sv.textSearchHistory[comboBoxContainerName] or {}
+	local textSearchHistory = sv.textSearchHistory[comboBoxContainerName]
+	--Entry already in the history, abort now
+	if ZO_IsElementInNumericallyIndexedTable(textSearchHistory, historyText) then return end
+	tins(textSearchHistory, 1, historyText)
+
+	--Remove any entry > 10 (remove last ones first)
+	local numEntries = #textSearchHistory
+	if numEntries > 10 then
+		--Remove last entry in the list
+		trem(textSearchHistory, numEntries)
+	end
+end
+
+function dropdownClass:WasTextSearchContextMenuEntryClicked(comboBox, mocCtrl)
+	if self.wasTextSearchContextMenuEntryClicked then
+		self.wasTextSearchContextMenuEntryClicked = nil
+		return true
+	end
+	return false
+end
+
 function dropdownClass:SetFilterString(filterBox)
 	if self.m_comboBox then
 		-- It probably does not need this but, added it to prevent lagging from fast typing.
 		throttledCall(function()
-			self.m_comboBox:SetFilterString(filterBox)
+			local text = filterBox:GetText()
+			self.m_comboBox:SetFilterString(filterBox, text)
+
+			--Delay the addition of a new text search history entry to take place after 1 second so we do not add
+			--parts of currently typed characters
+			throttledCall(function()
+				addTextSearchEditBoxTextToHistory(self.m_comboBox, filterBox, text)
+			end, 990)
 		end)
 	end
+end
+
+function dropdownClass:ShowFilterEditBoxHistory(filterBox)
+	local comboBox = self.m_comboBox
+	if comboBox ~= nil then
+		local comboBoxContainerName = comboBox.m_name
+		if comboBoxContainerName == nil or comboBoxContainerName == "" then return end
+		--Get the last saved text search (history) and show them as context menu
+		local textSearchHistory = sv.textSearchHistory[comboBoxContainerName]
+		if textSearchHistory ~= nil then
+			self.wasTextSearchContextMenuEntryClicked = false
+			ClearMenu()
+			for idx, textSearched in ipairs(textSearchHistory) do
+				if textSearched ~= "" then
+					AddMenuItem(tos(idx) .. ". " .. textSearched, function()
+						setTextSearchEditBoxText(self, filterBox, textSearched)
+					end)
+				end
+			end
+			if LibCustomMenu then
+				AddCustomMenuItem("-") --divider
+			end
+			AddMenuItem("- " .. GetString(SI_STATS_CLEAR_ALL_ATTRIBUTES_BUTTON) .." - ", function()
+				clearTextSearchHistory(self, comboBoxContainerName)
+			end)
+
+			--Prevent LSM Hook at ShowMenu to close LSM!!!
+			lib.preventLSMClosingZO_Menu = true
+			ShowMenu(filterBox)
+			ZO_Tooltips_HideTextTooltip()
+		end
+	end
+end
+
+
+function dropdownClass:OnFilterEditBoxMouseUp(filterBox, button, upInside)
+	--Only react on right click
+	if not upInside or button ~= MOUSE_BUTTON_INDEX_RIGHT then return end
+
+	self:ShowFilterEditBoxHistory(filterBox)
 end
 
 function dropdownClass:ResetFilters(owningWindow)
@@ -2360,95 +2465,18 @@ function dropdownClass:ResetFilters(owningWindow)
 	owningWindow.filterBox:SetText('')
 end
 
---[[
-local indexOfLSMFilterSettings = {}
-local addMenuItemFunc = AddCustomMenuItem ~= nil and AddCustomMenuItem or AddMenuItem
-function dropdownClass:ShowFilterSettings(owningWindow, settingsButton)
-	if self.m_comboBox ~= nil and self.m_comboBox.openingControl == nil then
-		ClearCustomScrollableMenu()
-	end
-	lib.sv = lib.sv or {}
-
-	ClearMenu()
-	--The index in the table can be used to set the checked state of the ZO_Menu.items[index].checkbox control via ZO_CheckButton_SetCheckState
-	--based on LSM SavedVariables
-	indexOfLSMFilterSettings["IncludeSubmenuEntries"] = addMenuItemFunc("Include submenu entries", function()
-		zo_callLater(function()
-			lib.sv["IncludeSubmenuEntries"] = ZO_CheckButton_IsChecked( ZO_Menu.items[ indexOfLSMFilterSettings["IncludeSubmenuEntries"] ].checkbox)
-		end, 0) --wait for xBox state change
-	end, MENU_ADD_OPTION_CHECKBOX)
-	if indexOfLSMFilterSettings["IncludeSubmenuEntries"] ~= nil then
-		ZO_CheckButton_SetCheckState(ZO_Menu.items[ indexOfLSMFilterSettings["IncludeSubmenuEntries"] ].checkbox, lib.sv["IncludeSubmenuEntries"])
-	end
-	addMenuItemFunc("-", function()  end)
-	addMenuItemFunc("Show LibScrollableMenu settings", function()  end)
-
-	--Prevent LSM Hook at ShowMenu to close LSM
-	lib.preventLSMClosingZO_Menu = true
-	ShowMenu(settingsButton)
-end
-]]
-
 function dropdownClass:IsFilterEnabled()
 	if self.m_comboBox then
 		return self.m_comboBox:IsFilterEnabled()
 	end
 end
 
---[[ Use With xml button to ignore empty matches
-function dropdownClass:GetFilteredEntries(sourceTable, isSubmenu)
-	-- If first entry was disabled due to no result.
-	if not ZO_IsTableEmpty(sourceTable) then
-		if sourceTable[1].wasEnabled then
-			sourceTable[1].enabled = true
-			sourceTable[1].wasEnabled = nil
-		end
-	end
-
-	if self:IsFilterEnabled() then
-		local ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
-		filterString = filterString or ''
-		ignoreSubmenu = ignoreSubmenu == '/' or self.m_comboBox.ignoreEmpty
-
-		if filterString ~= '' then
-			local function filterResults(item)
-				local name = zo_strlower(item.name)
-				return name:find(filterString) ~= nil
-			end
-
-			local results = {}
-
-			for k, item in ipairs(sourceTable) do
-				if recursiveOverEntries(item, filterResults) then
-					table.insert(results, item)
-				end
-			end
-
-			-- If it's still empty, Add no result entry.
-			if ZO_IsTableEmpty(results) then
-				if isSubmenu and ignoreSubmenu then
-					-- The parent matched filterString but, nothing in the submenu did, because the / switch was used, return unfiltered  submenu.
-					return sourceTable
-				else
-					if sourceTable[1].enabled ~= false then
-						sourceTable[1].wasEnabled = true
-						sourceTable[1].enabled = false
-					end
-					tins(results, noEntriesResults)
-				end
-			end
-
-			return results
-		end
-	end
-	return sourceTable
-end
-
-]]
+--[[ Used via XML button to I (include) submenu entries. Currently disabled, only available via text search prefix "/"
 function dropdownClass:SetFilterIgnore(ignore)
 	self.m_comboBox.ignoreEmpty = ignore
 	self.m_comboBox:UpdateResults()
 end
+]]
 
 --------------------------------------------------------------------
 -- ComboBox classes
@@ -2623,8 +2651,10 @@ function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
 	local refCount = mouseUpRefCounts[self]
 	--Some entry was clicked and the dropdown is visible
 	if refCount and self:IsDropdownVisible() then
-		--The clicked entry belongs to the "main" combobox
-		if self.m_dropdownObject:IsOwnedByComboBox(comboBox) then
+		local dropdownObject = self.m_dropdownObject
+		--The clicked entry belongs to the "main" combobox, or a contextMenu entry (ZO_Menu) of the textSearch editbox of this combobox was selected?
+		if dropdownObject:IsOwnedByComboBox(comboBox) or dropdownObject:WasTextSearchContextMenuEntryClicked() then
+d(">owned by combobox")
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				--Clicked entry should close after selection?
 				if mocCtrl.closeOnSelect then
@@ -2639,6 +2669,7 @@ function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
 				return true
 			end
 		else
+d(">Any other control was clicked")
 			--Any other control was clicked
 			refCount = refCount - 1
 		end
@@ -2652,12 +2683,14 @@ function comboBox_base:BypassOnGlobalMouseUp(button, mocCtrl, comboBox, ...)
 end
 
 function comboBox_base:OnGlobalMouseUp(eventCode, ...)
---d("[LSM]comboBox_base:OnGlobalMouseUp")
+d("[LSM]comboBox_base:OnGlobalMouseUp")
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:OnGlobalMouseUp")
 	--Check if the click should not be recognized
 	if not self:BypassOnGlobalMouseUp(...) then
+d(">not BypassOnGlobalMouseUp")
 		--Click should be recognized: Check if dropdown needs to be hidden/shown
 		if self:IsDropdownVisible() then
+d(">IsDropdownVisible -> Hide now")
 			self:HideDropdown()
 			dLog(LSM_LOGTYPE_VERBOSE, "<<< OpenMenu was cleared")
 			lib.openMenu = nil
@@ -2679,9 +2712,11 @@ function comboBox_base:OnGlobalMouseUp(eventCode, ...)
 		end
 		return true
 	else
+d(">!!! BypassOnGlobalMouseUp")
 		local mocCtrl = moc()
 		--Hide the dropdown of the main combobox if we clicked it and it was showing the dropdown
 		if mocCtrl == self.m_container and self:IsDropdownVisible() then
+d(">>clicked on m_container")
 			-- hide dropdown if comboBox is right-clicked
 			self:HideDropdown()
 		end
@@ -3270,8 +3305,8 @@ function comboBoxClass:SetupDropdownHeader()
 	ApplyTemplateToControl(dropdownControl, 'LibScrollableMenu_Dropdown_Template_WithHeader')
 end
 
-function comboBoxClass:SetFilterString(filterBox)
-	self.filterString = zo_strlower(filterBox:GetText())
+function comboBoxClass:SetFilterString(filterBox, newText)
+	self.filterString = (newText ~= nil and zo_strlower(newText)) or zo_strlower(filterBox:GetText())
 	self:UpdateResults(true)
 end
 
@@ -4182,6 +4217,14 @@ local function onAddonLoaded(event, name)
 	loadLogger()
 	dLog(LSM_LOGTYPE_DEBUG, "~~~~~ onAddonLoaded ~~~~~")
 
+	--SavedVariables
+	local lsmSVDefaults = {
+		textSearchHistory = {}
+	}
+	lib.SV = ZO_SavedVars:NewAccountWide("LibScrollableMenu_SavedVars", 1, "LSM", lsmSVDefaults)
+	sv = lib.SV
+
+
 	local comboBoxContainer = CreateControlFromVirtual(MAJOR .. "_ContextMenu", GuiRoot, "ZO_ComboBox")
 	--Create the local context menu object for the library's context menu API functions
 	g_contextMenu = contextMenuClass:New(comboBoxContainer)
@@ -4206,6 +4249,7 @@ local function onAddonLoaded(event, name)
 		if next(ZO_Menu.items) == nil then
         	return false
     	end
+		--Should the ZO_Menu not close any opened LSM? e.g. to show the textSearchHistory at the LSM text filter search box
 		if lib.preventLSMClosingZO_Menu then
 			lib.preventLSMClosingZO_Menu = nil
 			return
