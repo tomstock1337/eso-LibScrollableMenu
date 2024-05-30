@@ -835,8 +835,10 @@ local function defaultRecursiveCallback()
 	return false
 end
 
+local updateAdditionalDataVariables, updateDataValues
+
 -- Recursively loop over drdopdown entries, and submenu dropdown entries of that parent dropdown, and check if e.g. isNew needs to be updated
-local function recursiveOverEntries(entry, callback)
+local function recursiveOverEntries(entry, callback, updateSubmenuValues)
 	callback = callback or defaultRecursiveCallback
 	
 	local result = callback(entry)
@@ -849,6 +851,13 @@ local function recursiveOverEntries(entry, callback)
 			local subEntryResult = recursiveOverEntries(subEntry, callback)
 			if subEntryResult then
 				result = subEntryResult
+			end
+			if updateSubmenuValues then
+				--Get/build addiitonalData for submenu entries
+				updateAdditionalDataVariables(subEntry)
+
+				--Get/build data.label and/or data.name / data.* values (see table) for submenu entries
+				updateDataValues(subEntry)
 			end
 		end
 	end
@@ -1132,7 +1141,7 @@ end
 -- Recursively check for new entries.
 local function areAnyEntriesNew(entry)
 	dLog(LSM_LOGTYPE_VERBOSE, "areAnyEntriesNew")
-	return recursiveOverEntries(entry, getIsNew)
+	return recursiveOverEntries(entry, getIsNew, true)
 end
 
 -- Add/Remove the new status of a dropdown entry.
@@ -1244,7 +1253,7 @@ local function updateVariable(selfVar, key, value)
 end
 
 --Loop at the entries additionalData and add them to the "selfVar" object
-local function updateAdditionalDataVariables(selfVar)
+function updateAdditionalDataVariables(selfVar)
 	local data = selfVar.additionalData
 	if data == nil then return end
 	for key, value in pairs(data) do
@@ -1288,7 +1297,7 @@ end
 --> update data["name"] with the returned value from that prestored function in data._LSM.funcData["name"]
 --> If the function does not return anything (nil) the nilOrTrue of table possibleEntryDataWithFunctionAndDefaultValue
 --> will be used IF i is true (e.g. for the "enabled" state of the entry)
-local function updateDataValues(data, onlyTheseEntries)
+function updateDataValues(data, onlyTheseEntries)
 	--Compatibility fix for missing name in data -> Use label (e.g. sumenus of LibCustomMenu only have "label" and no "name")
 	if data.name == nil and data.label then
 		data.name = data.label
@@ -1836,6 +1845,14 @@ local function filterResults(item)
 		local name = item.label or item.name
 		if not filterNameExempt(name) then
 			--Not excluded, do the string comparison now
+
+			if type(name) ~= "string" then
+LSM_debug = LSM_debug or {}
+LSM_debug.filterResultsItems = LSM_debug.filterResultsItems or {}
+local itemCopy = ZO_DeepTableCopy(item)
+table.inser(LSM_debug.filterResultsItems, itemCopy)
+			end
+
 			return zo_strlower(name):find(filterString) ~= nil
 		end
 	else
@@ -2373,7 +2390,7 @@ end
 local function addTextSearchEditBoxTextToHistory(comboBox, filterBox, historyText)
 	historyText = historyText or filterBox:GetText()
 	if comboBox == nil or historyText == nil or historyText == "" then return end
-	local comboBoxContainerName = comboBox.m_name
+	local comboBoxContainerName = comboBox:GetUniqueName()
 	if comboBoxContainerName == nil or comboBoxContainerName == "" then return end
 
 	sv.textSearchHistory[comboBoxContainerName] = sv.textSearchHistory[comboBoxContainerName] or {}
@@ -2426,7 +2443,7 @@ function dropdownClass:ShowFilterEditBoxHistory(filterBox)
 	local selfVar = self
 	local comboBox = self.m_comboBox
 	if comboBox ~= nil then
-		local comboBoxContainerName = comboBox.m_name
+		local comboBoxContainerName = comboBox:GetUniqueName()
 		if comboBoxContainerName == nil or comboBoxContainerName == "" then return end
 		--Get the last saved text search (history) and show them as context menu
 		local textSearchHistory = sv.textSearchHistory[comboBoxContainerName]
@@ -3200,6 +3217,10 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth, ini
 	return self
 end
 
+function comboBoxClass:GetUniqueName()
+	return self.m_name
+end
+
 -- Changed to force updating items and, to set anchor since anchoring was removed from :Show( due to separate anchoring based on comboBox type. (comboBox to self /submenu to row/contextMenu to mouse)
 function comboBoxClass:AddMenuItems()
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:AddMenuItems")
@@ -3222,7 +3243,6 @@ function comboBoxClass:BypassOnGlobalMouseUp(button, ...)
 			-- We clicked outside the dropdowns.
 			updateMouseUpRefCount(self)
 		else
-			d(">we clicked in the context menu or the combobox dropdown")
 			-- If we clicked in the context menu or the combobox dropdown, let's just ignore it for now.
 			return mouseUpRefCounts[g_contextMenu] > 0
 		end
@@ -3619,6 +3639,14 @@ function contextMenuClass:Initialize(comboBoxContainer)
 	self.isContextMenu = true
 end
 
+function contextMenuClass:GetUniqueName()
+	if self.openingControl then
+		return getControlName(self.openingControl)
+	else
+		return self.m_name
+	end
+end
+
 -- Renamed from AddItem since AddItem can be the same as base. This function is only to pre-set data for updating on show,
 function contextMenuClass:AddContextMenuItem(itemEntry, updateOptions)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:AddContextMenuItem - itemEntry: %s, updateOptions: %s", tos(itemEntry), tos(updateOptions))
@@ -3639,7 +3667,7 @@ function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
 end
 
 function contextMenuClass:BypassOnGlobalMouseUp(button, ...)
-d("[LSM]contextMenuClass:BypassOnGlobalMouseUp-button: " ..tos(button))
+--d("[LSM]contextMenuClass:BypassOnGlobalMouseUp-button: " ..tos(button))
 	local mocCtrl = moc()
 	local owningWindow = mocCtrl:GetOwningWindow()
 	local comboBox = getComboBox(owningWindow)
@@ -4369,6 +4397,10 @@ WORKING ON - Current version: 2.2
 	TESTED: OK
 	25. Changed checkbox callback params order
 	TESTED: OK
+	26. Changed filter functions for the results list
+	TESTED: OK
+	27. Added context menu to search editbox -> history of last 10 searched texts
+	TESTED: OK
 
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
@@ -4410,6 +4442,8 @@ WORKING ON - Current version: 2.2
 	23. Fixed multiIcon usage of many icons and tooltips
 	24. Fixed disabled entries not closing the dropdown if clicked on them
 	25. Changed checkbox callback params order
+	26. Changed filter functions for the results list
+	27. Added context menu to search editbox -> history of last 10 searched texts
 
 -------------------
 TODO - To check (future versions)
