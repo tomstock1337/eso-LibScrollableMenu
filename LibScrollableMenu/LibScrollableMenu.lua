@@ -211,7 +211,6 @@ local possibleEntryDataWithFunction = {
 	["label"] = 	nilIgnore,
 	["checked"] = 	nilIgnore,
 	["enabled"] = 	nilToTrue,
-	["visible"] = 	nilToTrue,
 	["font"] = 		nilIgnore,
 
 	--todo: 20240527 are those needed to update on each show of the entries? Or should the entryType stay the same?
@@ -356,7 +355,6 @@ lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCall
 
 -- Search filter 
 local noEntriesResults = {
-	visible = true,
 	enabled = false,
 	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS),
 	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
@@ -367,10 +365,6 @@ local noEntriesSubmenu = {
 	enabled = false,
 	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
 --	m_disabledColor = ZO_ERROR_COLOR,
-}
-
-local NO_RESULTS_TABLE = {
-	noEntriesResults
 }
 
 --LSM entryTypes which should be processed by the text search/filter
@@ -1810,6 +1804,107 @@ local function runHandler(handlerTable, control, ...)
 end
 
 --------------------------------------------------------------------
+-- Dropdown entry filter functions
+--------------------------------------------------------------------
+
+--local helper variables for string filter functions
+local ignoreSubmenu 			--if using / prefix submenu entries not matching the search term should still be shown
+local lastEntryVisible  = true	--Was the last entry processed visible at the results list? Used to e.g. show the divider below too
+local filterString				--the search string
+
+--Check if name of entry counts as "to search", or not
+-->Returning true: item's name does not need to be searched / false: search the item's name
+local function filterNameExempt(name)
+	if filterString ~= '' then
+		--	if name == '' or name == GetString(SI_QUICKSLOTS_EMPTY), or name == nil
+		return filterNamesExempts[name] or name == nil --filterNamesExempts[type(name)]
+	else
+		return true
+	end
+end
+
+--Search the item's label or name now, if the entryType of the item should be processed by text search
+local function filterResults(item)
+	local entryType = item.entryType
+	if not entryType or filteredEntryTypes[entryType] then
+		local name = item.label or item.name
+		if not filterNameExempt(name) then
+			--Not excluded, do the string comparison now
+			return zo_strlower(name):find(filterString) ~= nil
+		end
+	else
+		return lastEntryVisible
+	end
+end
+
+--String filter the visible results, if options.enableFilter == true
+local function itemPassesFilter(item, isSubmenu)
+	--Check if the data.name / data.label are provided (And also check all other data.* keys if functions need to be executed
+	if verifyLabelString(item) then
+		if isSubmenu and ignoreSubmenu then
+			return true
+		else
+			--Recursively check menu entries (submenu and nested submenu entries) for the matching search string
+			return recursiveOverEntries(item, filterResults)
+		end
+	end
+end
+
+--------------------------------------------------------------------
+-- Dropdown entry functions
+--------------------------------------------------------------------
+local function createScrollableComboBoxEntry(self, item, index, entryType)
+	dLog(LSM_LOGTYPE_VERBOSE, "createScrollableComboBoxEntry - index: %s, entryType: %s,", tos(index), tos(entryType))
+	local entryData = ZO_EntryData:New(item)
+	entryData.m_index = index
+	entryData.m_owner = self.owner
+	entryData.m_dropdownObject = self
+	entryData:SetupAsScrollListDataEntry(entryType)
+	return entryData
+end
+
+local function addEntryToScrollList(self, item, dataList, index, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
+	local entryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
+	local entryType = ENTRY_ID
+	local widthPadding = 0
+	if self.customEntryTemplateInfos and item.customEntryTemplate then
+		local templateInfo = self.customEntryTemplateInfos[item.customEntryTemplate]
+		if templateInfo then
+			entryType = templateInfo.typeId
+			entryHeight = templateInfo.entryHeight
+			 -- for static width padding beyond string length, such as submenu icon
+			widthPadding = templateInfo.widthPadding or 0
+
+			-- If the entry has an icon, or isNew, we add the row height to adjust for icon size.
+			local iconPadding = (item.isNew or item.icon) and entryHeight or 0
+			widthPadding = widthPadding + iconPadding
+		end
+	end
+
+	if isLastEntry then
+		--entryTypes are added via ZO_ScrollList_AddDataType and there always exists 1 respective "last" entryType too,
+		--which handles the spacing at the last (most bottom) list entry to be different compared to the normal entryType
+		entryType = entryType + 1
+	else
+		entryHeight = entryHeight + spacing
+	end
+
+	allItemsHeight = allItemsHeight + entryHeight
+
+	local entry = createScrollableComboBoxEntry(self, item, index, entryType)
+	tins(dataList, entry)
+
+	local fontObject = self.owner:GetItemFontObject(item) --self.owner:GetDropdownFontObject()
+	--Check string width of label (alternative text to show at entry) or name (internal value used)
+	local nameWidth = GetStringWidthScaled(fontObject, item.label or item.name, 1, SPACE_INTERFACE) + widthPadding
+	if nameWidth > largestEntryWidth then
+		largestEntryWidth = nameWidth
+	end
+	return allItemsHeight, largestEntryWidth
+end
+
+
+--------------------------------------------------------------------
 -- dropdownClass
 --------------------------------------------------------------------
 
@@ -2098,78 +2193,46 @@ function dropdownClass:SelectItemByIndex(index, ignoreCallback)
 	end
 end
 
-local function createScrollableComboBoxEntry(self, item, index, entryType)
-	dLog(LSM_LOGTYPE_VERBOSE, "createScrollableComboBoxEntry - index: %s, entryType: %s,", tos(index), tos(entryType))
-	local entryData = ZO_EntryData:New(item)
-	entryData.m_index = index
-	entryData.m_owner = self.owner
-	entryData.m_dropdownObject = self
-	entryData:SetupAsScrollListDataEntry(entryType)
-	return entryData
-end
-
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
 	self.owner = comboBox
 
+	-- externally defined
+	ignoreSubmenu, filterString = nil, nil
+	lastEntryVisible = false
+	--options.enableFilter == true?
+	if self:IsFilterEnabled() then
+		ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
+	end
+	filterString = filterString or ''
+	-- Convert ignoreSubmenu to bool
+	-->If ignoreSubmenu == true: Show submenu entries even if they do not match the search term (as long as the submenu name matches the search term)
+	ignoreSubmenu = ignoreSubmenu == '/'
+
 	local control = self.control
 	local scrollControl = self.scrollControl
-	local owner = self.owner
 
-	--If options.enableFilter then check if any filter string was entered and only return matching entries
-	itemTable = self:GetFilteredEntries(itemTable, comboBox.isSubmenu)
-
-	ZO_ScrollList_Clear(self.scrollControl)
+	ZO_ScrollList_Clear(scrollControl)
 
 	self:SetSpacing(spacing)
 
 	local numItems = #itemTable
-	local dataList = ZO_ScrollList_GetDataList(self.scrollControl)
-
 	local largestEntryWidth = 0
+	local dataList = ZO_ScrollList_GetDataList(scrollControl)
 
 	--Take control.header's height into account here as base height too
 	local allItemsHeight = comboBox:GetBaseHeight(control)
 	for i = 1, numItems do
 		local item = itemTable[i]
-		--Check if the data.name / data.label are provided (And also check all other data.* keys if functions need to be executed
-		if verifyLabelString(item) and item.visible ~= false then
-			local isLastEntry = i == numItems
-			local entryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
-			local entryType = ENTRY_ID
-			local widthPadding = 0
-			if self.customEntryTemplateInfos and item.customEntryTemplate then
-				local templateInfo = self.customEntryTemplateInfos[item.customEntryTemplate]
-				if templateInfo then
-					entryType = templateInfo.typeId
-					entryHeight = templateInfo.entryHeight
-					 -- for static width padding beyond string length, such as submenu icon
-					widthPadding = templateInfo.widthPadding or 0
-
-					-- If the entry has an icon, or isNew, we add the row height to adjust for icon size.
-					local iconPadding = (item.isNew or item.icon) and entryHeight or 0
-					widthPadding = widthPadding + iconPadding
-				end
-			end
-
-			if isLastEntry then
-				--entryTypes are added via ZO_ScrollList_AddDataType and there always exists 1 respective "last" entryType too,
-				--which handles the spacing at the last (most bottom) list entry to be different compared to the normal entryType
-				entryType = entryType + 1
-			else
-				entryHeight = entryHeight + spacing
-			end
-
-			allItemsHeight = allItemsHeight + entryHeight
-
-			local entry = createScrollableComboBoxEntry(self, item, i, entryType)
-			tins(dataList, entry)
-
-			local fontObject = owner:GetItemFontObject(item) --owner:GetDropdownFontObject()
-			--Check string width of label (alternative text to show at entry) or name (internal value used)
-			local nameWidth = GetStringWidthScaled(fontObject, item.label or item.name, 1, SPACE_INTERFACE) + widthPadding
-			if nameWidth > largestEntryWidth then
-				largestEntryWidth = nameWidth
+		local isLastEntry = i == numItems
+		if itemPassesFilter(item, comboBox.isSubmenu) then
+			allItemsHeight, largestEntryWidth = addEntryToScrollList(self, item, dataList, i, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
+			lastEntryVisible = true
+		else
+			lastEntryVisible = false
+			if isLastEntry and ZO_IsTableEmpty(dataList) then
+				-- If no item passes filter.
+				allItemsHeight, largestEntryWidth = addEntryToScrollList(self, noEntriesResults, dataList, i, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
 			end
 		end
 	end
@@ -2201,103 +2264,11 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	dLog(LSM_LOGTYPE_VERBOSE, ">totalDropDownWidth: %s, allItemsHeight: %s, desiredHeight: %s", tos(totalDropDownWidth), tos(allItemsHeight), tos(desiredHeight))
 
 
-	ZO_Scroll_SetUseFadeGradient(scrollControl, not owner.disableFadeGradient )
+	ZO_Scroll_SetUseFadeGradient(scrollControl, not self.owner.disableFadeGradient )
 	control:SetHeight(desiredHeight)
 
 	ZO_ScrollList_SetHeight(scrollControl, desiredHeight)
 	ZO_ScrollList_Commit(scrollControl)
-end
-
---String search/filter in dropdowns
-do
-	--local helper variables for string filter functions
-	local ignoreSubmenu 			--if using / prefix submenu entries not matching the search term should still be shown
-	local lastEntryVisible  = true	--Was the last entry processed visible at the results list? Used to e.g. show the divider below too
-	local resultCount        = 0 	--found filtered entries
-	local filterString				--the search string
-
-
-	--Check if name of entry counts as "to search", or not
-	-->Returning true: item's name does not need to be searched / false: search the item's name
-	local function filterNameExempt(name)
-		if filterString ~= '' then
-		--	if name == '' or name == GetString(SI_QUICKSLOTS_EMPTY), or name == nil
-			return filterNamesExempts[name] or name == nil --filterNamesExempts[type(name)]
-		else
-			return true
-		end
-	end
-
-	--Search the item's label or name now, if the entryType of the item should be processed by text search
-	local function filterResults(item)
-		local entryType = item.entryType
-		if not entryType or filteredEntryTypes[entryType] then
-			local name = item.label or item.name
-			if not filterNameExempt(name) then
-				--Not excluded, do the string comparison now
-				return zo_strlower(name):find(filterString) ~= nil
-			end
-		else
-			return lastEntryVisible
-		end
-	end
-
-	--Update the visible tag of the item: Visible items wil be shown in the results list
-	local function setVisible(item, visible, isSubmenu)
-		local isVisible = item.visible
-		if isSubmenu and ignoreSubmenu then
-			isVisible = true
-		else
-			isVisible = visible
-		end
-
-		if isVisible then
-			resultCount = resultCount + 1
-		end
-	end
-
-	--String filter the visible results, if options.enableFilter == true
-	function dropdownClass:GetFilteredEntries(sourceTable, isSubmenu)
-		if not ZO_IsTableEmpty(sourceTable) then
-			--options.enableFilter == true?
-			if self:IsFilterEnabled() then
-				self.filterEnabled = true
-				lastEntryVisible = true
-
-				ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
-				filterString = filterString or ''
-				-- Convert ignoreSubmenu to bool
-				-->If ignoreSubmenu == true: Show submenu entries even if they do not match the search term (as long as the submenu name matches the search term)
-				ignoreSubmenu = ignoreSubmenu == '/'
-
-				resultCount = 0
-
-				for _, item in ipairs(sourceTable) do
-					local visible = true
-					--Recursively check menu entries (submenu and nested submenu entries) for the matching search string
-					if not recursiveOverEntries(item, filterResults) then
-						visible = false
-					end
-					lastEntryVisible = visible
-					setVisible(item, visible, isSubmenu)
-				end
-
-				-- If no filter results
-				if resultCount == 0 and #sourceTable > 0 then
-					return NO_RESULTS_TABLE
-				end
-
-			--Disable the filters again (if enabled) and show all items again
-			elseif self.filterEnabled then
-				self.filterEnabled = false
-				-- If filtering was disabled, ensure all entries are visible.
-				for _, item in ipairs(sourceTable) do
-					item.visible = getDataSource(item).visible or true
-				end
-			end
-		end
-		return sourceTable
-	end
 end
 
 function dropdownClass:UpdateHeight()
