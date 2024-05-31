@@ -291,7 +291,8 @@ local LSMEntryKeyZO_ComboBoxEntryKey = {
 
 --The mapping between LibScrollableMenu options key and ZO_ComboBox options key. Used in comboBoxClass:UpdateOptions()
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
-	--All possible options entries must be mapped here (left: options entry / right: ZO_ComboBox relating entry where the value is saved)
+	--All possible options entries "must" be mapped here (left: options entry / right: ZO_ComboBox relating entry where the value is saved)
+	-->Missing entries (even if names are the same) will relate in functin comboBoxClass:SetOption not respecting the value!
 	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
 	["headerColor"] =			"m_headerFontColor",
 	["normalColor"] = 			"m_normalColor",
@@ -3522,6 +3523,7 @@ local submenuClass_exposedVariables = {
 	['m_highlightTemplate'] = true,
 	['visibleRowsSubmenu'] = true, -- we only need this "visibleRowsSubmenu" for the submenus
 	['disableFadeGradient'] = true,
+	['useDefaultHighlightForSubmenuWithCallback'] = true,
 }
 
 local submenuClass_exposedFunctions = {
