@@ -84,7 +84,7 @@ local function test()
 			visibleRowsSubmenu = 10,
 			maxDropdownHeight = 450,
 
-			useDefaultHighlightForSubmenuWithCallback = true,
+			--useDefaultHighlightForSubmenuWithCallback = true,
 
 			--sortEntries=function() return false end,
 			narrate = narrateOptions,

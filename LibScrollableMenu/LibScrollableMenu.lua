@@ -4449,6 +4449,8 @@ WORKING ON - Current version: 2.2
 	TESTED: OK
 	28. Search editbox does not reset on context menus, if another parentControl (openingControl) was used
 	TESTED: OK
+	29. Added options.useDefaultHighlightForSubmenuWithCallback
+	TESTED: OK
 
 
 	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
@@ -4493,6 +4495,7 @@ WORKING ON - Current version: 2.2
 	26. Changed filter functions for the results list
 	27. Added context menu to search editbox -> history of last 10 searched texts
 	28. Search editbox does not reset on context menus, if another parentControl (openingControl) was used
+	29. Added options.useDefaultHighlightForSubmenuWithCallback
 
 -------------------
 TODO - To check (future versions)
