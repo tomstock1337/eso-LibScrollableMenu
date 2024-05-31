@@ -305,6 +305,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["enableFilter"] =			"enableFilter",
 	["narrate"] = 				"narrateData",
 	["maxDropdownHeight"] =		"maxHeight",
+	["useDefaultHighlightForSubmenuWithCallback"] = "useDefaultHighlightForSubmenuWithCallback",
 
 	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
 	-->!!!Attention: Add the entries which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below in this table here too!!!
