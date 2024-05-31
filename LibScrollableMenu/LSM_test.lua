@@ -84,6 +84,8 @@ local function test()
 			visibleRowsSubmenu = 10,
 			maxDropdownHeight = 450,
 
+			useDefaultHighlightForSubmenuWithCallback = true,
+
 			--sortEntries=function() return false end,
 			narrate = narrateOptions,
 			disableFadeGradient = false,
@@ -683,7 +685,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				name            = "-", --Divider
 			},
 			{
-				name            = "Entry having submenu 1 - entries = function",
+				name            = "Entry having submenu 1 - entries = function, callback = true",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Entry having submenu 1")
 				end,

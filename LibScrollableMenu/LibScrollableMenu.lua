@@ -270,6 +270,7 @@ local defaultComboBoxOptions  = {
 	["font"] = 					DEFAULT_FONT,
 	["spacing"] = 				DEFAULT_SPACING,
 	["disableFadeGradient"] = 	false,
+	["useDefaultHighlightForSubmenuWithCallback"] = false,
 	--["XMLRowTemplates"] = table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
@@ -2781,7 +2782,7 @@ function comboBox_base:GetDropdownObject(comboBoxContainer, depth)
 end
 
 function comboBox_base:GetHighlightTemplate(control)
-	return getControlData(control).m_highlightTemplate or self.m_highlightTemplate
+	return getControlData(control).m_highlightTemplate or control.m_data.m_highlightTemplate or self.m_highlightTemplate
 end
 
 -- Create the m_dropdownObject on initialize.
@@ -3069,10 +3070,16 @@ do -- Row setup functions
 		addArrow(control, data, list)
 		control.typeId = SUBMENU_ENTRY_ID
 
-		if control.closeOnSelect and not data.m_highlightTemplate then
-			data.m_highlightTemplate = 'LibScrollableMenu_Highlight_Green'
-		elseif not data.m_highlightTemplate then
-		--	data.m_highlightTemplate = 'LibScrollableMenu_Highlight_WithOutCallback'
+--d("[LSM]submenu setup: - name: " .. tos(getValueOrCallback(data.label or data.name, data)) ..", closeOnSelect: " ..tos(control.closeOnSelect) .. "; m_highlightTemplate: " ..tos(data.m_highlightTemplate) )
+
+		--Color the highlight light green if the submenu got a callback (entry opening a submenu can be clicked to select it)
+		local useDefaultHighlightForSubmenuWithCallback = (self.options ~= nil and self.options.useDefaultHighlightForSubmenuWithCallback) or false
+		if not useDefaultHighlightForSubmenuWithCallback then
+			if control.closeOnSelect and not data.m_highlightTemplate then
+				data.m_highlightTemplate = 'LibScrollableMenu_Highlight_Green'
+			--elseif not data.m_highlightTemplate then
+				--	data.m_highlightTemplate = 'LibScrollableMenu_Highlight_WithOutCallback'
+			end
 		end
 	end
 
@@ -3858,6 +3865,7 @@ end
 --->  === Dropdown callback functions
 -- 		function preshowDropdownFn:optional 	function function(ctrl) codeHere end: to run before the dropdown shows
 --->  === Dropdown's Custom XML virtual row/entry templates ============================================================
+--		boolean useDefaultHighlightForSubmenuWithCallback	Boolean or function returning a boolean if always the default ZO_ComboBox highlight XML template should be used for an entry having a submenu AND a callback function. If false the highlight 'LibScrollableMenu_Highlight_Green' will be used
 --		table XMLRowTemplates:optional			Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
 --												"template" String = XMLVirtualTemplateName,
 --												rowHeight number = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
