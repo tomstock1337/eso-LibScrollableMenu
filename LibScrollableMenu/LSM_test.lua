@@ -634,6 +634,10 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				entryType = lib.LSM_ENTRY_TYPE_CHECKBOX
 			},
 			{
+				label = "test",
+				isDivider = true
+			}, --todo: Divider test, working this way?
+			{
 				name            = "Main checkbox 2 - isCheckbox = true, entryType=checkbox, checked = SV fixed",
 				checked           = testSV.cbox1,
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
@@ -646,6 +650,10 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				entryType = lib.LSM_ENTRY_TYPE_CHECKBOX,
 				isCheckbox = true,
 			},
+			{
+				label ="Header with label",
+				isHeader = true
+			}, --todo: header test, working this way?
 			{
 				name            = "Main checkbox 3 - entryType = checkbox, checked = SV func",
 				checked           = function() return testSV.cbox2  end,
@@ -714,6 +722,16 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 							function() return testSV.cboxContextmenu1 end)
 
 					AddCustomScrollableMenuEntry("Normal context menu entry 2", function() d('Custom context menu Normal entry 2') end)
+
+					AddCustomScrollableMenuCheckbox("Context menu checkbox entry 3 - checked from SV func",
+							function(control, checkedData, checked)
+								d('Checkbox clicked at custom context menu entry 2 - checked: ' ..tostring(checked))
+								testSV.cboxContextmenu2 = checked
+							end,
+							function() return false  end, --should be taken to additionalData.checked and thus always return false!
+							{
+								checked = function() return testSV.cboxContextmenu2 end
+							})
 
 					ShowCustomScrollableMenu(self)
 				end,

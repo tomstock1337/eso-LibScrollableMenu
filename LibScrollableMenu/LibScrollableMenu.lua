@@ -119,27 +119,14 @@ local getDataSource
 
 
 ------------------------------------------------------------------------------------------------------------------------
---Menu types for the different scrollable menus
-
---[[
-LSM_MENUTYPE_MAINMENU = 1
-LSM_MENUTYPE_SUBMENU = 2
-LSM_MENUTYPE_CONTEXTMENU = 100
-LSM_MENUTYPE_CONTEXTMENU_SUBMENU = 101
-local LSM_MENUTYPE_MAINMENU = LSM_MENUTYPE_MAINMENU
-local LSM_MENUTYPE_SUBMENU = LSM_MENUTYPE_SUBMENU
-local LSM_MENUTYPE_CONTEXTMENU = LSM_MENUTYPE_CONTEXTMENU
-local LSM_MENUTYPE_CONTEXTMENU_SUBMENU = LSM_MENUTYPE_CONTEXTMENU_SUBMENU
-]]
-
---Entry types - For the scroll list's dataType of te menus
+--Entry types - For the scroll list's dataType of the menus
 local ENTRY_ID = 1
 local DIVIDER_ENTRY_ID = 2
 local HEADER_ENTRY_ID = 3
 local SUBMENU_ENTRY_ID = 4
 local CHECKBOX_ENTRY_ID = 5
 
---The custom scrollable context menu entry types
+--The custom scrollable context menu entry types > Globals
 lib.LSM_ENTRY_TYPE_NORMAL = 	ENTRY_ID
 lib.LSM_ENTRY_TYPE_DIVIDER = 	DIVIDER_ENTRY_ID
 lib.LSM_ENTRY_TYPE_HEADER = 	HEADER_ENTRY_ID
@@ -151,7 +138,7 @@ LSM_ENTRY_TYPE_DIVIDER = 		lib.LSM_ENTRY_TYPE_DIVIDER
 LSM_ENTRY_TYPE_HEADER = 		lib.LSM_ENTRY_TYPE_HEADER
 LSM_ENTRY_TYPE_CHECKBOX = 		lib.LSM_ENTRY_TYPE_CHECKBOX
 LSM_ENTRY_TYPE_SUBMENU = 		lib.LSM_ENTRY_TYPE_SUBMENU
-
+--Local references
 local LSM_ENTRY_TYPE_NORMAL = 	LSM_ENTRY_TYPE_NORMAL
 local LSM_ENTRY_TYPE_DIVIDER = 	LSM_ENTRY_TYPE_DIVIDER
 local LSM_ENTRY_TYPE_HEADER = 	LSM_ENTRY_TYPE_HEADER
@@ -168,22 +155,6 @@ local libraryAllowedEntryTypes = {
 }
 lib.allowedEntryTypes = libraryAllowedEntryTypes
 
---Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be allowed for the contextMenus
-local allowedEntryTypesForContextMenu = {
-	[LSM_ENTRY_TYPE_NORMAL] = true,
-	[LSM_ENTRY_TYPE_DIVIDER] = true,
-	[LSM_ENTRY_TYPE_HEADER] = true,
-	[LSM_ENTRY_TYPE_SUBMENU] =	true,
-	[LSM_ENTRY_TYPE_CHECKBOX] = true,
-}
-
---Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be used without a callback function
-local entryTypesForContextMenuWithoutMandatoryCallback = {
-	[LSM_ENTRY_TYPE_DIVIDER] = true,
-	[LSM_ENTRY_TYPE_HEADER] = true,
-	[LSM_ENTRY_TYPE_SUBMENU] =	true,
-}
-
 --Make them accessible for the DropdownObject:New options table -> options.XMLRowTemplates
 lib.scrollListRowTypes = {
 	ENTRY_ID = ENTRY_ID,
@@ -193,22 +164,52 @@ lib.scrollListRowTypes = {
 	CHECKBOX_ENTRY_ID = CHECKBOX_ENTRY_ID,
 }
 
---Sound settings
-local origSoundComboClicked = 	SOUNDS.COMBO_CLICK
-local origSoundDefaultClicked = SOUNDS.DEFAULT_CLICK
-local soundClickedSilenced    = SOUNDS.NONE
---Sound names of the combobox entry selected sounds
-local entryTypeToSilenceSoundName = {
-	[LSM_ENTRY_TYPE_CHECKBOX]	=	"DEFAULT_CLICK",
-	[LSM_ENTRY_TYPE_NORMAL] 	= 	"COMBO_CLICK",
-}
---Original sounds of the combobox entry selected sounds
-local entryTypeToOriginalSelectedSound = {
-	[LSM_ENTRY_TYPE_CHECKBOX]	= origSoundDefaultClicked,
-	[LSM_ENTRY_TYPE_NORMAL]		= origSoundComboClicked,
+--Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be allowed for the contextMenus
+local allowedEntryTypesForContextMenu = {
+	[LSM_ENTRY_TYPE_NORMAL] = 	true,
+	[LSM_ENTRY_TYPE_DIVIDER] = 	true,
+	[LSM_ENTRY_TYPE_HEADER] = 	true,
+	[LSM_ENTRY_TYPE_SUBMENU] =	true,
+	[LSM_ENTRY_TYPE_CHECKBOX] = true,
 }
 
+--Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be used without a callback function
+local entryTypesForContextMenuWithoutMandatoryCallback = {
+	[LSM_ENTRY_TYPE_DIVIDER] = 	true,
+	[LSM_ENTRY_TYPE_HEADER] = 	true,
+	[LSM_ENTRY_TYPE_SUBMENU] =	true,
+}
+
+
 ------------------------------------------------------------------------------------------------------------------------
+--Entries key mapping
+
+--The mapping between LibScrollableMenu entry key and ZO_ComboBox entry key. Used in addItem_Base -> updateVariables
+-->Only keys provided in this table will be copied from item.additionalData to item directly!
+local LSMEntryKeyZO_ComboBoxEntryKey = {
+	--ZO_ComboBox keys
+	["normalColor"] =		"m_normalColor",
+	["disabledColor"] =		"m_disabledColor",
+	["highlightColor"] =	"m_highlightColor",
+	["highlightTemplate"] =	"m_highlightTemplate",
+
+	--Keys which can be passed in at API functions like AddCustomScrollableMenuEntry
+	-->Will be taken care of in func updateVariable -> at the else if selfVar[key] == nil then ...
+}
+
+
+------------------------------------------------------------------------------------------------------------------------
+--Table additionalData's key (e.g. isDivider) to the LSM entry type mapping
+local additionalDataKeyToLSMEntryType = {
+	["isCheckbox"] =	LSM_ENTRY_TYPE_CHECKBOX,
+	["isDivider"] = 	LSM_ENTRY_TYPE_DIVIDER,
+	["isHeader"] = 		LSM_ENTRY_TYPE_HEADER,
+}
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+--Entries which can use a function and need to be updated via function updateDataValues
 
 --Table contains [string key] = defaultValue boolean for the row/entry's data table
 --> If key inside the row's data table (e.g. data["name"]) is a function:
@@ -222,14 +223,10 @@ local possibleEntryDataWithFunction = {
 	["checked"] = 	nilIgnore,
 	["enabled"] = 	nilToTrue,
 	["font"] = 		nilIgnore,
-
-	--todo: 20240527 are those needed to update on each show of the entries? Or should the entryType stay the same?
-	--["isDivider"] = nilIgnore,
-	--["isHeader"] = 	nilIgnore,
-	--["isCheckbox"] =nilIgnore,
-	--["entryType"] = nilIgnore,
 }
 
+------------------------------------------------------------------------------------------------------------------------
+--Default options/settings and values
 
 --ZO_ComboBox default settings: Will be copied over as default attributes to comboBoxClass and inherited scrollable
 --dropdown helper classes
@@ -275,19 +272,8 @@ local defaultComboBoxOptions  = {
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
 
---The mapping between LibScrollableMenu entry key and ZO_ComboBox entry key. Used in addItem_Base -> updateVariables
--->Only keys provided in this table will be copied from item.additionalData to item directly!
-local LSMEntryKeyZO_ComboBoxEntryKey = {
-	--ZO_ComboBox keys
-	["normalColor"] =		"m_normalColor",
-	["disabledColor"] =		"m_disabledColor",
-	["highlightColor"] =	"m_highlightColor",
-	["highlightTemplate"] =	"m_highlightTemplate",
-
-	--Keys which can be passed in at API functions like AddCustomScrollableMenuEntry
-	-->Will be taken care of in func updateVariable -> at the else if selfVar[key] == nil then ...
-}
-
+------------------------------------------------------------------------------------------------------------------------
+--Options key mapping
 
 --The mapping between LibScrollableMenu options key and ZO_ComboBox options key. Used in comboBoxClass:UpdateOptions()
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
@@ -365,6 +351,59 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 }
 lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCallbacks
 
+------------------------------------------------------------------------------------------------------------------------
+--Submenu key mapping
+
+-- Pass-through variables:
+--If submenuClass_exposedVariables[variable] == true: if submenu[key] is nil, returns submenu.m_comboBox[key]
+local submenuClass_exposedVariables = {
+	-- ZO_ComboBox
+	["m_font"] = true, --
+	["m_height"] = false, -- needs to be separate for visibleRowsSubmenu
+	['m_normalColor'] = true, --
+	['m_highlightColor'] = true, --
+	['m_containerWidth'] = true, --
+	['m_maxNumSelections'] = true, --
+	['m_enableMultiSelect'] = true, --
+	["m_customEntryTemplateInfos"] = false, -- Allowing this to paas-through would break row setup.
+
+	-- ZO_ComboBox_Base
+	["m_name"] = true, -- since the name is acquired by the container name.
+	["m_spacing"] = true, --
+	["m_sortType"] = true, --
+	["m_container"] = true, -- all children use the same container as the comboBox
+	["m_sortOrder"] = true, --
+	["m_sortsItems"] = true, --
+	["m_sortedItems"] = false, -- for obvious reasons
+	["m_openDropdown"] = true, -- control, set to true for submenu to make comboBox_base:IsEnabled( function work
+	["m_selectedColor"] = true, --
+	["m_disabledColor"] = true, --
+	["m_selectedItemText"] = false, -- This is handeled by "SelectItem"
+	["m_selectedItemData"] = false, -- This is handeled by "SelectItem"
+	["m_isDropdownVisible"] = false, -- each menu has different dropdowns
+	["m_preshowDropdownFn"] = true, --
+	["horizontalAlignment"] = true, --
+
+	-- LibScrollableMenu
+	['options'] = true,
+	['narrateData'] = true,
+	['m_headerFont'] = true,
+	['XMLrowTemplates'] = true, --TODO: is this being overwritten?
+	['maxDropdownHeight'] = true,
+	['m_headerFontColor'] = true,
+	['m_highlightTemplate'] = true,
+	['visibleRowsSubmenu'] = true, -- we only need this "visibleRowsSubmenu" for the submenus
+	['disableFadeGradient'] = true,
+	['useDefaultHighlightForSubmenuWithCallback'] = true,
+}
+
+-- Pass-through functions:
+--If submenuClass_exposedFunctions[variable] == true: if submenuClass[key] is not nil, returns submenuClass[key](submenu.m_comboBox, ...)
+local submenuClass_exposedFunctions = {
+	["SelectItem"] = true, -- (item, ignoreCallback)
+}
+
+------------------------------------------------------------------------------------------------------------------------
 
 -- Search filter 
 local noEntriesResults = {
@@ -380,21 +419,39 @@ local noEntriesSubmenu = {
 --	m_disabledColor = ZO_ERROR_COLOR,
 }
 
---LSM entryTypes which should be processed by the text search/filter
+--LSM entryTypes which should be processed by the text search/filter. Basically all entryTypes that use a label/name
 local filteredEntryTypes = {
-	[LSM_ENTRY_TYPE_NORMAL] = true,
-	[LSM_ENTRY_TYPE_SUBMENU] = true,
+	[LSM_ENTRY_TYPE_NORMAL] = 	true,
+	[LSM_ENTRY_TYPE_SUBMENU] = 	true,
 	[LSM_ENTRY_TYPE_CHECKBOX] = true,
-	[LSM_ENTRY_TYPE_HEADER] = true,
+	[LSM_ENTRY_TYPE_HEADER] = 	true,
 	--[LSM_ENTRY_TYPE_DIVIDER] = false,
 }
---Table defines if some names of the entries count as "to search" or not
+--Table defines if some names of the entries count as "to search" or not.
+--true: Item's name does not need to be searched / false: search the item's name
 local filterNamesExempts = {
 	--Direct check via "name" string
 	[''] = true,
 	[noEntriesSubmenu.name] = true, -- "Empty"
 	--Check via type(name)
 	--['nil'] = true,
+}
+
+------------------------------------------------------------------------------------------------------------------------
+--Sound settings
+
+local origSoundComboClicked = 	SOUNDS.COMBO_CLICK
+local origSoundDefaultClicked = SOUNDS.DEFAULT_CLICK
+local soundClickedSilenced    = SOUNDS.NONE
+--Sound names of the combobox entry selected sounds
+local entryTypeToSilenceSoundName = {
+	[LSM_ENTRY_TYPE_CHECKBOX]	=	"DEFAULT_CLICK",
+	[LSM_ENTRY_TYPE_NORMAL] 	= 	"COMBO_CLICK",
+}
+--Original sounds of the combobox entry selected sounds
+local entryTypeToOriginalSelectedSound = {
+	[LSM_ENTRY_TYPE_CHECKBOX]	= origSoundDefaultClicked,
+	[LSM_ENTRY_TYPE_NORMAL]		= origSoundComboClicked,
 }
 
 
@@ -755,41 +812,74 @@ function getValueOrCallback(arg, ...)
 end
 lib.GetValueOrCallback = getValueOrCallback
 
+--Check for isDivider, isHeader, isCheckbox ... in table (e.g. item.additionalData) and get the LSM entry type for it
+local function checkTablesKeyAndGetEntryType(dataTable, text)
+	for key, entryType in pairs(additionalDataKeyToLSMEntryType) do
+--d(">checkTablesKeyAndGetEntryType - text: " ..tos(text)..", key: " .. tos(key))
+		if dataTable[key] ~= nil then
+--d(">>found dataTable[key]")
+			if getValueOrCallback(dataTable[key], dataTable) == true then
+--d("<<<checkTablesKeyAndGetEntryType - text: " ..tos(text) ..", l_entryType: " .. tos(entryType) .. ", key: " .. tos(key))
+				return entryType
+			end
+		end
+	end
+	return nil
+end
+
 local function checkEntryType(text, entryType, additionalData, isAddDataTypeTable, options)
---df("[LSM]checkEntryType - text: %s, entryType: %s, isAddDataTypeTable: %s", tos(text), tos(entryType), tos(isAddDataTypeTable))
+--df("[LSM]checkEntryType - text: %s, entryType: %s, additionalData: %s, isAddDataTypeTable: %s", tos(text), tos(entryType), tos(additionalData), tos(isAddDataTypeTable))
 	if entryType == nil then
+		isAddDataTypeTable = isAddDataTypeTable or false
+		if isAddDataTypeTable == true then
+			if additionalData == nil then isAddDataTypeTable = false
+--d("<<<isAddDataTypeTable set to false")
+			end
+		end
+		local l_entryType
+
+		--Test was passed in?
 		if text ~= nil then
-			if getValueOrCallback(text, (isAddDataTypeTable and additionalData or options)) == libDivider then
+--(">!!text check")
+			--It should be a divider, according to the passed in text?
+			if getValueOrCallback(text, ((isAddDataTypeTable and additionalData) or options)) == libDivider then
+--d("<entry is divider, by text")
 				return LSM_ENTRY_TYPE_DIVIDER
 			end
 		end
-		if additionalData ~= nil and isAddDataTypeTable then
+
+		--Additional data was passed in?
+		if additionalData ~= nil and isAddDataTypeTable == true then
+--d(">!!additionalData checks")
 			if additionalData.entryType ~= nil then
-				return getValueOrCallback(additionalData.entryType, additionalData)
+--d(">>!!additionalData.entryType check")
+				l_entryType = getValueOrCallback(additionalData.entryType, additionalData)
+				if l_entryType ~= nil then
+--d("<l_entryType by entryType: " ..tos(l_entryType))
+					return l_entryType end
 			end
 
-			if additionalData.isCheckbox ~= nil then
-				if getValueOrCallback(additionalData.isCheckbox, additionalData) == true then
-					return LSM_ENTRY_TYPE_CHECKBOX
-				end
-			elseif additionalData.isDivider ~= nil then
-				if getValueOrCallback(additionalData.isDivider, additionalData) == true then
-					return LSM_ENTRY_TYPE_DIVIDER
-				end
-			elseif additionalData.isHeader ~= nil then
-				if getValueOrCallback(additionalData.isHeader, additionalData) == true then
-					return LSM_ENTRY_TYPE_HEADER
-				end
+			--Any isDivider, isHeader, isCheckbox, ...?
+--d(">>!!checkTablesKeyAndGetEntryType additionalData")
+			l_entryType = checkTablesKeyAndGetEntryType(additionalData, text)
+			if l_entryType ~= nil then
+--d("<l_entryType by checkTablesKeyAndGetEntryType: " ..tos(l_entryType))
+				return l_entryType
 			end
 
 			local name = additionalData.name
 			if name ~= nil then
-				if getValueOrCallback(additionalData.name, additionalData) == libDivider then
+--d(">>!!additionalData.name check")
+				if getValueOrCallback(name, additionalData) == libDivider then
+--d("<entry is divider, by name")
 					return LSM_ENTRY_TYPE_DIVIDER
 				end
 			end
-			if additionalData.label ~= nil and name == nil then
-				if getValueOrCallback(additionalData.label, additionalData) == libDivider then
+			local label = additionalData.label
+			if name == nil and label ~= nil then
+--d(">>!!additionalData.label check")
+				if getValueOrCallback(label, additionalData) == libDivider then
+--d("<entry is divider, by label")
 					return LSM_ENTRY_TYPE_DIVIDER
 				end
 			end
@@ -859,9 +949,9 @@ end
 
 --Loop at the entries additionalData and add them to the "selfVar" object
 local function updateAdditionalDataVariables(selfVar)
-	local data = selfVar.additionalData
-	if data == nil then return end
-	for key, value in pairs(data) do
+	local additionalData = selfVar.additionalData
+	if additionalData == nil then return end
+	for key, value in pairs(additionalData) do
 		updateVariable(selfVar, key, value)
 	end
 end
@@ -1247,8 +1337,22 @@ local function getComboBox(control)
 end
 
 --------------------------------------------------------------------
--- Local entryData functions
+-- Local entry/item data functions
 --------------------------------------------------------------------
+--Functions to run per item's entryType, after the item has been setup (e.g. to add missing mandatory data or change visuals)
+local postItemSetupFunctions = {
+	[SUBMENU_ENTRY_ID] = function(comboBox, itemEntry)
+		itemEntry.isNew = recursiveOverEntries(itemEntry, preUpdateSubItems)
+	end,
+	[HEADER_ENTRY_ID] = function(comboBox, itemEntry)
+		itemEntry.font = itemEntry.font or comboBox.m_headerFont
+		itemEntry.color = itemEntry.color or comboBox.m_headerFontColor
+	end,
+	[DIVIDER_ENTRY_ID] = function(comboBox, itemEntry)
+		itemEntry.name = libDivider
+	end,
+}
+
 
 function getDataSource(data)
 	if data and data.dataSource then
@@ -1331,7 +1435,7 @@ local function validateEntryType(item)
 	local entryType = getValueOrCallback(item.entryType, item)
 
 	--Check if any other entryType could be determined
-	local isDivider = ((item.label ~= nil and item.label == libDivider) or item.name == libDivider) or LSM_ENTRY_TYPE_DIVIDER == entryType
+	local isDivider = (((item.label ~= nil and item.label == libDivider) or item.name == libDivider) or (item.isDivider ~= nil and getValueOrCallback(item.isDivider, item))) or LSM_ENTRY_TYPE_DIVIDER == entryType
 	local isHeader = (item.isHeader ~= nil and getValueOrCallback(item.isHeader, item)) or LSM_ENTRY_TYPE_HEADER == entryType
 	local isCheckbox = (item.isCheckbox ~= nil and getValueOrCallback(item.isCheckbox, item)) or LSM_ENTRY_TYPE_CHECKBOX == entryType
 	local hasSubmenu = (item.entries ~= nil and getValueOrCallback(item.entries, item) ~= nil) or LSM_ENTRY_TYPE_SUBMENU == entryType
@@ -1357,9 +1461,6 @@ end
 
 --Set the custom XML virtual template for a dropdown entry
 local function setItemEntryCustomTemplate(item, customEntryTemplates)
-	--Get the entryType
-	validateEntryType(item)
-
 	local entryType = item.entryType
 	dLog(LSM_LOGTYPE_VERBOSE, "setItemEntryCustomTemplate - name: %q, entryType: %s", tos(item.label or item.name), tos(entryType))
 
@@ -1376,24 +1477,20 @@ local function addItem_Base(self, itemEntry)
 	--Get/build data.label and/or data.name / data.* values (see table )
 	updateDataValues(itemEntry)
 
+	--Validate the entryType now
+	validateEntryType(itemEntry)
+
 	if not itemEntry.customEntryTemplate then
+		--Set it's XML entry row template
 		setItemEntryCustomTemplate(itemEntry, self.XMLrowTemplates)
 
---dLog(LSM_LOGTYPE_DEBUG, ">name: " .. tos(itemEntry.name) .. ", isHeader: " ..tos(itemEntry.isHeader))
+		--dLog(LSM_LOGTYPE_DEBUG, ">name: " .. tos(itemEntry.name) .. ", isHeader: " ..tos(itemEntry.isHeader))
+	end
 
-		if itemEntry.hasSubmenu then
-			--itemEntry.isNew = areAnyEntriesNew(itemEntry)
-			itemEntry.isNew = recursiveOverEntries(itemEntry, preUpdateSubItems)
-		elseif itemEntry.isHeader then
-			itemEntry.font = itemEntry.font or self.m_headerFont
-			itemEntry.color = itemEntry.color or self.m_headerFontColor
-		--elseif itemEntry.isDivider then
-			-- Placeholder: Divider
-		--elseif itemEntry.isCheckbox then
-			-- Placeholder: Checkbox
-		--elseif itemEntry.isNew then
-			-- Placeholder: Is new
-		end
+	--Run a post setup function to update mandatory data or change visuals, for the entryType
+	local postItem_SetupFunc = postItemSetupFunctions[itemEntry.entryType]
+	if postItem_SetupFunc then
+		postItem_SetupFunc(self, itemEntry)
 	end
 end
 
@@ -1966,14 +2063,14 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 
 	-- highlightTemplate, animationFieldName = self.highlightTemplateOrFunction(control)
 
-	--Enable different hightlight templates at the ZO_SortFilterList scrolLList entries -> OnMousEnter
+	--Enable different hightlight templates at the ZO_SortFilterList scrolLList entries -> OnMouseEnter
 	-->entries opening a submenu, having a callback function, show with a different template (color e.g.)
 	-->>!!! ZO_ScrollList_EnableHighlight(self.scrollControl, function(control) end) cannot be used here as it does NOT overwrite existing highlightTemplateOrFunction !!!
 	self.scrollControl.highlightTemplateOrFunction = function(control)
 		if self.owner then
 			return self.owner:GetHighlightTemplate(control)
 		end
-		return 'ZO_SelectionHighlight'
+		return comboBoxDefaults.m_highlightTemplate --'ZO_SelectionHighlight'
 	end
 end
 
@@ -2232,19 +2329,21 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	lastEntryVisible = false
 	--options.enableFilter == true?
 	if self:IsFilterEnabled() then
-		ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- .* to include special characters
+		ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- starts with / and followed by .* to include special characters
 	end
 	filterString = filterString or ''
-
-	local textSearchEnabled = filterString ~= ''
-	if textSearchEnabled and comboBox.isSubmenu then
-		textSearchEnabled = not ignoreSubmenu
-	end
-
-
 	-- Convert ignoreSubmenu to bool
 	-->If ignoreSubmenu == true: Show submenu entries even if they do not match the search term (as long as the submenu name matches the search term)
 	ignoreSubmenu = ignoreSubmenu == '/'
+
+	--Any text entered?
+	local textSearchEnabled = filterString ~= ''
+	--Text filter should show non-matching submenu entries? "/" prefix was used in text filter editBox
+	if textSearchEnabled and comboBox.isSubmenu then
+		if ignoreSubmenu == true then
+			textSearchEnabled = false
+		end
+	end
 
 	local control = self.control
 	local scrollControl = self.scrollControl
@@ -3484,52 +3583,6 @@ end
 -- submenuClass
 --------------------------------------------------------------------
 
--- Pass-through variables
-local submenuClass_exposedVariables = {
-	-- ZO_ComboBox
-	["m_font"] = true, --
-	["m_height"] = false, -- needs to be separate for visibleRowsSubmenu
-	['m_normalColor'] = true, --
-	['m_highlightColor'] = true, --
-	['m_containerWidth'] = true, --
-	['m_maxNumSelections'] = true, --
-	['m_enableMultiSelect'] = true, --
-	["m_customEntryTemplateInfos"] = false, -- Allowing this to paas-through would break row setup.
-
-	-- ZO_ComboBox_Base
-	["m_name"] = true, -- since the name is acquired by the container name.
-	["m_spacing"] = true, --
-	["m_sortType"] = true, --
-	["m_container"] = true, -- all children use the same container as the comboBox
-	["m_sortOrder"] = true, --
-	["m_sortsItems"] = true, --
-	["m_sortedItems"] = false, -- for obvious reasons
-	["m_openDropdown"] = true, -- control, set to true for submenu to make comboBox_base:IsEnabled( function work
-	["m_selectedColor"] = true, --
-	["m_disabledColor"] = true, --
-	["m_selectedItemText"] = false, -- This is handeled by "SelectItem"
-	["m_selectedItemData"] = false, -- This is handeled by "SelectItem"
-	["m_isDropdownVisible"] = false, -- each menu has different dropdowns
-	["m_preshowDropdownFn"] = true, --
-	["horizontalAlignment"] = true, --
-
-	-- LibScrollableMenu
-	['options'] = true,
-	['narrateData'] = true,
-	['m_headerFont'] = true,
-	['XMLrowTemplates'] = true, --TODO: is this being overwritten?
-	['maxDropdownHeight'] = true,
-	['m_headerFontColor'] = true,
-	['m_highlightTemplate'] = true,
-	['visibleRowsSubmenu'] = true, -- we only need this "visibleRowsSubmenu" for the submenus
-	['disableFadeGradient'] = true,
-	['useDefaultHighlightForSubmenuWithCallback'] = true,
-}
-
-local submenuClass_exposedFunctions = {
-	["SelectItem"] = true, -- (item, ignoreCallback)
-}
-
 function submenuClass:New(...)
 	local newObject = setmetatable({},  {
 		__index = function (obj, key)
@@ -3988,6 +4041,10 @@ lib.getComboBoxsSortedItems = getComboBoxsSortedItems
 --		   font = "ZO_FontGame", label="test label", name="test value", enabled = true, checked = true, customValue1="foo", cutomValue2="bar", ... }
 --		--[[ Attention: additionalData keys which are maintained in table LSMOptionsKeyToZO_ComboBoxOptionsKey will be mapped to ZO_ComboBox's key and taken over into the entry.data[ZO_ComboBox's key]. All other "custom keys" will stay in entry.data.additionalData[key]! ]]
 --)
+
+
+--AddCustomScrollableMenuEntry("divider test", nil, nil, nil, { isDivider = true })
+
 function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additionalData)
 	--Special handling for dividers
 	local options = g_contextMenu:GetOptions()
@@ -4006,9 +4063,15 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 
 	--Additional data was passed in as a table: Check if label and/or name were provided and get their string value for the assert check
 	if isAddDataTypeTable == true then
-		--text and additionalData.name are provided: text wins
+		--Text was passed in?
 		if text ~= nil then
-			additionalData.name = text
+			--If entry is a divider
+			if generatedEntryType == LSM_ENTRY_TYPE_DIVIDER then
+				additionalData.name = libDivider
+			else
+				--Else: text and additionalData.name are provided: text wins
+				additionalData.name = text
+			end
 		end
 		generatedText = getValueOrCallback(additionalData.label or additionalData.name, additionalData)
 	end
