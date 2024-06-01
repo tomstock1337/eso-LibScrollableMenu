@@ -1459,6 +1459,13 @@ local function validateEntryType(item)
 	item.entryType = entryType
 end
 
+local function runPostItemSetupFunction(comboBox, itemEntry)
+	local postItem_SetupFunc = postItemSetupFunctions[itemEntry.entryType]
+	if postItem_SetupFunc then
+		postItem_SetupFunc(comboBox, itemEntry)
+	end
+end
+
 --Set the custom XML virtual template for a dropdown entry
 local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	local entryType = item.entryType
@@ -1488,10 +1495,7 @@ local function addItem_Base(self, itemEntry)
 	end
 
 	--Run a post setup function to update mandatory data or change visuals, for the entryType
-	local postItem_SetupFunc = postItemSetupFunctions[itemEntry.entryType]
-	if postItem_SetupFunc then
-		postItem_SetupFunc(self, itemEntry)
-	end
+	runPostItemSetupFunction(self, itemEntry)
 end
 
 --------------------------------------------------------------------
@@ -4056,22 +4060,23 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	--Determine the entryType based on text, passed in entryType, and/or additionalData table
 	entryType = checkEntryType(text, entryType, additionalData, isAddDataTypeTable, options)
 	entryType = entryType or LSM_ENTRY_TYPE_NORMAL
+
 	local generatedText
 
 	--Generate the entryType from passed in function, or use passed in value
 	local generatedEntryType = getValueOrCallback(entryType, (isAddDataTypeTable and additionalData) or options)
 
+	--If entry is a divider
+	if generatedEntryType == LSM_ENTRY_TYPE_DIVIDER then
+		text = libDivider
+	end
+
 	--Additional data was passed in as a table: Check if label and/or name were provided and get their string value for the assert check
 	if isAddDataTypeTable == true then
 		--Text was passed in?
 		if text ~= nil then
-			--If entry is a divider
-			if generatedEntryType == LSM_ENTRY_TYPE_DIVIDER then
-				additionalData.name = libDivider
-			else
-				--Else: text and additionalData.name are provided: text wins
-				additionalData.name = text
-			end
+			--text and additionalData.name are provided: text wins
+			additionalData.name = text
 		end
 		generatedText = getValueOrCallback(additionalData.label or additionalData.name, additionalData)
 	end

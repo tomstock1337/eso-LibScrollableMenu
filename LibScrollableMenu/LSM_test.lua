@@ -817,6 +817,12 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 3", function() d("Normal context menu at submenu entry6 1:1 - 3") end)
 							AddCustomScrollableMenuDivider()
 							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 4", function() d("Normal context menu at submenu entry6 1:1 - 4") end)
+							AddCustomScrollableMenuEntry(nil, nil, nil, nil, { isDivider = true })
+							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 5", function() d("Normal context menu at submenu entry6 1:1 - 5") end)
+							AddCustomScrollableMenuEntry(nil, nil, nil, nil, { entryType = LSM_ENTRY_TYPE_DIVIDER })
+							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 5", function() d("Normal context menu at submenu entry6 1:1 - 5") end)
+							AddCustomScrollableMenuEntry(nil, nil, nil, nil, { label = "test header in context menu", isHeader = true })
+							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 5", function() d("Normal context menu at submenu entry6 1:1 - 5") end)
 
 							local optionsContextMenu = {
 								visibleRowsDropdown = 3,
