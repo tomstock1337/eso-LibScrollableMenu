@@ -237,45 +237,46 @@ local possibleEntryDataWithFunction = {
 --dropdown helper classes
 local comboBoxDefaults = {
 	--From ZO_ComboBox
-	m_selectedItemData = nil,
-	m_selectedColor = { GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED) },
-	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
-	m_sortOrder = ZO_SORT_ORDER_UP,
-	m_sortType = ZO_SORT_BY_NAME,
-	m_sortsItems = false, --ZO_ComboBox real default is true
-	m_isDropdownVisible = false,
-	m_preshowDropdownFn = nil,
-	m_spacing = DEFAULT_SPACING,
-	m_font = DEFAULT_FONT,
-	m_normalColor = DEFAULT_TEXT_COLOR,
-	m_highlightColor = DEFAULT_TEXT_HIGHLIGHT,
-	m_highlightTemplate = 'ZO_SelectionHighlight',
-	m_customEntryTemplateInfos = nil,
-	m_enableMultiSelect = false,
-	m_maxNumSelections = nil,
-	m_height = DEFAULT_HEIGHT,
-	horizontalAlignment = TEXT_ALIGN_LEFT,
+	m_selectedItemData = 			nil,
+	m_selectedColor =				{ GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED) },
+	m_disabledColor = 				DEFAULT_TEXT_DISABLED_COLOR,
+	m_sortOrder = 					ZO_SORT_ORDER_UP,
+	m_sortType = 					ZO_SORT_BY_NAME,
+	m_sortsItems = 					false, --ZO_ComboBox real default is true
+	m_isDropdownVisible = 			false,
+	m_preshowDropdownFn = 			nil,
+	m_spacing = 					DEFAULT_SPACING,
+	m_font = 						DEFAULT_FONT,
+	m_normalColor = 				DEFAULT_TEXT_COLOR,
+	m_highlightColor = 				DEFAULT_TEXT_HIGHLIGHT,
+	m_highlightTemplate =			'ZO_SelectionHighlight',
+	m_customEntryTemplateInfos =	nil,
+	m_enableMultiSelect = 			false,
+	m_maxNumSelections = 			nil,
+	m_height = 						DEFAULT_HEIGHT,
+	horizontalAlignment = 			TEXT_ALIGN_LEFT,
 
 	--LibScrollableMenu internal (e.g. .options)
-	disableFadeGradient = false,
-	m_headerFontColor = HEADER_TEXT_COLOR,
-	visibleRows = DEFAULT_VISIBLE_ROWS,
-	visibleRowsSubmenu = DEFAULT_VISIBLE_ROWS,
-	baseEntryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+	disableFadeGradient = 			false,
+	m_headerFontColor = 			HEADER_TEXT_COLOR,
+	visibleRows = 					DEFAULT_VISIBLE_ROWS,
+	visibleRowsSubmenu = 			DEFAULT_VISIBLE_ROWS,
+	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 }
 
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
 local defaultComboBoxOptions  = {
-	["visibleRowsDropdown"] = 	DEFAULT_VISIBLE_ROWS,
-	["visibleRowsSubmenu"] = 	DEFAULT_VISIBLE_ROWS,
-	["sortEntries"] = 			DEFAULT_SORTS_ENTRIES,
-	["font"] = 					DEFAULT_FONT,
-	["spacing"] = 				DEFAULT_SPACING,
-	["disableFadeGradient"] = 	false,
+	["visibleRowsDropdown"] = 		DEFAULT_VISIBLE_ROWS,
+	["visibleRowsSubmenu"] = 		DEFAULT_VISIBLE_ROWS,
+	["sortEntries"] = 				DEFAULT_SORTS_ENTRIES,
+	["font"] = 						DEFAULT_FONT,
+	["spacing"] = 					DEFAULT_SPACING,
+	["disableFadeGradient"] = 		false,
 	["useDefaultHighlightForSubmenuWithCallback"] = false,
-	--["XMLRowTemplates"] = table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
+	--["XMLRowTemplates"] = 		table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
+
 
 ------------------------------------------------------------------------------------------------------------------------
 --Options key mapping
@@ -356,6 +357,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 }
 lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCallbacks
 
+
 ------------------------------------------------------------------------------------------------------------------------
 --Submenu key mapping
 
@@ -408,9 +410,10 @@ local submenuClass_exposedFunctions = {
 	["SelectItem"] = true, -- (item, ignoreCallback)
 }
 
-------------------------------------------------------------------------------------------------------------------------
 
--- Search filter 
+------------------------------------------------------------------------------------------------------------------------
+-- Search filter
+
 local noEntriesResults = {
 	enabled = false,
 	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS),
@@ -441,6 +444,7 @@ local filterNamesExempts = {
 	--Check via type(name)
 	--['nil'] = true,
 }
+
 
 ------------------------------------------------------------------------------------------------------------------------
 --Sound settings
@@ -503,8 +507,11 @@ local function dLog(debugType, text, ...)
 			logger:Debug(debugText)
 
 		elseif debugType == LSM_LOGTYPE_VERBOSE then
-			if lib.doVerboseDebug and logger.verbose and logger.verbose.isEnabled == true then
-				logger:Verbose(debugText)
+			if lib.doVerboseDebug then
+				local loggerVerbose = logger.verbose
+				if loggerVerbose and loggerVerbose.isEnabled == true then
+					logger:Verbose(debugText)
+				end
 			end
 
 		elseif debugType == LSM_LOGTYPE_INFO then
@@ -514,7 +521,7 @@ local function dLog(debugType, text, ...)
 			logger:Error(debugText)
 		end
 
-		--Normal debugging
+	--Normal debugging via chat d() messages
 	else
 		--No verbose debuglos in normal chat!
 		if debugType ~= LSM_LOGTYPE_VERBOSE then
