@@ -2381,6 +2381,8 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	--options.enableFilter == true?
 	if self:IsFilterEnabled() then
 		ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- starts with / and followed by .* to include special characters
+	else
+		self:ResetFilters(self.m_comboBox.m_dropdown)
 	end
 	filterString = filterString or ''
 	-- Convert ignoreSubmenu to bool
@@ -3483,8 +3485,13 @@ function comboBoxClass:HideOnMouseExit(mocCtrl)
 end
 
 function comboBoxClass:IsFilterEnabled()
-	self.filterString = self.filterString or ''
-	return self.options and self.options.enableFilter
+	local enableFilter = (self.options and getValueOrCallback(self.options.enableFilter, self.options)) or false
+	if not enableFilter then
+		self.filterString = ""
+	else
+		self.filterString = self.filterString or ""
+	end
+	return enableFilter
 end
 
 function comboBoxClass:SetDefaults()
@@ -4483,116 +4490,10 @@ LibScrollableMenu = lib
 --[[
 
 -------------------
-WORKING ON - Current version: 2.2
+WORKING ON - Current version: 2.21
 -------------------
-	- Fix divider not being shown if entryType is LSM_ENTRY_TYPE_NORMAL (but text is actually "-" only)
+	1. Search/filter editbox needs to reset to empy if options.enableFilter == false/nil
 	TESTED: OK
-	- Fix entryTypes passed in to the API functions to be used (even if wrong)
-	TESTED: OK
-	- Fix horizontalAlignment [_variable_] in setup functions
-	TESTED: OK
-	- Fix list [_variable_] in setup functions
-	TESTED: OK
-	- Fix LSMOptionsToZO_ComboBoxOptionsCallbacks -> self.options
-	TESTED: OK
-	- Add LSM_ENTRY_TYPE_SUBMENU and all needed code
-	TESTED: OK
-	- Add entry.m_highlightTemplate -> Add to entry.additionalData { highlightColor = ... , }
-	TESTED: OK
-	- Test dropdown header
-	TESTED: OK
-	- Test dropdown filter editbox and buttons
-	TESTED: OK
-	-Added support for options.maxDropdownHeight (only main menu, no submenu)
-	TESTED: OK
-	-Fixed height of menu to respect header height proprly
-	TESTED: OK
-	-Fixed checkboxes to hide tooltip on click
-	TESTED: OK
-	-Added translation files for e.g. tooltips at search filter editbox
-	TESTED: OK
-	-12	Compatibility fix for LibCustomMenu submenus (which only used data.label as the name): If data.name is missing in submenu but data.label exists -> set data.name = copy of data.label
-	TESTED: OK
-	-13 Fix AddCustomScrollableMenuEntries to put v.label to v.additionalData.label -> For a proper usage in AddCustomScrollableMenuEntry -> newEntry
-	TESTED: OK
-	-14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox) to properly get recognized from data tables of entries
-	TESTED: OK
-	-15. Fixed ZO_Menu opening does not hide already opened LSM dropdown & contextMenu
-	TESTED: OK
-	16. Bug callback onEntrySelected fires for entries clicked where there is no callback function (entry with hasSubmenu = true but callback = nil)
-	TESTED: OK
-	17. Bug header left clicking selects the header (if not explicitly enabled = false)
-	TESTED: OK
-	18. Bug clicking non-contextMenu entry while context menu is opened: Only close the context menu but do not select any entry
-	TESTED: OK
-	19. Find out if the checkbox selected toggle function is updating data.checked
-	TESTED: Main and submenu OK / ContextMenu NOT OK
-	20. Changed a lot in regards to OnGlobalMouseUp left & right click / context menu clears on right click
-	TESTED: OK
-	21. added: nil submenus create blank submenu. empty submenus create a subemnu with "Empty" entry.
-	TESTED: OK
-	22. Changed data["name"], "label", "checked", "enabled" of rows to use dynamic control table possibleEntryDataWithFunction
-	TESTED: OK
-	23. Fixed multiIcon usage of many icons and tooltips
-	TESTED: OK
-	24. Fixed disabled entries not closing the dropdown if clicked on them
-	TESTED: OK
-	25. Changed checkbox callback params order
-	TESTED: OK
-	26. Changed filter functions for the results list
-	TESTED: OK
-	27. Added context menu to search editbox -> history of last 10 searched texts
-	TESTED: OK
-	28. Search editbox does not reset on context menus, if another parentControl (openingControl) was used
-	TESTED: OK
-	29. Added options.useDefaultHighlightForSubmenuWithCallback
-	TESTED: OK
-
-
-	1. Added optional dropdown header with optionals: title, subtitle, filter, customControl
-	2. Fixed dropdown filtering. Filtered table reflects m_sortedItems indexing
-	- this allows selecting filtered items, selects sorted item by index. Prevents the need to modify selecting functions.
-	3. Opened submenu highlight "breadcrumb" to show chain of opened submenus. Animation based on how it's done in scrolltemplates.
-	- Consider, highlighting only if nested submenu is opened. This would require backwards highlighting. comboBox < m_submenu < m_submenu
-	- Store each opened submenu's highlight control until shown later?
-	4. Changed filtered "no results" entry color. Since it's a disabled entry, it was bright red.
-	5. Dropdown height now is adjusted by header height. Also supports self.maxDropdownHeight, when option is added.
-	- Default is (screenHeight - 100) - Updates on screen resized. to prevent dropdowns from overtaking the screen.
-	- Added maxDropdownHeight to submenuClass_exposedVariables. We can change that to a submenu specific variable.
-
-	6. Fixed - Close comboBox if right-clicked on non-comboBox, or descendant, control
-	7. Fixed - Update height on setting visible rows Dropdown
-	8. Fixed - Reset context menu to defaults on "clear"
-	9. Bug Right clicking on context menu entry must open a new context menu (if another was already opened)
-		-> should function correctly
-	6.5 if right-clicked on another control that has a context menu, closes current then opens new.
-		-> To allow this to work, had to remove contextMenuClass:HideDropdownInternal() to prevent clearing on hide. ClearCustomScrollableMenu now "must" be used by addons prior to populating the contextmenu
-	10. Bug Entry having a submenu and a callback should show the highlight green again
-		-> reverted
-	11. Fixed context menu to close on filterReset, but not at a contextMenu's filter
-	12. Compatibility fix for LibCustomMenu submenus (which only used data.label as the name): If data.name is missing in submenu but data.label exists -> set data.name = copy of data.label
-	13. Fix AddCustomScrollableMenuEntries to put v.label to v.additionalData.label -> For a proper usage in AddCustomScrollableMenuEntry -> newEntry
-	14. Fix isHeader and/or LSM_ENTRY_TYPE_HEADER (and checkbox, submenu etc.) to properly get recognized from data tables of entries
-	15. Fixed ZO_Menu opening does not hide already opened LSM dropdown & contextMenu
-	16. Bug callback onEntrySelected fires for entries clicked where there is no callback function (entry with hasSubmenu = true but callback = nil)
-	17. Bug header left clicking selects the header (if not explicitly enabled = false)
-		-> header entries are no longer selectable.
-	18. Bug clicking non-contextMenu entry while context menu is opened: Only close the context menu but do not select any entry
-		-> Closes context menu. does not select.
-
-	19. Find out if the checkbox selected toggle function is updating data.clicked. I had added this to the handler because it wasn't
-		data.checked = ZO_CheckButton_IsChecked(control.m_checkbox)
-	20. Changed a lot in regards to OnGlobalMouseUp / context menu clears on right click
-	21. added: nil submenus create blank submenu. empty submenus create a subemnu with "Empty" entry.
-	22. Changed data["name"], "label", "checked", "enabled" of rows to use dynamic control table possibleEntryDataWithFunction
-	23. Fixed multiIcon usage of many icons and tooltips
-	24. Fixed disabled entries not closing the dropdown if clicked on them
-	25. Changed checkbox callback params order
-	26. Changed filter functions for the results list
-	27. Added context menu to search editbox -> history of last 10 searched texts
-	28. Search editbox does not reset on context menus, if another parentControl (openingControl) was used
-	29. Added options.useDefaultHighlightForSubmenuWithCallback
-
 
 -------------------
 TODO - To check (future versions)
