@@ -113,7 +113,7 @@ local function test()
 
 			--Afterwards enable this custom enryType's setupFunction
 			XMLRowTemplates = {
-				[lib.scrollListRowTypes.ENTRY_ID] = {
+				[lib.scrollListRowTypes.LSM_ENTRY_TYPE_NORMAL] = {
 					template = "LibScrollableMenu_ComboBoxEntry_TestXMLRowTemplates",
 					rowHeight = 40,
 					setupFunc = function(control, data, list)

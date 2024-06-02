@@ -130,11 +130,6 @@ local getDataSource
 
 ------------------------------------------------------------------------------------------------------------------------
 --Entry types - For the scroll list's dataType of the menus
---local ENTRY_ID = 1
---local DIVIDER_ENTRY_ID = 2
---local HEADER_ENTRY_ID = 3
---local SUBMENU_ENTRY_ID = 4
---local CHECKBOX_ENTRY_ID = 5
 local LSM_ENTRY_TYPE_NORMAL = 	1
 local LSM_ENTRY_TYPE_DIVIDER = 	2
 local LSM_ENTRY_TYPE_HEADER = 	3
