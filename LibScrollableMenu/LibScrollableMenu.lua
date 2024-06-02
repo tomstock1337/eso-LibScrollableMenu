@@ -8,7 +8,7 @@ lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
 
 lib.author = "IsJustaGhost, Baertram, tomstock, Kyoma"
-lib.version = "2.2"
+lib.version = "2.21"
 
 lib.data = {}
 
