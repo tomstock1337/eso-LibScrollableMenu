@@ -297,8 +297,10 @@
 									/>
 
 									<OnMouseEnter>
-										ZO_Tooltips_ShowTextTooltip(self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET))
-										InformationTooltipTopLevel:BringWindowToTop()
+										local owningWindow = self:GetOwningWindow()
+										if owningWindow.object then
+											owningWindow.object:ShowTextTooltip(self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET), owningWindow)
+										end
 									</OnMouseEnter>
 
 									<OnMouseExit>
@@ -339,8 +341,10 @@
 											</OnTextChanged>
 
 											<OnMouseEnter>
-												ZO_Tooltips_ShowTextTooltip(self, BOTTOM, GetString(SI_LSM_SEARCH_FILTER_TOOLTIP))
-												InformationTooltipTopLevel:BringWindowToTop()
+												local owningWindow = self:GetOwningWindow()
+												if owningWindow.object then
+													owningWindow.object:ShowTextTooltip(self, BOTTOM, GetString(SI_LSM_SEARCH_FILTER_TOOLTIP), owningWindow)
+												end
 											</OnMouseEnter>
 
 											<OnMouseExit>

@@ -11,8 +11,7 @@
 ## Author: IsJustaGhost, Baertram, tomstock (, Kyoma)
 ## APIVersion: 101041 101042
 ## OptionalDependsOn: LibDebugLogger>=263
-## SavedVariables: LSM_TEST_SV
-
+## SavedVariables: LibScrollableMenu_SavedVars
 
 lang/en.lua
 lang/$(language).lua
@@ -22,4 +21,4 @@ LibScrollableMenu.xml
 
 ## Uncomment this to test the combobox with different menu entryTypes and submenus
 ## Use slash command /lsmtest to show the test UI
-LSM_test.lua
+## LSM_test.lua

@@ -2619,6 +2619,20 @@ function dropdownClass:SetFilterIgnore(ignore)
 end
 ]]
 
+function dropdownClass:ShowTextTooltip(control, side, tooltipText, owningWindow)
+	ZO_Tooltips_HideTextTooltip()
+	--Do not show tooltip if the context menu at the search editbox is shown
+	if not ZO_Menu:IsHidden() or tooltipText == nil or tooltipText == "" then return end
+	--Do not show tooltip if cursor is in the search editbox (typing)
+	if owningWindow ~= nil then
+		local searchFilterTextBox = owningWindow.filterBox
+		if searchFilterTextBox ~= nil and control == searchFilterTextBox and control:HasFocus() then return end
+	end
+	ZO_Tooltips_ShowTextTooltip(control, side, tooltipText)
+	InformationTooltipTopLevel:BringWindowToTop()
+end
+
+
 --------------------------------------------------------------------
 -- ComboBox classes
 --------------------------------------------------------------------
