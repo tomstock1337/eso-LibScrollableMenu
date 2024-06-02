@@ -10,8 +10,6 @@ local MAJOR = lib.name
 lib.author = "IsJustaGhost, Baertram, tomstock, Kyoma"
 lib.version = "2.3"
 
-lib.data = {}
-
 if not lib then return end
 
 --------------------------------------------------------------------
@@ -3702,8 +3700,8 @@ function submenuClass:New(...)
 			local value = submenuClass[key]
 			if value then
 				if submenuClass_exposedFunctions[key] then
-					return function(self, ...)
-						return value(self.m_comboBox, ...)
+					return function(p_self, ...)
+						return value(p_self.m_comboBox, ...)
 					end
 				end
 
