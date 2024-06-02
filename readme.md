@@ -27,18 +27,19 @@ Do not override :AddMenuItems() and just do it the normal way. Your combobox wil
 Check file LSM_test.lua for example code and menus + submenus + callbacks!
 
 Create a comboBox from virtual template e.g.:
+
 ```local comboBox = WINDOW_MANAGER:CreateControlFromVirtual("AF_FilterBar" .. myName .. "DropdownFilter", parentControl, "ZO_ComboBox")```
 
 
 Add the scrollable helper via LibScrollableMenu:
 ```
-		--Define your options for the scrollHelper here
-		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
-		-->LibScrollableMenu.lua
-		local options = { visibleRowsDropdown = 10, visibleRowsSubmenu = 5, sortEntries=function() return false end, }
-		--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
-		--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
-		local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBox, options)
+--Define your options for the scrollHelper here
+-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
+-->LibScrollableMenu.lua
+local options = { visibleRowsDropdown = 10, visibleRowsSubmenu = 5, sortEntries=function() return false end, }
+--Create a scrollHelper then and reference your ZO_ComboBox, plus pass in the options
+--After that build your menu entres (see below) and add them to the combobox via :AddItems(comboBoxMenuEntries)
+local scrollHelper = AddCustomScrollableComboBoxDropdownMenu(testTLC, comboBox, options)
 ```
 
 The scroll helper enables a scrollable comboxbox then, without multi selection!
@@ -54,13 +55,13 @@ tableWithEntries can contain entries for normal non-submenu lines:
 ```
 local tableWithEntries = {}
 
-                    tableWithEntries [#tableWithEntries +1] = {
-                        name            = "My non-submenu entry",
-                        callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-                           --do what neesd to be done once the entry was selected
-                        end,
-                        tooltip         = "Tooltip text",
-                    }
+tableWithEntries [#tableWithEntries +1] = {
+    name            = "My non-submenu entry",
+    callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+        --do what neesd to be done once the entry was selected
+    end,
+    tooltip         = "Tooltip text",
+}
 
 
 ```
@@ -68,30 +69,30 @@ local tableWithEntries = {}
 or lines with submenus, where you specify "entries" as a tabl which got the same format as non-submenu entries again (see above).
 ```
 local submenuEntries = {
-                    submenuEntries [#submenuEntries +1] = {
-                        name            = "My submenu sub-entry 1",
-                        --label             = "My submenu sub-entry 1",
-                        callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-                           --do what neesd to be done once the entry was selected
-                        end,
-                        tooltip         = "Tooltip text",
-                    }
+  submenuEntries [#submenuEntries +1] = {
+      name            = "My submenu sub-entry 1",
+      --label             = "My submenu sub-entry 1",
+      callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+          --do what neesd to be done once the entry was selected
+      end,
+      tooltip         = "Tooltip text",
+  }
 
-                    submenuEntries [#submenuEntries  +1] = {
-                        name            = "My submenu sub-entry 2",
-                        callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-                           --do what neesd to be done once the entry was selected
-                        end,
-                        tooltip         = "Tooltip text",
-                    }
+  submenuEntries [#submenuEntries  +1] = {
+      name            = "My submenu sub-entry 2",
+      callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+          --do what neesd to be done once the entry was selected
+      end,
+      tooltip         = "Tooltip text",
+  }
 
 }
 
 
-                    tableWithEntries [#tableWithEntries +1] = {
-                        name            = "My submenu entry",
-                        entries         = submenuEntries,
-                        tooltip         = "Tooltip text",
-                    }
+tableWithEntries [#tableWithEntries +1] = {
+    name            = "My submenu entry",
+    entries         = submenuEntries,
+    tooltip         = "Tooltip text",
+}
 
 ```
