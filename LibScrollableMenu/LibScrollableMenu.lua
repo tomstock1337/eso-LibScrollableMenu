@@ -7,7 +7,7 @@ local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
 
-lib.author = "IsJustaGhost, Baertram, tomstock1337, Kyoma"
+lib.author = "IsJustaGhost, Baertram, tomstock, Kyoma"
 lib.version = "2.2"
 
 lib.data = {}
@@ -1464,7 +1464,7 @@ local function clearNewStatus(control, data)
 		if data.entries == nil then
 			data.isNew = false
 			
-			lib:FireCallbacks('NewStatusUpdated', data, control)
+			lib:FireCallbacks('NewStatusUpdated', control, data)
 			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: NewStatusUpdated - control: " ..tos(getControlName(control)))
 
 			control.m_dropdownObject:Refresh(data)
@@ -1822,7 +1822,7 @@ local function onMouseEnter(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
-	lib:FireCallbacks('EntryOnMouseEnter', data, control)
+	lib:FireCallbacks('EntryOnMouseEnter', control, data)
 	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 
 	return dropdown
@@ -1832,7 +1832,7 @@ local function onMouseExit(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
-	lib:FireCallbacks('EntryOnMouseExit', data, control)
+	lib:FireCallbacks('EntryOnMouseExit', control, data)
 	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
 
 	return dropdown
@@ -1842,7 +1842,7 @@ end
 local function selectEntryCallback(dropdown, control, data, hasSubmenu)
 	if not data or not data.callback then return end
 	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
-	lib:FireCallbacks('EntryOnSelected', data, control)
+	lib:FireCallbacks('EntryOnSelected', control, data)
 	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnSelected - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(MOUSE_BUTTON_INDEX_LEFT), tos(true), tos(hasSubmenu))
 
 	dropdown:SelectItemByIndex(control.m_data.m_index, data.ignoreCallback)
