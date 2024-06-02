@@ -100,17 +100,21 @@ local DEFAULT_SPACING = 0
 local WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = 4
 
 --Fonts
-local DEFAULT_FONT = "ZoFontGame"
-local HEADER_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED))
-local DEFAULT_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL))
-local DEFAULT_TEXT_HIGHLIGHT = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT))
+local DEFAULT_FONT = 				"ZoFontGame"
+local HeaderFontTitle = 			"ZoFontHeader3"
+local HeaderFontSubtitle = 			"ZoFontHeader2"
+
+--Colors
+local HEADER_TEXT_COLOR = 			ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED))
+local DEFAULT_TEXT_COLOR = 			ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL))
+local DEFAULT_TEXT_HIGHLIGHT = 		ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT))
 local DEFAULT_TEXT_DISABLED_COLOR = ZO_GAMEPAD_UNSELECTED_COLOR
 
 --Textures
-local iconNewIcon = ZO_KEYBOARD_NEW_ICON
+local iconNewIcon = 				ZO_KEYBOARD_NEW_ICON
 
 --MultiIcon
-local iconNarrationNewValue = GetString(SI_SCREEN_NARRATION_NEW_ICON_NARRATION)
+local iconNarrationNewValue = 		GetString(SI_SCREEN_NARRATION_NEW_ICON_NARRATION)
 
 --Narration
 local UINarrationName = MAJOR .. "_UINarration_"
@@ -632,9 +636,6 @@ local headerControls = lib.headerControls
 
 local refreshDropdownHeader
 do
-	local HeaderFontTitle = "ZoFontHeader3"
-	local HeaderFontSubtitle = "ZoFontHeader2"
-
 	local PARENT			= headerControls.PARENT
 	local TITLE				= headerControls.TITLE
 	local SUBTITLE			= headerControls.SUBTITLE
