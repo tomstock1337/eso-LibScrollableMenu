@@ -157,11 +157,11 @@ lib.allowedEntryTypes = libraryAllowedEntryTypes
 
 --Make them accessible for the DropdownObject:New options table -> options.XMLRowTemplates
 lib.scrollListRowTypes = {
-	ENTRY_ID = ENTRY_ID,
-	DIVIDER_ENTRY_ID = DIVIDER_ENTRY_ID,
-	HEADER_ENTRY_ID = HEADER_ENTRY_ID,
-	SUBMENU_ENTRY_ID = SUBMENU_ENTRY_ID,
-	CHECKBOX_ENTRY_ID = CHECKBOX_ENTRY_ID,
+	["ENTRY_ID"] =			ENTRY_ID,
+	["DIVIDER_ENTRY_ID"] = 	DIVIDER_ENTRY_ID,
+	["HEADER_ENTRY_ID"] = 	HEADER_ENTRY_ID,
+	["SUBMENU_ENTRY_ID"] = 	SUBMENU_ENTRY_ID,
+	["CHECKBOX_ENTRY_ID"] = CHECKBOX_ENTRY_ID,
 }
 
 --Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be allowed for the contextMenus
@@ -2901,7 +2901,10 @@ function comboBox_base:GetDropdownObject(comboBoxContainer, depth)
 end
 
 function comboBox_base:GetHighlightTemplate(control)
-	return getControlData(control).m_highlightTemplate or control.m_data.m_highlightTemplate or self.m_highlightTemplate
+	local controlData = getControlData(control)
+	return (controlData ~= nil and controlData.m_highlightTemplate)
+			or (control.m_data ~= nil and control.m_data.m_highlightTemplate)
+			or self.m_highlightTemplate
 end
 
 -- Create the m_dropdownObject on initialize.
