@@ -1,0 +1,81 @@
+-v- ---------------LSM v2.2 - 2024-06-02---------------------------------------------------------------------------- -v-
+-[Fixes]-
+--Open and close clicks
+--Context menus open & close, and other bugs
+--Sizes
+--Highlights
+--Non clickable items
+--MultiIcons
+--Sounds
+--Checkboxes
+--Entry type determination
+--Row's dataSource etc. updating
+--Tooltips & custom tooltips
+--API functions
+--Callbacks (some callback parameters have changed!)
+--Behavor of menus and contextmenus if ZO_Menu is used in addition
+--Compatibility fix for LibCustomMenu submenus (which only used data.label as the name)
+
+-[Changes]-
+-Changed default sorting to "false" now. Enable it via options.sortEntries if you need it sorted by default
+
+-[Additions]-
+-Added new combobox header: Headline text, subline text, text search filter -> All optional, controled via the options table
+-Added opened submenu highlight "breadcrumb" to show chain of opened submenus
+-Added option maxDropdownHeight
+-Added option useDefaultHighlightForSubmenuWithCallback
+-Added: nil submenus create blank submenu -> no entries, borders look weird. An empty submenu {} creates a submenu with 1 "Empty" entry.
+-Added SavedVariables (currently used for text filter header's "last 10 searched texts history")
+
+-[Current callbacks]-
+'NewStatusUpdated' = function(control, data)
+'EntryOnMouseEnter' = function(control, data)
+'EntryOnMouseExit' = function(control, data)
+'EntryOnSelected' = function(control, data)
+'OnMenuShow' = function(control)
+'OnSubMenuShow' = function(control)
+'OnContextMenuShow' = function(control)
+'OnMenuHide' = function(control)
+'OnSubMenuHide' = function(control)
+'OnContextMenuHide' = function(control)
+'CheckboxUpdated' = function(control, data, isChecked)
+'OnDropdownMenuAdded' = function(comboBox_Object, options)
+
+-[Current narration callbacks]-
+-"OnComboBoxMouseEnter" = function(m_dropdownObject, comboBoxControl)
+-"OnComboBoxMouseExit" = function(m_dropdownObject, comboBoxControl)
+-"OnMenuShow" = function(m_dropdownObject, comboBoxControl)
+-"OnMenuHide" = function(m_dropdownObject, comboBoxControl)
+-"OnSubMenuShow" = function(m_dropdownObject, comboBoxControl, anchorPoint)
+-"OnSubMenuHide" = function(m_dropdownObject, comboBoxControl)
+-"OnEntryMouseEnter" = function(m_dropdownObject, entryControl, data, hasSubmenu)
+-"OnEntryMouseExit" = function(m_dropdownObject, entryControl, data, hasSubmenu)
+-"OnEntrySelected" = function(m_dropdownObject, entryControl, data, hasSubmenu)
+-"OnCheckboxUpdated" = function(m_dropdownObject, checkboxControl, data)
+
+-[Current options table that can be passed in to API functions or new LSM]-
+--> See above API function "AddCustomScrollableComboBoxDropdownMenu"
+
+-[Current API functions]-
+--> Parameter description see file LibScrollableMenu.lua -> search for --[API - Custom scrollable context menu at any control]
+
+--API to add a scrollable dropdown to an existing ZO_ComboBox control
+function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, options)
+
+--API to add a scrollable dropdown to any control -> As context menu (like a ZO_Menu)
+function ClearCustomScrollableMenu()
+function AddCustomScrollableMenu(entries, options)
+function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additionalData)
+function AddCustomScrollableMenuEntries(contextMenuEntries)
+function AddCustomScrollableSubMenuEntry(text, entries)
+function AddCustomScrollableMenuDivider()
+function AddCustomScrollableMenuHeader(text, additionalData)
+function AddCustomScrollableMenuCheckbox(text, callback, checked, additionalData)
+function SetCustomScrollableMenuOptions(options, comboBoxContainer)
+function ShowCustomScrollableMenu(controlToAnchorTo, options)
+
+-API that can be used in a callback function of an entry
+function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
+
+
+-^- ---------------LSM v2.2 - 2024-06-02---------------------------------------------------------------------------- -^-

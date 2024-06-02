@@ -6,6 +6,13 @@ local MAJOR = lib.name
 ------------------------------------------------------------------------------------------------------------------------
 local function test()
 	if lib.testComboBoxContainer == nil then
+		local testSV = ZO_SavedVars:NewAccountWide("LibScrollableMenu_SavedVars", 1, "LSM_Test",
+				{ cbox1 = false, cbox2 = false, cbox3 = false,
+				  cboxSubmenu1 = false, cboxSubmenu2 = false, cboxSubmenu3 = false,
+				  cboxContextmenu1 = false, cboxContextmenu2 = false, cboxContextmenu3 = false },
+				nil, nil)
+
+
 		local testTLC = CreateTopLevelWindow(MAJOR .. "TestTLC")
 		testTLC:SetHidden(true)
 		testTLC:SetDimensions(1, 1)
@@ -66,17 +73,27 @@ local function test()
 		-->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
 		-->LibScrollableMenu.lua
 		local HEADER_TEXT_COLOR_RED = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_FAILED))
+		local CUSTOM_DISABLED_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_GAME_REPRESENTATIVE))
+		local CUSTOM_HIGHLIGHT_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_TOOLTIP_INSTRUCTIONAL))
 
+		--==============================================================================================================
+		-- Options for the main combobox menu
+		--==============================================================================================================
 		local options = {
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
-			sortEntries=function() return false end,
+			maxDropdownHeight = 450,
+
+			--useDefaultHighlightForSubmenuWithCallback = true,
+
+			--sortEntries=function() return false end,
 			narrate = narrateOptions,
 			disableFadeGradient = false,
 			--headerColor = HEADER_TEXT_COLOR_RED,
-			--disabledColor = ZO_GAMEPAD_UNSELECTED_COLOR,
-			--normalColor = ZO_WHITE,
-			--spacing = 12,
+			--titleText = function()  return "Custom title text" end,
+			--subtitleText = "Custom sub title",
+			enableFilter = function() return true end,
+
 			--[[ Define in XML:
 				<!-- Normal entry for Custom options.XMLRowTemplates test  -->
 				<Control name="LibScrollableMenu_ComboBoxEntry_TestXMLRowTemplates" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
@@ -96,7 +113,7 @@ local function test()
 
 			--Afterwards enable this custom enryType's setupFunction
 			XMLRowTemplates = {
-				[lib.scrollListRowTypes.ENTRY_ID] = {
+				[lib.scrollListRowTypes.LSM_ENTRY_TYPE_NORMAL] = {
 					template = "LibScrollableMenu_ComboBoxEntry_TestXMLRowTemplates",
 					rowHeight = 40,
 					setupFunc = function(control, data, list)
@@ -126,48 +143,103 @@ local function test()
 
 		--Prepare and add the text entries in the dropdown's comboBox
 
-		local subEntries = {
-
-			{
-				
-				name            = "Submenu entry 1:1",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry 1:1")
-				end,
-				tooltip         = "Submenu Entry Test 1:1",
-				--icons 			= nil,
-			},
-			{
-				name            = "-",
-			},
+		--==============================================================================================================
+		-- Submenu entries within contextMenus
+		--==============================================================================================================
+		local submenuEntriesForContextMenu = {
 			{
 
-				name            = "Submenu entry 1:2",
+				--name            = "CntxtMenu - Submenu entry 1:1",
+				label = 			"Test name missing - only label",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Submenu entry 1:2")
+					d("CntxtMenu - Submenu entry 1:1")
 				end,
-				tooltip         = function() return "Submenu Entry Test 1:2" end,
+				tooltip         = 	"CntxtMenu - Submenu Entry Test 1:1",
+				--icon 			= nil,
+				enabled 		= true,
+			},
+			{
+				name            =	"-",
+			},
+			{
+
+				name            = "CntxtMenu - Submenu entry 1:2",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("CntxtMenu - Submenu entry 1:2")
+				end,
+				tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
 				isNew			= true,
-				--icons 			= nil,
+				--icon 			= nil,
+				enabled 		= function() return true end,
 			},
+			{
+				entryType		= LSM_ENTRY_TYPE_DIVIDER,
+			},
+			{
 
+				name            = "CntxtMenu - Submenu entry with 3 icon 1:3",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("CntxtMenu - Submenu entry 1:3")
+				end,
+				--tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
+				--isNew			= true,
+				--icon 			= nil,
+				icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
+				--enabled 		= function() return false end,
+			},
+			{
+				name = function() return "-" end,
+				customValue1 = "test",
+				--entryType = LSM_ENTRY_TYPE_DIVIDER,
+			},
+			{
+
+				name            = "CntxtMenu - Submenu entry with 2 icon 1:4",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("CntxtMenu - Submenu entry 1:3")
+				end,
+				--tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
+				--isNew			= true,
+				--icon 			= nil,
+				icon =			{ { iconTexture = "/esoui/art/inventory/inventory_trait_ornate_icon.dds", width = 32, height = 32, tooltip = "Hello world" }, "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", { iconTexture = "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds", width = 16, height = 16, tooltip = "Hello world - 2nd tooltip" }  },
+				--enabled 		= false,
+			},
+			{
+				name            =	"bla blubb",
+				entryType		= LSM_ENTRY_TYPE_DIVIDER,
+			},
+			{
+
+				name            = "CntxtMenu - Submenu entry 1:5",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("CntxtMenu - Submenu entry 1:5")
+				end,
+				--tooltip         = function() return "CntxtMenu - Submenu Entry Test 1:2" end,
+				--isNew			= false,
+				--icon 			= nil,
+			},
 		}
 
+		--==============================================================================================================
+		-- Submenu entries
+		--==============================================================================================================
 		--LibScrollableMenu - LSM entry - Submenu normal
-		local submenuEntries = {
+		local isCheckBoxNow = false
+		local isCheckBoxNow2 = false
+		local submenuEntries               = {
 			{
 
-				name            = "Submenu Entry Test 1 (contexMenu)",
+				name            = "Submenu Entry Test 1 (contextMenu)",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 1")
 				end,
 				contextMenuCallback =   function(self)
-					d("contextMenuCallback")
+					d("Submenu Entry Test 1 (contextMenu) -> Callback")
 					ClearCustomScrollableMenu()
 
-					AddCustomScrollableSubMenuEntry("Submenu entry 1 (function)", subEntries) -- function() return subEntries end --todo: ERROR both do not remove the isNew onMouseEnter at a contextmenu
+					AddCustomScrollableSubMenuEntry("Context Submenu entry 1 (function)", submenuEntriesForContextMenu) -- function() return subEntries end --todo: ERROR both do not remove the isNew onMouseEnter at a contextmenu
 
-					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Parent, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
+					AddCustomScrollableMenuEntry("Context RunCustomScrollableMenuItemsCallback (Parent, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Custom menu Normal entry 1')
 
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
@@ -184,16 +256,12 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenu, nil, true)
 					end)
 
-					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
+					AddCustomScrollableMenuEntry("Context Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 
-					ShowCustomScrollableMenu(nil, {
-						--spacing = 12,
-						narrate = narrateOptions,
-					})
-					d("Submenu entry 1")
+					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, enableFilter = true })
 				end,
 				--tooltip         = "Submenu Entry Test 1",
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 
@@ -202,10 +270,10 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 					d("Submenu entry test 2")
 				end,
 				contextMenuCallback =   function(self)
-					d("contextMenuCallback")
+					d("Submenu Entry Test 2 (contextMenu) -> Callback")
 					ClearCustomScrollableMenu()
 
-					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Same, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
+					AddCustomScrollableMenuEntry("Context RunCustomScrollableMenuItemsCallback (Same, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Custom menu Normal entry 1')
 
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
@@ -222,48 +290,61 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenu, nil, false)
 					end)
 
-					AddCustomScrollableMenuEntry("Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
+					AddCustomScrollableMenuEntry("Context Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 
 					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, })
-					d("Submenu entry 1")
 				end,
 				isNew			= true,
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
-				isCheckbox		= function() return true  end,
-				name            = "Checkbox entry 1",
+				--isCheckbox		= function() isCheckBoxNow = not isCheckBoxNow d("isCheckBoxNow = " ..tostring(isCheckBoxNow)) return isCheckBoxNow end,
+				entryType = 	function() isCheckBoxNow = not isCheckBoxNow d("isCheckBoxNow = " ..tostring(isCheckBoxNow)) return isCheckBoxNow and LSM_ENTRY_TYPE_CHECKBOX or LSM_ENTRY_TYPE_NORMAL end,
+				name            = "Checkbox submenu entry 1 with 3 icon - entryType = func (checkbox)",
 				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Checkbox entry 1")
+				callback        =   function(control, checkedData, checked)
+					d("Checkbox entry 1 - checked: " ..tostring(checked))
 				end,
 				--	tooltip         = function() return "Checkbox entry 1"  end
-				tooltip         = "Checkbox entry 1"
+				tooltip         = "Checkbox entry 1",
+				icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" }
 			},
 			{
 				name            = "-", --Divider
 			},
 			{
-				isCheckbox		= true,
-				name            = "Checkbox entry 2",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Checkbox entry 2")
+				--isCheckbox		= true,
+				name            = "Checkbox submenu entry 2 - LSM_ENTRY_TYPE_CHECKBOX - checked from SV fixed",
+				callback        =   function(control, checkedData, checked)
+					d("Checkbox entry 2 - checked: " ..tostring(checked))
+					testSV.cboxSubmenu1 = checked
 				end,
-				checked			= true, -- Confirmed does start checked.
+				checked			= testSV.cboxSubmenu1, -- Confirmed does start checked.
 				--tooltip         = function() return "Checkbox entry 2" end
-				tooltip         = "Checkbox entry 2"
+				tooltip         = "Checkbox entry 2",
+				entryType		= LSM_ENTRY_TYPE_CHECKBOX,
+				--[[
+				additionalData = {
+						normalColor =		GetClassColor(GetUnitClassId("player")),
+						disabledColor =		CUSTOM_DISABLED_TEXT_COLOR,
+						highlightColor =	CUSTOM_HIGHLIGHT_TEXT_COLOR,
+						highlightTemplate =	"ZO_TallListSelectedHighlight",
+						font = function() return "ZoFontBookLetter" end,
+					}
+					]]
 			},
 			{
 				name            = "-", --Divider
 			},
 			--LibScrollableMenu - LSM entry - Submenu divider
 			{
-				name            = "-",
+				name            = "test submenu divider with name text - LSM_ENTRY_TYPE_DIVIDER",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					--Headers do not use any callback
+					--Dividers do not use any callback
 				end,
 				tooltip         = "Submenu Divider Test 1",
-				--icons 			= nil,
+				--icon 			= nil,
+				entryType		= LSM_ENTRY_TYPE_DIVIDER,
 			},
 			{
 
@@ -273,23 +354,35 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				end,
 				isNew			= true,
 				--tooltip         = "Submenu Entry Test 3",
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 				isHeader        = true, --Enables the header at LSM
-				name            = "Header Test 1",
+				name            = "Header Test 1 - isHeader",
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
 				tooltip         = "Header test 1",
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 
-				name            = "Submenu Entry Test 4",
+				name            = "Submenu Entry Test 4 - LSM_ENTRY_TYPE_NORMAL",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Submenu entry test 4")
 				end,
-				tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				tooltip         = function() return "Submenu Entry Test 4"  end,
+				--icon 			= nil,
+				entryType		= LSM_ENTRY_TYPE_NORMAL,
+			},
+			{
+
+				name            = "Submenu Entry Test 4 - LSM_ENTRY_TYPE_NORMAL, but entries",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Submenu entry test 4")
+				end,
+				tooltip         = function() return "Submenu Entry Test 4"  end,
+				--icon 			= nil,
+				entryType		= LSM_ENTRY_TYPE_NORMAL,
+				entries 		= {}, --does that match together with entryType = LSM_ENTRY_TYPE_NORMAL? Or LSM_ENTRY_TYPE_SUBMENU needed?
 			},
 			{
 
@@ -298,7 +391,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 5")
 				end,
 				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 				name            = "Submenu entry 6",
@@ -313,7 +406,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 							d("Submenu entry 6 1:1")
 						end,
 						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
+						--icon 			= nil,
 					},
 					{
 
@@ -325,12 +418,12 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 						entries         = {
 							{
 
-								name            = "Submenu entry 6 2:1",
+								name            = "Submenu entry 6 with 3 icon 2:1",
 								callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 									d("Submenu entry 6 2:1")
 								end,
 								--tooltip         = "Submenu Entry Test 1",
-								--icons 			= nil,
+								icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" }
 							},
 							{
 
@@ -347,7 +440,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 											d("Normal entry 6 2:1")
 										end,
 										--tooltip         = "Submenu Entry Test 1",
-										--icons 			= nil,
+										--icon 			= nil,
 									},
 									{
 
@@ -357,7 +450,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 										end,
 										tooltip         = "Normal entry 6 2:2",
 										isNew			= true,
-										--icons 			= nil,
+										--icon 			= nil,
 									},
 								},
 							},
@@ -370,7 +463,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 							d("Normal entry 6 1:2")
 						end,
 						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
+						--icon 			= nil,
 					},
 				},
 				--	tooltip         = function() return "Submenu entry 6"  end
@@ -383,7 +476,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 7")
 				end,
 				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 
@@ -392,7 +485,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 8")
 				end,
 				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 
@@ -401,7 +494,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 9")
 				end,
 				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				--icon 			= nil,
 			},
 			{
 
@@ -410,17 +503,39 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("Submenu entry test 10")
 				end,
 				--tooltip         = function() return "Submenu Entry Test 4"  end
-				--icons 			= nil,
+				--icon 			= nil,
 			}
 		}
 
 		--Normal entries
 		local wasNameChangedAtEntry = false
 		local wasLabelChangedAtEntry = false
-		local comboBoxMenuEntries = {
+		local isEnabledNowMain = false
+		local isEnabledNow = false
+		local gotSubmenuEntries = false
+		local isChecked = false
+
+		--==============================================================================================================
+		-- Main combobox menu entries
+		--==============================================================================================================
+		local comboBoxMenuEntries          = {
 			{
-				enabled = function() return false  end,
-				name            = function()
+				isHeader        = function() return true end, --Enables the header at LSM
+				name            = "Header Test Main 1 - isHeader = func",
+				tooltip         = "Header test main 1",
+				--icon 			= nil,
+			},
+			{
+				additionalData = {
+					normalColor =		GetClassColor(GetUnitClassId("player")),
+					disabledColor =		CUSTOM_DISABLED_TEXT_COLOR,
+					highlightColor =	CUSTOM_HIGHLIGHT_TEXT_COLOR,
+					highlightTemplate =	"ZO_TallListSelectedHighlight",
+					font = 				function() return "ZoFontBookLetter" end,
+				},
+
+				enabled = function() isEnabledNowMain = not isEnabledNowMain return isEnabledNowMain end,
+				name = function()
 					if not wasNameChangedAtEntry then
 						wasNameChangedAtEntry = true
 						return "Normal entry 1 (contextMenu)"
@@ -433,12 +548,14 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				callback        =   function(self)
 					d("Normal entry 1")
 				end,
+				--entryType = lib.LSM_ENTRY_TYPE_CHECKBOX,
 				contextMenuCallback =   function(self)
 					d("contextMenuCallback")
 					ClearCustomScrollableMenu()
 					--AddCustomScrollableSubMenuEntry("Context menu entry 1", subEntries)
+					AddCustomScrollableMenuHeader("Header test in context menu", nil)
 
-					AddCustomScrollableSubMenuEntry("Context menu entry1 opening a submenu", subEntries)
+					AddCustomScrollableSubMenuEntry("Context menu entry1 opening a submenu", submenuEntriesForContextMenu)
 
 					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Parent, Checkboxes)", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Context menu Normal entry 1')
@@ -446,7 +563,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 
 						local function myAddonCallbackFunc(p_comboBox, p_item, entriesFound, ...) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
-d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+							d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
 							for k, v in ipairs(entriesFound) do
 								local name = v.label or v.name
 								d(">name of checkbox: " .. tostring(name).. ", checked: " .. tostring(v.checked))
@@ -458,27 +575,103 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, { LSM_ENTRY_TYPE_CHECKBOX }, true, "customParam1", "customParam2")
 					end)
 
-					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end)
-					ShowCustomScrollableMenu()
+					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end, nil, nil, {
+						normalColor =		GetClassColor(GetUnitClassId("player")),
+						disabledColor =		CUSTOM_DISABLED_TEXT_COLOR,
+						highlightColor =	CUSTOM_HIGHLIGHT_TEXT_COLOR,
+						highlightTemplate =	"ZO_TallListSelectedHighlight",
+						font = function() return "ZoFontBookLetter" end,
+					})
+
+					AddCustomScrollableMenuEntry("Context menu Normal entry 3", function() d('Context menu Normal entry 3') end)
+
+					AddCustomScrollableMenuEntry("Context menu Normal entry 4", function() d('Context menu Normal entry 4') end)
+
+					AddCustomScrollableMenuEntry("Context menu Normal entry 5", function() d('Context menu Normal entry 5') end)
+
+					ShowCustomScrollableMenu(nil, {
+						--titleText = "Context menu",
+						--titleFont = function() return "ZoFontGameSmall" end,
+						--subtitleText = function() return "Test 1" end,
+						--subtitleFont = "ZoFontHeader3", --Same font size as title
+						enableFilter = true,
+						--headerColor = HEADER_TEXT_COLOR_RED,
+						visibleRowsDropdown = 5,
+						visibleRowsSubmenu = 4,
+						--maxDropdownHeight = 250,
+						--sortEntries = false,
+					})
 				end,
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",
 				isNew			= true,
 				--entries         = submenuEntries,
 				--tooltip         =
-				customTooltip   = function(data, rowControl, point, offsetX, offsetY, relativePoint)
-					if data ~= nil then
+				customTooltip   = function(control, isAbove, data, rowControl, point, offsetX, offsetY, relativePoint)
+					if isAbove and data ~= nil then
 						ZO_Tooltips_ShowTextTooltip(rowControl, point or TOP, "Test custom tooltip")
 					else
 						ZO_Tooltips_HideTextTooltip()
 					end
 				end,
-				type = lib.LSM_ENTRY_TYPE_CHECKBOX
 			},
 			{
 				name            = "-", --Divider
 			},
 			{
-				name            = "Name value", --no name test
+
+				name            = "Submenu Entry Test - No entries",
+				entryType = LSM_ENTRY_TYPE_SUBMENU,
+
+			},
+			{
+				name            = "Main checkbox - checked (toggle func)",
+				checked           = function() isChecked = not isChecked return isChecked end,
+				callback        =   function(control, checkedData, checked)
+					d("Main checkbox! checked: " ..tostring(checked))
+				end,
+				--entries         = submenuEntries,
+				--tooltip         =
+				entryType = lib.LSM_ENTRY_TYPE_CHECKBOX
+			},
+			{
+				label = "test",
+				isDivider = true
+			}, --todo: Divider test, working this way?
+			{
+				name            = "Main checkbox 2 - isCheckbox = true, entryType=checkbox, checked = SV fixed",
+				checked           = testSV.cbox1,
+				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				callback        =   function(control, checkedData, checked)
+					d("Main checkbox 2! checked: " ..tostring(checked))
+					testSV.cbox1 = checked
+				end,
+				--entries         = submenuEntries,
+				--tooltip         =
+				entryType = lib.LSM_ENTRY_TYPE_CHECKBOX,
+				isCheckbox = true,
+			},
+			{
+				label ="Header with label",
+				isHeader = true
+			}, --todo: header test, working this way?
+			{
+				name            = "Main checkbox 3 - entryType = checkbox, checked = SV func",
+				checked           = function() return testSV.cbox2  end,
+				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+				callback        =   function(control, checkedData, checked)
+					d("Main checkbox 3! checked: " ..tostring(checked))
+					testSV.cbox2 = checked
+				end,
+				--entries         = submenuEntries,
+				--tooltip         =
+				entryType = lib.LSM_ENTRY_TYPE_CHECKBOX
+				--isCheckbox = true,
+			},
+			{
+				entryType            = function() return LSM_ENTRY_TYPE_DIVIDER end --divider with function returning the entryType
+			},
+			{
+				name            = "Name used as value, label shows entry's name", --no name test
 				label           = function()
 					if not wasLabelChangedAtEntry then
 						wasLabelChangedAtEntry = true
@@ -494,18 +687,20 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 				end,
 				--entries         = submenuEntries,
 				--tooltip         =
-				type = lib.LSM_ENTRY_TYPE_CHECKBOX
+				--type = lib.LSM_ENTRY_TYPE_CHECKBOX
 			},
 			{
 				name            = "-", --Divider
 			},
 			{
-				name            = "Entry having submenu 1 (function)",
+				name            = "Entry having submenu 1 - entries = function, callback = true",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Entry having submenu 1")
 				end,
+				--entries         = function() gotSubmenuEntries = not gotSubmenuEntries if gotSubmenuEntries == true then return submenuEntries else return { } end end,
 				entries         = function() return submenuEntries end,
-				tooltip         = 'Submenu test tooltip.'
+				tooltip         = 'Submenu test tooltip.',
+				icon =			{ { iconTexture = "/esoui/art/inventory/inventory_trait_ornate_icon.dds", width = 32, height = 32, tooltip = "Hello world" }, "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", { iconTexture = "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds", width = 16, height = 16, tooltip = "Hello world - 2nd tooltip" }  }
 			},
 			{
 				name            = "Normal entry 2 (contextMenu)",
@@ -517,7 +712,26 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 					d("Normal entry 2")
 					ClearCustomScrollableMenu()
 
-					AddCustomScrollableMenuEntry("Normal entry 2", function() d('Custom menu Normal entry 2') end)
+					AddCustomScrollableMenuHeader("Test header context menu")
+
+					AddCustomScrollableMenuCheckbox("Context menu checkbox entry 2 - checked from SV func",
+							function(control, checkedData, checked)
+								d('Checkbox clicked at custom context menu entry 2 - checked: ' ..tostring(checked))
+								testSV.cboxContextmenu1 = checked
+							end,
+							function() return testSV.cboxContextmenu1 end)
+
+					AddCustomScrollableMenuEntry("Normal context menu entry 2", function() d('Custom context menu Normal entry 2') end)
+
+					AddCustomScrollableMenuCheckbox("Context menu checkbox entry 3 - checked from SV func",
+							function(control, checkedData, checked)
+								d('Checkbox clicked at custom context menu entry 2 - checked: ' ..tostring(checked))
+								testSV.cboxContextmenu2 = checked
+							end,
+							function() return false  end, --should be taken to additionalData.checked and thus always return false!
+							{
+								checked = function() return testSV.cboxContextmenu2 end
+							})
 
 					ShowCustomScrollableMenu(self)
 				end,
@@ -526,17 +740,18 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 				--tooltip         =
 			},
 			{
-				isHeader		= function() return true  end,
-				name            = "Header entry 1",
+				--isHeader		= function() return true  end,
+				name            = "Header entry 1 - LSM_ENTRY_TYPE_HEADER",
 				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
-				--icons 	     = nil,
+				--icon 	     = nil,
+				entryType	= LSM_ENTRY_TYPE_HEADER,
 			},
 			{
-				isCheckbox		= function() return true  end,
-				name            = "Checkbox entry 1",
+				isCheckbox		= function() isCheckBoxNow2 = not isCheckBoxNow2 d("isCheckBoxNow2 = " ..tostring(isCheckBoxNow2)) return isCheckBoxNow2 end,
+				name            = "Checkbox entry 1 - isCheckbox func",
 				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Checkbox entry 1")
+				callback        =   function(control, checkedData, checked)
+					d("Checkbox entry 1 - checked: " ..tostring(checked))
 				end,
 				--	tooltip         = function() return "Checkbox entry 1"  end
 				tooltip         = "Checkbox entry 1"
@@ -546,9 +761,9 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 			},
 			{
 				isCheckbox		= true,
-				name            = "Checkbox entry 2",
-				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("Checkbox entry 2")
+				name            = "Checkbox entry 2 - isCheckbox bool = true",
+				callback        =   function(control, checkedData, checked)
+					d("Checkbox entry 2 - checked: " ..tostring(checked))
 				end,
 				checked			= true, -- Confirmed does start checked.
 				--tooltip         = function() return "Checkbox entry 2" end
@@ -558,19 +773,23 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 				name            = "-", --Divider
 			},
 			{
-				name            = "Normal entry 4",
+				name            = "Normal entry 4 - entryType func",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Normal entry 4")
+				end,
+				entryType = function()
+					return LSM_ENTRY_TYPE_NORMAL
 				end,
 				--entries         = submenuEntries,
 				--	tooltip         = function() return "Normal entry 4"  end
 				tooltip         = "Normal entry 4"
 			},
 			{
-				name            = "Normal entry 5",
+				name            = "Normal entry 5 with 3 icon",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Normal entry 5")
 				end,
+				icon =			{ "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
 				--entries         = submenuEntries,
 				--	tooltip         = function() return "Normal entry 5"  end
 				tooltip         = "Normal entry 5"
@@ -581,12 +800,44 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 				entries         = {
 					{
 
-						name            = "Normal entry 6 1:1",
+						name            = "Normal entry 6 1:1 - context menu with divider tests",
 						callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 							d("Submenu entry 6 1:1")
 						end,
-						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
+						tooltip         = "Submenu Entry Test 6 1:1 - context menu with divider tests",
+						icon 			= { [1] = function() return "EsoUI/Art/Inventory/inventory_trait_reconstruct_icon.dds" end },
+						contextMenuCallback         =   function(self)
+							d("contextMenuCallback Submenu Entry Test 6 1:1")
+							ClearCustomScrollableMenu()
+
+							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 1", function() d("Normal context menu at submenu entry6 1:1 - 1") end)
+							AddCustomScrollableMenuEntry("-")
+							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 2", function() d("Normal context menu at submenu entry6 1:1 - 2") end)
+							AddCustomScrollableMenuEntry("divider test", nil, nil, nil, { isDivider = true })
+							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 3", function() d("Normal context menu at submenu entry6 1:1 - 3") end)
+							AddCustomScrollableMenuDivider()
+							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 4", function() d("Normal context menu at submenu entry6 1:1 - 4") end)
+							AddCustomScrollableMenuEntry(nil, nil, nil, nil, { isDivider = true })
+							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 5", function() d("Normal context menu at submenu entry6 1:1 - 5") end)
+							AddCustomScrollableMenuEntry(nil, nil, nil, nil, { entryType = LSM_ENTRY_TYPE_DIVIDER })
+							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 5", function() d("Normal context menu at submenu entry6 1:1 - 5") end)
+							AddCustomScrollableMenuEntry(nil, nil, nil, nil, { label = "test header in context menu", isHeader = true })
+							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 5", function() d("Normal context menu at submenu entry6 1:1 - 5") end)
+
+							local optionsContextMenu = {
+								visibleRowsDropdown = 3,
+								visibleRowsSubmenu = 3,
+								maxDropdownHeight = 300,
+
+								--sortEntries=function() return false end,
+								disableFadeGradient = true,
+								--headerColor = HEADER_TEXT_COLOR_RED,
+								--titleText = function()  return "Custom title text" end,
+								--subtitleText = "Custom sub title",
+								enableFilter = true,
+							}
+							ShowCustomScrollableMenu(nil, optionsContextMenu)
+						end,
 					},
 					{
 
@@ -603,7 +854,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 									d("Submenu entry 6 2:1")
 								end,
 								--tooltip         = "Submenu Entry Test 1",
-								--icons 			= nil,
+								--icon 			= nil,
 							},
 							{
 
@@ -615,22 +866,22 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 								entries         = {
 									{
 
-										name            = "Normal entry 6 2:1",
+										name            = "Normal entry 6 2:2:1",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:1")
 										end,
 										--tooltip         = "Submenu Entry Test 1",
-										--icons 			= nil,
+										--icon 			= nil,
 									},
 									{
 
-										name            = "Normal entry 6 2:2",
+										name            = "Normal entry 6 2:2:2",
 										callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 											d("Normal entry 6 2:2")
 										end,
 										tooltip         = "Normal entry 6 2:2",
 										isNew			= true,
-										--icons 			= nil,
+										--icon 			= nil,
 									},
 								},
 							},
@@ -643,7 +894,7 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 							d("Normal entry 6 1:2")
 						end,
 						--tooltip         = "Submenu Entry Test 1",
-						--icons 			= nil,
+						--icon 			= nil,
 					},
 				},
 				--	tooltip         = function() return "Submenu entry 6"  end
@@ -659,22 +910,24 @@ d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS
 				tooltip         = "Normal entry 7"
 			},
 			{
-				name            = "Normal entry 8",
+				name            = "Normal entry 8- enabled = func",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Normal entry 8")
 				end,
 				--entries         = submenuEntries,
 				--	tooltip         = function() return "Normal entry 8"  end
-				tooltip         = "Normal entry 8"
+				tooltip         = "Normal entry 8",
+				enabled 		= function() isEnabledNow = not isEnabledNow return isEnabledNow  end
 			},
 			{
-				name            = "Normal entry 9",
+				name            = "Normal entry 9 - enabled false (boolean)",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("Normal entry 9")
 				end,
 				--entries         = submenuEntries,
 				--	tooltip         = function() return "Normal entry 9"  end
-				tooltip         = "Normal entry 9"
+				tooltip         = "Normal entry 9",
+				enabled 		= false,
 			},
 			{
 				name            = "Normal entry 10 - Very long text here at this entry!",
