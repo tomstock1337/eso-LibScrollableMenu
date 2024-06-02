@@ -4492,7 +4492,7 @@ LibScrollableMenu = lib
 -------------------
 WORKING ON - Current version: 2.21
 -------------------
-	1. Search/filter editbox needs to reset to empy if options.enableFilter == false/nil
+	1. Search/filter editbox needs to reset to empty if options.enableFilter == false/nil
 	TESTED: OK
 
 -------------------
