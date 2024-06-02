@@ -8,7 +8,7 @@ lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
 
 lib.author = "IsJustaGhost, Baertram, tomstock, Kyoma"
-lib.version = "2.21"
+lib.version = "2.3"
 
 lib.data = {}
 
@@ -1987,26 +1987,34 @@ end
 local ignoreSubmenu 			--if using / prefix submenu entries not matching the search term should still be shown
 local lastEntryVisible  = true	--Was the last entry processed visible at the results list? Used to e.g. show the divider below too
 local filterString				--the search string
+local filterFunc				--the filter function to use. Default is "defaultFilterFunc". Custom filterFunc can be added via options.customFilterFunc
 
 --Check if name of entry counts as "to search", or not
 -->Returning true: item's name does not need to be searched / false: search the item's name
-local function filterNameExempt(name)
+local function filterNameExempt(item)
 	if filterString ~= '' then
-		--	if name == '' or name == GetString(SI_QUICKSLOTS_EMPTY), or name == nil
-		return filterNamesExempts[name] or name == nil --filterNamesExempts[type(name)]
+		local name = item.label or item.name
+		return name == nil or filterNamesExempts[name] --or filterNamesExempts[type(name)] --> Shows nil too
 	else
 		return true
 	end
+end
+
+--options.customFilterFunc needs the same signature/parameters like this function
+--return value needs to be a boolean: true = found/false = not found
+-->Attention: prefix "/" in the filterString still jumps this function for submenus as non-matching will be always found that way!
+local function defaultFilterFunc(p_item, p_filterString)
+	local name = p_item.label or p_item.name
+	return zo_strlower(name):find(p_filterString) ~= nil
 end
 
 --Search the item's label or name now, if the entryType of the item should be processed by text search
 local function filterResults(item)
 	local entryType = item.entryType
 	if not entryType or filteredEntryTypes[entryType] then
-		local name = item.label or item.name
-		if not filterNameExempt(name) then
+		if not filterNameExempt(item) then
 			--Not excluded, do the string comparison now
-			return zo_strlower(name):find(filterString) ~= nil
+			return filterFunc(item, filterString)
 		end
 	else
 		return lastEntryVisible
@@ -2375,14 +2383,17 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
 	self.owner = comboBox
 
+	local comboBoxObject = self.m_comboBox
+
 	-- externally defined
-	ignoreSubmenu, filterString = nil, nil
+	ignoreSubmenu, filterString, filterFunc = nil, nil, nil
 	lastEntryVisible = false
 	--options.enableFilter == true?
 	if self:IsFilterEnabled() then
-		ignoreSubmenu, filterString = self.m_comboBox.filterString:match('(/?)(.*)') -- starts with / and followed by .* to include special characters
+		ignoreSubmenu, filterString = comboBoxObject.filterString:match('(/?)(.*)') -- starts with / and followed by .* to include special characters
+		filterFunc = comboBoxObject:GetFilterFunction()
 	else
-		self:ResetFilters(self.m_comboBox.m_dropdown)
+		self:ResetFilters(comboBoxObject.m_dropdown)
 	end
 	filterString = filterString or ''
 	-- Convert ignoreSubmenu to bool
@@ -3370,6 +3381,11 @@ function comboBox_base:IsFilterEnabled()
 	-- Overwrite at subclasses
 end
 
+function comboBox_base:GetFilterFunction()
+	local filterFunction = (self.options and self.options.customFilterFunc) or defaultFilterFunc
+	return filterFunction
+end
+
 function comboBox_base:UpdateOptions(options, onInit)
 	-- Overwrite at subclasses
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateOptions - options: %s, onInit: %s", tos(options), tos(onInit))
@@ -3998,6 +4014,7 @@ end
 --		userdata customHeaderControl:optional	Userdata or function returning Userdata: A custom control thta should be shown above the dropdown entries
 -->  === Dropdown text search & filter =================================================================================
 --		boolean enableFilter:optional			Boolean or function returning boolean which controls if the text search/filter editbox at the dropdown header is shown
+--		function customFilterFunc				A function returning a boolean true: show item / false: hide item. Signature of function: customFilterFunc(item, filterString)
 --->  === Dropdown callback functions
 -- 		function preshowDropdownFn:optional 	function function(ctrl) codeHere end: to run before the dropdown shows
 --->  === Dropdown's Custom XML virtual row/entry templates ============================================================
@@ -4490,15 +4507,20 @@ LibScrollableMenu = lib
 --[[
 
 -------------------
-WORKING ON - Current version: 2.21
+WORKING ON - Current version: 2.3
 -------------------
-	1. Search/filter editbox needs to reset to empty if options.enableFilter == false/nil
-	TESTED: OK
+
+    2. Accept a custom filter function via options.customFilterFunc
+    TESTED: OK
+
 
 -------------------
 TODO - To check (future versions)
 -------------------
-	2. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
+
+    1. Make Options update same style like updateDataValues does for entries
+    2. Accept a custom filter function
+	3. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
 	4. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
 	- fired on handlers dropdown_OnShow dropdown_OnHide
 	6. Check if entries' .tooltip can be a function and then call that function and show it as normal ZO_Tooltips_ShowTextTooltip(control, text) instead of having to use .customTooltip for that
@@ -4515,5 +4537,3 @@ UPCOMING FEATURES  - What will be added in the future?
 		It may require pushing the header bottom down when open and up when closed. Have not had much luck with resize to fit descendants
 		making it as a comboBox would not change the current dimminsions. And, it would add dificulties in passing the filter into the parent dropdown
 ]]
-
-

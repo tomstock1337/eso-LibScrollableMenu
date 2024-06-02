@@ -76,6 +76,19 @@ local function test()
 		local CUSTOM_DISABLED_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_GAME_REPRESENTATIVE))
 		local CUSTOM_HIGHLIGHT_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_TOOLTIP_INSTRUCTIONAL))
 
+
+		local function customFilterFunc(p_item, p_filterString)
+			local name = p_item.label or p_item.name
+			if p_item.customFilterFuncData ~= nil then
+				if p_item.customFilterFuncData.findMe ~= nil then
+			d(">customFilterFunc - findMe: " ..tostring(p_item.customFilterFuncData.findMe))
+					return zo_strlower(p_item.customFilterFuncData.findMe):find(p_filterString) ~= nil
+				end
+			end
+			return false
+		end
+
+
 		--==============================================================================================================
 		-- Options for the main combobox menu
 		--==============================================================================================================
@@ -93,6 +106,7 @@ local function test()
 			--titleText = function()  return "Custom title text" end,
 			--subtitleText = "Custom sub title",
 			enableFilter = function() return true end,
+			--customFilterFunc = customFilterFunc
 
 			--[[ Define in XML:
 				<!-- Normal entry for Custom options.XMLRowTemplates test  -->
@@ -148,7 +162,6 @@ local function test()
 		--==============================================================================================================
 		local submenuEntriesForContextMenu = {
 			{
-
 				--name            = "CntxtMenu - Submenu entry 1:1",
 				label = 			"Test name missing - only label",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
@@ -638,6 +651,11 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				isDivider = true
 			}, --todo: Divider test, working this way?
 			{
+				customFilterFuncData = {
+					findMe = "test",
+				},
+
+
 				name            = "Main checkbox 2 - isCheckbox = true, entryType=checkbox, checked = SV fixed",
 				checked           = testSV.cbox1,
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
