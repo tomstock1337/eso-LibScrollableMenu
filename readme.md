@@ -28,11 +28,13 @@ Check file LSM_test.lua for example code and menus + submenus + callbacks!
 
 Create a comboBox from virtual template e.g.:
 
-```local comboBox = WINDOW_MANAGER:CreateControlFromVirtual("AF_FilterBar" .. myName .. "DropdownFilter", parentControl, "ZO_ComboBox")```
+```lua
+local comboBox = WINDOW_MANAGER:CreateControlFromVirtual("AF_FilterBar" .. myName .. "DropdownFilter", parentControl, "ZO_ComboBox")
+```
 
 
 Add the scrollable helper via LibScrollableMenu:
-```
+```lua
 --Define your options for the scrollHelper here
 -->For all possible option values check API function "AddCustomScrollableComboBoxDropdownMenu" description at file
 -->LibScrollableMenu.lua
@@ -52,28 +54,26 @@ Just use (comboBox = dropdown.m_comboBox)
 ```comboBox:AddItems(tableWithEntries)```
 
 tableWithEntries can contain entries for normal non-submenu lines:
-```
+```lua
 local tableWithEntries = {}
 
 tableWithEntries [#tableWithEntries +1] = {
     name            = "My non-submenu entry",
     callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-        --do what neesd to be done once the entry was selected
+        --do what needs to be done once the entry was selected
     end,
     tooltip         = "Tooltip text",
 }
-
-
 ```
 
 or lines with submenus, where you specify "entries" as a tabl which got the same format as non-submenu entries again (see above).
-```
+```lua
 local submenuEntries = {
   submenuEntries [#submenuEntries +1] = {
       name            = "My submenu sub-entry 1",
       --label             = "My submenu sub-entry 1",
       callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-          --do what neesd to be done once the entry was selected
+          --do what needs to be done once the entry was selected
       end,
       tooltip         = "Tooltip text",
   }
@@ -81,18 +81,15 @@ local submenuEntries = {
   submenuEntries [#submenuEntries  +1] = {
       name            = "My submenu sub-entry 2",
       callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-          --do what neesd to be done once the entry was selected
+          --do what needs to be done once the entry was selected
       end,
       tooltip         = "Tooltip text",
   }
-
 }
-
 
 tableWithEntries [#tableWithEntries +1] = {
     name            = "My submenu entry",
     entries         = submenuEntries,
     tooltip         = "Tooltip text",
 }
-
 ```
