@@ -1,5 +1,9 @@
 -v- ---------------LSM v2.3 - 2024-xx------------------------------------------------------------------------------- -v-
-TODO
+-[Fixes]-
+--Fixed iconData nil check for multi icon control
+
+-[Additions]
+--Accept a custom filter function via options.customFilterFunc
 
 
 -v- ---------------LSM v2.21 - 2024-06-02---------------------------------------------------------------------------- -v-

@@ -1288,7 +1288,7 @@ local function updateIcons(control, data)
 	dLog(LSM_LOGTYPE_VERBOSE, "updateIcons - numIcons %s", tos(iconData ~= nil and #iconData or 0))
 
 	local anyIconWasAdded = false
-	local iconDataType = type(iconData)
+	local iconDataType = iconData ~= nil and type(iconData) or nil
 	if iconDataType ~= nil then
 		if iconDataType ~= 'table' then
 			--If only a "any.dds" texture path or a function returning this was passed in
@@ -1858,7 +1858,7 @@ end
 local function onMouseUp(control, data, hasSubmenu, button, upInside, entryCallbackFunc)
 	local dropdown = control.m_dropdownObject
 
---d("[LSM]onMouseUp-button: " ..tos(button))
+--d("[LSM]onMouseUp-button: " ..tos(button) .. ", upInside: " ..tos(upInside))
 
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseUp - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
 	if upInside then
@@ -1944,7 +1944,7 @@ local handlerFunctions  = {
 	---> So the parameters for the LibScrollableMenu entry.callback functions will be the same:  (comboBox, itemName, item, selectionChanged, oldItem)
 	['onMouseUp'] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data, button, upInside)
-			--d('onMouseUp [LSM_ENTRY_TYPE_NORMAL]')
+--d('onMouseUp [LSM_ENTRY_TYPE_NORMAL]')
 			onMouseUp(control, data, no_submenu, button, upInside, selectEntryCallback)
 			return true
 		end,
@@ -3859,6 +3859,8 @@ function contextMenuClass:BypassOnGlobalMouseUp(button, ...)
 	local owningWindow = mocCtrl:GetOwningWindow()
 	local comboBox = getComboBox(owningWindow)
 
+--d(">name: " .. getControlName(mocCtrl))
+
 	return comboBox_base.BypassOnGlobalMouseUp(self, button, mocCtrl, comboBox, ...)
 end
 
@@ -4507,9 +4509,10 @@ LibScrollableMenu = lib
 -------------------
 WORKING ON - Current version: 2.3
 -------------------
-
-    2. Accept a custom filter function via options.customFilterFunc
+    1. Accept a custom filter function via options.customFilterFunc
     TESTED: OK
+    2. Fixed iconData nil check for multi icon control
+    TESTED: OPEN
 
 
 -------------------
