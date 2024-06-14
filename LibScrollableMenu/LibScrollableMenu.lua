@@ -3937,12 +3937,6 @@ function contextMenuClass:ShowContextMenu(parentControl)
 
 	local openingControlOld = self.openingControl
 	self.openingControl = parentControl
-	if self.openingControl then
-		local options = self.options
-		if options.highlightContextMenuOpeningControl then
-			highlightControl(self, self.openingControl)
-		end
-	end
 
 	local comboBox = getComboBox(parentControl)
 	if comboBox and comboBox.m_submenu and comboBox.m_submenu:IsDropdownVisible() then
@@ -3956,6 +3950,12 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	end
 
 	self:UpdateOptions(self.optionsData)
+
+	if self.openingControl then
+		if self.optionsData.highlightContextMenuOpeningControl then
+			highlightControl(self, self.openingControl)
+		end
+	end
 
 	self:ShowDropdown()
 
