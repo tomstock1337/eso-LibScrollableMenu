@@ -1,7 +1,8 @@
 -v- ---------------LSM v2.3 - 2024-xx------------------------------------------------------------------------------- -v-
 -[Fixes]-
 --Fixed iconData nil check for multi icon control
-
+--Fixed getComboBox to return the actual context menu combobox so that submenu entries clicked run their callback
+    
 -[Additions]
 --Accept a custom filter function via options.customFilterFunc
 

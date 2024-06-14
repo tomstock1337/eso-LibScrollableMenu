@@ -1328,24 +1328,39 @@ local function updateIcons(control, data)
 	multiIconCtrl:SetHidden(not anyIconWasAdded)
 end
 
-local function getComboBox(control)
+-- 2024-06-14 IsjustaGhost: oh crap. it may be returturning m_owner, which would be the submenu object
+--> context menu's submenu directly closing on click on entry because comboBox passed in (which was determined via getComboBox) is not the correct one
+--> -all submenus are g_contextMenu.m_submenu.m_dropdownObject.m_combobox = g_contextMenu.m_container.m_comboBox
+--> -m_owner is personal. m_comboBox is singular to link all children to the owner
+local function getComboBox(control, owningMenu)
 	if control then
-		if control.m_owner then
-			return control.m_owner
-		elseif control.m_comboBox then
-			return control.m_comboBox
+		--owningMenu boolean will be used to determine the m_comboBox only and not the m_owner
+		-->Needed for LSM context menus that do not open on any LSM control, but standalone!
+		-->Checked in onMouseUp's callback function
+		if owningMenu then
+			if control.m_comboBox then
+				return control.m_comboBox
+			end
+		else
+			if control.m_owner then
+				return control.m_owner
+			elseif control.m_comboBox then
+				return control.m_comboBox
+			end
 		end
 	end
-	
+
 	if type(control) == 'userdata' then
 		local owningWindow = control:GetOwningWindow()
 		if owningWindow then
 			if owningWindow.object and owningWindow.object ~= control then
-				return getComboBox(owningWindow.object)
+				return getComboBox(owningWindow.object, owningMenu)
 			end
 		end
 	end
 end
+
+
 
 ------------------------------------------------------------------------------------------------------------------------
 --Local context menu helper functions
@@ -1863,11 +1878,14 @@ local function onMouseUp(control, data, hasSubmenu, button, upInside, entryCallb
 	dLog(LSM_LOGTYPE_VERBOSE, "onMouseUp - control: %s, button: %s, upInside: %s, hasSubmenu: %s", tos(getControlName(control)), tos(button), tos(upInside), tos(hasSubmenu))
 	if upInside then
 		if button == MOUSE_BUTTON_INDEX_LEFT then
-			local comboBox = getComboBox(control)
+			--local comboBox = getComboBox(control)
+			local comboBox = getComboBox(control, true) --passing in owningMenu true boolean to get proper comboBox
 			if g_contextMenu:IsDropdownVisible() and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
 				--If context menu is currently shown do not run a clicked entry's callback of a non-context menu dropdown!
 				-->Just close the context menu first
+--d(">just closing context menu!")
 			else
+--d(">calling entry callback func!")
 				--Callback function was passed in? Run it then
 				if entryCallbackFunc ~= nil then
 					entryCallbackFunc(dropdown, control, data, hasSubmenu)
@@ -1957,6 +1975,7 @@ local handlerFunctions  = {
 			return true
 		end,
 		[LSM_ENTRY_TYPE_SUBMENU] = function(control, data, button, upInside)
+--d('onMouseUp [LSM_ENTRY_TYPE_SUBMENU]')
 			onMouseUp(control, data, has_submenu, button, upInside, selectEntryCallback)
 			return true
 		end,
@@ -4513,6 +4532,8 @@ WORKING ON - Current version: 2.3
     TESTED: OK
     2. Fixed iconData nil check for multi icon control
     TESTED: OPEN
+    3. Fixed getComboBox to pass in 2nd param boolean -> to select the m_comboBox and not the m_owner
+    TESTED: OK
 
 
 -------------------
