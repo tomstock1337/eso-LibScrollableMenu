@@ -5,7 +5,7 @@
     
 -[Additions]
 --Accept a custom filter function via options.customFilterFunc
-
+--Added option.highlightContextMenuOpeningControl: highlight the openingControl passed in to ShowCustomScrollableMenu(openingControl)
 
 -v- ---------------LSM v2.21 - 2024-06-02---------------------------------------------------------------------------- -v-
 -[Fixes]-

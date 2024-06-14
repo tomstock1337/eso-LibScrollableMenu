@@ -275,6 +275,7 @@ local defaultComboBoxOptions  = {
 	["spacing"] = 					DEFAULT_SPACING,
 	["disableFadeGradient"] = 		false,
 	["useDefaultHighlightForSubmenuWithCallback"] = false,
+	["highlightContextMenuOpeningControl"] = false,
 	--["XMLRowTemplates"] = 		table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
@@ -301,6 +302,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["narrate"] = 				"narrateData",
 	["maxDropdownHeight"] =		"maxHeight",
 	["useDefaultHighlightForSubmenuWithCallback"] = "useDefaultHighlightForSubmenuWithCallback",
+	["highlightContextMenuOpeningControl"] = "highlightContextMenuOpeningControl",
 
 	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
 	-->!!!Attention: Add the entries which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below in this table here too!!!
@@ -404,6 +406,7 @@ local submenuClass_exposedVariables = {
 	['visibleRowsSubmenu'] = true, -- we only need this "visibleRowsSubmenu" for the submenus
 	['disableFadeGradient'] = true,
 	['useDefaultHighlightForSubmenuWithCallback'] = true,
+	['highlightContextMenuOpeningControl'] = true,
 }
 
 -- Pass-through functions:
@@ -3935,7 +3938,10 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	local openingControlOld = self.openingControl
 	self.openingControl = parentControl
 	if self.openingControl then
-		highlightControl(self, self.openingControl)
+		local options = self.options
+		if options.highlightContextMenuOpeningControl then
+			highlightControl(self, self.openingControl)
+		end
 	end
 
 	local comboBox = getComboBox(parentControl)
@@ -4533,6 +4539,8 @@ WORKING ON - Current version: 2.3
     2. Fixed iconData nil check for multi icon control
     TESTED: OPEN
     3. Fixed getComboBox to pass in 2nd param boolean -> to select the m_comboBox and not the m_owner
+    TESTED: OK
+    4. Added option.highlightContextMenuOpeningControl
     TESTED: OK
 
 
