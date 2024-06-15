@@ -754,6 +754,8 @@ do
 
 		local headerCollapsible = options.headerCollapsible
 		if not headerCollapsible then visible = true end
+		comboBox.m_dropdown.headerCollapseButton:SetHidden(not headerCollapsible)
+
 
 		--control:SetHidden(true)
 		control:SetHeight(0)
@@ -3619,7 +3621,7 @@ end
 
 
 function comboBoxClass:ToggleDropdownHeader(toggleButtonCtrl)
-	local headerControl, _ = getHeaderControl(self)
+	local headerControl, dropdownControl = getHeaderControl(self)
 	if headerControl == nil then return end
 
 	local options = self:GetOptions()
@@ -3631,8 +3633,11 @@ function comboBoxClass:ToggleDropdownHeader(toggleButtonCtrl)
 			self.headerCollapsed = true
 			toggleButtonCtrl:SetText("v")
 		end
+
+		refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
+		dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ToggleDropdownHeader - toggleButton: %s", tos(toggleButtonCtrl))
+		self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
 	end
-	refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
 end
 
 
