@@ -831,6 +831,16 @@ local function getHeaderControl(selfVar)
 	return dropdownControl.header, dropdownControl
 end
 
+
+local function updateCollapseHeaderButton(toggleButtonCtrl, headerCollapsed)
+	if headerCollapsed == true then
+		toggleButtonCtrl:SetText("^")
+	else
+		toggleButtonCtrl:SetText("v")
+	end
+	return not headerCollapsed
+end
+
 --Check for isDivider, isHeader, isCheckbox ... in table (e.g. item.additionalData) and get the LSM entry type for it
 local function checkTablesKeyAndGetEntryType(dataTable, text)
 	for key, entryType in pairs(additionalDataKeyToLSMEntryType) do
@@ -3200,6 +3210,7 @@ function comboBox_base:UpdateHeight(control)
 	--maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
 	--If the height of the total height is below minHeight then increase it to be at least that high
 	maxHeightInTotal = zo_clamp(maxHeightInTotal, minHeight, screensMaxDropdownHeight)
+--d(">headerHeight: " ..tos(headerHeight) .. ", maxHeightInTotal: " ..tos(maxHeightInTotal))
 
 
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
@@ -3619,24 +3630,19 @@ function comboBoxClass:ShowDropdown()
 	self:ShowDropdownInternal()
 end
 
-
 function comboBoxClass:ToggleDropdownHeader(toggleButtonCtrl)
 	local headerControl, dropdownControl = getHeaderControl(self)
 	if headerControl == nil then return end
 
 	local options = self:GetOptions()
 	if options.headerCollapsible then
-		if self.headerCollapsed == true then
-			self.headerCollapsed = false
-			toggleButtonCtrl:SetText("^")
-		else
-			self.headerCollapsed = true
-			toggleButtonCtrl:SetText("v")
-		end
-
-		refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ToggleDropdownHeader - toggleButton: %s", tos(toggleButtonCtrl))
+
+		self.headerCollapsed = updateCollapseHeaderButton(toggleButtonCtrl, self.headerCollapsed)
+		refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
+
 		self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
+		self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
 	end
 end
 
@@ -3648,8 +3654,10 @@ function comboBoxClass:UpdateDropdownHeader()
 
 	local options = self:GetOptions()
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(options))
-	refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
 
+	updateCollapseHeaderButton(self.m_dropdown.headerCollapseButton, not self.headerCollapsed)
+
+	refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
 	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
 end
 
