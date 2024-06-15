@@ -2,10 +2,13 @@
 -[Fixes]-
 --Fixed iconData nil check for multi icon control
 --Fixed getComboBox to return the actual context menu combobox so that submenu entries clicked run their callback
-    
+--Removed duplicate recusrive loop over all (nseted)submenu entries to update the values -> in function UpdateItems
+
 -[Additions]
 --Accept a custom filter function via options.customFilterFunc
 --Added option.highlightContextMenuOpeningControl: highlight the openingControl passed in to ShowCustomScrollableMenu(openingControl)
+--Changed IsFilterEnabled function to return false if only 1 entry in the dropdown. Updating the header to hide the filter visually then
+
 
 -v- ---------------LSM v2.21 - 2024-06-02---------------------------------------------------------------------------- -v-
 -[Fixes]-

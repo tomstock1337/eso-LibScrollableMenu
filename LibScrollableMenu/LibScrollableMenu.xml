@@ -60,6 +60,8 @@
 			<OnMouseUp>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
+--d("[LSM]dropdown:OnEntrySelected - button: " ..tostring(button) .. ", upInside: " .. tostring(upInside))
+--LibScrollableMenu._debug = { self = self, button = button, upInside = upInside }
 					dropdown:OnEntrySelected(self, button, upInside)
 				end
 			</OnMouseUp>
@@ -441,6 +443,40 @@
 								</Button-->
 							</Controls>
 						</Control>
+
+						<Button name="$(parent)ToogleHeader" inherits="ZO_DefaultTextButton" text="^" fon="ZoFontGameSmall">
+							<Dimensions x="16" y="16" />
+							<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6" offsetY="-7" />
+							<OnInitialized>
+LSM_Debug = LSM_Debug or {}
+LSM_Debug._headerCollapseButtons = LSM_Debug._headerCollapseButtons or {}
+LSM_Debug._headerCollapseButtons[self] = self
+								local owningWindow = self:GetOwningWindow()
+								if owningWindow then
+									owningWindow.headerCollapseButton = self
+								end
+							</OnInitialized>
+
+							<OnMouseEnter>
+								local owningWindow = self:GetOwningWindow()
+								if owningWindow.object then
+									owningWindow.object:ShowTextTooltip(self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET), owningWindow)
+								end
+							</OnMouseEnter>
+
+							<OnMouseExit>
+								ZO_Tooltips_HideTextTooltip()
+							</OnMouseExit>
+
+							<OnClicked>
+								ZO_Tooltips_HideTextTooltip()
+								local owningWindow = self:GetOwningWindow()
+								if owningWindow.object and owningWindow.object.m_comboBox then
+--d("[LSM]Found owningWindow.object.m_comboBox")
+									owningWindow.object.m_comboBox:ToggleDropdownHeader(self)
+								end
+							</OnClicked>
+						</Button>
 						
 						<Control name="$(parent)CustomControl" resizeToFitDescendents="false" hidden="true">
 							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />

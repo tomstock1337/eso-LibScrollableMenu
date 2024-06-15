@@ -264,6 +264,7 @@ local comboBoxDefaults = {
 	visibleRows = 					DEFAULT_VISIBLE_ROWS,
 	visibleRowsSubmenu = 			DEFAULT_VISIBLE_ROWS,
 	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+	headerCollapsed = 				false,
 }
 
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
@@ -276,6 +277,7 @@ local defaultComboBoxOptions  = {
 	["disableFadeGradient"] = 		false,
 	["useDefaultHighlightForSubmenuWithCallback"] = false,
 	["highlightContextMenuOpeningControl"] = false,
+	["headerCollapsible"] = 		false,
 	--["XMLRowTemplates"] = 		table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
@@ -303,6 +305,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["maxDropdownHeight"] =		"maxHeight",
 	["useDefaultHighlightForSubmenuWithCallback"] = "useDefaultHighlightForSubmenuWithCallback",
 	["highlightContextMenuOpeningControl"] = "highlightContextMenuOpeningControl",
+	["headerCollapsible"] = 	"headerCollapsible",
 
 	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
 	-->!!!Attention: Add the entries which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below in this table here too!!!
@@ -407,6 +410,7 @@ local submenuClass_exposedVariables = {
 	['disableFadeGradient'] = true,
 	['useDefaultHighlightForSubmenuWithCallback'] = true,
 	['highlightContextMenuOpeningControl'] = true,
+	["headerCollapsible"] = true,
 }
 
 -- Pass-through functions:
@@ -660,22 +664,24 @@ do
 		g_currentBottomLeftHeader = controlId
 	end
 
-	local function header_updateAnchors(control, refreshResults)
+	local function header_updateAnchors(control, refreshResults, visible)
 		--local owningWindow = control:GetOwningWindow()
 		--local hasFocus = owningWindow.filterBox:HasFocus()
 		
-		local headerHeight = 0
+		local headerHeight = visible and 0 or 13-- +5 (see below at control:SetHeight) = 18 pixels height
 		local controls = control.controls
 		g_currentBottomLeftHeader = CENTER_BASELINE
-		
+
 		for controlId, headerControl in ipairs(controls) do
 			headerControl:ClearAnchors()
-			if refreshResults[controlId] then
+			local notHidden = refreshResults[controlId] and visible
+			headerControl:SetHidden(not notHidden)
+			if notHidden then
 				header_applyAnchorToControl(control, controlId)
 				headerHeight = headerHeight + headerControl:GetHeight() + 5
 			end
 		end
-		
+
 		control:SetHeight(headerHeight + 5)
 	end
 
@@ -707,9 +713,9 @@ do
 		if control == nil then
 			return false
 		end
-		
+
 		local dataType = type(data)
-		
+
 		if dataType == "function" then
 			data = data(control)
 		end
@@ -718,12 +724,10 @@ do
 			control:SetText(data)
 		end
 
-		control:SetHidden(not data)
-		
 		if dataType == "boolean" then
 			return data
 		end
-		
+
 		return data ~= nil
 	end
 
@@ -731,58 +735,51 @@ do
 		if control == nil then
 			return false
 		end
-		
+
 		local dataType = type(customControl)
 		control:SetHidden(dataType ~= "userdata")
 		if dataType == "userdata" then
 			customControl:SetParent(control)
-			customControl:SetHidden(false)
-			
 			customControl:ClearAnchors()
 			customControl:SetAnchor(TOP, control, TOP, 0, 2)
-			--[[
-			customControl:SetAnchor(BOTTOM, control, BOTTOM, 0, 5)
-			customControl:SetAnchor(TOPLEFT, control, TOPLEFT, 0, 5)
-			customControl:SetAnchor(BOTTOMRIGHT, control, BOTTOMRIGHT, 0, 10)
-			]]
-			
-		--	local offsetY = customControl:GetHeight()
-		--	control:SetHeight(customControl:GetHeight())
 			control:SetDimensions(customControl:GetDimensions())
 			return true
 		end
 
-			
 		return false
 	end
 
-	refreshDropdownHeader = function(control, options)
+	refreshDropdownHeader = function(comboBox, control, options, visible)
 		local controls = control.controls
-		
-		control:SetHidden(true)
+
+		local headerCollapsible = options.headerCollapsible
+		if not headerCollapsible then visible = true end
+
+		--control:SetHidden(true)
 		control:SetHeight(0)
-		
-		g_refreshResults = {}
-		
-		g_refreshResults[TITLE] = header_processData(controls[TITLE], getValueOrCallback(options.titleText, options))
-		header_setFont(controls[TITLE], getValueOrCallback(options.titleFont, options), HeaderFontTitle)
-		
-		g_refreshResults[SUBTITLE] = header_processData(controls[SUBTITLE], getValueOrCallback(options.subtitleText, options))
-		header_setFont(controls[SUBTITLE], getValueOrCallback(options.subtitleFont, options), HeaderFontSubtitle)
-		
-		header_setAlignment(controls[TITLE], getValueOrCallback(options.titleTextAlignment, options), TEXT_ALIGN_CENTER)
-		local showTitle = g_refreshResults[TITLE] or g_refreshResults[SUBTITLE] or false
-		
-		local showDivider = false
-		g_refreshResults[FILTER_CONTAINER] = header_processData(controls[FILTER_CONTAINER], getValueOrCallback(options.enableFilter, options))
-		showDivider = showDivider or g_refreshResults[FILTER_CONTAINER]
-		
-		g_refreshResults[CUSTOM_CONTROL] = header_processControl(controls[CUSTOM_CONTROL], getValueOrCallback(options.customHeaderControl, options))
-		showDivider = showDivider or g_refreshResults[CUSTOM_CONTROL]
-		
-		g_refreshResults[DIVIDER_SIMPLE] = (showDivider and showTitle)
-		
-		header_updateAnchors(control, g_refreshResults)
+
+		if visible then
+			g_refreshResults = {}
+
+			g_refreshResults[TITLE] = header_processData(controls[TITLE], getValueOrCallback(options.titleText, options))
+			header_setFont(controls[TITLE], getValueOrCallback(options.titleFont, options), HeaderFontTitle)
+
+			g_refreshResults[SUBTITLE] = header_processData(controls[SUBTITLE], getValueOrCallback(options.subtitleText, options))
+			header_setFont(controls[SUBTITLE], getValueOrCallback(options.subtitleFont, options), HeaderFontSubtitle)
+
+			header_setAlignment(controls[TITLE], getValueOrCallback(options.titleTextAlignment, options), TEXT_ALIGN_CENTER)
+			local showTitle = g_refreshResults[TITLE] or g_refreshResults[SUBTITLE] or false
+
+			local showDivider = false
+			g_refreshResults[FILTER_CONTAINER] = header_processData(controls[FILTER_CONTAINER], comboBox:IsFilterEnabled())
+			showDivider = showDivider or g_refreshResults[FILTER_CONTAINER]
+
+			g_refreshResults[CUSTOM_CONTROL] = header_processControl(controls[CUSTOM_CONTROL], getValueOrCallback(options.customHeaderControl, options))
+			showDivider = showDivider or g_refreshResults[CUSTOM_CONTROL]
+
+			g_refreshResults[DIVIDER_SIMPLE] = (showDivider and showTitle)
+		end
+		header_updateAnchors(control, g_refreshResults, visible)
 	end
 end
 
@@ -825,6 +822,12 @@ function getValueOrCallback(arg, ...)
 	end
 end
 lib.GetValueOrCallback = getValueOrCallback
+
+local function getHeaderControl(selfVar)
+	if ZO_IsTableEmpty(selfVar.options) then return end
+	local dropdownControl = selfVar.m_dropdownObject.control
+	return dropdownControl.header, dropdownControl
+end
 
 --Check for isDivider, isHeader, isCheckbox ... in table (e.g. item.additionalData) and get the LSM entry type for it
 local function checkTablesKeyAndGetEntryType(dataTable, text)
@@ -1434,7 +1437,7 @@ end
 
 
 -- Recursively check for new entries.
--->Dnone within preUpdateSubItems func now
+-->Done within preUpdateSubItems func now
 --[[
 local function areAnyEntriesNew(entry)
 	dLog(LSM_LOGTYPE_VERBOSE, "areAnyEntriesNew")
@@ -1558,6 +1561,7 @@ local function addItem_Base(self, itemEntry)
 	end
 
 	--Run a post setup function to update mandatory data or change visuals, for the entryType
+	-->Recursively checks all submenu and their nested submenu entries
 	runPostItemSetupFunction(self, itemEntry)
 end
 
@@ -2686,6 +2690,7 @@ function dropdownClass:ResetFilters(owningWindow)
 end
 
 function dropdownClass:IsFilterEnabled()
+--d("[LSM]dropdownClass:IsFilterEnabled")
 	if self.m_comboBox then
 		return self.m_comboBox:IsFilterEnabled()
 	end
@@ -2993,11 +2998,16 @@ function comboBox_base:GetOptions()
 	return self.options
 end
 
+function comboBox_base:SetOptions(options)
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetOptions")
+	self.options = options
+end
+
 -- Get or create submenu
 function comboBox_base:GetSubmenu()
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetSubmenu")
 	if not self.m_submenu then
-		self.m_submenu = submenuClass:New(self, self.m_container, self.options, self.m_nextFree)
+		self.m_submenu = submenuClass:New(self, self.m_container, self:GetOptions(), self.m_nextFree)
 	end
 	return self.m_submenu
 end
@@ -3125,11 +3135,14 @@ end
 function comboBox_base:UpdateItems()
 	zo_comboBox_base_updateItems(self)
 
+	--[[
+	20240615 Should not be needed anymore as this is already done at runPostItemSetupFunction[LSM_ENTRY_TYPE_SUBMENU] in add_itemBase
 	for _, itemEntry in pairs(self.m_sortedItems) do
 		if itemEntry.hasSubmenu then
 			recursiveOverEntries(itemEntry, preUpdateSubItems)
 		end
 	end
+	]]
 end
 
 function comboBox_base:SetupEntryBase(control, data, list)
@@ -3275,7 +3288,8 @@ do -- Row setup functions
 --d("[LSM]submenu setup: - name: " .. tos(getValueOrCallback(data.label or data.name, data)) ..", closeOnSelect: " ..tos(control.closeOnSelect) .. "; m_highlightTemplate: " ..tos(data.m_highlightTemplate) )
 
 		--Color the highlight light green if the submenu got a callback (entry opening a submenu can be clicked to select it)
-		local useDefaultHighlightForSubmenuWithCallback = (self.options ~= nil and self.options.useDefaultHighlightForSubmenuWithCallback) or false
+		local options = self:GetOptions()
+		local useDefaultHighlightForSubmenuWithCallback = (options ~= nil and options.useDefaultHighlightForSubmenuWithCallback) or false
 		if not useDefaultHighlightForSubmenuWithCallback then
 			if control.closeOnSelect and not data.m_highlightTemplate then
 				data.m_highlightTemplate = 'LibScrollableMenu_Highlight_Green'
@@ -3402,13 +3416,13 @@ function comboBox_base:IsFilterEnabled()
 end
 
 function comboBox_base:GetFilterFunction()
-	local filterFunction = (self.options and self.options.customFilterFunc) or defaultFilterFunc
+	local options = self:GetOptions()
+	local filterFunction = (options and options.customFilterFunc) or defaultFilterFunc
 	return filterFunction
 end
 
 function comboBox_base:UpdateOptions(options, onInit)
 	-- Overwrite at subclasses
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateOptions - options: %s, onInit: %s", tos(options), tos(onInit))
 end
 
 function comboBox_base:SetFilterString()
@@ -3446,6 +3460,10 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth, ini
 	self.m_selectedItemText = comboBoxContainer:GetNamedChild("SelectedItemText")
 	self.m_multiSelectItemData = {}
 	comboBox_base.Initialize(self, parent, comboBoxContainer, options, depth)
+
+	--Custom added controls
+	-->Header - Collapse&Expand toggle button
+	self.m_dropdown.headerCollapseButton:SetHidden(true)
 
 	return self
 end
@@ -3521,12 +3539,18 @@ function comboBoxClass:HideOnMouseExit(mocCtrl)
 end
 
 function comboBoxClass:IsFilterEnabled()
-	local enableFilter = (self.options and getValueOrCallback(self.options.enableFilter, self.options)) or false
+	local options = self:GetOptions()
+	local enableFilter = (options and getValueOrCallback(options.enableFilter, options)) or false
+d("[LSM]comboBoxClass:IsFilterEnabled - enableFilter: " ..tos(enableFilter))
 	if not enableFilter then
 		self.filterString = ""
 	else
 		self.filterString = self.filterString or ""
 	end
+
+	--local retVar = #self.m_sortedItems > 1 and enableFilter or false
+--d(">#sortedItems: " ..tos(#self.m_sortedItems) .. ",  isEnabled: " ..tos(retVar))
+	--Only show the filter header if there is more than 1 entry
 	return enableFilter
 end
 
@@ -3543,7 +3567,6 @@ end
 --ZO_ComboBox default options (set at self:ResetToDefaults())
 function comboBoxClass:SetOption(LSMOptionsKey)
 	--Old code: Updating comboBox[key] with the newValue
-	local options = self.options
 	--Get current value
 	local currentZO_ComboBoxValueKey = LSMOptionsKeyToZO_ComboBoxOptionsKey[LSMOptionsKey]
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:SetOption . key: %s, ZO_ComboBox[key]: %s", tos(LSMOptionsKey), tos(currentZO_ComboBoxValueKey))
@@ -3551,8 +3574,10 @@ function comboBoxClass:SetOption(LSMOptionsKey)
 	local currentValue = self[currentZO_ComboBoxValueKey]
 
 	--Get new value via options passed in
-	local newValue = getValueOrCallback(options[LSMOptionsKey], options) --read new value from the options (run function there or get the value)
+	local options = self:GetOptions()
+	local newValue = options and getValueOrCallback(options[LSMOptionsKey], options) --read new value from the options (run function there or get the value)
 	if newValue == nil then
+d(">LSMOptionsKey: " .. tos(LSMOptionsKey) .. " -> Is nil in options")
 		newValue = currentValue
 	end
 	if newValue == nil then return end
@@ -3592,12 +3617,33 @@ function comboBoxClass:ShowDropdown()
 	self:ShowDropdownInternal()
 end
 
+
+function comboBoxClass:ToggleDropdownHeader(toggleButtonCtrl)
+	local headerControl, _ = getHeaderControl(self)
+	if headerControl == nil then return end
+
+	local options = self:GetOptions()
+	if options.headerCollapsible then
+		if self.headerCollapsed == true then
+			self.headerCollapsed = false
+			toggleButtonCtrl:SetText("^")
+		else
+			self.headerCollapsed = true
+			toggleButtonCtrl:SetText("v")
+		end
+	end
+	refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
+end
+
+
 function comboBoxClass:UpdateDropdownHeader()
-	if ZO_IsTableEmpty(self.options) then return end
-	local dropdownControl = self.m_dropdownObject.control
-	local headerControl = dropdownControl.header
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(self.options))
-	refreshDropdownHeader(headerControl, self.options)
+--d("[LSM]comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(self.headerCollapsed))
+	local headerControl, dropdownControl = getHeaderControl(self)
+	if headerControl == nil then return end
+
+	local options = self:GetOptions()
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(options))
+	refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
 
 	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
 end
@@ -3645,7 +3691,7 @@ function comboBoxClass:UpdateOptions(options, onInit)
 		end
 
 		--Set the passed in options to the ZO_ComboBox .options table (for future comparison, see above at optionsChanged = optionsChanged or options ~= self.options)
-		self.options = options
+		self:SetOptions(options)
 
 		--Clear the table with options which got updated. Will be filled in self:SetOption(key) method
 		self.updatedOptions = {}
@@ -3686,7 +3732,7 @@ function comboBoxClass:ResetToDefaults()
 
 	zo_mixin(self, defaults) -- overwrite existing ZO_ComboBox default values with LSM defaults
 
-	self.options = nil
+	self:SetOptions(nil)
 end
 
 -- We need to integrate a supplied ZO_ComboBox with the lib's functionality.
@@ -3750,7 +3796,7 @@ end
 
 function submenuClass:UpdateOptions(options, onInit)
 	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:UpdateOptions - options: %s, onInit: %s", tos(options), tos(onInit))
-	self:AddCustomEntryTemplates(self.options)
+	self:AddCustomEntryTemplates(self:GetOptions())
 end
 
 function submenuClass:AddMenuItems(parentControl)
@@ -3889,7 +3935,7 @@ end
 function contextMenuClass:ClearItems()
 	--d( 'contextMenuClass:ClearItems()')
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ClearItems")
-	self:SetOptions(nil)
+	self:SetContextMenuOptions(nil)
 	self:ResetToDefaults()
 
 --	ZO_ComboBox_HideDropdown(self:GetContainer())
@@ -3971,8 +4017,8 @@ function contextMenuClass:ShowContextMenu(parentControl)
   	end, 10, "_ContextMenuClass_ShowContextMenu")
 end
 
-function contextMenuClass:SetOptions(options)
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:SetOptions - options: %s", tos(options))
+function contextMenuClass:SetContextMenuOptions(options)
+	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:SetContextMenuOptions - options: %s", tos(options))
 
 	--[[ --todo 20240506 Still needed? If enabled again it would overwrite the context menu options with defaults (which should be okay?)
 	if ZO_IsTableEmpty(options) then
@@ -4030,6 +4076,7 @@ end
 --		table headerColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for header entries
 --		table normalColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all normal (enabled) entries
 --		table disabledColor:optional 			table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all disabled entries
+--		boolean highlightContextMenuOpeningControl Boolean or function returning boolean if the openingControl of a context menu should be highlighted
 -->  ===Dropdown header/title ==========================================================================================
 --		string titleText:optional				String or function returning a string: Title text to show above the dropdown entries
 --		string titleFont:optional				String or function returning a font string: Title text's font. Default: "ZoFontHeader3"
@@ -4037,6 +4084,7 @@ end
 --		string subtitleFont:optional			String or function returning a font string: Sub-Title text's font. Default: "ZoFontHeader2"
 --		number titleTextAlignment:optional		Number or function returning a number: The title's vertical alignment, e.g. TEXT_ALIGN_CENTER
 --		userdata customHeaderControl:optional	Userdata or function returning Userdata: A custom control thta should be shown above the dropdown entries
+--		boolean headerCollapsible			 	Boolean or function returning boolean if the header control should show a collapse/expand button
 -->  === Dropdown text search & filter =================================================================================
 --		boolean enableFilter:optional			Boolean or function returning boolean which controls if the text search/filter editbox at the dropdown header is shown
 --		function customFilterFunc				A function returning a boolean true: show item / false: hide item. Signature of function: customFilterFunc(item, filterString)
@@ -4274,7 +4322,7 @@ function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 		end
 	else
 		--Update options to default contextMenu
-		g_contextMenu:SetOptions(options)
+		g_contextMenu:SetContextMenuOptions(options)
 	end
 end
 local setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
@@ -4542,7 +4590,10 @@ WORKING ON - Current version: 2.3
     TESTED: OK
     4. Added option.highlightContextMenuOpeningControl
     TESTED: OK
-
+    5. Removed duplicate recursive loop over all (nseted)submenu entries to update the values -> in function UpdateItems
+    TESTED: OPEN
+    6. Added collapsible header and options.headerCollapsible
+    TESTED: OPEN
 
 -------------------
 TODO - To check (future versions)
