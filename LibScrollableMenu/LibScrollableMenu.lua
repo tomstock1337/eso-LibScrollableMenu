@@ -277,7 +277,7 @@ local defaultComboBoxOptions  = {
 	["disableFadeGradient"] = 		false,
 	["useDefaultHighlightForSubmenuWithCallback"] = false,
 	["highlightContextMenuOpeningControl"] = false,
-	["headerCollapsible"] = 		false,
+	["headerCollapsible"] = 		true,
 	--["XMLRowTemplates"] = 		table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
@@ -1352,7 +1352,7 @@ end
 --> -m_owner is personal. m_comboBox is singular to link all children to the owner
 local function getComboBox(control, owningMenu)
 	if control then
-		--owningMenu boolean will be used to determine the m_comboBox only and not the m_owner
+		--owningMenu boolean will be used to determine the m_comboBox (main menu) only and not the m_owner
 		-->Needed for LSM context menus that do not open on any LSM control, but standalone!
 		-->Checked in onMouseUp's callback function
 		if owningMenu then
@@ -3327,12 +3327,14 @@ do -- Row setup functions
 
 			checkedData.checked = checked
 			if checkedData.callback then
+				local comboBox = getComboBox(control)
 				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
-				checkedData.callback(control, checkedData, checked)
+				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
+				checkedData.callback(comboBox, checkedData.label or checkedData.name, control, checked)
 			end
 
-			self:Narrate("OnCheckboxUpdated", checkbox, checkedData, nil)
-			lib:FireCallbacks('CheckboxUpdated', control, checkedData, checked)
+			self:Narrate("OnCheckboxUpdated", checkbox, data, nil)
+			lib:FireCallbacks('CheckboxUpdated', control, data, checked)
 			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: CheckboxUpdated - control: %q, checked: %s", tos(getControlName(checkbox)), tos(checked))
 		end
 
@@ -3554,7 +3556,7 @@ end
 function comboBoxClass:IsFilterEnabled()
 	local options = self:GetOptions()
 	local enableFilter = (options and getValueOrCallback(options.enableFilter, options)) or false
-d("[LSM]comboBoxClass:IsFilterEnabled - enableFilter: " ..tos(enableFilter))
+--d("[LSM]comboBoxClass:IsFilterEnabled - enableFilter: " ..tos(enableFilter))
 	if not enableFilter then
 		self.filterString = ""
 	else
@@ -4156,6 +4158,10 @@ end
 --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --[API - Custom scrollable context menu at any control]
 --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--Params: userdata rowControl - Returns the m_data.dataSource table of the rowControl
+GetCustomScrollableMenuRowData = getControlData
+
+
 --Add a scrollable context (right click) menu at any control (not only a ZO_ComboBox), e.g. to any custom control of your
 --addon or even any entry of a LibScrollableMenu combobox dropdown
 --
@@ -4468,9 +4474,7 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	local sortedItems = getComboBoxsSortedItems(comboBox, fromParentMenu, false)
 	if ZO_IsTableEmpty(sortedItems) then return end
 
-	--Unlink the copied items so we can pass them to the addon's calling, without fearing they will change the actual's
-	--control data and invalidate any opend LSM menus
-	local itemsForCallbackFunc = ZO_ShallowTableCopy(sortedItems)
+	local itemsForCallbackFunc = sortedItems
 
 	--Any entryTypes to filter passed in?
 	if gotFilterEntryTypes == true and not ZO_IsTableEmpty(filterEntryTypesTable) then
@@ -4607,6 +4611,15 @@ WORKING ON - Current version: 2.3
     TESTED: OPEN
     6. Added collapsible header and options.headerCollapsible
     TESTED: OPEN
+    7. Using proper function GetOptions() where needed now
+    TESTED: OPEN
+    8. Callback functions for checkboxes now use the similar signature like normal entry callbacks:	function(comboBox, itemName, item, checked)
+    TESTED: OPEN
+    9. Added API function GetCustomScrollableMenuRowData(rowControl)
+    TESTED: OPEN
+    10. Fixed API RunCustomScrollableMenuItemsCallback to use the m_sortedItems, and not a copy (so updating the dataSource works)
+    TESTED: OPEN
+
 
 -------------------
 TODO - To check (future versions)

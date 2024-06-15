@@ -315,7 +315,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				entryType = 	function() isCheckBoxNow = not isCheckBoxNow d("isCheckBoxNow = " ..tostring(isCheckBoxNow)) return isCheckBoxNow and LSM_ENTRY_TYPE_CHECKBOX or LSM_ENTRY_TYPE_NORMAL end,
 				name            = "Checkbox submenu entry 1 with 3 icon - entryType = func (checkbox)",
 				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
-				callback        =   function(control, checkedData, checked)
+				callback        =   function(comboBox, itemName, item, checked)
 					d("Checkbox entry 1 - checked: " ..tostring(checked))
 				end,
 				--	tooltip         = function() return "Checkbox entry 1"  end
@@ -328,7 +328,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 			{
 				--isCheckbox		= true,
 				name            = "Checkbox submenu entry 2 - LSM_ENTRY_TYPE_CHECKBOX - checked from SV fixed",
-				callback        =   function(control, checkedData, checked)
+				callback        =   function(comboBox, itemName, item, checked)
 					d("Checkbox entry 2 - checked: " ..tostring(checked))
 					testSV.cboxSubmenu1 = checked
 				end,
@@ -639,7 +639,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 			{
 				name            = "Main checkbox - checked (toggle func)",
 				checked           = function() isChecked = not isChecked return isChecked end,
-				callback        =   function(control, checkedData, checked)
+				callback        =   function(comboBox, itemName, item, checked)
 					d("Main checkbox! checked: " ..tostring(checked))
 				end,
 				--entries         = submenuEntries,
@@ -659,7 +659,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				name            = "Main checkbox 2 - isCheckbox = true, entryType=checkbox, checked = SV fixed",
 				checked           = testSV.cbox1,
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				callback        =   function(control, checkedData, checked)
+				callback        =   function(comboBox, itemName, item, checked)
 					d("Main checkbox 2! checked: " ..tostring(checked))
 					testSV.cbox1 = checked
 				end,
@@ -676,7 +676,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				name            = "Main checkbox 3 - entryType = checkbox, checked = SV func",
 				checked           = function() return testSV.cbox2  end,
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				callback        =   function(control, checkedData, checked)
+				callback        =   function(comboBox, itemName, item, checked)
 					d("Main checkbox 3! checked: " ..tostring(checked))
 					testSV.cbox2 = checked
 				end,
@@ -733,7 +733,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					AddCustomScrollableMenuHeader("Test header context menu")
 
 					AddCustomScrollableMenuCheckbox("Context menu checkbox entry 2 - checked from SV func",
-							function(control, checkedData, checked)
+							function(comboBox, itemName, item, checked)
 								d('Checkbox clicked at custom context menu entry 2 - checked: ' ..tostring(checked))
 								testSV.cboxContextmenu1 = checked
 							end,
@@ -742,7 +742,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					AddCustomScrollableMenuEntry("Normal context menu entry 2", function() d('Custom context menu Normal entry 2') end)
 
 					AddCustomScrollableMenuCheckbox("Context menu checkbox entry 3 - checked from SV func",
-							function(control, checkedData, checked)
+							function(comboBox, itemName, item, checked)
 								d('Checkbox clicked at custom context menu entry 2 - checked: ' ..tostring(checked))
 								testSV.cboxContextmenu2 = checked
 							end,
@@ -768,7 +768,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				isCheckbox		= function() isCheckBoxNow2 = not isCheckBoxNow2 d("isCheckBoxNow2 = " ..tostring(isCheckBoxNow2)) return isCheckBoxNow2 end,
 				name            = "Checkbox entry 1 - isCheckbox func",
 				icon 			= "/esoui/art/inventory/inventory_trait_ornate_icon.dds",
-				callback        =   function(control, checkedData, checked)
+				callback        =   function(comboBox, itemName, item, checked)
 					d("Checkbox entry 1 - checked: " ..tostring(checked))
 				end,
 				--	tooltip         = function() return "Checkbox entry 1"  end
@@ -780,7 +780,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 			{
 				isCheckbox		= true,
 				name            = "Checkbox entry 2 - isCheckbox bool = true",
-				callback        =   function(control, checkedData, checked)
+				callback        =   function(comboBox, itemName, item, checked)
 					d("Checkbox entry 2 - checked: " ..tostring(checked))
 				end,
 				checked			= true, -- Confirmed does start checked.

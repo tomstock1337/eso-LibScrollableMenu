@@ -2,12 +2,20 @@
 -[Fixes]-
 --Fixed iconData nil check for multi icon control
 --Fixed getComboBox to return the actual context menu combobox so that submenu entries clicked run their callback
---Removed duplicate recusrive loop over all (nseted)submenu entries to update the values -> in function UpdateItems
+--Fixed API RunCustomScrollableMenuItemsCallback to use the m_sortedItems, and not a copy (so updating the dataSource works)
+--Using proper function GetOptions() where needed now
+--Removed duplicate recursive loop over all (nested)submenu entries to update the values -> in function UpdateItems
 
 -[Additions]
 --Accept a custom filter function via options.customFilterFunc
 --Added option.highlightContextMenuOpeningControl: highlight the openingControl passed in to ShowCustomScrollableMenu(openingControl)
 --Changed IsFilterEnabled function to return false if only 1 entry in the dropdown. Updating the header to hide the filter visually then
+--Added comboBox to checkbox's callback 4th param so that API funcs like RunCustomScrollableMenuItemsCallback can use it
+
+--Added API function GetCustomScrollableMenuRowData(rowControl)
+
+-[Changes]
+--Callback functions for checkboxes now use the similar signature like normal entry callbacks:	function(comboBox, itemName, item, checked)
 
 
 -v- ---------------LSM v2.21 - 2024-06-02---------------------------------------------------------------------------- -v-
