@@ -17,12 +17,37 @@ if not lib then return end
 --------------------------------------------------------------------
 --The default SV variables
 local lsmSVDefaults = {
-	textSearchHistory = {}
+	textSearchHistory = {},
+	collapsedHeaderState = {},
 }
 local svName = "LibScrollableMenu_SavedVars"
 lib.SV = {} --will be init properly at the onAddonLoaded function
 local sv = lib.SV
 
+local function updateSavedVariable(svOptionName, newValue, subTableName)
+	if svOptionName == nil then return end
+	local svOptionData = lib.SV[svOptionName]
+	if svOptionData == nil then return end
+	if subTableName ~= nil then
+		if type(svOptionData) ~= "table" then return end
+		lib.SV[svOptionName][subTableName] = newValue
+	else
+		lib.SV[svOptionName] = newValue
+	end
+end
+
+
+local function getSavedVariable(svOptionName, subTableName)
+	if svOptionName == nil then return end
+	local svOptionData = lib.SV[svOptionName]
+	if svOptionData == nil then return end
+	if subTableName ~= nil then
+		if type(svOptionData) ~= "table" then return end
+		return lib.SV[svOptionName][subTableName]
+	else
+		return lib.SV[svOptionName]
+	end
+end
 
 
 --------------------------------------------------------------------
@@ -543,11 +568,9 @@ end
 --------------------------------------------------------------------
 -- Breadcrumb animation highlight
 --------------------------------------------------------------------
-
 local function playAnimationOnControl(control, animationFieldName, controlTemplate, overrideEndAlpha)
 	if controlTemplate then
 		if not control[animationFieldName] then
-		--	highlightControl = CreateControlFromVirtual("$(parent)Scroll", control, controlTemplate, animationFieldName)
 			local highlightControl = CreateControlFromVirtual("$(parent)", control, controlTemplate, animationFieldName)
 			local width = highlightControl:GetWidth()
 			highlightControl:SetFadeGradient(1, (width / 3) , 0, width)
@@ -564,6 +587,7 @@ local function playAnimationOnControl(control, animationFieldName, controlTempla
 		control[animationFieldName]:PlayForward()
 	end
 end
+
 
 local function removeAnimationOnControl(control, animationFieldName)
 	if control[animationFieldName] then
@@ -838,7 +862,8 @@ local function updateCollapseHeaderButton(toggleButtonCtrl, headerCollapsed)
 	else
 		toggleButtonCtrl:SetText("v")
 	end
-	return not headerCollapsed
+	local newState = not headerCollapsed
+	return newState
 end
 
 --Check for isDivider, isHeader, isCheckbox ... in table (e.g. item.additionalData) and get the LSM entry type for it
@@ -2135,7 +2160,7 @@ local dropdownClass = ZO_ComboBoxDropdown_Keyboard:Subclass()
 -- dropdownClass:New(To simplify locating the beginning of the class
 function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
-
+	--df("[LSM]dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
 	local dropdownControl = CreateControlFromVirtual(comboBoxContainer:GetName(), GuiRoot, "LibScrollableMenu_Dropdown_Template", depth)
 	ZO_ComboBoxDropdown_Keyboard.Initialize(self, dropdownControl)
 	dropdownControl.object = self
@@ -2154,7 +2179,7 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 		scrollCtrl.upButton.owner = 	scrollCtrl
 		scrollCtrl.downButton.owner = 	scrollCtrl
 	end
-	 self.scroll = self.scrollControl.contents
+	self.scroll = self.scrollControl.contents
 
 	-- highlightTemplate, animationFieldName = self.highlightTemplateOrFunction(control)
 
@@ -3633,6 +3658,7 @@ function comboBoxClass:ShowDropdown()
 end
 
 function comboBoxClass:ToggleDropdownHeader(toggleButtonCtrl)
+d("[LSM]comboBoxClass:ToggleDropdownHeader - toggleButtonCtrl: " ..tos(toggleButtonCtrl))
 	local headerControl, dropdownControl = getHeaderControl(self)
 	if headerControl == nil then return end
 
@@ -3641,6 +3667,7 @@ function comboBoxClass:ToggleDropdownHeader(toggleButtonCtrl)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ToggleDropdownHeader - toggleButton: %s", tos(toggleButtonCtrl))
 
 		self.headerCollapsed = updateCollapseHeaderButton(toggleButtonCtrl, self.headerCollapsed)
+		updateSavedVariable("collapsedHeaderState", self.headerCollapsed, dropdownControl)
 		refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
 
 		self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
@@ -3650,16 +3677,21 @@ end
 
 
 function comboBoxClass:UpdateDropdownHeader()
---d("[LSM]comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(self.headerCollapsed))
+d("[LSM]comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(self.headerCollapsed))
 	local headerControl, dropdownControl = getHeaderControl(self)
 	if headerControl == nil then return end
 
 	local options = self:GetOptions()
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(options))
+	local newState = false
+	if options.headerCollapsible then
+		self.headerCollapsed = getSavedVariable("collapsedHeaderState", dropdownControl)
+		if self.headerCollapsed == nil then self.headerCollapsed = false end
 
-	updateCollapseHeaderButton(self.m_dropdown.headerCollapseButton, not self.headerCollapsed)
-
-	refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
+		newState = not self.headerCollapsed
+		updateCollapseHeaderButton(self.m_dropdown.headerCollapseButton, newState)
+	end
+	refreshDropdownHeader(self, headerControl, options, newState)
 	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
 end
 
