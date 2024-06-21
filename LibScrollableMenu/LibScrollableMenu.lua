@@ -877,7 +877,7 @@ d("[LSM]updateCollapseHeaderButton - headerCollapsed: " ..tos(headerCollapsed) .
 	end
 d(">newState: " ..tos(newState))
 
-	if headerCollapsed == true then
+	if newState == true then
 		toggleButtonCtrl:SetText("v")
 	else
 		toggleButtonCtrl:SetText("^")
