@@ -865,17 +865,32 @@ local function getHeaderControl(selfVar)
 	return dropdownControl.header, dropdownControl
 end
 
+local headerToggleParentsThatShouldSaveInsteadOfChildren = {
+	[CT_SCROLL] = true
+}
+local function getHeaderToggleStateControlSavedVariableName(selfVar)
+	local openingControlOrComboBoxName = selfVar:GetUniqueName()
+	if openingControlOrComboBoxName and openingControlOrComboBoxName.GetParent then
+		local parentCtrl = openingControlOrComboBoxName:GetParent()
+		--Parent control is a scrollList -> Then save the parent as SV entry name, and not each single row of the scrollList
+		if parentCtrl and parentCtrl.GetType and headerToggleParentsThatShouldSaveInsteadOfChildren[parentCtrl:GetType()] then
+			return getControlName(parentCtrl)
+		end
+	end
+	return openingControlOrComboBoxName
+end
 
-local function updateCollapseHeaderButton(toggleButtonCtrl, headerCollapsed, dropdownControl, noVarUpdate)
+
+local function updateCollapseHeaderButton(selfVar, toggleButtonCtrl, headerCollapsed, dropdownControl, noVarUpdate)
 	noVarUpdate = noVarUpdate or false
-d("[LSM]updateCollapseHeaderButton - headerCollapsed: " ..tos(headerCollapsed) .. ", noVarUpdate: " ..tos(noVarUpdate))
+--d("[LSM]updateCollapseHeaderButton - headerCollapsed: " ..tos(headerCollapsed) .. ", noVarUpdate: " ..tos(noVarUpdate))
 
 	local newState = headerCollapsed
 	if not noVarUpdate then
 		newState = not headerCollapsed
-		updateSavedVariable("collapsedHeaderState", newState, getControlName(dropdownControl))
+		updateSavedVariable("collapsedHeaderState", newState, getHeaderToggleStateControlSavedVariableName(selfVar))
 	end
-d(">newState: " ..tos(newState))
+--d(">newState: " ..tos(newState))
 
 	if newState == true then
 		toggleButtonCtrl:SetText("v")
@@ -886,33 +901,40 @@ d(">newState: " ..tos(newState))
 end
 
 local function setDropdownHeaderToggleState(selfVar, toggleButtonCtrl)
-d("[LSM]setDropdownHeaderToggleState - toggleButtonCtrl: " ..tos(toggleButtonCtrl))
+--d("[LSM]setDropdownHeaderToggleState - toggleButtonCtrl: " ..tos(toggleButtonCtrl))
 	local headerControl, dropdownControl = getHeaderControl(selfVar)
 	if headerControl == nil or dropdownControl == nil then return end
 
+LSM_Debug = LSM_Debug or {}
+LSM_Debug.dropdownHeaderData = LSM_Debug.dropdownHeaderData or {}
+LSM_Debug.dropdownHeaderData[selfVar] = {
+	self = selfVar,
+	dropdownControl = dropdownControl,
+}
+
 	--Get the current header's collapsed state
-	local currentHeaderCollapsedState = getSavedVariable("collapsedHeaderState", getControlName(dropdownControl))
+	local currentHeaderCollapsedState = getSavedVariable("collapsedHeaderState", getHeaderToggleStateControlSavedVariableName(selfVar))
 	if currentHeaderCollapsedState == nil then currentHeaderCollapsedState = false end
 	selfVar.headerCollapsed = currentHeaderCollapsedState
 
 	--Get the current options
 	local options = selfVar:GetOptions()
 	--Header is collapsible?
-d(">headerCollapsible: " .. tos(options.headerCollapsible) ..", currentHeaderCollapsedState: " ..tos(currentHeaderCollapsedState))
+--d(">headerCollapsible: " .. tos(options.headerCollapsible) ..", currentHeaderCollapsedState: " ..tos(currentHeaderCollapsedState))
 	if options.headerCollapsible == true then
 		--Toggle button was clicked to change the collapsed state
 		if toggleButtonCtrl ~= nil then
 			--ToggleDropdownHeader ->
 			--Change the current collapsed state to the other one and update the button's text + SavedVariables
-			selfVar.headerCollapsed = updateCollapseHeaderButton(toggleButtonCtrl, currentHeaderCollapsedState, dropdownControl, false)
+			selfVar.headerCollapsed = updateCollapseHeaderButton(selfVar, toggleButtonCtrl, currentHeaderCollapsedState, dropdownControl, false)
 		else
 			--No toggle button was clicked. Just drawing the header
 			--UpdateDropdownHeader ->
 			--Only update the button's text
-			updateCollapseHeaderButton(selfVar.m_dropdown.headerCollapseButton, currentHeaderCollapsedState, dropdownControl, true)
+			updateCollapseHeaderButton(selfVar, selfVar.m_dropdown.headerCollapseButton, currentHeaderCollapsedState, dropdownControl, true)
 		end
 	end
-d(">newHeaderCollapsedState: " ..tos(selfVar.headerCollapsed))
+--d(">newHeaderCollapsedState: " ..tos(selfVar.headerCollapsed))
 
 	--Redraw all dynamic header controls (title, subtitle, filter editbox, ...) -> function signature = comboBox, control, options, visible
 	--> visible controls if the header is shown in total (collapsed or not collapsed), or not
@@ -922,7 +944,7 @@ d(">newHeaderCollapsedState: " ..tos(selfVar.headerCollapsed))
 
 	--Toggle button was clicked -> Header's collapsed state changed
 	if toggleButtonCtrl ~= nil then
-d(">>:Show is called")
+--d(">>:Show is called")
 		--Redraw the dropdown so that the header height etc. is visibly updated
 		selfVar.m_dropdownObject:Show(selfVar, selfVar.m_sortedItems, selfVar.m_containerWidth, selfVar.m_height, selfVar:GetSpacing())
 	end
