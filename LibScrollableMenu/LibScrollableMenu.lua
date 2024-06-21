@@ -705,7 +705,7 @@ do
 				headerHeight = headerHeight + headerControl:GetHeight() + 5
 			end
 		end
-
+d(">header height: " ..tos(headerHeight))
 		control:SetHeight(headerHeight + 5)
 	end
 
@@ -856,14 +856,59 @@ local function getHeaderControl(selfVar)
 end
 
 
-local function updateCollapseHeaderButton(toggleButtonCtrl, headerCollapsed)
+local function updateCollapseHeaderButton(toggleButtonCtrl, headerCollapsed, dropdownControl, noVarUpdate)
 	if headerCollapsed == true then
-		toggleButtonCtrl:SetText("^")
-	else
 		toggleButtonCtrl:SetText("v")
+	else
+		toggleButtonCtrl:SetText("^")
 	end
-	local newState = not headerCollapsed
+
+	local newState = headerCollapsed
+	if not noVarUpdate then
+		newState = not headerCollapsed
+		updateSavedVariable("collapsedHeaderState", newState, getControlName(dropdownControl))
+	end
 	return newState
+end
+
+local function setDropdownHeaderToggleState(selfVar, toggleButtonCtrl)
+	local headerControl, dropdownControl = getHeaderControl(selfVar)
+	if headerControl == nil or dropdownControl == nil then return end
+
+	--Get the current header's collapsed state
+	local currentHeaderCollapsedState = getSavedVariable("collapsedHeaderState", getControlName(dropdownControl))
+	if currentHeaderCollapsedState == nil then currentHeaderCollapsedState = false end
+	selfVar.headerCollapsed = currentHeaderCollapsedState
+
+
+	--Get the current options
+	local options = selfVar:GetOptions()
+	--Header is collapsible?
+	if options.headerCollapsible == true then
+		--Toggle button was clicked to change the collapsed state
+		if toggleButtonCtrl ~= nil then
+			--ToggleDropdownHeader ->
+			--Change the current collapsed state to the other one and update the button's text
+			selfVar.headerCollapsed = updateCollapseHeaderButton(toggleButtonCtrl, currentHeaderCollapsedState, dropdownControl)
+		else
+			--No toggle button was clicked. Just drawing the header
+			--UpdateDropdownHeader ->
+			--Only update the button's text
+			updateCollapseHeaderButton(selfVar.m_dropdown.headerCollapseButton, currentHeaderCollapsedState, dropdownControl, true)
+		end
+	end
+
+	--Redraw all dynamic header controls (title, subtitle, filter editbox, ...) -> function signature = comboBox, control, options, visible
+	--> visible controls if the header is collapsed, or not
+	refreshDropdownHeader(selfVar, headerControl, options, not selfVar.headerCollapsed)
+	--Update self.m_height properly for self:Show call (including the now updated header's height)
+	self:UpdateHeight(dropdownControl)
+
+	--Toggle button was clicked -> Header's collapsed state changed
+	if toggleButtonCtrl ~= nil then
+		--Redraw the dropdown so that the header height etc. is visibly updated
+		self.m_dropdownObject:Show(selfVar, selfVar.m_sortedItems, selfVar.m_containerWidth, selfVar.m_height, selfVar:GetSpacing())
+	end
 end
 
 --Check for isDivider, isHeader, isCheckbox ... in table (e.g. item.additionalData) and get the LSM entry type for it
@@ -3658,42 +3703,14 @@ function comboBoxClass:ShowDropdown()
 end
 
 function comboBoxClass:ToggleDropdownHeader(toggleButtonCtrl)
---d("[LSM]comboBoxClass:ToggleDropdownHeader - toggleButtonCtrl: " ..tos(toggleButtonCtrl))
-	local headerControl, dropdownControl = getHeaderControl(self)
-	if headerControl == nil then return end
-
-	local options = self:GetOptions()
-	if options.headerCollapsible then
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ToggleDropdownHeader - toggleButton: %s", tos(toggleButtonCtrl))
-
-		self.headerCollapsed = updateCollapseHeaderButton(toggleButtonCtrl, self.headerCollapsed)
-		updateSavedVariable("collapsedHeaderState", self.headerCollapsed, getControlName(dropdownControl))
-		refreshDropdownHeader(self, headerControl, options, not self.headerCollapsed)
-
-		self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
-		self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
-	end
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ToggleDropdownHeader - toggleButton: %s", tos(toggleButtonCtrl))
+	self:UpdateDropdownHeader(toggleButtonCtrl)
 end
 
 
-function comboBoxClass:UpdateDropdownHeader()
---d("[LSM]comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(self.headerCollapsed))
-	local headerControl, dropdownControl = getHeaderControl(self)
-	if headerControl == nil then return end
-
-	local options = self:GetOptions()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s", tos(options))
-	local newHeaderVisibleState = true
-	if options.headerCollapsible then
-		self.headerCollapsed = getSavedVariable("collapsedHeaderState", getControlName(dropdownControl))
-		if self.headerCollapsed == nil then self.headerCollapsed = false end
---d(">header is collapsible. SavedVars state: " ..tos(getSavedVariable("collapsedHeaderState", getControlName(dropdownControl))))
-
-		newHeaderVisibleState = not self.headerCollapsed
-		updateCollapseHeaderButton(self.m_dropdown.headerCollapseButton, newHeaderVisibleState)
-	end
-	refreshDropdownHeader(self, headerControl, options, newHeaderVisibleState)
-	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
+function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s, toggleButton: %s", tos(self.options), tos(toggleButtonCtrl))
+	local dropdownControl, headerControl = setDropdownHeaderToggleState(self, toggleButtonCtrl)
 end
 
 function comboBoxClass:UpdateOptions(options, onInit)
