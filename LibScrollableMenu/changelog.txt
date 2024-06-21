@@ -11,6 +11,7 @@
 --Added option.highlightContextMenuOpeningControl: highlight the openingControl passed in to ShowCustomScrollableMenu(openingControl)
 --Changed IsFilterEnabled function to return false if only 1 entry in the dropdown. Updating the header to hide the filter visually then
 --Added comboBox to checkbox's callback 4th param so that API funcs like RunCustomScrollableMenuItemsCallback can use it
+--Added a collapsible header + button to toggle its state. State will be saved in SavedVariables per LSM name
 
 --Added API function GetCustomScrollableMenuRowData(rowControl)
 

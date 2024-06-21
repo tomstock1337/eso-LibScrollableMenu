@@ -156,7 +156,7 @@ local NIL_CHECK_TABLE = {}
 --local "global" functions
 local getValueOrCallback
 local getDataSource
-
+local getControlName
 
 ------------------------------------------------------------------------------------------------------------------------
 --Entry types - For the scroll list's dataType of the menus
@@ -694,7 +694,7 @@ do
 	local function header_updateAnchors(control, refreshResults, visible)
 		--local owningWindow = control:GetOwningWindow()
 		--local hasFocus = owningWindow.filterBox:HasFocus()
-		
+		local anyControlNotHidden = false
 		local headerHeight = visible and 0 or 13-- +5 (see below at control:SetHeight) = 18 pixels height
 		local controls = control.controls
 		g_currentBottomLeftHeader = CENTER_BASELINE
@@ -707,9 +707,11 @@ do
 				header_applyAnchorToControl(control, controlId)
 				headerHeight = headerHeight + headerControl:GetHeight() + 5
 			end
+			anyControlNotHidden = notHidden or refreshResults[controlId] ~= nil
 		end
-d(">header height: " ..tos(headerHeight))
+--d(">header height: " ..tos(headerHeight))
 		control:SetHeight(headerHeight + 5)
+		return anyControlNotHidden
 	end
 
 	local function header_setAlignment(control, alignment, defaultAlignment)
@@ -779,14 +781,13 @@ d(">header height: " ..tos(headerHeight))
 	refreshDropdownHeader = function(comboBox, control, options, visible)
 
 		local controls = control.controls
-
 		local headerCollapsible = options.headerCollapsible
-d("[LSM]refreshDropdownHeader - visible: " ..tos(visible) .. ", headerCollapsible: " ..tos(headerCollapsible))
+--d("[LSM]refreshDropdownHeader - visible: " ..tos(visible) .. ", headerCollapsible: " ..tos(headerCollapsible))
 		if not headerCollapsible then visible = true end
 		comboBox.m_dropdown.headerCollapseButton:SetHidden(not headerCollapsible)
 
+		control:SetHidden(true)
 		control:SetHeight(0)
-		control:SetHidden(not visible)
 
 		g_refreshResults = {}
 
@@ -809,7 +810,12 @@ d("[LSM]refreshDropdownHeader - visible: " ..tos(visible) .. ", headerCollapsibl
 		g_refreshResults[DIVIDER_SIMPLE] = (showDivider and showTitle)
 
 		--Dynamically anchor the header controls now and change the header height, based on visible state (collapsed/expanded)
-		header_updateAnchors(control, g_refreshResults, visible)
+		local anyControlNotHidden = header_updateAnchors(control, g_refreshResults, visible)
+		--Unhide the header so the collapse/expand buttons are shown, or if any header title, subtitle, search editbox are shown
+		if anyControlNotHidden or headerCollapsible then
+			control:SetHidden(false)
+		end
+
 	end
 end
 
@@ -817,7 +823,7 @@ end
 --------------------------------------------------------------------
 -- Local functions
 --------------------------------------------------------------------
-local function getControlName(control, alternativeControl)
+function getControlName(control, alternativeControl)
 	local ctrlName = control ~= nil and (control.name or (control.GetName ~= nil and control:GetName()))
 	if ctrlName == nil and alternativeControl ~= nil then
 		ctrlName = (alternativeControl.name or (alternativeControl.GetName ~= nil and alternativeControl:GetName()))
@@ -863,11 +869,6 @@ end
 local function updateCollapseHeaderButton(toggleButtonCtrl, headerCollapsed, dropdownControl, noVarUpdate)
 	noVarUpdate = noVarUpdate or false
 d("[LSM]updateCollapseHeaderButton - headerCollapsed: " ..tos(headerCollapsed) .. ", noVarUpdate: " ..tos(noVarUpdate))
-	if headerCollapsed == true then
-		toggleButtonCtrl:SetText("v")
-	else
-		toggleButtonCtrl:SetText("^")
-	end
 
 	local newState = headerCollapsed
 	if not noVarUpdate then
@@ -875,6 +876,12 @@ d("[LSM]updateCollapseHeaderButton - headerCollapsed: " ..tos(headerCollapsed) .
 		updateSavedVariable("collapsedHeaderState", newState, getControlName(dropdownControl))
 	end
 d(">newState: " ..tos(newState))
+
+	if headerCollapsed == true then
+		toggleButtonCtrl:SetText("v")
+	else
+		toggleButtonCtrl:SetText("^")
+	end
 	return newState
 end
 
@@ -4678,6 +4685,8 @@ WORKING ON - Current version: 2.3
     9. Added API function GetCustomScrollableMenuRowData(rowControl)
     TESTED: OPEN
     10. Fixed API RunCustomScrollableMenuItemsCallback to use the m_sortedItems, and not a copy (so updating the dataSource works)
+    TESTED: OPEN
+    11. Added a collapsible header + button to toggle its state. State will be saved in SavedVariables per LSM name
     TESTED: OPEN
 
 
