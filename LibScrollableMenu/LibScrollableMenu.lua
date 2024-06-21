@@ -25,15 +25,18 @@ lib.SV = {} --will be init properly at the onAddonLoaded function
 local sv = lib.SV
 
 local function updateSavedVariable(svOptionName, newValue, subTableName)
+d("[LSM]updateSavedVariable - svOptionName: " ..tostring(svOptionName) .. ", newValue: " ..tostring(newValue) ..", subTableName: " ..tostring(subTableName))
 	if svOptionName == nil then return end
 	local svOptionData = lib.SV[svOptionName]
 	if svOptionData == nil then return end
 	if subTableName ~= nil then
 		if type(svOptionData) ~= "table" then return end
+d(">>sv is table")
 		lib.SV[svOptionName][subTableName] = newValue
 	else
 		lib.SV[svOptionName] = newValue
 	end
+	sv = lib.SV
 end
 
 
@@ -857,6 +860,8 @@ end
 
 
 local function updateCollapseHeaderButton(toggleButtonCtrl, headerCollapsed, dropdownControl, noVarUpdate)
+	noVarUpdate = noVarUpdate or false
+d("[LSM]updateCollapseHeaderButton - headerCollapsed: " ..tos(headerCollapsed) .. ", noVarUpdate: " ..tos(noVarUpdate))
 	if headerCollapsed == true then
 		toggleButtonCtrl:SetText("v")
 	else
@@ -868,10 +873,12 @@ local function updateCollapseHeaderButton(toggleButtonCtrl, headerCollapsed, dro
 		newState = not headerCollapsed
 		updateSavedVariable("collapsedHeaderState", newState, getControlName(dropdownControl))
 	end
+d(">newState: " ..tos(newState))
 	return newState
 end
 
 local function setDropdownHeaderToggleState(selfVar, toggleButtonCtrl)
+d("[LSM]setDropdownHeaderToggleState - toggleButtonCtrl: " ..tos(toggleButtonCtrl))
 	local headerControl, dropdownControl = getHeaderControl(selfVar)
 	if headerControl == nil or dropdownControl == nil then return end
 
@@ -880,16 +887,16 @@ local function setDropdownHeaderToggleState(selfVar, toggleButtonCtrl)
 	if currentHeaderCollapsedState == nil then currentHeaderCollapsedState = false end
 	selfVar.headerCollapsed = currentHeaderCollapsedState
 
-
 	--Get the current options
 	local options = selfVar:GetOptions()
 	--Header is collapsible?
+d(">headerCollapsible: " .. tos(options.headerCollapsible) ..", currentHeaderCollapsedState: " ..tos(currentHeaderCollapsedState))
 	if options.headerCollapsible == true then
 		--Toggle button was clicked to change the collapsed state
 		if toggleButtonCtrl ~= nil then
 			--ToggleDropdownHeader ->
-			--Change the current collapsed state to the other one and update the button's text
-			selfVar.headerCollapsed = updateCollapseHeaderButton(toggleButtonCtrl, currentHeaderCollapsedState, dropdownControl)
+			--Change the current collapsed state to the other one and update the button's text + SavedVariables
+			selfVar.headerCollapsed = updateCollapseHeaderButton(toggleButtonCtrl, currentHeaderCollapsedState, dropdownControl, false)
 		else
 			--No toggle button was clicked. Just drawing the header
 			--UpdateDropdownHeader ->
@@ -897,17 +904,19 @@ local function setDropdownHeaderToggleState(selfVar, toggleButtonCtrl)
 			updateCollapseHeaderButton(selfVar.m_dropdown.headerCollapseButton, currentHeaderCollapsedState, dropdownControl, true)
 		end
 	end
+d(">newHeaderCollapsedState: " ..tos(selfVar.headerCollapsed))
 
 	--Redraw all dynamic header controls (title, subtitle, filter editbox, ...) -> function signature = comboBox, control, options, visible
-	--> visible controls if the header is collapsed, or not
+	--> visible controls if the header is shown in total (collapsed or not collapsed), or not
 	refreshDropdownHeader(selfVar, headerControl, options, not selfVar.headerCollapsed)
 	--Update self.m_height properly for self:Show call (including the now updated header's height)
-	self:UpdateHeight(dropdownControl)
+	selfVar:UpdateHeight(dropdownControl)
 
 	--Toggle button was clicked -> Header's collapsed state changed
 	if toggleButtonCtrl ~= nil then
+d(">>:Show is called")
 		--Redraw the dropdown so that the header height etc. is visibly updated
-		self.m_dropdownObject:Show(selfVar, selfVar.m_sortedItems, selfVar.m_containerWidth, selfVar.m_height, selfVar:GetSpacing())
+		selfVar.m_dropdownObject:Show(selfVar, selfVar.m_sortedItems, selfVar.m_containerWidth, selfVar.m_height, selfVar:GetSpacing())
 	end
 end
 
