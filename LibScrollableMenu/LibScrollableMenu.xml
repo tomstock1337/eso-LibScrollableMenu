@@ -446,7 +446,7 @@
 
 						<Button name="$(parent)ToogleHeader" inherits="ZO_DefaultTextButton" text="^" font="ZoFontGameSmall">
 							<Dimensions x="16" y="16" />
-							<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6" offsetY="-7" />
+							<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6" offsetY="-3" />
 							<OnInitialized>
 								local owningWindow = self:GetOwningWindow()
 								if owningWindow then
