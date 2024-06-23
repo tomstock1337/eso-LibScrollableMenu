@@ -332,7 +332,7 @@
 									<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="-25"/>
 									
 									<Controls>
-										<EditBox name="$(parent)Box" verticalAlignment="CENTER" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
+										<EditBox name="$(parent)Box" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
 											<OnTextChanged>
 												ZO_Tooltips_HideTextTooltip()
 												ClearMenu()
@@ -444,13 +444,10 @@
 							</Controls>
 						</Control>
 
-						<Button name="$(parent)ToogleHeader" inherits="ZO_DefaultTextButton" text="^" fon="ZoFontGameSmall">
+						<Button name="$(parent)ToogleHeader" inherits="ZO_DefaultTextButton" text="^" font="ZoFontGameSmall">
 							<Dimensions x="16" y="16" />
 							<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6" offsetY="-7" />
 							<OnInitialized>
-LSM_Debug = LSM_Debug or {}
-LSM_Debug._headerCollapseButtons = LSM_Debug._headerCollapseButtons or {}
-LSM_Debug._headerCollapseButtons[self] = self
 								local owningWindow = self:GetOwningWindow()
 								if owningWindow then
 									owningWindow.headerCollapseButton = self
@@ -460,7 +457,7 @@ LSM_Debug._headerCollapseButtons[self] = self
 							<OnMouseEnter>
 								local owningWindow = self:GetOwningWindow()
 								if owningWindow.object then
-									owningWindow.object:ShowTextTooltip(self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET), owningWindow)
+									owningWindow.object:ShowTextTooltip(self, BOTTOM, GetString(SI_GAMEPAD_TOGGLE_OPTION), owningWindow)
 								end
 							</OnMouseEnter>
 
