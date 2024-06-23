@@ -106,6 +106,9 @@ local function test()
 			--titleText = function()  return "Custom title text" end,
 			--subtitleText = "Custom sub title",
 			enableFilter = function() return true end,
+			headerCollapsible = true,
+			headerCollapsed = true,
+
 			--customFilterFunc = customFilterFunc
 
 			--[[ Define in XML:

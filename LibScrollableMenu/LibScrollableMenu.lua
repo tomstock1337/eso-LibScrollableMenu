@@ -25,13 +25,13 @@ lib.SV = {} --will be init properly at the onAddonLoaded function
 local sv = lib.SV
 
 local function updateSavedVariable(svOptionName, newValue, subTableName)
-d("[LSM]updateSavedVariable - svOptionName: " ..tostring(svOptionName) .. ", newValue: " ..tostring(newValue) ..", subTableName: " ..tostring(subTableName))
+--d("[LSM]updateSavedVariable - svOptionName: " ..tostring(svOptionName) .. ", newValue: " ..tostring(newValue) ..", subTableName: " ..tostring(subTableName))
 	if svOptionName == nil then return end
 	local svOptionData = lib.SV[svOptionName]
 	if svOptionData == nil then return end
 	if subTableName ~= nil then
 		if type(svOptionData) ~= "table" then return end
-d(">>sv is table")
+--d(">>sv is table")
 		lib.SV[svOptionName][subTableName] = newValue
 	else
 		lib.SV[svOptionName] = newValue
@@ -334,6 +334,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["useDefaultHighlightForSubmenuWithCallback"] = "useDefaultHighlightForSubmenuWithCallback",
 	["highlightContextMenuOpeningControl"] = "highlightContextMenuOpeningControl",
 	["headerCollapsible"] = 	"headerCollapsible",
+	["headerCollapsed"] = 		"headerCollapsed",
 
 	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
 	-->!!!Attention: Add the entries which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below in this table here too!!!
@@ -439,6 +440,7 @@ local submenuClass_exposedVariables = {
 	['useDefaultHighlightForSubmenuWithCallback'] = true,
 	['highlightContextMenuOpeningControl'] = true,
 	["headerCollapsible"] = true,
+	["headerCollapsed"] = false,
 }
 
 -- Pass-through functions:
@@ -910,20 +912,25 @@ local function setDropdownHeaderToggleState(selfVar, toggleButtonCtrl)
 	local headerControl, dropdownControl = getHeaderControl(selfVar)
 	if headerControl == nil or dropdownControl == nil then return end
 
-LSM_Debug = LSM_Debug or {}
-LSM_Debug.dropdownHeaderData = LSM_Debug.dropdownHeaderData or {}
-LSM_Debug.dropdownHeaderData[selfVar] = {
-	self = selfVar,
-	dropdownControl = dropdownControl,
-}
-
-	--Get the current header's collapsed state
-	local currentHeaderCollapsedState = getSavedVariable("collapsedHeaderState", getHeaderToggleStateControlSavedVariableName(selfVar))
-	if currentHeaderCollapsedState == nil then currentHeaderCollapsedState = false end
-	selfVar.headerCollapsed = currentHeaderCollapsedState
+	local noVarUpdate = false
+	local currentHeaderCollapsedState
 
 	--Get the current options
 	local options = selfVar:GetOptions()
+	--Take the collapsed state always fixed from options - But only if not manually toggled the collapsed state
+	if toggleButtonCtrl == nil and options.headerCollapsed ~= nil then
+		currentHeaderCollapsedState = options.headerCollapsed
+--d(">currentHeaderCollapsedState changed to options.headerCollapsed")
+		noVarUpdate = true
+		--explicitly update the SavedVars with the current state so next click on the button works correctly
+		updateSavedVariable("collapsedHeaderState", currentHeaderCollapsedState, getHeaderToggleStateControlSavedVariableName(selfVar))
+	else
+		--Get the current header's collapsed state from SavedVariables
+		currentHeaderCollapsedState = getSavedVariable("collapsedHeaderState", getHeaderToggleStateControlSavedVariableName(selfVar))
+	end
+	if currentHeaderCollapsedState == nil then currentHeaderCollapsedState = false end
+	selfVar.headerCollapsed = currentHeaderCollapsedState
+
 	--Header is collapsible?
 --d(">headerCollapsible: " .. tos(options.headerCollapsible) ..", currentHeaderCollapsedState: " ..tos(currentHeaderCollapsedState))
 	if options.headerCollapsible == true then
@@ -931,7 +938,7 @@ LSM_Debug.dropdownHeaderData[selfVar] = {
 		if toggleButtonCtrl ~= nil then
 			--ToggleDropdownHeader ->
 			--Change the current collapsed state to the other one and update the button's text + SavedVariables
-			selfVar.headerCollapsed = updateCollapseHeaderButton(selfVar, toggleButtonCtrl, currentHeaderCollapsedState, dropdownControl, false)
+			selfVar.headerCollapsed = updateCollapseHeaderButton(selfVar, toggleButtonCtrl, currentHeaderCollapsedState, dropdownControl, noVarUpdate)
 		else
 			--No toggle button was clicked. Just drawing the header
 			--UpdateDropdownHeader ->
@@ -4713,7 +4720,9 @@ WORKING ON - Current version: 2.3
     TESTED: OPEN
     10. Fixed API RunCustomScrollableMenuItemsCallback to use the m_sortedItems, and not a copy (so updating the dataSource works)
     TESTED: OPEN
-    11. Added a collapsible header + button to toggle its state. State will be saved in SavedVariables per LSM name
+    11. Added a collapsible header + button via options.headerCollapsible to toggle the header's height. State will be saved in SavedVariables per openingControl or combobox name.
+    TESTED: OPEN
+    12. Added option.headerCollapsed to always show the collapsible header at that state if the menu opens
     TESTED: OPEN
 
 
