@@ -3131,8 +3131,8 @@ end
 
 function comboBox_base:GetHighlightTemplate(control)
 	local controlData = getControlData(control)
-	return (controlData ~= nil and controlData.m_highlightTemplate)
-			or (control.m_data ~= nil and control.m_data.m_highlightTemplate)
+	return (controlData ~= nil and controlData.m_highlightTemplate) or
+			(control.m_data ~= nil and control.m_data.m_highlightTemplate)
 			or self.m_highlightTemplate
 end
 
@@ -3438,7 +3438,7 @@ do -- Row setup functions
 		if not useDefaultHighlightForSubmenuWithCallback then
 			if control.closeOnSelect and not data.m_highlightTemplate then
 				data.m_highlightTemplate = 'LibScrollableMenu_Highlight_Green'
-			--elseif not data.m_highlightTemplate then
+				--elseif not data.m_highlightTemplate then
 				--	data.m_highlightTemplate = 'LibScrollableMenu_Highlight_WithOutCallback'
 			end
 		end
@@ -4735,6 +4735,9 @@ WORKING ON - Current version: 2.3
     TESTED: OPEN
     12. Added option.headerCollapsed to always show the collapsible header at that state if the menu opens
     TESTED: OPEN
+	13. Bug with data.m_highlightTemplate = 'LibScrollableMenu_Highlight_Green' -> 1st repeated pool control (e.g. 15 rows -> 16th is 1st repeated pool control then) will use the normal blue highlight
+	because control.HighlightAnimation on scrollist row was set with old animation already and does not update properly
+	TESTED: TO FIX
 
 
 -------------------
@@ -4746,8 +4749,7 @@ TODO - To check (future versions)
 	3. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
 	4. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
 	- fired on handlers dropdown_OnShow dropdown_OnHide
-	6. Check if entries' .tooltip can be a function and then call that function and show it as normal ZO_Tooltips_ShowTextTooltip(control, text) instead of having to use .customTooltip for that
-
+	5. Check if entries' .tooltip can be a function and then call that function and show it as normal ZO_Tooltips_ShowTextTooltip(control, text) instead of having to use .customTooltip for that
 
 -------------------
 UPCOMING FEATURES  - What will be added in the future?
