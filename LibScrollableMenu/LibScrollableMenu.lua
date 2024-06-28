@@ -2400,7 +2400,7 @@ function dropdownClass:AnchorToMouse()
 
 	local point, relativeTo, relativePoint
 	if right then
-		x = x + 10
+		x = x + 2
 		if bottom then
 			point = TOPLEFT
 			relativeTo = nil
@@ -2411,7 +2411,7 @@ function dropdownClass:AnchorToMouse()
 			relativePoint = TOPLEFT
 		end
 	else
-		x = x - 10
+		x = x - 2
 		if bottom then
 			point = TOPRIGHT
 			relativeTo = nil
