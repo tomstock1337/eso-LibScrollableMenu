@@ -5,6 +5,7 @@
 --Fixed API RunCustomScrollableMenuItemsCallback to use the m_sortedItems, and not a copy (so updating the dataSource works)
 --Using proper function GetOptions() where needed now
 --Removed duplicate recursive loop over all (nested)submenu entries to update the values -> in function UpdateItems
+--Fixed API function RunCustomScrollableMenuItemsCallback, params ...
 
 -[Additions]
 --Accept a custom filter function via options.customFilterFunc
@@ -15,6 +16,7 @@
 --Added option.headerCollapsed to always show the collapsible header at that state if the menu opens
 
 --Added API function GetCustomScrollableMenuRowData(rowControl)
+--Added item.m_owner to RefreshSortedItems
 
 -[Changes]
 --Callback functions for checkboxes now use the similar signature like normal entry callbacks:	function(comboBox, itemName, item, checked)

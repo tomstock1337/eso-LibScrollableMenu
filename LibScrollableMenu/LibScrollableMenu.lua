@@ -3265,10 +3265,12 @@ function comboBox_base:RefreshSortedItems(parentControl)
 		-- replace empty entries with noEntriesSubmenu item
 		if ZO_IsTableEmpty(entries) then
 			noEntriesSubmenu.m_parentControl = parentControl
+			noEntriesSubmenu.m_owner = self
 			self:AddItem(noEntriesSubmenu, ZO_COMBOBOX_SUPPRESS_UPDATE)
 		else
 			for _, item in ipairs(entries) do
 				item.m_parentControl = parentControl
+				item.m_owner = self
 				-- update strings by functions will be done in AddItem
 				self:AddItem(item, ZO_COMBOBOX_SUPPRESS_UPDATE)
 			end
@@ -4585,7 +4587,7 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	--item could have a control or something like that from where we can get the owner and then check if the owner got a openingControl or similar?
 	local sortedItems = getComboBoxsSortedItems(comboBox, fromParentMenu, false)
 	if ZO_IsTableEmpty(sortedItems) then return end
-
+--d(">sortedItems: " .. tos(#sortedItems))
 	local itemsForCallbackFunc = sortedItems
 
 	--Any entryTypes to filter passed in?
@@ -4593,6 +4595,7 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 		local allowedEntryTypes = {}
 		--Build lookup table for allowed entry types
 		for _, entryTypeToFilter in ipairs(filterEntryTypesTable) do
+--d(">>entryTypeToFilter: " ..tos(entryTypeToFilter))
 			--Is the entryType passed in a library's known and allowed one?
 			if libraryAllowedEntryTypes[entryTypeToFilter] then
 				allowedEntryTypes[entryTypeToFilter] = true
@@ -4605,16 +4608,17 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 			--Check the determined items' entryType and only add the matching (non filtered) ones
 			for _, v in ipairs(itemsForCallbackFunc) do
 				local itemsEntryType = v.entryType
-					if itemsEntryType ~= nil and allowedEntryTypes[itemsEntryType] then
-						filteredTab[#filteredTab + 1] = v
-					end
+--d(">>itemsEntryType: " ..tos(itemsEntryType))
+				if itemsEntryType ~= nil and allowedEntryTypes[itemsEntryType] then
+--d(">>added: " ..tos(v.label or v.name))
+					filteredTab[#filteredTab + 1] = v
 				end
+			end
 			itemsForCallbackFunc = filteredTab
 		end
 	end
 
-	local gotAnyCustomParams = (select(1, {...}) ~= nil and true) or false
-	myAddonCallbackFunc(comboBox, item, itemsForCallbackFunc, (gotAnyCustomParams and unpack({...})) or nil)
+	myAddonCallbackFunc(comboBox, item, itemsForCallbackFunc, ...)
 end
 
 
@@ -4738,6 +4742,10 @@ WORKING ON - Current version: 2.3
 	13. Bug with data.m_highlightTemplate = 'LibScrollableMenu_Highlight_Green' -> 1st repeated pool control (e.g. 15 rows -> 16th is 1st repeated pool control then) will use the normal blue highlight
 	because control.HighlightAnimation on scrollist row was set with old animation already and does not update properly
 	TESTED: TO FIX
+	14. Fixed API function RunCustomScrollableMenuItemsCallback, params ...
+	TESTED: TESTED
+	15. Added item.m_owner to RefreshSortedItems
+	TESTED: TESTED
 
 
 -------------------
