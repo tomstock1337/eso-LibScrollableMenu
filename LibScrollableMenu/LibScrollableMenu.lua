@@ -794,7 +794,7 @@ do
 			height = height + ROW_OFFSET_Y
 		end
 		
-		d( height)
+		--d("Header height: " .. tos(height))
 		return height
 	end
 	
