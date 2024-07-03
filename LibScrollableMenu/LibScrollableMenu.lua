@@ -3824,6 +3824,11 @@ function comboBoxClass:IsFilterEnabled()
 	return enableFilter
 end
 
+function comboBoxClass:SetFilterString(filterBox, newText)
+	self.filterString = (newText ~= nil and zo_strlower(newText)) or zo_strlower(filterBox:GetText())
+	self:UpdateResults(true)
+end
+
 function comboBoxClass:SetDefaults()
 	self.defaults = {}
 	for k, v in  pairs(comboBoxDefaults) do
@@ -3831,6 +3836,20 @@ function comboBoxClass:SetDefaults()
 			self.defaults[k] = v
 		end
 	end
+end
+
+--Reset internal default values like m_font or LSM defaults like visibleRowsDropdown
+-->If called from init function of API AddCustomScrollableComboBoxDropdownMenu: Keep existing ZO default (or changed by addons) entries of the ZO_ComboBox and only reset missing ones
+-->If called later from e.g. UpdateOptions function where options passed in are nil or empty: Reset all to LSM default values
+--->In all cases the function comboBoxClass:UpdateOptions should update the options needed!
+function comboBoxClass:ResetToDefaults(initExistingComboBox)
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ResetToDefaults")
+	local defaults = ZO_DeepTableCopy(comboBoxDefaults)
+	zo_mixin(defaults, self.defaults)
+
+	zo_mixin(self, defaults) -- overwrite existing ZO_ComboBox default values with LSM defaults
+
+	self:SetOptions(nil)
 end
 
 --Update the comboBox's attribute/functions with a value returned from the applied custom options of the LSM, or with
@@ -3847,7 +3866,7 @@ function comboBoxClass:SetOption(LSMOptionsKey)
 	local options = self:GetOptions()
 	local newValue = options and getValueOrCallback(options[LSMOptionsKey], options) --read new value from the options (run function there or get the value)
 	if newValue == nil then
-d(">LSMOptionsKey: " .. tos(LSMOptionsKey) .. " -> Is nil in options")
+--d(">LSMOptionsKey: " .. tos(LSMOptionsKey) .. " -> Is nil in options")
 		newValue = currentValue
 	end
 	if newValue == nil then return end
@@ -3862,62 +3881,6 @@ d(">LSMOptionsKey: " .. tos(LSMOptionsKey) .. " -> Is nil in options")
 	else
 		self[currentZO_ComboBoxValueKey] = newValue
 	end
-end
-
-function comboBoxClass:SetupDropdownHeader()
-	local dropdownControl = self.m_dropdownObject.control
-	ApplyTemplateToControl(dropdownControl, 'LibScrollableMenu_Dropdown_Template_WithHeader')
-	
-	local options = self:GetOptions()
-	local headerCollapsed = sv and sv.headerCollapsed or options and options.headerCollapsed
-	if headerCollapsed then
-		if dropdownControl.toggleButton then
-			ZO_CheckButton_SetCheckState(dropdownControl.toggleButton, headerCollapsed)
-		end
-	end
-end
-
-function comboBoxClass:SetFilterString(filterBox, newText)
-	self.filterString = (newText ~= nil and zo_strlower(newText)) or zo_strlower(filterBox:GetText())
-	self:UpdateResults(true)
-end
-
-function comboBoxClass:ShowDropdown()
-	-- Let the caller know that this is about to be shown...
-	if self.m_preshowDropdownFn then
-		self.m_preshowDropdownFn(self)
-	end
-
-	if not self:IsDropdownVisible() then
-		-- Update header only if hidden.
-		self:UpdateDropdownHeader()
-	end
-	self:ShowDropdownInternal()
-end
-
-function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s, toggleButton: %s", tos(self.options), tos(toggleButtonCtrl))
-	local headerControl, dropdownControl = getHeaderControl(self)
-	if headerControl == nil then return end
-	
-	toggleButtonCtrl = toggleButtonCtrl or dropdownControl.toggleButton
-	
-	local headerCollapsed = false
-	if toggleButtonCtrl then
-		local currentState = toggleButtonCtrl:GetState()
-		if currentState == BSTATE_PRESSED then
-			headerCollapsed = true
-		elseif currentState == BSTATE_NORMAL then
-			headerCollapsed = false
-		end
-		--updateSavedVariable("collapsedHeaderState", headerCollapsed, getHeaderToggleStateControlSavedVariableName(self))
-	end
---	options.headerCollapsed = headerCollapsed
-
-	d("[LSM]comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(headerCollapsed))
-	refreshDropdownHeader(self, headerControl, self.options, headerCollapsed)
-
-	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
 end
 
 function comboBoxClass:UpdateOptions(options, onInit)
@@ -3993,18 +3956,17 @@ function comboBoxClass:UpdateResults(comingFromFilters)
 	self:Show()
 end
 
---Reset internal default values like m_font or LSM defaults like visibleRowsDropdown
--->If called from init function of API AddCustomScrollableComboBoxDropdownMenu: Keep existing ZO default (or changed by addons) entries of the ZO_ComboBox and only reset missing ones
--->If called later from e.g. UpdateOptions function where options passed in are nil or empty: Reset all to LSM default values
---->In all cases the function comboBoxClass:UpdateOptions should update the options needed!
-function comboBoxClass:ResetToDefaults(initExistingComboBox)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ResetToDefaults")
-	local defaults = ZO_DeepTableCopy(comboBoxDefaults)
-	zo_mixin(defaults, self.defaults)
+function comboBoxClass:ShowDropdown()
+	-- Let the caller know that this is about to be shown...
+	if self.m_preshowDropdownFn then
+		self.m_preshowDropdownFn(self)
+	end
 
-	zo_mixin(self, defaults) -- overwrite existing ZO_ComboBox default values with LSM defaults
-
-	self:SetOptions(nil)
+	if not self:IsDropdownVisible() then
+		-- Update header only if hidden.
+		self:UpdateDropdownHeader()
+	end
+	self:ShowDropdownInternal()
 end
 
 -- We need to integrate a supplied ZO_ComboBox with the lib's functionality.
@@ -4019,6 +3981,54 @@ function comboBoxClass:UpdateMetatable(parent, comboBoxContainer, options)
 	lib:FireCallbacks('OnDropdownMenuAdded', self, options)
 	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(self.m_container)), tos(options))
 	self:Initialize(parent, comboBoxContainer, options, 1, true)
+end
+
+function comboBoxClass:SetupDropdownHeader()
+	local dropdownControl = self.m_dropdownObject.control
+	ApplyTemplateToControl(dropdownControl, 'LibScrollableMenu_Dropdown_Template_WithHeader')
+
+	local options = self:GetOptions()
+	local headerCollapsible = (options and options.headerCollapsible) or false
+	local headerCollapsed = (options and options.headerCollapsed) or nil
+
+	if headerCollapsible then
+		if headerCollapsed == nil then
+			headerCollapsed = getSavedVariable("collapsedHeaderState", getHeaderToggleStateControlSavedVariableName(self))
+		end
+	else
+		headerCollapsed = false
+	end
+
+	if headerCollapsed ~= nil then
+		if dropdownControl.toggleButton then
+			dropdownControl.toggleButton:SetHidden(not headerCollapsible)
+			ZO_CheckButton_SetCheckState(dropdownControl.toggleButton, headerCollapsed)
+		end
+	end
+end
+
+function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s, toggleButton: %s", tos(self.options), tos(toggleButtonCtrl))
+	local headerControl, dropdownControl = getHeaderControl(self)
+	if headerControl == nil then return end
+
+	toggleButtonCtrl = toggleButtonCtrl or dropdownControl.toggleButton
+
+	local headerCollapsed = false
+	if toggleButtonCtrl then
+		local currentState = toggleButtonCtrl:GetState()
+		if currentState == BSTATE_PRESSED then
+			headerCollapsed = true
+		elseif currentState == BSTATE_NORMAL then
+			headerCollapsed = false
+		end
+
+		updateSavedVariable("collapsedHeaderState", headerCollapsed, getHeaderToggleStateControlSavedVariableName(self))
+	end
+
+	d("[LSM]comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(headerCollapsed))
+	refreshDropdownHeader(self, headerControl, self.options, headerCollapsed)
+	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
 end
 
 
