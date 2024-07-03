@@ -542,6 +542,15 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				--icon 			= nil,
 			},
 			{
+				entryType		= LSM_ENTRY_TYPE_BUTTON,
+				label			= "Click me - I'm a button",
+				name            = "Button1",
+				tooltip         = "Button button button...",
+				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("I clicked a button with the name: " .. tostring(itemName))
+				end,
+			},
+			{
 				additionalData = {
 					normalColor =		GetClassColor(GetUnitClassId("player")),
 					disabledColor =		CUSTOM_DISABLED_TEXT_COLOR,
