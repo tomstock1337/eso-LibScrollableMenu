@@ -2159,6 +2159,8 @@ local handlerFunctions  = {
 	---> It will call the ZO_ComboBoxDropdown_Keyboard.OnEntrySelected and via that ZO_ComboBox_Base:ItemSelectedClickHelper(item, ignoreCallback)
 	---> which will then call the item.callback(comboBox, itemName, item, selectionChanged, oldItem) function
 	---> So the parameters for the LibScrollableMenu entry.callback functions will be the same:  (comboBox, itemName, item, selectionChanged, oldItem)
+	---> The return value true/false controls if the calling function runHandler -> dropdownClass.OnEntryMouseUp(control, button, upInside) -> will select the entry
+	---> to the dropdown via ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp(control, button, upInside)
 	['onMouseUp'] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data, button, upInside)
 --d('onMouseUp [LSM_ENTRY_TYPE_NORMAL]')
@@ -2174,9 +2176,9 @@ local handlerFunctions  = {
 			return true
 		end,
 		[LSM_ENTRY_TYPE_SUBMENU] = function(control, data, button, upInside)
---d('onMouseUp [LSM_ENTRY_TYPE_SUBMENU]')
+			--d('onMouseUp [LSM_ENTRY_TYPE_SUBMENU]')
 			onMouseUp(control, data, has_submenu, button, upInside, selectEntryCallback)
-			return true
+			return not control.closeOnSelect --if submenu entry got data.callback then select the entry, else not
 		end,
 		[LSM_ENTRY_TYPE_CHECKBOX] = function(control, data, button, upInside)
 			--d( 'onMouseUp [LSM_ENTRY_TYPE_CHECKBOX]')
@@ -2602,13 +2604,13 @@ end
 function dropdownClass:SelectItemByIndex(index, ignoreCallback)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:SelectItemByIndex - index: %s, ignoreCallback: %s,", tos(index), tos(ignoreCallback))
 	if self.owner then
-		playSelectedSoundCheck(self)
+		playSelectedSoundCheck(self, nil)
 		return self.owner:SelectItemByIndex(index, ignoreCallback)
 	end
 end
 
 function dropdownClass:RunItemCallback(item, ignoreCallback)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:SelectItemByIndex - index: %s, ignoreCallback: %s,", tos(index), tos(ignoreCallback))
+	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:RunItemCallback - item: %s, ignoreCallback: %s,", tos(item), tos(ignoreCallback))
 	if self.owner then
 		playSelectedSoundCheck(self, item.entryType)
 		return self.owner:RunItemCallback(item, ignoreCallback)
