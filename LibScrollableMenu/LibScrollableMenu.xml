@@ -149,6 +149,34 @@
 			</Controls>
 		</Control>
 
+		<!-- RadioButton -->
+		<Control name="LibScrollableMenu_ComboBoxRadioButtonEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
+			<Dimensions y="25" />
+
+			<OnInitialized>
+				self.Checkbox = self:GetNamedChild('Checkbox')
+			</OnInitialized>
+
+			<Controls>
+				<Button name="$(parent)RadioButton" inherits="ZO_RadioButton" level="2">
+					<!-- Centered on the icon -->
+					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
+						ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
+					</OnMouseEnter>
+
+					<OnMouseExit name="ZO_PropagateMouseOverBehavior">
+						ZO_PropagateHandlerToNearestAncestor("OnMouseExit", ...)
+					</OnMouseExit>
+					<Anchor point="LEFT" relativeTo="$(parent)IconContainer" relativePoint="RIGHT" offsetX="1"/>
+				</Button>
+				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
+
+					<Anchor point="LEFT" relativeTo="$(parent)RadioButton" relativePoint="RIGHT" offsetX="4"/>
+					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+				</Label>
+			</Controls>
+		</Control>
+
 		<!-- Submenu -->
 		<Control name="LibScrollableMenu_ComboBoxSubmenuEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
 			<OnInitialized>

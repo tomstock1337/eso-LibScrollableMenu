@@ -551,6 +551,28 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				end,
 			},
 			{
+				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
+				label			= "Radiobutton 1",
+				name            = "RadioButton1",
+				tooltip         = "Button button button...",
+				checked 		= true,
+				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("I clicked radio button 1 with the name: " .. tostring(itemName))
+				end,
+				radioButtonGroup = 1,
+			},
+			{
+				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
+				label			= "Radiobutton 2",
+				name            = "RadioButton2",
+				tooltip         = "Button button button...",
+				checked 		= false,
+				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("I clicked radio button 2 with the name: " .. tostring(itemName))
+				end,
+				radioButtonGroup = function() return 1 end,
+			},
+			{
 				additionalData = {
 					normalColor =		GetClassColor(GetUnitClassId("player")),
 					disabledColor =		CUSTOM_DISABLED_TEXT_COLOR,

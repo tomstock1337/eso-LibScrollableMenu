@@ -166,6 +166,7 @@ local LSM_ENTRY_TYPE_HEADER = 	3
 local LSM_ENTRY_TYPE_SUBMENU = 	4
 local LSM_ENTRY_TYPE_CHECKBOX = 5
 local LSM_ENTRY_TYPE_BUTTON = 6
+local LSM_ENTRY_TYPE_RADIOBUTTON = 7
 
 --Constant for the divider entryType
 lib.DIVIDER = "-"
@@ -179,6 +180,7 @@ lib.scrollListRowTypes = {
 	["LSM_ENTRY_TYPE_SUBMENU"] = 	LSM_ENTRY_TYPE_SUBMENU,
 	["LSM_ENTRY_TYPE_CHECKBOX"] =	LSM_ENTRY_TYPE_CHECKBOX,
 	["LSM_ENTRY_TYPE_BUTTON"] =		LSM_ENTRY_TYPE_BUTTON,
+	["LSM_ENTRY_TYPE_RADIOBUTTON"] = LSM_ENTRY_TYPE_RADIOBUTTON,
 }
 local scrollListRowTypes = lib.scrollListRowTypes
 
@@ -198,6 +200,7 @@ local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_SUBMENU] =	true,
 	[LSM_ENTRY_TYPE_CHECKBOX] =	true,
 	[LSM_ENTRY_TYPE_BUTTON] =	true,
+	[LSM_ENTRY_TYPE_RADIOBUTTON] =	true,
 }
 --lib.allowedEntryTypes = libraryAllowedEntryTypes
 
@@ -209,6 +212,7 @@ local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_SUBMENU] =	true,
 	[LSM_ENTRY_TYPE_CHECKBOX] = true,
 	[LSM_ENTRY_TYPE_BUTTON] = true,
+	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
 }
 --lib.allowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
 
@@ -477,6 +481,8 @@ local filteredEntryTypes = {
 	[LSM_ENTRY_TYPE_SUBMENU] = 	true,
 	[LSM_ENTRY_TYPE_CHECKBOX] = true,
 	[LSM_ENTRY_TYPE_HEADER] = 	true,
+	[LSM_ENTRY_TYPE_BUTTON] = 	true,
+	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
 	--[LSM_ENTRY_TYPE_DIVIDER] = false,
 }
 --Table defines if some names of the entries count as "to search" or not.
@@ -497,16 +503,20 @@ local origSoundComboClicked = 	SOUNDS.COMBO_CLICK
 local origSoundDefaultClicked = SOUNDS.DEFAULT_CLICK
 local soundClickedSilenced	= 	SOUNDS.NONE
 --Sound names of the combobox entry selected sounds
+local defaultClick = "DEFAULT_CLICK"
+local comboClick = "COMBO_CLICK"
 local entryTypeToSilenceSoundName = {
-	[LSM_ENTRY_TYPE_CHECKBOX]	=	"DEFAULT_CLICK",
-	[LSM_ENTRY_TYPE_NORMAL] 	= 	"COMBO_CLICK",
-	[LSM_ENTRY_TYPE_BUTTON] 	= 	"DEFAULT_CLICK",
+	[LSM_ENTRY_TYPE_NORMAL] 	= 	comboClick,
+	[LSM_ENTRY_TYPE_CHECKBOX]	=	defaultClick,
+	[LSM_ENTRY_TYPE_BUTTON] 	= 	defaultClick,
+	[LSM_ENTRY_TYPE_RADIOBUTTON]= 	defaultClick,
 }
 --Original sounds of the combobox entry selected sounds
 local entryTypeToOriginalSelectedSound = {
-	[LSM_ENTRY_TYPE_CHECKBOX]	= origSoundDefaultClicked,
 	[LSM_ENTRY_TYPE_NORMAL]		= origSoundComboClicked,
+	[LSM_ENTRY_TYPE_CHECKBOX]	= origSoundDefaultClicked,
 	[LSM_ENTRY_TYPE_BUTTON] 	= origSoundDefaultClicked,
+	[LSM_ENTRY_TYPE_RADIOBUTTON]= origSoundDefaultClicked,
 }
 
 
@@ -3062,6 +3072,14 @@ function comboBox_base:AddCustomEntryTemplates(options)
 				self:SetupEntryButton(control, data, list)
 			end,
 		},
+		[LSM_ENTRY_TYPE_RADIOBUTTON] = {
+			template = 'LibScrollableMenu_ComboBoxRadioButtonEntry',
+			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			setupFunc = function(control, data, list)
+				self:SetupEntryRadioButton(control, data, list)
+			end,
+		},
 	}
 	lib.DefaultXMLTemplates = defaultXMLTemplates
 
@@ -3542,6 +3560,7 @@ do -- Row setup functions
 
 	function comboBox_base:SetupEntryButton(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		control.isButton = true
 		control.typeId = LSM_ENTRY_TYPE_BUTTON
 		addIcon(control, data, list)
 		addLabel(control, data, list)
@@ -3562,6 +3581,49 @@ do -- Row setup functions
 		
 		if data.buttonTemplate then
 			ApplyTemplateToControl(control, data.buttonTemplate)
+		end
+	end
+
+	local function SetupRadioButtonAsEnabled(radioButtonGroup, radioButton)
+		local BUTTON_ENABLED = true
+		local NO_HANDLER = nil
+		radioButtonGroup:SetButtonIsValidOption(radioButton, BUTTON_ENABLED)
+		--radioButton.m_label:SetHandler("OnMouseEnter", NO_HANDLER)
+		--radioButton.m_label:SetHandler("OnMouseExit", NO_HANDLER)
+	end
+
+	function comboBox_base:SetupEntryRadioButton(control, data, list)
+		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+
+		control.isRadioButton = true
+		self:SetupEntryLabel(control, data, list)
+		control.typeId = LSM_ENTRY_TYPE_RADIOBUTTON
+
+		control.m_radioButton = control.m_radioButton or control:GetNamedChild("RadioButton")
+		local radioButton = control.m_radioButton
+
+		if data.buttonTemplate then
+			ApplyTemplateToControl(radioButton, data.buttonTemplate)
+		end
+
+		--Add radiobuttons of same comboBox to 1 group so clicking one, changes the others
+		self.radioButtonGroups = self.radioButtonGroups or {}
+
+		local radioButtonGroupNr = getValueOrCallback(data.radioButtonGroup, data)
+		if type(radioButtonGroupNr) == "number" then
+			self.radioButtonGroups[radioButtonGroupNr] = self.radioButtonGroups[radioButtonGroupNr] or ZO_RadioButtonGroup:New()
+			local radioButtonGroup = self.radioButtonGroups[radioButtonGroupNr]
+    		radioButtonGroup:Add(radioButton)
+
+			radioButton.radioButtonGroupNr = radioButtonGroupNr
+			radioButton.m_radioButtonGroup = radioButtonGroup
+
+			SetupRadioButtonAsEnabled(radioButtonGroup, radioButton)
+
+			local isChecked = getValueOrCallback(data.checked, data)
+			if isChecked == true then
+				radioButtonGroup:SetClickedButton(radioButton)
+			end
 		end
 	end
 
