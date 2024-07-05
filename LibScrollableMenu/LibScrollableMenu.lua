@@ -2076,6 +2076,13 @@ local function radioButtonEntryCallback(dropdown, control, data, hasSubmenu)
 	if not data or not data.callback then return end
 	--Does not select the item, only callback is fired!
 	dropdown:RunItemCallback(data, data.ignoreCallback)
+
+	--Now select the radiobutton that was clicked
+	local radioButton = control.m_radioButton
+	local radioButtonGroup = radioButton and radioButton.m_radioButtonGroup
+	if radioButtonGroup then
+		radioButtonGroup:SetClickedButton(radioButton)
+	end
 end
 
 
