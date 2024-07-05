@@ -2225,7 +2225,7 @@ local handlerFunctions  = {
 			return true
 		end,
 		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(control, data, button, upInside)
-d( 'onMouseUp [LSM_ENTRY_TYPE_RADIOBUTTON]')
+--d( 'onMouseUp [LSM_ENTRY_TYPE_RADIOBUTTON]')
 			-- Fires the callback from ItemSelectedClickHelper without selecting the item.
 			onMouseUp(control, data, has_submenu, button, upInside, radioButtonEntryCallback)
 			return true
@@ -3652,6 +3652,10 @@ do -- Row setup functions
 			local isChecked = getValueOrCallback(data.checked, data)
 			if isChecked == true then
 				radioButtonGroup:SetClickedButton(radioButton)
+			end
+
+			if type(data.radioButtonGroupSelectionChangedCallback) == "function" then
+				radioButtonGroup:SetSelectionChangedCallback(data.radioButtonGroupSelectionChangedCallback)
 			end
 
 		--else
