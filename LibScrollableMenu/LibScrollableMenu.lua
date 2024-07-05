@@ -4990,6 +4990,9 @@ WORKING ON - Current version: 2.3
 	TESTED: TESTED
 	16. Added LSM_ENTRY_TYPE_BUTTON
 	TESTED: OPEN
+	17. Added LSM_ENTRY_TYPE_RADIOBUTTON with radioButtonGroups. data.radioButtonGroup number adds them to the same group. data.checked = true defines which radiobutton in the group is the default checked one.
+	data.radioButtonGroupSelectionChangedCallback can be a function that is only called if a radiobutton group really changes the selected radiobutton. data.callback will be executed on each click on a radiobutton
+	TESTED: OPEN
 
 
 	check divider entry.

@@ -14,6 +14,11 @@
 --Added comboBox to checkbox's callback 4th param so that API funcs like RunCustomScrollableMenuItemsCallback can use it
 --Added a collapsible header + button via options.headerCollapsible to toggle the header's height. State will be saved in SavedVariables per openingControl or combobox name.
 --Added option.headerCollapsed to always show the collapsible header at that state if the menu opens
+--Added LSM_ENTRY_TYPE_BUTTON data.buttonTemplate can be sued to define the buttons XML template. Clicking a button keeps the dropdown opened!
+--Added LSM_ENTRY_TYPE_RADIOBUTTON with radioButtonGroups. data.buttonTemplate can be sued to define the buttons XML template. Clicking a button keeps the dropdown opened!
+    data.radioButtonGroup number adds them to the same group. data.checked = true defines which radiobutton in the group is the default checked one.
+	data.radioButtonGroupSelectionChangedCallback can be a function that is only called if a radiobutton group really changes the selected radiobutton. data.callback will be executed on each click on a radiobutton
+
 
 --Added API function GetCustomScrollableMenuRowData(rowControl)
 --Added item.m_owner to RefreshSortedItems
