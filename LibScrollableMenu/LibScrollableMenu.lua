@@ -1,4 +1,3 @@
----@diagnostic disable: duplicate-set-field
 if LibScrollableMenu ~= nil then return end -- the same or newer version of this lib is already loaded into memory
 
 --------------------------------------------------------------------
@@ -2073,6 +2072,12 @@ local function buttonEntryCallback(dropdown, control, data, hasSubmenu)
 	dropdown:RunItemCallback(data, data.ignoreCallback)
 end
 
+local function radioButtonEntryCallback(dropdown, control, data, hasSubmenu)
+	if not data or not data.callback then return end
+	--Does not select the item, only callback is fired!
+	dropdown:RunItemCallback(data, data.ignoreCallback)
+end
+
 
 local function onMouseUp(control, data, hasSubmenu, button, upInside, entryCallbackFunc)
 	local dropdown = control.m_dropdownObject
@@ -2137,6 +2142,10 @@ local handlerFunctions  = {
 			onMouseEnter(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
+		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(control, data, ...)
+			onMouseEnter(control, data, no_submenu)
+			return false --not control.closeOnSelect
+		end,
 	},
 	['onMouseExit'] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data)
@@ -2164,6 +2173,10 @@ local handlerFunctions  = {
 			return false --not control.closeOnSelect
 		end,
 		[LSM_ENTRY_TYPE_BUTTON] = function(control, data, ...)
+			onMouseExit(control, data, no_submenu)
+			return false --not control.closeOnSelect
+		end,
+		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(control, data, ...)
 			onMouseExit(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
@@ -2202,6 +2215,12 @@ local handlerFunctions  = {
 --d( 'onMouseUp [LSM_ENTRY_TYPE_BUTTON]')
 			-- Fires the callback from ItemSelectedClickHelper without selecting the item.
 			onMouseUp(control, data, has_submenu, button, upInside, buttonEntryCallback)
+			return true
+		end,
+		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(control, data, button, upInside)
+d( 'onMouseUp [LSM_ENTRY_TYPE_RADIOBUTTON]')
+			-- Fires the callback from ItemSelectedClickHelper without selecting the item.
+			onMouseUp(control, data, has_submenu, button, upInside, radioButtonEntryCallback)
 			return true
 		end,
 	},
@@ -3616,7 +3635,7 @@ do -- Row setup functions
 		if type(radioButtonGroupNr) == "number" then
 			self.radioButtonGroups[radioButtonGroupNr] = self.radioButtonGroups[radioButtonGroupNr] or ZO_RadioButtonGroup:New()
 			local radioButtonGroup = self.radioButtonGroups[radioButtonGroupNr]
-    		radioButtonGroup:Add(radioButton)
+			radioButtonGroup:Add(radioButton)
 
 			radioButton.radioButtonGroupNr = radioButtonGroupNr
 			radioButton.m_radioButtonGroup = radioButtonGroup
@@ -3627,6 +3646,9 @@ do -- Row setup functions
 			if isChecked == true then
 				radioButtonGroup:SetClickedButton(radioButton)
 			end
+
+		--else
+			--assert / error message because no radio buton group provided? Or maybe not needed if you want a single radio button or custom butonTemplate
 		end
 	end
 
