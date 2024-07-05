@@ -1688,6 +1688,7 @@ local function validateEntryType(item)
 	local isDivider = (((item.label ~= nil and item.label == libDivider) or item.name == libDivider) or (item.isDivider ~= nil and getValueOrCallback(item.isDivider, item))) or LSM_ENTRY_TYPE_DIVIDER == entryType
 	local isHeader = (item.isHeader ~= nil and getValueOrCallback(item.isHeader, item)) or LSM_ENTRY_TYPE_HEADER == entryType
 	local isButton = (item.isButton ~= nil and getValueOrCallback(item.isButton, item)) or LSM_ENTRY_TYPE_BUTTON == entryType
+	local isRadioButton = (item.isRadioButton ~= nil and getValueOrCallback(item.isRadioButton, item)) or LSM_ENTRY_TYPE_RADIOBUTTON == entryType
 	local isCheckbox = (item.isCheckbox ~= nil and getValueOrCallback(item.isCheckbox, item)) or LSM_ENTRY_TYPE_CHECKBOX == entryType
 	local hasSubmenu = (item.entries ~= nil and getValueOrCallback(item.entries, item) ~= nil) or LSM_ENTRY_TYPE_SUBMENU == entryType
 
@@ -1697,13 +1698,15 @@ local function validateEntryType(item)
 					isDivider and LSM_ENTRY_TYPE_DIVIDER or
 					isHeader and LSM_ENTRY_TYPE_HEADER or
 					isCheckbox and LSM_ENTRY_TYPE_CHECKBOX or
-					isButton and LSM_ENTRY_TYPE_BUTTON
-					or LSM_ENTRY_TYPE_NORMAL
+					isButton and LSM_ENTRY_TYPE_BUTTON or
+					isRadioButton and LSM_ENTRY_TYPE_RADIOBUTTON or
+					LSM_ENTRY_TYPE_NORMAL
 	end
 
 	--Update the item's variables
 	item.isHeader = isHeader
 	item.isButton = isButton
+	item.isRadioButton = isRadioButton
 	item.isDivider = isDivider
 	item.isCheckbox = isCheckbox
 	item.hasSubmenu = hasSubmenu
