@@ -155,6 +155,7 @@
 
 			<OnInitialized>
 				self.RadioButton = self:GetNamedChild('RadioButton')
+				self.isRadioButton = true
 			</OnInitialized>
 
 			<Controls>
