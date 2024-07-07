@@ -3074,7 +3074,7 @@ function comboBox_base:AddCustomEntryTemplates(options)
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
-				self:SetupCheckbox(control, data, list)
+				self:SetupEntryCheckbox(control, data, list)
 			end,
 		},
 		[LSM_ENTRY_TYPE_BUTTON] = {
@@ -3701,15 +3701,15 @@ do -- Row setup functions
 		control.typeId = LSM_ENTRY_TYPE_HEADER
 	end
 
-	function comboBox_base:SetupCheckbox(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupCheckbox - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+	function comboBox_base:SetupEntryCheckbox(control, data, list)
+		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 		local function setChecked(checkbox, checked)
 			local checkedData = getControlData(checkbox:GetParent())
 
 			checkedData.checked = checked
 			if checkedData.callback then
 				local comboBox = getComboBox(control)
-				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
+				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
 				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
 				checkedData.callback(comboBox, checkedData.label or checkedData.name, control, checked)
 			end

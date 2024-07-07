@@ -154,7 +154,7 @@
 			<Dimensions y="25" />
 
 			<OnInitialized>
-				self.radioButton = self:GetNamedChild('RadioButton')
+				self.RadioButton = self:GetNamedChild('RadioButton')
 			</OnInitialized>
 
 			<Controls>
