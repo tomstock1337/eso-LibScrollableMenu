@@ -246,6 +246,8 @@ local additionalDataKeyToLSMEntryType = {
 	["isCheckbox"] =	LSM_ENTRY_TYPE_CHECKBOX,
 	["isDivider"] = 	LSM_ENTRY_TYPE_DIVIDER,
 	["isHeader"] = 		LSM_ENTRY_TYPE_HEADER,
+	["isButton"] = 		LSM_ENTRY_TYPE_BUTTON,
+	["isRadioButton"] = LSM_ENTRY_TYPE_RADIOBUTTON,
 }
 
 
@@ -730,7 +732,7 @@ do
 	
 	local ROW_OFFSET_Y = 5
 	local ROW_BOTTOM_Y = ROW_OFFSET_Y * 6 -- 30 per row
-	
+
 	local DATA_OFFSET_X = 5
 	local HEADER_OFFSET_X = 29
 
@@ -746,39 +748,29 @@ do
 	end
 
 	local DEFAULT_ANCHOR = 100
-								-- {point, relativeTo_controlId, relativePoint, offsetX, offsetY}
+
+							-- {point, relativeTo_controlId, relativePoint, offsetX, offsetY}
 	local anchors = {
-  --	  [TOGGLE_BUTTON]		= { Anchor:New(TOPRIGHT, PARENT, TOPRIGHT, -ROW_OFFSET_Y, ROW_OFFSET_Y)},
-		[TOGGLE_BUTTON]		= { Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y,  0)},
-		
-		[TITLE]				= { Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y),
-								Anchor:New(BOTTOMRIGHT, nil, BOTTOMRIGHT, -ROW_OFFSET_Y, ROW_BOTTOM_Y) },
+		[TOGGLE_BUTTON]		= { Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0)},
+
+		[DIVIDER_SIMPLE]	= { Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y),
+								Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) }, -- ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y
 								
-		[SUBTITLE]			= { Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y),
-								Anchor:New(BOTTOMRIGHT, nil, BOTTOMRIGHT, -ROW_OFFSET_Y, ROW_BOTTOM_Y) },
-								
-		[DIVIDER_SIMPLE]	= { Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y),
-								Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y) },
-								
-		[FILTER_CONTAINER]	= { Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y),
-								Anchor:New(BOTTOMRIGHT, nil, BOTTOMRIGHT, 0, ROW_BOTTOM_Y) },
-								
-		[DEFAULT_ANCHOR]	= { Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y),
-								Anchor:New(BOTTOMRIGHT, nil, BOTTOMRIGHT, 0, ROW_BOTTOM_Y) },
-								
-		[CUSTOM_CONTROL]	= { Anchor:New(TOP, nil, BOTTOM, 0, ROW_OFFSET_Y) },
+		[DEFAULT_ANCHOR]	= { Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, 0),
+								Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) },
 								
 	}
-	
-	local function header_applyAnchorToControl(headerControl, anchor, controlId, control)
+			-- {point, relativeTo_controlId, relativePoint, offsetX, offsetY}
+
+	local function header_applyAnchorToControl(headerControl, anchorData, controlId, control)
 		if headerControl:IsHidden() then headerControl:SetHidden(false) end
 		local controls = headerControl.controls
 		
-		local targetId = anchor.targetId or g_currentBottomLeftHeader
+		local targetId = anchorData.targetId or g_currentBottomLeftHeader
 		local target = controls[targetId]
 		
-		anchor.anchor:SetTarget(target)
-		anchor.anchor:AddToControl(control)
+		anchorData.anchor:SetTarget(target)
+		anchorData.anchor:AddToControl(control)
 	end
 
 	local function header_applyAnchorSetToControl(headerControl, anchorSet, controlId, collapsed)
@@ -792,28 +784,16 @@ do
 		end
 		
 		g_currentBottomLeftHeader = controlId
-		
-		
+
 		local height = control:GetHeight()
 		if controlId == TOGGLE_BUTTON then
 			-- We want to keep height if collapsed but not add height for the button if not.
 			height = collapsed and height or 0
-		else
-		--	height = height + (ROW_OFFSET_Y * 2)
-			height = height + ROW_OFFSET_Y
 		end
-		
-		--d("Header height: " .. tos(height))
+
 		return height
 	end
-	
-	--[[
-				if collapsed then
-				else
-				end
 
-	]]
-	
 	local function showHeaderDivider(controlId)
 		if g_currentBottomLeftHeader ~= DEFAULT_CONTROLID and controlId < TOGGLE_BUTTON then
 			return g_currentBottomLeftHeader < DIVIDER_SIMPLE and controlId > DIVIDER_SIMPLE
@@ -849,7 +829,11 @@ do
 		end
 		
 		if headerHeight > 0 then
-			headerControl:SetHeight(headerHeight + (ROW_OFFSET_Y * 3))
+			if not collapsed then
+				headerHeight = headerHeight + (ROW_OFFSET_Y * 3)
+			end
+			headerControl:SetHeight(headerHeight)
+
 		end
 	end
 	
@@ -3005,9 +2989,9 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 	self.m_container = comboBoxContainer
 	local dropdownObject = self:GetDropdownObject(comboBoxContainer, depth)
 	self:SetDropdownObject(dropdownObject)
-	self:SetupDropdownHeader()
 
 	self:UpdateOptions(options, true)
+	self:SetupDropdownHeader()
 	self:UpdateHeight()
 end
 
@@ -3271,7 +3255,7 @@ end
 -- Create the m_dropdownObject on initialize.
 function comboBox_base:GetOptions()
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetOptions")
-	return self.options
+	return self.options or {}
 end
 
 -- Get or create submenu
@@ -3685,14 +3669,6 @@ do -- Row setup functions
 	end
 ]]
 
-
---[[
-	control[animationFieldName]
-	
-	"HighlightAnimation"
-	self.breadcrumbName
-]]
-
 	function comboBox_base:SetupEntrySubmenu(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntrySubmenu - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 		self:SetupEntryLabel(control, data, list)
@@ -3758,6 +3734,7 @@ do -- Row setup functions
 	end
 end
 
+--[[
 function comboBox_base:HighlightLabel(labelControl, data)
 	if labelControl.SetColor then
 		local color = self:GetItemHighlightColor(data)
@@ -3771,6 +3748,7 @@ function ZO_ComboBox:UnhighlightLabel(labelControl, data)
 		labelControl:SetColor(color:UnpackRGBA())
 	end
 end
+]]
 
 -- Blank
 function comboBox_base:GetMaxRows()
@@ -4088,21 +4066,16 @@ function comboBoxClass:SetupDropdownHeader()
 	ApplyTemplateToControl(dropdownControl, 'LibScrollableMenu_Dropdown_Template_WithHeader')
 
 	local options = self:GetOptions()
-	local headerCollapsible = (options and options.headerCollapsible) or false
-	local headerCollapsed = (options and options.headerCollapsed) or nil
+	if options.headerCollapsible then
+		local headerCollapsed = (options and options.headerCollapsed)
 
-	if headerCollapsible then
 		if headerCollapsed == nil then
 			headerCollapsed = getSavedVariable("collapsedHeaderState", getHeaderToggleStateControlSavedVariableName(self))
 		end
-	else
-		headerCollapsed = false
-	end
-
-	if headerCollapsed ~= nil then
-		if dropdownControl.toggleButton then
-			dropdownControl.toggleButton:SetHidden(not headerCollapsible)
-			ZO_CheckButton_SetCheckState(dropdownControl.toggleButton, headerCollapsed)
+		if headerCollapsed ~= nil then
+			if dropdownControl.toggleButton then
+				ZO_CheckButton_SetCheckState(dropdownControl.toggleButton, headerCollapsed)
+			end
 		end
 	end
 end
@@ -4112,18 +4085,19 @@ function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
 	local headerControl, dropdownControl = getHeaderControl(self)
 	if headerControl == nil then return end
 
-	toggleButtonCtrl = toggleButtonCtrl or dropdownControl.toggleButton
-
 	local headerCollapsed = false
-	if toggleButtonCtrl then
-		local currentState = toggleButtonCtrl:GetState()
-		if currentState == BSTATE_PRESSED then
-			headerCollapsed = true
-		elseif currentState == BSTATE_NORMAL then
-			headerCollapsed = false
-		end
 
-		updateSavedVariable("collapsedHeaderState", headerCollapsed, getHeaderToggleStateControlSavedVariableName(self))
+	local options = self:GetOptions()
+	if options.headerCollapsible then
+		toggleButtonCtrl = toggleButtonCtrl or dropdownControl.toggleButton
+		if toggleButtonCtrl then
+			headerCollapsed = ZO_CheckButton_IsChecked(toggleButtonCtrl)
+
+			if options.headerCollapsed == nil then
+				-- No need in saving state if we are going to force state by options.headerCollapsed
+				updateSavedVariable("collapsedHeaderState", headerCollapsed, getHeaderToggleStateControlSavedVariableName(self))
+			end
+		end
 	end
 
 	d("[LSM]comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(headerCollapsed))
@@ -4996,7 +4970,25 @@ WORKING ON - Current version: 2.3
 
 
 	check divider entry.
-	
+
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	Adjust header anchors to fit by sets
+
+	title
+	title, subtitle
+	title, subtitle, divider, filter
+	title, subtitle, divider, filter, custom control
+	title, subtitle, divider, custom control
+
+	subtitle
+	subtitle, divider, filter
+	subtitle, divider, filter, custom control
+	subtitle, divider, custom control
+
+	filter
+	filter, custom control
+	custom control
+
 -------------------
 TODO - To check (future versions)
 -------------------

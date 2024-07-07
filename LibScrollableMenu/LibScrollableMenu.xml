@@ -60,8 +60,8 @@
 			<OnMouseUp>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
---d("[LSM]dropdown:OnEntrySelected - button: " ..tostring(button) .. ", upInside: " .. tostring(upInside))
---LibScrollableMenu._debug = { self = self, button = button, upInside = upInside }
+						--d("[LSM]dropdown:OnEntrySelected - button: " ..tostring(button) .. ", upInside: " .. tostring(upInside))
+						--LibScrollableMenu._debug = { self = self, button = button, upInside = upInside }
 					dropdown.OnEntryMouseUp(self, button, upInside)
 				end
 			</OnMouseUp>
@@ -154,7 +154,7 @@
 			<Dimensions y="25" />
 
 			<OnInitialized>
-				self.Checkbox = self:GetNamedChild('Checkbox')
+				self.radioButton = self:GetNamedChild('RadioButton')
 			</OnInitialized>
 
 			<Controls>
@@ -211,8 +211,7 @@
 				</Label>
 			</Controls>
 		</Button>
-		
-		-->
+
 		<!-- The genuine Dropdown control. The scroll list container.
 			TLC so it can be forced above other dropdowns without having to consider layering
 			Since some UI panels have layering set, we set it as overlay high, so it will be above those
@@ -264,45 +263,38 @@
 			</OnInitialized>
 			<Controls>
 				<Control name="$(parent)Header" resizeToFitDescendents="false" hidden="true">
-					<!--OnInitialized>
-						local headerControls = LibScrollableMenu.headerControls
-						local titleContainer = self:GetNamedChild("TitleContainer")
-						self.controls = {
-							[headerControls.PARENT] = self,
-							[headerControls.TITLE] = titleContainer:GetNamedChild("Title"),
-							[headerControls.SUBTITLE] = titleContainer:GetNamedChild("SubTitle"),
-							[headerControls.CENTER_BASELINE] = self:GetNamedChild("CenterAnchor"),
-							[headerControls.TITLE_BASELINE] = titleContainer,
-							[headerControls.DIVIDER_SIMPLE] = self:GetNamedChild("DividerSimple"),
-							[headerControls.FILTER_CONTAINER] = self:GetNamedChild("FilterContainer"),
-							[headerControls.CUSTOM_CONTROL] = self:GetNamedChild("CustomControl"),
-							[headerControls.TOGGLE_BUTTON] = self:GetNamedChild("ToggleHeader"),
-						}
-					</OnInitialized-->
 					<OnInitialized>
+						local title = self:GetNamedChild("Title")
+						local subTitle = self:GetNamedChild("SubTitle")
+						local filterContainer = self:GetNamedChild("FilterContainer")
 						local headerControls = LibScrollableMenu.headerControls
-						local titleContainer = self:GetNamedChild("TitleContainer")
 						self.controls = {
 							[headerControls.PARENT] 			= self,
-							[headerControls.TITLE] 				= titleContainer:GetNamedChild("Title"),
-							[headerControls.SUBTITLE] 			= titleContainer:GetNamedChild("SubTitle"),
+							[headerControls.TITLE] 				= title,
+							[headerControls.SUBTITLE] 			= subTitle,
 							[headerControls.CENTER_BASELINE] 	= self:GetNamedChild("CenterAnchor"),
-							[headerControls.TITLE_BASELINE] 	= titleContainer,
 							[headerControls.DIVIDER_SIMPLE] 	= self:GetNamedChild("DividerSimple"),
-							[headerControls.FILTER_CONTAINER] 	= self:GetNamedChild("FilterContainer"),
+							[headerControls.FILTER_CONTAINER] 	= filterContainer,
 							[headerControls.CUSTOM_CONTROL] 	= self:GetNamedChild("CustomControl"),
 							[headerControls.TOGGLE_BUTTON] 		= self:GetNamedChild("ToggleHeader"),
 						}
 						self:GetParent().header = self
+
+						ZO_SharedGamepadEntry_SetHeightFromLabelOnly({label = title})
+						ZO_SharedGamepadEntry_SetHeightFromLabelOnly({label = subTitle})
 					</OnInitialized>
 					
 					<!-- These anchors set it to span from left to right -->
 					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT"/>
 					<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT"/>
+					<!--
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT"/>
+					<Anchor point="TOPRIGHT
+					-->
 
 					<Controls>
 						<!-- Provides an area that clearly shows the border of the header -->
-						<Control name="$(parent)BG">
+						<Control name="$(parent)BG" excludeFromResizeToFitExtents="true" >
 							<AnchorFill />
 							<Controls>
 								<Texture name="$(parent)MungeOverlay" textureFile="EsoUI/Art/Tooltips/munge_overlay.dds" addressMode="WRAP">
@@ -316,35 +308,37 @@
 								</Texture>
 							</Controls>
 						</Control>
-						
+
 						<!-- Used to anchor the first control to the header -->
 						<Control name="$(parent)CenterAnchor" excludeFromResizeToFitExtents="true" hidden="true">
-							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="5" />
-							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="5"/>
+							<Dimensions y="5" />
+							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="25" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
+							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="-25" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
 						</Control>
-						
-						<Control name="$(parent)TitleContainer" excludeFromResizeToFitExtents="true">
-							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />
-							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
+
+						<!--Label name="$(parent)Title" inherits="ZO_GamepadScreenHeaderTitleTextTemplate" excludeFromResizeToFitExtents="true" -->
+						<Label name="$(parent)Title" hidden="true"/>
+						<!--Label name="$(parent)SubTitle" inherits="ZO_GamepadHeaderLabelTextTemplate" horizontalAlignment="CENTER" excludeFromResizeToFitExtents="true" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"-->
+						<Label name="$(parent)SubTitle" horizontalAlignment="CENTER" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"/>
+
+						<Control name="$(parent)DividerSimple" hidden="true">
+							<Dimensions y="16" />
 							<Controls>
-								<!--Label name="$(parent)Title" inherits="ZO_GamepadScreenHeaderTitleTextTemplate" excludeFromResizeToFitExtents="true" -->
-								<Label name="$(parent)Title"/>
-								<!--Label name="$(parent)SubTitle" inherits="ZO_GamepadHeaderLabelTextTemplate" horizontalAlignment="CENTER" excludeFromResizeToFitExtents="true" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"-->
-								<Label name="$(parent)SubTitle" horizontalAlignment="CENTER" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"/>
+								<Texture name="$(parent)Divider" hidden="false" inherits="LibScrollableMenu_ComboBoxDividerEntry">
+									<Dimensions y="6" />
+									<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0"/>
+									<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
+								</Texture>
 							</Controls>
 						</Control>
 
-						<!--This control fakes the area of where a divider would go so that content header is at least as tall as a header would normally be
-							With a divider.  This ensures controls anchoring to the header begin where the Datas would be if there is no data -->
-						<Texture name="$(parent)DividerSimple" inherits="LibScrollableMenu_ComboBoxDividerEntry"/>
-						
 						<Control name="$(parent)FilterContainer" hidden="true">
-							<Dimensions y="32" />
+							<Dimensions y="37"/>
 							<Controls>
 								<Button name="$(parent)Reset" excludeFromResizeToFitExtents="true" inherits="ZO_ButtonBehaviorClickSound">
 									<Dimensions x="32" y="32" />
-									<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="0" />
-							
+									<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="-5" offsetY="0" />
+
 									<Textures
 										normal="EsoUI/Art/Help/help_tabIcon_feedback_up.dds"
 										pressed="EsoUI/Art/Help/help_tabIcon_feedback_down.dds"
@@ -381,11 +375,12 @@
 										owningWindow.filterBox.m_dropdownObject = owningWindow.object
 									</OnInitialized>
 					
-									<Anchor point="LEFT" relativeTo="$(parent)Reset" relativePoint="RIGHT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
-									<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="-25"/>
+									<Dimensions y="32"/>
+									<Anchor point="TOPLEFT" relativeTo="$(parent)Reset" relativePoint="TOPRIGHT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
+									<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
 									
 									<Controls>
-										<EditBox name="$(parent)Box" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
+										<EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
 											<OnTextChanged>
 												ZO_Tooltips_HideTextTooltip()
 												ClearMenu()
