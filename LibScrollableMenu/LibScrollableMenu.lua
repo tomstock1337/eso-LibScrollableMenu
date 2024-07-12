@@ -2303,11 +2303,11 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 end
 
 function dropdownClass:AddItems(items)
-	error('[LSM] scrollHelper:AddItems is obsolete. You must use m_comboBox:AddItems')
+	error(debugPrefix .. 'scrollHelper:AddItems is obsolete. You must use m_comboBox:AddItems')
 end
 
 function dropdownClass:AddItem(item)
-	error('[LSM] scrollHelper:AddItem is obsolete. You must use m_comboBox:AddItem')
+	error(debugPrefix .. 'scrollHelper:AddItem is obsolete. You must use m_comboBox:AddItem')
 end
 
 --Narration
