@@ -60,9 +60,9 @@
 			<OnMouseUp>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
-						--d("[LSM]dropdown:OnEntrySelected - button: " ..tostring(button) .. ", upInside: " .. tostring(upInside))
+						--d("[LSM]dropdown.OnEntryMouseUp - button: " ..tostring(button) .. ", upInside: " .. tostring(upInside))
 						--LibScrollableMenu._debug = { self = self, button = button, upInside = upInside }
-					dropdown.OnEntryMouseUp(self, button, upInside)
+					dropdown:OnEntryMouseUp(self, button, upInside)
 				end
 			</OnMouseUp>
 		</Control>
@@ -129,9 +129,21 @@
 				self.Checkbox = self:GetNamedChild('Checkbox')
 			</OnInitialized>
 			
+
 			<Controls>
-				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton" level="2">
-					<!-- Centered on the icon -->
+				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton" level="3">
+					<OnInitialized>
+						<!-- We propogate the row OnMouseUp to the button's OnClicked so clicking the row simulates clicking the button -->
+						ZO_PreHookHandler(self:GetParent(), 'OnMouseUp', function(parent, button, upInside, ...)
+							local OnClicked = self:GetHandler('OnClicked')
+							if OnClicked then
+								if upInside and button == MOUSE_BUTTON_INDEX_LEFT then
+									OnClicked(self, button, upInside, ...)
+								end
+							end
+						end)
+					</OnInitialized>
+
 					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
 						ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
 					</OnMouseEnter>
@@ -139,10 +151,11 @@
 					<OnMouseExit name="ZO_PropagateMouseOverBehavior">
 						ZO_PropagateHandlerToNearestAncestor("OnMouseExit", ...)
 					</OnMouseExit>
+					<!-- Centered on the icon -->
 					<Anchor point="LEFT" relativeTo="$(parent)IconContainer" relativePoint="RIGHT" offsetX="1"/>
 				</Button>
-				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
 
+				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
 					<Anchor point="LEFT" relativeTo="$(parent)Checkbox" relativePoint="RIGHT" offsetX="4"/>
 					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
 				</Label>
@@ -159,8 +172,19 @@
 			</OnInitialized>
 
 			<Controls>
-				<Button name="$(parent)RadioButton" inherits="ZO_RadioButton" level="2">
-					<!-- Centered on the icon -->
+				<Button name="$(parent)RadioButton" inherits="ZO_RadioButton" level="3">
+					<OnInitialized>
+						<!-- We propogate the row OnMouseUp to the button's OnClicked so clicking the row simulates clicking the button -->
+						ZO_PreHookHandler(self:GetParent(), 'OnMouseUp', function(parent, button, upInside, ...)
+							local OnClicked = self:GetHandler('OnClicked')
+							if OnClicked then
+								if upInside and button == MOUSE_BUTTON_INDEX_LEFT then
+									OnClicked(self, button, upInside, ...)
+								end
+							end
+						end)
+					</OnInitialized>
+
 					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
 						ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
 					</OnMouseEnter>
@@ -168,8 +192,10 @@
 					<OnMouseExit name="ZO_PropagateMouseOverBehavior">
 						ZO_PropagateHandlerToNearestAncestor("OnMouseExit", ...)
 					</OnMouseExit>
+					<!-- Centered on the icon -->
 					<Anchor point="LEFT" relativeTo="$(parent)IconContainer" relativePoint="RIGHT" offsetX="1"/>
 				</Button>
+
 				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
 
 					<Anchor point="LEFT" relativeTo="$(parent)RadioButton" relativePoint="RIGHT" offsetX="4"/>
@@ -490,17 +516,24 @@
 										ClearTooltip(InformationTooltip)
 									</OnMouseExit>
 								</Button-->
+
 							</Controls>
 						</Control>
 
-						<Button name="$(parent)ToggleHeader" inherits="ZO_ButtonBehaviorClickSound" hidden="false">
+						<Control name="$(parent)CustomControl" resizeToFitDescendents="false" hidden="true">
+							<!--
+							Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />
+							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
+							-->
+						</Control>
+
+						<Button name="$(parent)ToggleHeader" inherits="ZO_ButtonBehaviorClickSound" hidden="true">
 							<Dimensions x="24" y="24" />
 							<!--Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6" offsetY="-3" /-->
 							
 							<OnInitialized>
 								local owningWindow = self:GetOwningWindow()
 								owningWindow.toggleButton = self
-								
 								self.toggleFunction = function(button, checked)
 									if owningWindow.object and owningWindow.object.m_comboBox then
 										owningWindow.object.m_comboBox:UpdateDropdownHeader(self)
@@ -519,13 +552,13 @@
 							</OnInitialized>
 
 							<Textures
-								normal="EsoUI/Art/Buttons/large_uparrow_up.dds"
-								mouseOver="EsoUI/Art/Buttons/large_uparrow_over.dds"
-								disabled="EsoUI/Art/Buttons/large_uparrow_disabled.dds"
+								normal="EsoUI/Art/Buttons/large_downarrow_up.dds"
+								mouseOver="EsoUI/Art/Buttons/large_downarrow_over.dds"
+								disabled="EsoUI/Art/Buttons/large_downarrow_disabled.dds"
 								
-								pressed="EsoUI/Art/Buttons/large_downarrow_up.dds"
-								pressedMouseOver="EsoUI/Art/Buttons/large_downarrow_over.dds"
-								disabledPressed="EsoUI/Art/Buttons/large_downarrow_disabled.dds"
+								pressed="EsoUI/Art/Buttons/large_uparrow_up.dds"
+								pressedMouseOver="EsoUI/Art/Buttons/large_uparrow_over.dds"
+								disabledPressed="EsoUI/Art/Buttons/large_uparrow_disabled.dds"
 							/>
 							
 							<OnMouseEnter>
@@ -544,11 +577,6 @@
 								ZO_CheckButton_OnClicked(self)
 							</OnClicked>
 						</Button>
-						
-						<Control name="$(parent)CustomControl" resizeToFitDescendents="true" hidden="true">
-							<!--Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />
-							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/-->
-						</Control>
 					</Controls>
 				</Control>
 				
