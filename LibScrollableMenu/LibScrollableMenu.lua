@@ -2884,6 +2884,7 @@ end
 
 --------------------------------------------------------------------
 -- buttonGroupClass
+--  (radio) buttons in a group will change their checked state to false if another button in the group was clicked
 --------------------------------------------------------------------
 
 local buttonGroupClass = ZO_RadioButtonGroup:Subclass()
@@ -2891,19 +2892,20 @@ local buttonGroupClass = ZO_RadioButtonGroup:Subclass()
 function buttonGroupClass:Add(button, isRadioButton)
 	if button then
 		if self.m_buttons[button] == nil then
+			local selfVar = self
 			-- Remember the original handler so that its call can be forced.
 			local originalHandler = button:GetHandler("OnClicked")
 			self.m_buttons[button] = { originalHandler = originalHandler, isValidOption = true } -- newly added buttons always start as valid options for now.
 
-				d( 'isRadioButton ' .. tos(isRadioButton))
+				--d( debugPrefix..'isRadioButton ' .. tos(isRadioButton))
 			if isRadioButton then
 				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
 				local newHandler = function(control, buttonId, ignoreCallback)
-					d( 'buttonGroup callback')
-					self:HandleClick(control, buttonId, ignoreCallback)
+					--d( debugPrefix.. 'buttonGroup callback')
+					selfVar:HandleClick(control, buttonId, ignoreCallback)
 				end
 
-				d( 'originalHandler' .. tos(originalHandler))
+				--d( debugPrefix..'originalHandler' .. tos(originalHandler))
 				button:SetHandler("OnClicked", newHandler)
 
 				if button.label then
@@ -2920,7 +2922,7 @@ function buttonGroupClass:SetChecked(control, checked, ignoreCallback)
 	self.m_clickedButton = nil
 
 	local valueChanged = false
-	for button, buttonData in pairs(self.m_buttons) do
+	for button, _ in pairs(self.m_buttons) do
 		local currentValue = ZO_CheckButton_IsChecked(button)
 		local newValue = checked == nil and not currentValue or checked
 
@@ -2935,16 +2937,16 @@ function buttonGroupClass:SetChecked(control, checked, ignoreCallback)
 		end
 	end
 
-	if valueChanged and self.onSelectionChangedCallback and not ignoreCallback then
+	if valueChanged and not ignoreCallback and self.onSelectionChangedCallback then
 		self:onSelectionChangedCallback(control, previousControl)
 	end
-
 	return valueChanged
 end
 
 function buttonGroupClass:SetInverse(control, ignoreCallback)
 	return self:SetChecked(control, nil, ignoreCallback)
 end
+
 
 --------------------------------------------------------------------
 -- ComboBox classes
@@ -3504,7 +3506,6 @@ do -- Row setup functions
 			local buttonGroup = comboBox.m_buttonGroup[groupIndex]
 
 			if type(data.buttonGroupOnSelectionChangedCallback) == "function" then
-			--	buttonGroup:SetSelectionChangedCallback(data.radioButtonGroupSelectionChangedCallback)
 				buttonGroup:SetSelectionChangedCallback(data.buttonGroupOnSelectionChangedCallback)
 			end
 
@@ -3596,20 +3597,17 @@ do -- Row setup functions
 		--end
 
 		if data.buttonTemplate then
-		-- I don't think we need this. As a radio button is a radio button. I think this should only be in the button type entry.
 			ApplyTemplateToControl(radioButton, data.buttonTemplate)
 		end
 
 		--Add radiobuttons of same comboBox to 1 group so clicking one, changes the others
 		local radioButtonGroup = addButtonGroup(self, radioButton, data, true)
-
 		if radioButtonGroup then
 			-- TODOL see if theese two are safe to move into addButtonGroup
 			radioButtonGroup:SetEnabled(control, data.enabled)
 			radioButtonGroup:SetButtonIsValidOption(control, data.enabled)
 
-			local isChecked = getValueOrCallback(data.checked, data)
-			if isChecked == true then
+			if data.checked == true then
 				radioButtonGroup:SetClickedButton(radioButton)
 			end
 		end
