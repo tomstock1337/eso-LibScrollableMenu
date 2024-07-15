@@ -449,8 +449,8 @@ local submenuClass_exposedVariables = {
 	['disableFadeGradient'] = true,
 	['useDefaultHighlightForSubmenuWithCallback'] = true,
 	['highlightContextMenuOpeningControl'] = true,
-	["headerCollapsible"] = true,
-	["headerCollapsed"] = false,
+	["headerCollapsible"] = false, 		--Header: Currently not available separately for a submenu
+	["headerCollapsed"] = false,		--Header: Currently not available separately for a submenu
 }
 
 -- Pass-through functions:
@@ -1265,6 +1265,7 @@ end
 local function silenceEntryClickedSound(doSilence, entryType)
 	dLog(LSM_LOGTYPE_VERBOSE, "silenceComboBoxClickedSound - doSilence: " .. tos(doSilence) .. "; entryType: " ..tos(entryType))
 	local soundNameForSilence = entryTypeToSilenceSoundName[entryType]
+	if soundNameForSilence == nil then return end
 	if doSilence == true then
 		SOUNDS[soundNameForSilence] = soundClickedSilenced
 	else
