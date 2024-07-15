@@ -552,15 +552,15 @@
 							</OnInitialized>
 
 							<Textures
-								normal="EsoUI/Art/Buttons/large_downarrow_up.dds"
-								mouseOver="EsoUI/Art/Buttons/large_downarrow_over.dds"
-								disabled="EsoUI/Art/Buttons/large_downarrow_disabled.dds"
-								
-								pressed="EsoUI/Art/Buttons/large_uparrow_up.dds"
-								pressedMouseOver="EsoUI/Art/Buttons/large_uparrow_over.dds"
-								disabledPressed="EsoUI/Art/Buttons/large_uparrow_disabled.dds"
+								normal="EsoUI/Art/Buttons/large_uparrow_up.dds"
+								mouseOver="EsoUI/Art/Buttons/large_uparrow_over.dds"
+								disabled="EsoUI/Art/Buttons/large_uparrow_disabled.dds"
+
+								pressed="EsoUI/Art/Buttons/large_downarrow_up.dds"
+								pressedMouseOver="EsoUI/Art/Buttons/large_downarrow_over.dds"
+								disabledPressed="EsoUI/Art/Buttons/large_downarrow_disabled.dds"
 							/>
-							
+
 							<OnMouseEnter>
 								local owningWindow = self:GetOwningWindow()
 								if owningWindow.object then
