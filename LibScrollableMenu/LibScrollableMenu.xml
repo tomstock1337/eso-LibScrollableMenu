@@ -107,19 +107,19 @@
 		</Control>
 
 		<!-- Normal entry -->
-		<Control name="LibScrollableMenu_ComboBoxEntry" inherits="LibScrollableMenu_IconEntry_Template ZO_ComboBoxEntry" mouseEnabled="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxEntry" inherits="LibScrollableMenu_IconEntry_Template LibScrollableMenu_ComboBoxEntry_Behavior" mouseEnabled="true" virtual="true">
 			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
 			<OnInitialized>
 				<!-- Is this still needed? -->
 				self.selectable = true <!-- Denotes this is a selectable entry.   -->
 			</OnInitialized>
 
-			<!--Controls>
+			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
 				</Label>
-			</Controls-->
+			</Controls>
 		</Control>
 
 		<!-- Checkbox -->
