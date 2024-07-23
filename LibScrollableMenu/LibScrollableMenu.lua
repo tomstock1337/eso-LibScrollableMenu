@@ -4833,6 +4833,7 @@ lib.SetButtonGroupState = setButtonGroupState
 ------------------------------------------------------------------------------------------------------------------------
 --XML OnClick handler for checkbox and radiobuttons
 function lib.ButtonOnInitialize(control, isRadioButton)
+	isRadioButton = isRadioButton or false
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
 		if upInside then
 			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
@@ -4852,7 +4853,9 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 
 	local originalClicked = control:GetHandler('OnClicked')
 	control:SetHandler('OnClicked', function(p_control, buttonId, ignoreCallback, ...)
-        PlaySound(SOUNDS.DEFAULT_CLICK)
+        --PlaySound(SOUNDS.DEFAULT_CLICK)
+		local dropdown = control:GetOwningWindow().m_dropdownObject
+		playSelectedSoundCheck(dropdown, isRadioButton and LSM_ENTRY_TYPE_RADIOBUTTON or LSM_ENTRY_TYPE_CHECKBOX)
 		if p_control.checked ~= nil then
 			d( debugPrefix .. 'checked ~= nil')
 			ZO_CheckButton_SetCheckState(p_control, p_control.checked)
