@@ -1,3 +1,4 @@
+
 if LibScrollableMenu ~= nil then return end -- the same or newer version of this lib is already loaded into memory
 
 --------------------------------------------------------------------
@@ -2046,7 +2047,7 @@ local handlerFunctions  = {
 			return true
 		end,
 		[LSM_ENTRY_TYPE_SUBMENU] = function(control, data, ...)
-			--d( 'onMouseEnter [LSM_ENTRY_TYPE_SUBMENU]')
+			--d( debugPrefix .. 'onMouseEnter [LSM_ENTRY_TYPE_SUBMENU]')
 			local dropdown = onMouseEnter(control, data, has_submenu)
 			clearTimeout()
 			--Show the submenu of the entry
@@ -2133,7 +2134,7 @@ local handlerFunctions  = {
 			return false
 		end,
 		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(control, data, button, upInside)
---d( 'onMouseUp [LSM_ENTRY_TYPE_RADIOBUTTON]')
+--d( debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_RADIOBUTTON]')
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
@@ -2317,6 +2318,16 @@ function dropdownClass:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	self.owner:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint) -->comboBox_base:Narrate(...)
 end
 
+local function poolControlReset(control)
+    control:SetHidden(true)
+
+	if control.isSubmenu then
+		if control.m_owner.m_submenu then
+			control.m_owner.m_submenu:Hideropdown()
+		end
+	end
+end
+
 function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AddCustomEntryTemplate - entryTemplate: %s, entryHeight: %s, setupFunction: %s, widthPadding: %s", tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding))
 	if not self.customEntryTemplateInfos then
@@ -2338,8 +2349,8 @@ function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupF
 	self.customEntryTemplateInfos[entryTemplate] = customEntryInfo
 
 	local entryHeightWithSpacing = entryHeight + self.spacing
-	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId, entryTemplate, entryHeightWithSpacing, setupFunction)
-	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId + 1, entryTemplate, entryHeight, setupFunction)
+	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId, entryTemplate, entryHeightWithSpacing, setupFunction, poolControlReset)
+	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId + 1, entryTemplate, entryHeight, setupFunction, poolControlReset)
 
 	self.nextScrollTypeId = self.nextScrollTypeId + 2
 end
@@ -2518,16 +2529,17 @@ function dropdownClass:OnMouseExitTimeout(control)
 	end)
 end
 
-function dropdownClass:OnEntryMouseUp(control, button, upInside)
+function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntryMouseUp - control: %s, button: %s, upInside: %s", tos(getControlName(control)), tos(button), tos(upInside))
 
 	if upInside then
 		local data = getControlData(control)
 	--	local comboBox = getComboBox(control, true)
 		local comboBox = control.m_owner
+
 		if data.enabled then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
-				if runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
+				if not ignoreHandler and runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
 					self:OnEntrySelected(control)
 				else
 					self:RunItemCallback(data, data.ignoreCallback)
@@ -2920,27 +2932,34 @@ end
 
 function buttonGroupClass:SetChecked(control, checked, ignoreCallback)
 	local previousControl = self.m_clickedButton
+	-- This must be made nil as running this virtually resets the button group.
+	-- Not dong so will break readial buttons, if used on them.
+	-- Lets say one inverts radio buttons. The previously set one will remain so, tho it's no inverted, it will not be able to be selected again until another is selected first.
+	-- if not self.m_enabled or self.m_clickedButton == control then
 	self.m_clickedButton = nil
 
+	local buttonId = MOUSE_BUTTON_INDEX_LEFT
+	local updatedButtons = {}
+
 	local valueChanged = false
-	for button, _ in pairs(self.m_buttons) do
-		local currentValue = ZO_CheckButton_IsChecked(button)
-		local newValue = checked == nil and not currentValue or checked
-
-		if currentValue ~= newValue then
-			valueChanged = true
-			ZO_CheckButton_SetCheckState(button, newValue)
-
-			-- buttonData.originalHandler(button, buttonId, ignoreCallback)
-			if button.toggleFunction and not ignoreCallback then
-				button.toggleFunction(button, newValue)
+	for button, controlData in pairs(self.m_buttons) do
+		if button.enabled then
+			if ZO_CheckButton_IsChecked(button) ~= checked then
+				valueChanged = true
+				-- button.checked Used to pass checked to handler
+				button.checked = checked
+				table.insert(updatedButtons, button)
+				if controlData.originalHandler then
+					controlData.originalHandler(button, buttonId, ignoreCallback)
+				end
 			end
 		end
 	end
 
-	if valueChanged and not ignoreCallback and self.onSelectionChangedCallback then
-		self:onSelectionChangedCallback(control, previousControl)
+	if not ignoreCallback and not ZO_IsTableEmpty(updatedButtons) and self.onStateChangedCallback then
+		self:onStateChangedCallback(control, updatedButtons)
 	end
+
 	return valueChanged
 end
 
@@ -2948,6 +2967,9 @@ function buttonGroupClass:SetInverse(control, ignoreCallback)
 	return self:SetChecked(control, nil, ignoreCallback)
 end
 
+function buttonGroupClass:SetStateChangedCallback(callback)
+    self.onStateChangedCallback = callback
+end
 
 --------------------------------------------------------------------
 -- ComboBox classes
@@ -3335,8 +3357,11 @@ function comboBox_base:SetupEntryBase(control, data, list)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryBase - control: " .. tos(getControlName(control)))
 	self.m_dropdownObject:SetupEntryBase(control, data, list)
 
+	control.callback = data.callback
 	control.contextMenuCallback = data.contextMenuCallback
 	control.closeOnSelect = (control.selectable and type(data.callback) == 'function') or false
+
+    control:SetMouseEnabled(data.enabled ~= false)
 end
 
 function comboBox_base:Show()
@@ -3346,7 +3371,7 @@ end
 
 -- used for onMouseEnter[submenu] and onMouseUp[contextMenu]
 function comboBox_base:ShowDropdownOnMouseAction(parentControl)
-	--d( 'comboBox_base:ShowDropdownOnMouseAction')
+	--d( debugPrefix .. 'comboBox_base:ShowDropdownOnMouseAction')
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:ShowDropdownOnMouseAction - parentControl: %s " .. tos(getControlName(parentControl)))
 	if self:IsDropdownVisible() then
 		-- If submenu was currently opened, close it so it can reset.
@@ -3498,26 +3523,43 @@ do -- Row setup functions
 		control.m_label:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
 	end
 
-	local function addButtonGroup(comboBox, control, data, isRadioButton)
+	local function addButton(comboBox, control, data, buttonType)
+		local buttonControl = control.m_button or control:GetNamedChild(buttonType)
+		control.m_button = buttonControl
+		buttonControl.buttonType = buttonType
+
+      	buttonControl:SetMouseEnabled(data.enabled ~= false)
+		buttonControl.enabled = data.enabled ~= false
+
+	--	ZO_CheckButton_SetEnableState(buttonControl, data.enabled ~= false)
+
+		local buttonGroup
 		local groupIndex = getValueOrCallback(data.buttonGroup, data)
+
 		if type(groupIndex) == "number" then
 			-- Prepare buttonGroup
 			comboBox.m_buttonGroup = comboBox.m_buttonGroup or {}
 			comboBox.m_buttonGroup[groupIndex] = comboBox.m_buttonGroup[groupIndex] or buttonGroupClass:New()
-			local buttonGroup = comboBox.m_buttonGroup[groupIndex]
+			buttonGroup = comboBox.m_buttonGroup[groupIndex]
 
 			if type(data.buttonGroupOnSelectionChangedCallback) == "function" then
 				buttonGroup:SetSelectionChangedCallback(data.buttonGroupOnSelectionChangedCallback)
 			end
 
-			-- Add button/control to buttonGroup
-			buttonGroup:Add(control, isRadioButton)
+			if type(data.buttonGroupOnStateChangedCallback) == "function" then
+				buttonGroup:SetStateChangedCallback(data.buttonGroupOnStateChangedCallback)
+			end
 
-			control.m_buttonGroup = buttonGroup
-			control.m_buttonGroupIndex = groupIndex
+			-- Add buttonControl to buttonGroup
+			buttonGroup:Add(buttonControl, control.isRadioButton)
+			buttonControl.m_buttonGroup = buttonGroup
+			buttonControl.m_buttonGroupIndex = groupIndex
 
-			return buttonGroup
+		--	buttonGroup:SetButtonState(control, data.clicked, data.enabled ~= false)
+			buttonGroup:SetButtonIsValidOption(buttonControl, data.enabled ~= false)
 		end
+
+		return buttonControl, buttonGroup
 	end
 
 	function comboBox_base:SetupEntryDivider(control, data, list)
@@ -3586,37 +3628,17 @@ do -- Row setup functions
 	function comboBox_base:SetupEntryRadioButton(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 
-		control.isRadioButton = true
 		self:SetupEntryLabel(control, data, list)
+		control.isRadioButton = true
 		control.typeId = LSM_ENTRY_TYPE_RADIOBUTTON
 
-		control.m_radioButton = control.m_radioButton or control:GetNamedChild("RadioButton")
-		local radioButton = control.m_radioButton
-
-		--if radioButton then
-		--	radioButton.label = control.m_label
-		--end
-
-		if data.buttonTemplate then
-			ApplyTemplateToControl(radioButton, data.buttonTemplate)
-		end
-
-		--Add radiobuttons of same comboBox to 1 group so clicking one, changes the others
-		local radioButtonGroup = addButtonGroup(self, radioButton, data, true)
+		local radioButton, radioButtonGroup = addButton(self, control, data, "RadioButton")
 		if radioButtonGroup then
-			-- TODOL see if theese two are safe to move into addButtonGroup
-			radioButtonGroup:SetEnabled(control, data.enabled)
-			radioButtonGroup:SetButtonIsValidOption(control, data.enabled)
-
 			if data.checked == true then
+				-- Only 1 can be set as "checked" here.
 				radioButtonGroup:SetClickedButton(radioButton)
 			end
 		end
-
-		-- I just notice nothing is being done to m_radioButton as with m_checkBox.
-		-- What if no group is provided? There will be a radio button that can't be set or used.
-		--else
-			--assert / error message because no radio buton group provided? Or maybe not needed if you want a single radio button or custom butonTemplate
 	end
 
 	function comboBox_base:SetupEntryCheckbox(control, data, list)
@@ -3629,7 +3651,7 @@ do -- Row setup functions
 				local comboBox = getComboBox(control)
 				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
 				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
-				checkedData.callback(comboBox, checkedData.label or checkedData.name, control, checked)
+			--	checkedData.callback(comboBox, checkedData.label or checkedData.name, control, checked)
 			end
 
 			self:Narrate("OnCheckboxUpdated", checkbox, data, nil)
@@ -3637,19 +3659,18 @@ do -- Row setup functions
 			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: CheckboxUpdated - control: %q, checked: %s", tos(getControlName(checkbox)), tos(checked))
 		end
 
-		control.isCheckbox = true
 		self:SetupEntryLabel(control, data, list)
+		control.isCheckbox = true
 		control.typeId = LSM_ENTRY_TYPE_CHECKBOX
 
-		control.m_checkbox = control.m_checkbox or control:GetNamedChild("Checkbox")
-		local checkbox = control.m_checkbox
+		local checkbox = addButton(self, control, data, "Checkbox")
 		ZO_CheckButton_SetToggleFunction(checkbox, setChecked)
 		ZO_CheckButton_SetCheckState(checkbox, getValueOrCallback(data.checked, data))
-		
-		addButtonGroup(self, checkbox, data)
 	end
 
 	function comboBox_base:SetupEntryButton(control, data, list)
+		-- The row it's self is treated as a button, no child button
+
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 		control.isButton = true
 		control.typeId = LSM_ENTRY_TYPE_BUTTON
@@ -3673,6 +3694,7 @@ do -- Row setup functions
 		if data.buttonTemplate then
 			ApplyTemplateToControl(control, data.buttonTemplate)
 		end
+
 	--	addButtonGroup(self, control, data)
 	end
 end
@@ -4204,7 +4226,7 @@ function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
 end
 
 function contextMenuClass:ClearItems()
-	--d( 'contextMenuClass:ClearItems()')
+	--d( debugPrefix .. 'contextMenuClass:ClearItems()')
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ClearItems")
 	self:SetContextMenuOptions(nil)
 	self:ResetToDefaults()
@@ -4807,6 +4829,45 @@ lib.SetButtonGroupState = setButtonGroupState
 
 
 ------------------------------------------------------------------------------------------------------------------------
+-- XML handler functions
+------------------------------------------------------------------------------------------------------------------------
+
+function lib.ButtonOnInitialize(control, isRadioButton)
+	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
+		local onClickedHandler = control:GetHandler('OnClicked')
+		if onClickedHandler then
+			if upInside then
+				if buttonId == MOUSE_BUTTON_INDEX_LEFT then
+					onClickedHandler(control, buttonId, upInside, ...)
+				elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
+					local rightClickCallback = parent.m_data.contextMenuCallback or parent.m_data.rightClickCallback
+					if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(parent.m_owner) then
+						dLog(LSM_LOGTYPE_VERBOSE, "m_button OnMouseUp!")
+						rightClickCallback(parent.m_owner, parent, parent.m_data)
+					end
+				end
+			end
+		end
+	end)
+
+	local originalClicked = control:GetHandler('OnClicked')
+	control:SetHandler('OnClicked', function(control, buttonId, ignoreCallback, ...)
+
+        PlaySound(SOUNDS.DEFAULT_CLICK)
+		if control.checked ~= nil then
+			d( debugPrefix .. 'checked ~= nil')
+			ZO_CheckButton_SetCheckState(control, control.checked)
+		else
+			if originalClicked then
+				d( debugPrefix.. 'originalClicked')
+				originalClicked(control, buttonId, ignoreCallback, ...)
+			end
+		end
+		control.checked = nil
+	end)
+end
+
+------------------------------------------------------------------------------------------------------------------------
 -- Init
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -4879,6 +4940,7 @@ local function onAddonLoaded(event, name)
 end
 EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
+
 
 
 ------------------------------------------------------------------------------------------------------------------------
