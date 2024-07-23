@@ -2902,6 +2902,69 @@ end
 
 local buttonGroupClass = ZO_RadioButtonGroup:Subclass()
 
+function buttonGroupClass:SetButtonState(button, clickedButton, enabled)
+    if(enabled) then
+        if(button == clickedButton) then
+            button:SetState(BSTATE_PRESSED, true)
+        else
+            button:SetState(BSTATE_NORMAL, false)
+        end
+
+        if button.label then
+            button.label:SetColor(self.labelColorEnabled:UnpackRGB())
+        end
+    else
+        if(button == clickedButton) then
+            button:SetState(BSTATE_DISABLED_PRESSED, true)
+        else
+            button:SetState(BSTATE_DISABLED, true)
+        end
+
+        if button.label then
+            button.label:SetColor(self.labelColorDisabled:UnpackRGB())
+        end
+    end
+end
+
+function buttonGroupClass:HandleClick(control, buttonId, ignoreCallback)
+    if not self.m_enabled or self.m_clickedButton == control then
+        return
+    end
+
+    -- Can't click disabled buttons
+    local controlData = self.m_buttons[control]
+    if controlData and not controlData.isValidOption then
+        return
+    end
+
+    if self.customClickHandler and self.customClickHandler(control, buttonId, ignoreCallback) then
+        return
+    end
+
+    -- For now only the LMB will be allowed to click radio buttons.
+    if buttonId == MOUSE_BUTTON_INDEX_LEFT then
+        -- Set all buttons in the group to unpressed, and unlocked.
+        -- If the button is disabled externally (maybe it isn't a valid option at this time)
+        -- then set it to unpressed, but disabled.
+        for k, v in pairs(self.m_buttons) do
+            self:SetButtonState(k, nil, v.isValidOption)
+        end
+
+        -- Set the clicked button to pressed and lock it down (so that it stays pressed.)
+        control:SetState(BSTATE_PRESSED, true)
+        local previousControl = self.m_clickedButton
+        self.m_clickedButton = control
+
+        if self.onSelectionChangedCallback and not ignoreCallback then
+            self:onSelectionChangedCallback(control, previousControl)
+        end
+    end
+
+    if controlData.originalHandler then
+        controlData.originalHandler(control, buttonId)
+    end
+end
+
 function buttonGroupClass:Add(button, isRadioButton)
 	if button then
 		if self.m_buttons[button] == nil then
@@ -2914,7 +2977,7 @@ function buttonGroupClass:Add(button, isRadioButton)
 			if isRadioButton then
 				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
 				local newHandler = function(control, buttonId, ignoreCallback)
-					--d( debugPrefix.. 'buttonGroup callback')
+					d( debugPrefix.. 'buttonGroup HandleClick')
 					selfVar:HandleClick(control, buttonId, ignoreCallback)
 				end
 
@@ -3527,9 +3590,12 @@ do -- Row setup functions
 		local buttonControl = control.m_button or control:GetNamedChild(buttonType)
 		control.m_button = buttonControl
 		buttonControl.buttonType = buttonType
+		buttonControl.m_comboBox = comboBox
 
-      	buttonControl:SetMouseEnabled(data.enabled ~= false)
-		buttonControl.enabled = data.enabled ~= false
+		local isEnabled = data.enabled ~= false
+
+      	buttonControl:SetMouseEnabled(isEnabled)
+		buttonControl.enabled = isEnabled
 
 	--	ZO_CheckButton_SetEnableState(buttonControl, data.enabled ~= false)
 
@@ -3555,8 +3621,8 @@ do -- Row setup functions
 			buttonControl.m_buttonGroup = buttonGroup
 			buttonControl.m_buttonGroupIndex = groupIndex
 
-		--	buttonGroup:SetButtonState(control, data.clicked, data.enabled ~= false)
-			buttonGroup:SetButtonIsValidOption(buttonControl, data.enabled ~= false)
+		--	buttonGroup:SetButtonState(control, data.clicked, isEnabled)
+			buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
 		end
 
 		return buttonControl, buttonGroup
@@ -4840,6 +4906,11 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 				local onClickedHandler = control:GetHandler('OnClicked')
 				if onClickedHandler then
 					onClickedHandler(control, buttonId, upInside, ...)
+					if parent.callback then
+						--callback 		= function(comboBox, itemName, item, checked)
+						local data = parent.m_data
+						parent.callback(parent.m_owner, data.name, data, data.checked)
+					end
 				end
 			elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
 				local rightClickCallback = parent.m_data.contextMenuCallback or parent.m_data.rightClickCallback

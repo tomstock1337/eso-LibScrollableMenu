@@ -556,7 +556,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				name            = "RadioButton1",
 				tooltip         = "Button button button...",
 				checked 		= true,
-				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
+				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked radio button 1 with the name: " .. tostring(itemName))
 				end,
 				radioButtonGroup = 1,
@@ -567,7 +567,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				name            = "RadioButton2",
 				tooltip         = "Button button button...",
 				checked 		= false,
-				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
+				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked radio button 2 with the name: " .. tostring(itemName))
 				end,
 				radioButtonGroup = function() return 1 end,
@@ -579,7 +579,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				name            = "RadioButton3",
 				tooltip         = "Button button button...",
 				checked 		= true,
-				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
+				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked radio button 3 with the name: " .. tostring(itemName))
 				end,
 				radioButtonGroup = 2,
@@ -590,7 +590,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				name            = "RadioButton4",
 				tooltip         = "Button button button...",
 				checked 		= false,
-				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
+				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked radio button 4 with the name: " .. tostring(itemName))
 				end,
 				radioButtonGroup = function() return 2 end,
