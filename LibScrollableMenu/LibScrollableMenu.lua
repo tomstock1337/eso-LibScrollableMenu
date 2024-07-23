@@ -4783,8 +4783,8 @@ end
 local function setButtonGroupState(comboBox, control, data)
 	local groupIndex = getValueOrCallback(data.buttonGroup, data)
 	local buttonGroupSetAll = {
-		{ -- LSM_ENTRY_TYPE_NORMAL selecct andd close.
-			name = 'Check All', -- GetString('SI_LSM_BUTTON_GROUP_SET', 1) Check All
+		{ -- LSM_ENTRY_TYPE_NORMAL selecct and close.
+			name = GetString(SI_LSM_CNTXT_CHECK_ALL), --Check All
 			--entryType = LSM_ENTRY_TYPE_BUTTON,
 			entryType = LSM_ENTRY_TYPE_NORMAL,
 			additionalData = {
@@ -4799,7 +4799,7 @@ local function setButtonGroupState(comboBox, control, data)
 			end,
 		},
 		{
-			name = 'UnCheck All', -- GetString('SI_LSM_BUTTON_GROUP_SET', 2) UnCheck All
+			name = GetString(SI_LSM_CNTXT_CHECK_NONE),-- Check none
 			entryType = LSM_ENTRY_TYPE_NORMAL,
 			additionalData = {
 				horizontalAlignment = TEXT_ALIGN_CENTER,
@@ -4812,7 +4812,7 @@ local function setButtonGroupState(comboBox, control, data)
 			end,
 		},
 		{ -- LSM_ENTRY_TYPE_BUTTON allows for, invert, undo, invert, undo
-			name = 'Invert All', -- GetString('SI_LSM_BUTTON_GROUP_SET', 3) Invert All
+			name = GetString(SI_LSM_CNTXT_CHECK_INVERT), -- Invert
 			entryType = LSM_ENTRY_TYPE_BUTTON,
 			callback = function()
 				if comboBox.m_buttonGroup and comboBox.m_buttonGroup[groupIndex] then
