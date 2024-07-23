@@ -4851,19 +4851,19 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 	end)
 
 	local originalClicked = control:GetHandler('OnClicked')
-	control:SetHandler('OnClicked', function(control, buttonId, ignoreCallback, ...)
+	control:SetHandler('OnClicked', function(p_control, buttonId, ignoreCallback, ...)
 
         PlaySound(SOUNDS.DEFAULT_CLICK)
-		if control.checked ~= nil then
+		if p_control.checked ~= nil then
 			d( debugPrefix .. 'checked ~= nil')
-			ZO_CheckButton_SetCheckState(control, control.checked)
+			ZO_CheckButton_SetCheckState(p_control, p_control.checked)
 		else
 			if originalClicked then
 				d( debugPrefix.. 'originalClicked')
-				originalClicked(control, buttonId, ignoreCallback, ...)
+				originalClicked(p_control, buttonId, ignoreCallback, ...)
 			end
 		end
-		control.checked = nil
+		p_control.checked = nil
 	end)
 end
 
