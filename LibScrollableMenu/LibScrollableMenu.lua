@@ -3667,7 +3667,7 @@ do -- Row setup functions
 			rowData.checked = checked
 			if rowData.callback then
 				local comboBox = getComboBox(control)
-				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
+				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - calling radiobutton callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
 				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
 				rowData.callback(comboBox, rowData.label or rowData.name, control, checked)
 			end
@@ -4889,6 +4889,7 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 				if onClickedHandler then
 					onClickedHandler(control, buttonId, upInside, ...)
 					if parent.callback then
+d( debugPrefix .. "onMouseUp -> calling onClick handler and after that callback of radio/checkButton")
 						--callback 		= function(comboBox, itemName, item, checked)
 						local data = parent.m_data
 						parent.callback(parent.m_owner, data.name, data, data.checked)
