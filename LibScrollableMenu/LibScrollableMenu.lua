@@ -4881,46 +4881,39 @@ lib.SetButtonGroupState = setButtonGroupState
 ------------------------------------------------------------------------------------------------------------------------
 --XML OnClick handler for checkbox and radiobuttons
 function lib.ButtonOnInitialize(control, isRadioButton)
-	isRadioButton = isRadioButton or false
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
-		if upInside then
-			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
-				local onClickedHandler = control:GetHandler('OnClicked')
-				if onClickedHandler then
+		local onClickedHandler = control:GetHandler('OnClicked')
+		if onClickedHandler then
+			if upInside then
+				if buttonId == MOUSE_BUTTON_INDEX_LEFT then
 					onClickedHandler(control, buttonId, upInside, ...)
-					if parent.callback then
-d( debugPrefix .. "onMouseUp -> calling onClick handler and after that callback of radio/checkButton")
-						--callback 		= function(comboBox, itemName, item, checked)
-						local data = parent.m_data
-						parent.callback(parent.m_owner, data.name, data, data.checked)
+				elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
+					local rightClickCallback = parent.m_data.contextMenuCallback or parent.m_data.rightClickCallback
+					if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(parent.m_owner) then
+						dLog(LSM_LOGTYPE_VERBOSE, "m_button OnMouseUp!")
+						rightClickCallback(parent.m_owner, parent, parent.m_data)
 					end
-				end
-			elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
-				local rightClickCallback = parent.m_data.contextMenuCallback or parent.m_data.rightClickCallback
-				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(parent.m_owner) then
-					dLog(LSM_LOGTYPE_VERBOSE, "m_button OnMouseUp!")
-					rightClickCallback(parent.m_owner, parent, parent.m_data)
 				end
 			end
 		end
 	end)
 
-	local originalClicked = control:GetHandler('OnClicked')
-	control:SetHandler('OnClicked', function(p_control, buttonId, ignoreCallback, ...)
-        --PlaySound(SOUNDS.DEFAULT_CLICK)
-		local dropdown = control:GetOwningWindow().m_dropdownObject
-		playSelectedSoundCheck(dropdown, isRadioButton and LSM_ENTRY_TYPE_RADIOBUTTON or LSM_ENTRY_TYPE_CHECKBOX)
-		if p_control.checked ~= nil then
-			d( debugPrefix .. 'checked ~= nil')
-			ZO_CheckButton_SetCheckState(p_control, p_control.checked)
-		else
-			if originalClicked then
-				d( debugPrefix.. 'originalClicked')
-				originalClicked(p_control, buttonId, ignoreCallback, ...)
+	if not isRadioButton then
+		local originalClicked = control:GetHandler('OnClicked')
+		control:SetHandler('OnClicked', function(p_control, buttonId, ignoreCallback, ...)
+			--PlaySound(SOUNDS.DEFAULT_CLICK)
+			local dropdown = control:GetOwningWindow().m_dropdownObject
+			playSelectedSoundCheck(dropdown, isRadioButton and LSM_ENTRY_TYPE_RADIOBUTTON or LSM_ENTRY_TYPE_CHECKBOX)
+			if p_control.checked ~= nil then
+				ZO_CheckButton_SetCheckState(p_control, p_control.checked)
+			else
+				if originalClicked then
+					originalClicked(p_control, buttonId, ignoreCallback, ...)
+				end
 			end
-		end
-		p_control.checked = nil
-	end)
+			p_control.checked = nil
+		end)
+	end
 end
 
 ------------------------------------------------------------------------------------------------------------------------
