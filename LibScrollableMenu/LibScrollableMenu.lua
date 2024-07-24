@@ -3560,8 +3560,9 @@ do -- Row setup functions
 		control.m_button = buttonControl
 		buttonControl.buttonType = buttonType
 
-      	buttonControl:SetMouseEnabled(data.enabled ~= false)
-		buttonControl.enabled = data.enabled ~= false
+		local isEnabled = data.enabled ~= false
+      	buttonControl:SetMouseEnabled(isEnabled)
+		buttonControl.enabled = isEnabled
 
 		ZO_CheckButton_SetToggleFunction(buttonControl, toggleFunction)
 	--	ZO_CheckButton_SetEnableState(buttonControl, data.enabled ~= false)
@@ -3588,8 +3589,8 @@ do -- Row setup functions
 			buttonControl.m_buttonGroup = buttonGroup
 			buttonControl.m_buttonGroupIndex = groupIndex
 
-		--	buttonGroup:SetButtonState(control, data.clicked, data.enabled ~= false)
-			buttonGroup:SetButtonIsValidOption(buttonControl, data.enabled ~= false)
+		--	buttonGroup:SetButtonState(control, data.clicked, isEnabled)
+			buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
 		end
 
 		return buttonControl, buttonGroup
