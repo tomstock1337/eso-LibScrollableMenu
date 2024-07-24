@@ -3700,7 +3700,7 @@ do -- Row setup functions
 				local comboBox = getComboBox(control)
 				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
 				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
-			--	checkedData.callback(comboBox, checkedData.label or checkedData.name, control, checked)
+				checkedData.callback(comboBox, checkedData.label or checkedData.name, control, checked)
 			end
 
 			self:Narrate("OnCheckboxUpdated", checkbox, data, nil)
