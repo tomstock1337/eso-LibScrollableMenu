@@ -2902,12 +2902,43 @@ end
 
 local buttonGroupClass = ZO_RadioButtonGroup:Subclass()
 
+function buttonGroupClass:Add(button, isRadioButton)
+	if button then
+		if self.m_buttons[button] == nil then
+			local selfVar = self
+			-- Remember the original handler so that its call can be forced.
+			local originalHandler = button:GetHandler("OnClicked")
+			self.m_buttons[button] = { originalHandler = originalHandler, isValidOption = true } -- newly added buttons always start as valid options for now.
+
+				--d( debugPrefix..'isRadioButton ' .. tos(isRadioButton))
+			if isRadioButton then
+				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
+				local newHandler = function(control, buttonId, ignoreCallback)
+					--d( debugPrefix.. 'buttonGroup callback')
+					selfVar:HandleClick(control, buttonId, ignoreCallback)
+				end
+
+				--d( debugPrefix..'originalHandler' .. tos(originalHandler))
+				button:SetHandler("OnClicked", newHandler)
+
+				if button.label then
+					button.label:SetColor(self.labelColorEnabled:UnpackRGB())
+				end
+			end
+		end
+	end
+end
+
 function buttonGroupClass:SetButtonState(button, clickedButton, enabled)
+	local callToggleFunc = true
+	local checked = true
+
     if(enabled) then
         if(button == clickedButton) then
             button:SetState(BSTATE_PRESSED, true)
         else
             button:SetState(BSTATE_NORMAL, false)
+			checked = false
         end
 
         if button.label then
@@ -2923,73 +2954,11 @@ function buttonGroupClass:SetButtonState(button, clickedButton, enabled)
         if button.label then
             button.label:SetColor(self.labelColorDisabled:UnpackRGB())
         end
-    end
-end
-
-function buttonGroupClass:HandleClick(control, buttonId, ignoreCallback)
-    if not self.m_enabled or self.m_clickedButton == control then
-        return
+		callToggleFunc = false
     end
 
-    -- Can't click disabled buttons
-    local controlData = self.m_buttons[control]
-    if controlData and not controlData.isValidOption then
-        return
-    end
-
-    if self.customClickHandler and self.customClickHandler(control, buttonId, ignoreCallback) then
-        return
-    end
-
-    -- For now only the LMB will be allowed to click radio buttons.
-    if buttonId == MOUSE_BUTTON_INDEX_LEFT then
-        -- Set all buttons in the group to unpressed, and unlocked.
-        -- If the button is disabled externally (maybe it isn't a valid option at this time)
-        -- then set it to unpressed, but disabled.
-        for k, v in pairs(self.m_buttons) do
-            self:SetButtonState(k, nil, v.isValidOption)
-        end
-
-        -- Set the clicked button to pressed and lock it down (so that it stays pressed.)
-        control:SetState(BSTATE_PRESSED, true)
-        local previousControl = self.m_clickedButton
-        self.m_clickedButton = control
-
-        if self.onSelectionChangedCallback and not ignoreCallback then
-            self:onSelectionChangedCallback(control, previousControl)
-        end
-    end
-
-    if controlData.originalHandler then
-        controlData.originalHandler(control, buttonId)
-    end
-end
-
-function buttonGroupClass:Add(button, isRadioButton)
-	if button then
-		if self.m_buttons[button] == nil then
-			local selfVar = self
-			-- Remember the original handler so that its call can be forced.
-			local originalHandler = button:GetHandler("OnClicked")
-			self.m_buttons[button] = { originalHandler = originalHandler, isValidOption = true } -- newly added buttons always start as valid options for now.
-
-				--d( debugPrefix..'isRadioButton ' .. tos(isRadioButton))
-			if isRadioButton then
-				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
-				local newHandler = function(control, buttonId, ignoreCallback)
-					d( debugPrefix.. 'buttonGroup HandleClick')
-					selfVar:HandleClick(control, buttonId, ignoreCallback)
-				end
-
-				--d( debugPrefix..'originalHandler' .. tos(originalHandler))
-				button:SetHandler("OnClicked", newHandler)
-
-				if button.label then
-					button.label:SetColor(self.labelColorEnabled:UnpackRGB())
-				end
-			end
-
-		end
+	if (button.toggleFunction ~= nil) and callToggleFunc then
+		button:toggleFunction(checked)
 	end
 end
 
@@ -3586,17 +3555,15 @@ do -- Row setup functions
 		control.m_label:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
 	end
 
-	local function addButton(comboBox, control, data, buttonType)
+	local function addButton(comboBox, control, data, buttonType, toggleFunction)
 		local buttonControl = control.m_button or control:GetNamedChild(buttonType)
 		control.m_button = buttonControl
 		buttonControl.buttonType = buttonType
-		buttonControl.m_comboBox = comboBox
 
-		local isEnabled = data.enabled ~= false
+      	buttonControl:SetMouseEnabled(data.enabled ~= false)
+		buttonControl.enabled = data.enabled ~= false
 
-      	buttonControl:SetMouseEnabled(isEnabled)
-		buttonControl.enabled = isEnabled
-
+		ZO_CheckButton_SetToggleFunction(buttonControl, toggleFunction)
 	--	ZO_CheckButton_SetEnableState(buttonControl, data.enabled ~= false)
 
 		local buttonGroup
@@ -3621,8 +3588,8 @@ do -- Row setup functions
 			buttonControl.m_buttonGroup = buttonGroup
 			buttonControl.m_buttonGroupIndex = groupIndex
 
-		--	buttonGroup:SetButtonState(control, data.clicked, isEnabled)
-			buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
+		--	buttonGroup:SetButtonState(control, data.clicked, data.enabled ~= false)
+			buttonGroup:SetButtonIsValidOption(buttonControl, data.enabled ~= false)
 		end
 
 		return buttonControl, buttonGroup
@@ -3693,12 +3660,26 @@ do -- Row setup functions
 
 	function comboBox_base:SetupEntryRadioButton(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		local function setChecked(button, checked)
+			local rowData = getControlData(button:GetParent())
 
+			rowData.checked = checked
+			if rowData.callback then
+				local comboBox = getComboBox(control)
+				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
+				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
+				rowData.callback(comboBox, rowData.label or rowData.name, control, checked)
+			end
+
+		--	self:Narrate("OnCheckboxUpdated", button, data, nil)
+		--	lib:FireCallbacks('CheckboxUpdated', control, data, checked)
+			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: RadioButtonUpdated - control: %q, checked: %s", tos(getControlName(button)), tos(checked))
+		end
 		self:SetupEntryLabel(control, data, list)
 		control.isRadioButton = true
 		control.typeId = LSM_ENTRY_TYPE_RADIOBUTTON
 
-		local radioButton, radioButtonGroup = addButton(self, control, data, "RadioButton")
+		local radioButton, radioButtonGroup = addButton(self, control, data, "RadioButton", setChecked)
 		if radioButtonGroup then
 			if data.checked == true then
 				-- Only 1 can be set as "checked" here.
@@ -3709,6 +3690,7 @@ do -- Row setup functions
 
 	function comboBox_base:SetupEntryCheckbox(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+
 		local function setChecked(checkbox, checked)
 			local checkedData = getControlData(checkbox:GetParent())
 
@@ -3729,8 +3711,7 @@ do -- Row setup functions
 		control.isCheckbox = true
 		control.typeId = LSM_ENTRY_TYPE_CHECKBOX
 
-		local checkbox = addButton(self, control, data, "Checkbox")
-		ZO_CheckButton_SetToggleFunction(checkbox, setChecked)
+		local checkbox = addButton(self, control, data, "Checkbox", setChecked)
 		ZO_CheckButton_SetCheckState(checkbox, getValueOrCallback(data.checked, data))
 	end
 
