@@ -3711,10 +3711,8 @@ d( debugPrefix .. "SetupEntryRadioButton-setChecked, checked: " ..tos(checked))
 		local function setChecked(checkbox, checked)
 			local checkedData = getControlData(checkbox:GetParent())
 
-			if checked then
-				local dropdown = selfVar.m_dropdownObject
-				playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
-			end
+			local dropdown = selfVar.m_dropdownObject
+			playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
 
 			checkedData.checked = checked
 			if checkedData.callback then
