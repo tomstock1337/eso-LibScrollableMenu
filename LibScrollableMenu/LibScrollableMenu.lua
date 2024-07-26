@@ -3216,6 +3216,7 @@ function comboBox_base:AddCustomEntryTemplates(options)
 end
 
 function comboBox_base:OnGlobalMouseUp(eventId, button)
+d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", isMOC: " ..tos(self.m_dropdownObject:IsMouseOverControl()) .. ", hiddenForReasons: " ..tos(self:HiddenForReasons(button)) .. ", dropddownVisible: " ..tos(self:IsDropdownVisible())  )
 	if self:IsDropdownVisible() then
 		if not self.m_dropdownObject:IsMouseOverControl() then
 			if self:HiddenForReasons(button) then
@@ -3223,6 +3224,7 @@ function comboBox_base:OnGlobalMouseUp(eventId, button)
 			end
 		end
 	else
+d(">else - containerIsHidden: " .. tos(self.m_container:IsHidden()))
 		if self.m_container:IsHidden() then
 			self:HideDropdown()
 		else
@@ -3296,10 +3298,11 @@ local function getMouseOver_HiddenFor_Info()
 end
 
 function comboBox_base:HiddenForReasons(button)
+d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
 
 	if self.m_dropdownObject:IsOwnedByComboBox(comboBox) or self.m_dropdownObject:WasTextSearchContextMenuEntryClicked() then
-		if not mocEntry or mocEntry.enabled ~= false then
+		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				--Clicked entry should close after selection?
 				return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
@@ -3310,6 +3313,7 @@ function comboBox_base:HiddenForReasons(button)
 			end
 		end
 	end
+
 	local hiddenForReasons = self:GetHiddenForReasons()
 	return hiddenForReasons(owningWindow, mocCtrl, comboBox, mocEntry)
 end
@@ -3901,7 +3905,7 @@ end
 
 function comboBoxClass:GetHiddenForReasons()
 	return function(owningWindow, mocCtrl, comboBox, entry)
-		-- context menu was last cliscked
+		-- context menu was last clicked
 		return not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox)
 	end
 end
@@ -4343,9 +4347,36 @@ function contextMenuClass:GetMenuPrefix()
 	return 'Contextmenu'
 end
 
-function contextMenuClass:GetHiddenForReasons()
+function contextMenuClass:GetHiddenForReasons(button)
+d(debugPrefix .. "contextMenuClass:HiddenForReasons - button: " .. tos(button))
+	--local owningWindow, mocCtrl1, comboBox1, mocEntry = getMouseOver_HiddenFor_Info()
+
 	return function(owningWindow, mocCtrl, comboBox, entry)
-		return false
+d(">context menu clicked")
+		if button == MOUSE_BUTTON_INDEX_LEFT then
+			--Is there no LSM comboBox available? Close the context menu
+			if not comboBox then return true end
+
+			--Is the mocEntry an empty table (something else was clicked than a LSM entry)
+			if ZO_IsTableEmpty(entry) then return true end
+
+			if mocCtrl then
+				local owner = mocCtrl.m_owner
+				if owner then
+					--Does moc entry belong to a LSM menu and it IS the current contextMenu?
+					if owner == comboBox then
+						return mocCtrl.closeOnSelect
+					else
+						--Does moc entry belong to a LSM menu but it's not the current contextMenu?
+						return true
+					end
+				end
+			end
+
+
+		elseif button == MOUSE_BUTTON_INDEX_RIGHT then
+			return true --close context menu
+		end
 	end
 end
 
@@ -4929,14 +4960,14 @@ lib.SetButtonGroupState = setButtonGroupState
 --XML OnClick handler for checkbox and radiobuttons
 function lib.ButtonOnInitialize(control, isRadioButton)
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
-d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
+--d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
 		if upInside then
 			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
 				local data = getControlData(parent)
 				playSelectedSoundCheck(parent.m_dropdownObject, data.entryType)
 
 				local onClickedHandler = control:GetHandler('OnClicked')
-d(">>OnClickedHandler: " ..tos(onClickedHandler))
+--d(">>OnClickedHandler: " ..tos(onClickedHandler))
 				if onClickedHandler then
 					onClickedHandler(control, buttonId, upInside, ...)
 				end
