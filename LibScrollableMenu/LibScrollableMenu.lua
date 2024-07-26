@@ -1335,7 +1335,7 @@ local function doMapEntries(entryTable, mapTable, entryTableType)
 end
 
 -- This function will create a map of all entries recursively. Useful when there are submenu entries
--- and you want to use them for comparing in the callbacks, NewStatusUpdated, CheckboxUpdated
+-- and you want to use them for comparing in the callbacks, NewStatusUpdated, CheckboxUpdated, RadioButtonUpdated
 local function mapEntries(entryTable, mapTable, blank)
 	dLog(LSM_LOGTYPE_VERBOSE, "mapEntries")
 
@@ -1976,7 +1976,7 @@ end
 
 local function onSelectedNarrate(narrateText, stopCurrent)
 	dLog(LSM_LOGTYPE_VERBOSE, "onSelectedNarrate - narrateText: %s, stopCurrent: %s", tos(narrateText), tos(stopCurrent))
-	onUpdateDoNarrate("OnEntryOrCheckboxSelected", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
+	onUpdateDoNarrate("OnEntryOrButtonSelected", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
 end
 
 local function onMouseMenuOpenOrCloseNarrate(narrateText, stopCurrent)
@@ -1997,6 +1997,7 @@ local narrationEventToLibraryNarrateFunction = {
 	["OnEntryMouseExit"] = 		onMouseEnterOrExitNarrate,
 	["OnEntrySelected"] = 		onSelectedNarrate,
 	["OnCheckboxUpdated"] = 	onSelectedNarrate,
+	["OnRadioButtonUpdated"] = 	onSelectedNarrate,
 }
 
 --------------------------------------------------------------------
@@ -3328,6 +3329,7 @@ function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 		["OnEntryMouseExit"]	= function() return selfVar, ctrl, data, hasSubmenu end,
 		["OnEntryMouseEnter"]	= function() return selfVar, ctrl, data, hasSubmenu end,
 		["OnCheckboxUpdated"]	= function() return selfVar, ctrl, data end,
+		["OnRadioButtonUpdated"]= function() return selfVar, ctrl, data end,
 		["OnComboBoxMouseExit"] = function() return selfVar, ctrl end,
 		["OnComboBoxMouseEnter"]= function() return selfVar, ctrl end,
 	}
@@ -3676,6 +3678,7 @@ d( debugPrefix .. "SetupEntryRadioButton-setChecked, checked: " ..tos(checked))
 
 			if checked then
 				local dropdown = selfVar.m_dropdownObject
+d(">playSelecteSoundChck - Radiobutton")
 				playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_RADIOBUTTON)
 			end
 
@@ -3687,9 +3690,11 @@ d( debugPrefix .. "SetupEntryRadioButton-setChecked, checked: " ..tos(checked))
 				rowData.callback(comboBox, rowData.label or rowData.name, control, checked)
 			end
 
-			--	self:Narrate("OnCheckboxUpdated", button, data, nil)
-			--	lib:FireCallbacks('CheckboxUpdated', control, data, checked)
-			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: RadioButtonUpdated - control: %q, checked: %s", tos(getControlName(button)), tos(checked))
+			if checked then
+				self:Narrate("OnRadioButtonUpdated", button, data, nil)
+				lib:FireCallbacks('RadioButtonUpdated', control, data, checked)
+				dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: RadioButtonUpdated - control: %q, checked: %s", tos(getControlName(button)), tos(checked))
+			end
 		end
 		self:SetupEntryLabel(control, data, list)
 		control.isRadioButton = true
@@ -4482,6 +4487,7 @@ end
 --												"OnEntryMouseExit"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
 --												"OnEntrySelected"		function(m_dropdownObject, entryControl, data, hasSubmenu) end
 --												"OnCheckboxUpdated"		function(m_dropdownObject, checkboxControl, data) end
+--												"OnRadioButtonUpdated"	function(m_dropdownObject, checkboxControl, data) end
 --			Example:	narrate = { ["OnComboBoxMouseEnter"] = myAddonsNarrateComboBoxOnMouseEnter, ... }
 --  }
 function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, options)
