@@ -2921,7 +2921,7 @@ function buttonGroupClass:Add(button, isRadioButton)
 d(debugPrefix .. "buttonGroup:Add - OnClicked handler set")
 				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
 				local newHandler = function(control, buttonId, ignoreCallback)
-					d( debugPrefix.. 'buttonGroup callback')
+					d( debugPrefix.. 'buttonGroup -> OnClicked handler. Calling HandleClick')
 					selfVar:HandleClick(control, buttonId, ignoreCallback)
 				end
 
@@ -2946,11 +2946,16 @@ function buttonGroupClass:SetButtonState(button, clickedButton, enabled)
         else
             button:SetState(BSTATE_NORMAL, false)
 			checked = false
+			callToggleFunc = false
         end
 
         if button.label then
             button.label:SetColor(self.labelColorEnabled:UnpackRGB())
         end
+
+		if (button.toggleFunction ~= nil) and checked then
+			button:toggleFunction(checked)
+		end
     else
         if(button == clickedButton) then
             button:SetState(BSTATE_DISABLED_PRESSED, true)
@@ -2961,11 +2966,47 @@ function buttonGroupClass:SetButtonState(button, clickedButton, enabled)
         if button.label then
             button.label:SetColor(self.labelColorDisabled:UnpackRGB())
         end
-		callToggleFunc = false
     end
 
-	if (button.toggleFunction ~= nil) and callToggleFunc then
-		button:toggleFunction(checked)
+end
+
+function buttonGroupClass:HandleClick(control, buttonId, ignoreCallback)
+	if not self.m_enabled or self.m_clickedButton == control then
+		return
+	end
+
+	-- Can't click disabled buttons
+	local controlData = self.m_buttons[control]
+	if controlData and not controlData.isValidOption then
+		return
+	end
+
+	if self.customClickHandler and self.customClickHandler(control, buttonId, ignoreCallback) then
+		return
+	end
+
+	-- For now only the LMB will be allowed to click radio buttons.
+	if buttonId == MOUSE_BUTTON_INDEX_LEFT then
+		-- Set all buttons in the group to unpressed, and unlocked.
+		-- If the button is disabled externally (maybe it isn't a valid option at this time)
+		-- then set it to unpressed, but disabled.
+		for k, v in pairs(self.m_buttons) do
+		--	self:SetButtonState(k, nil, v.isValidOption)
+			self:SetButtonState(k, control, v.isValidOption)
+		end
+
+		-- Set the clicked button to pressed and lock it down (so that it stays pressed.)
+--		control:SetState(BSTATE_PRESSED, true)
+		local previousControl = self.m_clickedButton
+		self.m_clickedButton = control
+
+		if self.onSelectionChangedCallback and not ignoreCallback then
+			self:onSelectionChangedCallback(control, previousControl)
+		end
+	end
+
+	if controlData.originalHandler then
+		controlData.originalHandler(control, buttonId)
 	end
 end
 
@@ -3380,11 +3421,11 @@ function comboBox_base:RefreshSortedItems(parentControl)
 	end
 end
 
-function comboBox_base:RunItemCallback(item, ignoreCallback)
+function comboBox_base:RunItemCallback(item, ignoreCallback, ...)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:FireEntrtCallback")
 	
 	if item.callback and not ignoreCallback then
-		return item.callback(self, item.name, item)
+		return item.callback(self, item.name, item, ...)
 	end
 	return false
 end
@@ -3671,36 +3712,26 @@ do -- Row setup functions
 	function comboBox_base:SetupEntryRadioButton(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 
-		local selfVar = self
-		local function setChecked(button, checked)
-d( debugPrefix .. "SetupEntryRadioButton-setChecked, checked: " ..tos(checked))
+		local function toggleFunction(button, checked)
 			local rowData = getControlData(button:GetParent())
-
-			if checked then
-				local dropdown = selfVar.m_dropdownObject
-d(">playSelecteSoundChck - Radiobutton")
-				playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_RADIOBUTTON)
-			end
-
 			rowData.checked = checked
 			if rowData.callback then
-				local comboBox = getComboBox(control)
+			--	local comboBox = getComboBox(control)
 				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - calling radiobutton callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
 				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
-				rowData.callback(comboBox, rowData.label or rowData.name, control, checked)
+			--	rowData.callback(comboBox, rowData.label or rowData.name, control, checked)
+				self:RunItemCallback(data, data.ignoreCallback, checked)
 			end
 
-			if checked then
-				self:Narrate("OnRadioButtonUpdated", button, data, nil)
-				lib:FireCallbacks('RadioButtonUpdated', control, data, checked)
-				dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: RadioButtonUpdated - control: %q, checked: %s", tos(getControlName(button)), tos(checked))
-			end
+			self:Narrate("OnRadioButtonUpdated", button, data, nil)
+			lib:FireCallbacks('RadioButtonUpdated', control, data, checked)
+			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: RadioButtonUpdated - control: %q, checked: %s", tos(getControlName(button)), tos(checked))
 		end
 		self:SetupEntryLabel(control, data, list)
 		control.isRadioButton = true
 		control.typeId = LSM_ENTRY_TYPE_RADIOBUTTON
 
-		local radioButton, radioButtonGroup = addButton(self, control, data, "RadioButton", setChecked)
+		local radioButton, radioButtonGroup = addButton(self, control, data, "RadioButton", toggleFunction)
 		if radioButtonGroup then
 			if data.checked == true then
 				-- Only 1 can be set as "checked" here.
@@ -3712,19 +3743,15 @@ d(">playSelecteSoundChck - Radiobutton")
 	function comboBox_base:SetupEntryCheckbox(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 
-		local selfVar = self
-		local function setChecked(checkbox, checked)
+		local function toggleFunction(checkbox, checked)
 			local checkedData = getControlData(checkbox:GetParent())
-
-			local dropdown = selfVar.m_dropdownObject
-			playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
 
 			checkedData.checked = checked
 			if checkedData.callback then
-				local comboBox = getComboBox(control)
+			--	local comboBox = getComboBox(control)
 				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
 				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
-				checkedData.callback(comboBox, checkedData.label or checkedData.name, control, checked)
+				self:RunItemCallback(data, data.ignoreCallback, checked)
 			end
 
 			self:Narrate("OnCheckboxUpdated", checkbox, data, nil)
@@ -3736,14 +3763,14 @@ d(">playSelecteSoundChck - Radiobutton")
 		control.isCheckbox = true
 		control.typeId = LSM_ENTRY_TYPE_CHECKBOX
 
-		local checkbox = addButton(self, control, data, "Checkbox", setChecked)
+		local checkbox = addButton(self, control, data, "Checkbox", toggleFunction)
 		ZO_CheckButton_SetCheckState(checkbox, getValueOrCallback(data.checked, data))
 	end
 
 	function comboBox_base:SetupEntryButton(control, data, list)
-		-- The row it's self is treated as a button, no child button
-
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+
+		-- The row it's self is treated as a button, no child button
 		control.isButton = true
 		control.typeId = LSM_ENTRY_TYPE_BUTTON
 		addIcon(control, data, list)
@@ -3766,8 +3793,6 @@ d(">playSelecteSoundChck - Radiobutton")
 		if data.buttonTemplate then
 			ApplyTemplateToControl(control, data.buttonTemplate)
 		end
-
-	--	addButtonGroup(self, control, data)
 	end
 end
 
@@ -4911,12 +4936,11 @@ d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId
 		if upInside then
 			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
 				local onClickedHandler = control:GetHandler('OnClicked')
-LSM_debug = LSM_debug or {}
-LSM_debug.controlOnMouseUpParent = control
 d(">>OnClickedHandler: " ..tos(onClickedHandler))
 				if onClickedHandler then
 					onClickedHandler(control, buttonId, upInside, ...)
 				end
+
 			elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
 				local rightClickCallback = parent.m_data.contextMenuCallback or parent.m_data.rightClickCallback
 				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(parent.m_owner) then
