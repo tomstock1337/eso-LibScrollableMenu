@@ -2021,8 +2021,8 @@ end
 local function onMouseUp(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
 
-	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
-	lib:FireCallbacks('EntryOnMouseExit', control, data)
+	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
+	lib:FireCallbacks('OnEntrySelected', control, data)
 
 	hideTooltip(control)
 	return dropdown
