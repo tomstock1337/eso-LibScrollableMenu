@@ -740,7 +740,12 @@ do
 							-- {point, relativeTo_controlId, relativePoint, offsetX, offsetY}
 	local anchors = {
 		[TOGGLE_BUTTON]		= { Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0)},
-
+		--Try to anchor the toggleButton to the bottom right but make it's width the total width of the header so you
+		--can click the whole header to toggle it -> 2nd anchor to bottom left
+		--[[
+		[TOGGLE_BUTTON]		= { Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0),
+							    Anchor:New(BOTTOMLEFT, PARENT, BOTTOMLEFT, 0, 0) },
+		]]
 		[DIVIDER_SIMPLE]	= { Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y),
 								Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) }, -- ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y
 								
@@ -2912,9 +2917,10 @@ function buttonGroupClass:Add(button, isRadioButton)
 
 				--d( debugPrefix..'isRadioButton ' .. tos(isRadioButton))
 			if isRadioButton then
+d(debugPrefix .. "buttonGroup:Add - OnClicked handler set")
 				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
 				local newHandler = function(control, buttonId, ignoreCallback)
-					--d( debugPrefix.. 'buttonGroup callback')
+					d( debugPrefix.. 'buttonGroup callback')
 					selfVar:HandleClick(control, buttonId, ignoreCallback)
 				end
 
@@ -3665,10 +3671,13 @@ do -- Row setup functions
 
 		local selfVar = self
 		local function setChecked(button, checked)
+d( debugPrefix .. "SetupEntryRadioButton-setChecked, checked: " ..tos(checked))
 			local rowData = getControlData(button:GetParent())
 
-			local dropdown = selfVar.m_dropdownObject
-			playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_RADIOBUTTON)
+			if checked then
+				local dropdown = selfVar.m_dropdownObject
+				playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_RADIOBUTTON)
+			end
 
 			rowData.checked = checked
 			if rowData.callback then
@@ -3678,8 +3687,8 @@ do -- Row setup functions
 				rowData.callback(comboBox, rowData.label or rowData.name, control, checked)
 			end
 
-		--	self:Narrate("OnCheckboxUpdated", button, data, nil)
-		--	lib:FireCallbacks('CheckboxUpdated', control, data, checked)
+			--	self:Narrate("OnCheckboxUpdated", button, data, nil)
+			--	lib:FireCallbacks('CheckboxUpdated', control, data, checked)
 			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: RadioButtonUpdated - control: %q, checked: %s", tos(getControlName(button)), tos(checked))
 		end
 		self:SetupEntryLabel(control, data, list)
@@ -3701,8 +3710,11 @@ do -- Row setup functions
 		local selfVar = self
 		local function setChecked(checkbox, checked)
 			local checkedData = getControlData(checkbox:GetParent())
-			local dropdown = selfVar.m_dropdownObject
-			playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
+
+			if checked then
+				local dropdown = selfVar.m_dropdownObject
+				playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
+			end
 
 			checkedData.checked = checked
 			if checkedData.callback then
@@ -4891,9 +4903,13 @@ lib.SetButtonGroupState = setButtonGroupState
 --XML OnClick handler for checkbox and radiobuttons
 function lib.ButtonOnInitialize(control, isRadioButton)
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
+d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
 		if upInside then
 			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
 				local onClickedHandler = control:GetHandler('OnClicked')
+LSM_debug = LSM_debug or {}
+LSM_debug.controlOnMouseUpParent = control
+d(">>OnClickedHandler: " ..tos(onClickedHandler))
 				if onClickedHandler then
 					onClickedHandler(control, buttonId, upInside, ...)
 				end

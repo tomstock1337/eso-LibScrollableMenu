@@ -516,9 +516,8 @@
 						</Control>
 
 						<Button name="$(parent)ToggleHeader" inherits="ZO_ButtonBehaviorClickSound" hidden="true">
-							<Dimensions x="24" y="24" />
-							<!--Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6" offsetY="-3" /-->
-							
+							<DimensionConstraints minY="24" maxY="24" minX="24" />
+
 							<OnInitialized>
 								local owningWindow = self:GetOwningWindow()
 								owningWindow.toggleButton = self
