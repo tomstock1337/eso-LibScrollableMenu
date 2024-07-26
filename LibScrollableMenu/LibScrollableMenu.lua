@@ -3665,6 +3665,9 @@ do -- Row setup functions
 		local function setChecked(button, checked)
 			local rowData = getControlData(button:GetParent())
 
+			local dropdown = control:GetOwningWindow().m_dropdownObject
+			playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_RADIOBUTTON)
+
 			rowData.checked = checked
 			if rowData.callback then
 				local comboBox = getComboBox(control)
@@ -3695,6 +3698,9 @@ do -- Row setup functions
 
 		local function setChecked(checkbox, checked)
 			local checkedData = getControlData(checkbox:GetParent())
+
+			local dropdown = control:GetOwningWindow().m_dropdownObject
+			playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
 
 			checkedData.checked = checked
 			if checkedData.callback then
@@ -4903,8 +4909,8 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 		local originalClicked = control:GetHandler('OnClicked')
 		control:SetHandler('OnClicked', function(p_control, buttonId, ignoreCallback, ...)
 			--PlaySound(SOUNDS.DEFAULT_CLICK)
-			local dropdown = control:GetOwningWindow().m_dropdownObject
-			playSelectedSoundCheck(dropdown, isRadioButton and LSM_ENTRY_TYPE_RADIOBUTTON or LSM_ENTRY_TYPE_CHECKBOX)
+			--local dropdown = control:GetOwningWindow().m_dropdownObject
+			--playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
 			if p_control.checked ~= nil then
 				ZO_CheckButton_SetCheckState(p_control, p_control.checked)
 			else
