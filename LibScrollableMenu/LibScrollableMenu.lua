@@ -3662,10 +3662,12 @@ do -- Row setup functions
 
 	function comboBox_base:SetupEntryRadioButton(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+
+		local selfVar = self
 		local function setChecked(button, checked)
 			local rowData = getControlData(button:GetParent())
 
-			local dropdown = control:GetOwningWindow().m_dropdownObject
+			local dropdown = selfVar.m_dropdownObject
 			playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_RADIOBUTTON)
 
 			rowData.checked = checked
@@ -3696,10 +3698,10 @@ do -- Row setup functions
 	function comboBox_base:SetupEntryCheckbox(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 
+		local selfVar = self
 		local function setChecked(checkbox, checked)
 			local checkedData = getControlData(checkbox:GetParent())
-
-			local dropdown = control:GetOwningWindow().m_dropdownObject
+			local dropdown = selfVar.m_dropdownObject
 			playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
 
 			checkedData.checked = checked
