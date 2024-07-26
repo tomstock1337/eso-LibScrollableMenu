@@ -4882,17 +4882,17 @@ lib.SetButtonGroupState = setButtonGroupState
 --XML OnClick handler for checkbox and radiobuttons
 function lib.ButtonOnInitialize(control, isRadioButton)
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
-		local onClickedHandler = control:GetHandler('OnClicked')
-		if onClickedHandler then
-			if upInside then
-				if buttonId == MOUSE_BUTTON_INDEX_LEFT then
+		if upInside then
+			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
+				local onClickedHandler = control:GetHandler('OnClicked')
+				if onClickedHandler then
 					onClickedHandler(control, buttonId, upInside, ...)
-				elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
-					local rightClickCallback = parent.m_data.contextMenuCallback or parent.m_data.rightClickCallback
-					if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(parent.m_owner) then
-						dLog(LSM_LOGTYPE_VERBOSE, "m_button OnMouseUp!")
-						rightClickCallback(parent.m_owner, parent, parent.m_data)
-					end
+				end
+			elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
+				local rightClickCallback = parent.m_data.contextMenuCallback or parent.m_data.rightClickCallback
+				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(parent.m_owner) then
+					dLog(LSM_LOGTYPE_VERBOSE, "m_button OnMouseUp!")
+					rightClickCallback(parent.m_owner, parent, parent.m_data)
 				end
 			end
 		end
