@@ -3724,7 +3724,7 @@ do -- Row setup functions
 				selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 			end
 
-			self:Narrate("OnRadioButtonUpdated", button, data, nil)
+			selfVar:Narrate("OnRadioButtonUpdated", button, data, nil)
 			lib:FireCallbacks('RadioButtonUpdated', control, data, checked)
 			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: RadioButtonUpdated - control: %q, checked: %s", tos(getControlName(button)), tos(checked))
 		end
@@ -3756,7 +3756,7 @@ do -- Row setup functions
 				selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 			end
 
-			self:Narrate("OnCheckboxUpdated", checkbox, data, nil)
+			selfVar:Narrate("OnCheckboxUpdated", checkbox, data, nil)
 			lib:FireCallbacks('CheckboxUpdated', control, data, checked)
 			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: CheckboxUpdated - control: %q, checked: %s", tos(getControlName(checkbox)), tos(checked))
 		end
