@@ -3712,6 +3712,7 @@ do -- Row setup functions
 	function comboBox_base:SetupEntryRadioButton(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 
+		local selfVar = self
 		local function toggleFunction(button, checked)
 			local rowData = getControlData(button:GetParent())
 			rowData.checked = checked
@@ -3720,7 +3721,7 @@ do -- Row setup functions
 				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - calling radiobutton callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
 				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
 			--	rowData.callback(comboBox, rowData.label or rowData.name, control, checked)
-				self:RunItemCallback(data, data.ignoreCallback, checked)
+				selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 			end
 
 			self:Narrate("OnRadioButtonUpdated", button, data, nil)
@@ -3743,6 +3744,7 @@ do -- Row setup functions
 	function comboBox_base:SetupEntryCheckbox(control, data, list)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 
+		local selfVar = self
 		local function toggleFunction(checkbox, checked)
 			local checkedData = getControlData(checkbox:GetParent())
 
@@ -3751,7 +3753,7 @@ do -- Row setup functions
 			--	local comboBox = getComboBox(control)
 				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
 				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
-				self:RunItemCallback(data, data.ignoreCallback, checked)
+				selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 			end
 
 			self:Narrate("OnCheckboxUpdated", checkbox, data, nil)
