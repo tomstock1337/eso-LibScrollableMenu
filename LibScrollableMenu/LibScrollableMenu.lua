@@ -2583,7 +2583,7 @@ end
 function dropdownClass:RunItemCallback(item, ignoreCallback)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:RunItemCallback - item: %s, ignoreCallback: %s,", tos(item), tos(ignoreCallback))
 	if self.owner then
-		playSelectedSoundCheck(self, item.entryType)
+		--playSelectedSoundCheck(self, item.entryType) Already done in comboBoxBase:RunItemCallback
 		return self.owner:RunItemCallback(item, ignoreCallback)
 	end
 end
@@ -3423,7 +3423,8 @@ end
 
 function comboBox_base:RunItemCallback(item, ignoreCallback, ...)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:FireEntrtCallback")
-	
+
+	playSelectedSoundCheck(self.m_dropdownObject, item.entryType)
 	if item.callback and not ignoreCallback then
 		return item.callback(self, item.name, item, ...)
 	end
@@ -3717,10 +3718,9 @@ do -- Row setup functions
 		local function toggleFunction(button, checked)
 			local rowData = getControlData(button:GetParent())
 			rowData.checked = checked
-			playSelectedSoundCheck(self.m_dropdownObject, LSM_ENTRY_TYPE_RADIOBUTTON)
-			selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 
 			dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - calling radiobutton callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
+			selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 
 			selfVar:Narrate("OnRadioButtonUpdated", button, data, nil)
 			lib:FireCallbacks('RadioButtonUpdated', control, data, checked)
@@ -3747,12 +3747,10 @@ do -- Row setup functions
 			local checkedData = getControlData(checkbox:GetParent())
 
 			checkedData.checked = checked
-			if checkedData.callback then
-			--	local comboBox = getComboBox(control)
-				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
-				--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
-				selfVar:RunItemCallback(data, data.ignoreCallback, checked)
-			end
+
+			dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
+			--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
+			selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 
 			selfVar:Narrate("OnCheckboxUpdated", checkbox, data, nil)
 			lib:FireCallbacks('CheckboxUpdated', control, data, checked)
