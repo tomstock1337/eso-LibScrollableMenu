@@ -2583,7 +2583,7 @@ end
 function dropdownClass:RunItemCallback(item, ignoreCallback)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:RunItemCallback - item: %s, ignoreCallback: %s,", tos(item), tos(ignoreCallback))
 	if self.owner then
-		--playSelectedSoundCheck(self, item.entryType) Already done in comboBoxBase:RunItemCallback
+		playSelectedSoundCheck(self, item.entryType)
 		return self.owner:RunItemCallback(item, ignoreCallback)
 	end
 end
@@ -3424,7 +3424,6 @@ end
 function comboBox_base:RunItemCallback(item, ignoreCallback, ...)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:FireEntrtCallback")
 
-	playSelectedSoundCheck(self.m_dropdownObject, item.entryType)
 	if item.callback and not ignoreCallback then
 		return item.callback(self, item.name, item, ...)
 	end
@@ -4933,6 +4932,9 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
 		if upInside then
 			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
+				local data = getControlData(parent)
+				playSelectedSoundCheck(parent.m_dropdownObject, data.entryType)
+
 				local onClickedHandler = control:GetHandler('OnClicked')
 d(">>OnClickedHandler: " ..tos(onClickedHandler))
 				if onClickedHandler then
