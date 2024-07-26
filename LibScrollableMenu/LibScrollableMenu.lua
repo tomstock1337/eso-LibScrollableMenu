@@ -3310,19 +3310,20 @@ function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	if eventName == nil or isAccessibilityUIReaderEnabled() == false or narrateData == nil then return end
 	local narrateCallbackFuncForEvent = narrateData[eventName]
 	if narrateCallbackFuncForEvent == nil or type(narrateCallbackFuncForEvent) ~= "function" then return end
+	local selfVar = self
 
 	--The function parameters signature for the different narration callbacks
 	local eventCallbackFunctionsSignatures = {
-		["OnMenuShow"]			= function() return self, ctrl end,
-		["OnMenuHide"]			= function() return self, ctrl end,
-		["OnSubMenuShow"]		= function() return self, ctrl, anchorPoint end,
-		["OnSubMenuHide"]		= function() return self, ctrl end,
-		["OnEntrySelected"]		= function() return self, ctrl, data, hasSubmenu end,
-		["OnEntryMouseExit"]	= function() return self, ctrl, data, hasSubmenu end,
-		["OnEntryMouseEnter"]	= function() return self, ctrl, data, hasSubmenu end,
-		["OnCheckboxUpdated"]	= function() return self, ctrl, data end,
-		["OnComboBoxMouseExit"] = function() return self, ctrl end,
-		["OnComboBoxMouseEnter"]= function() return self, ctrl end,
+		["OnMenuShow"]			= function() return selfVar, ctrl end,
+		["OnMenuHide"]			= function() return selfVar, ctrl end,
+		["OnSubMenuShow"]		= function() return selfVar, ctrl, anchorPoint end,
+		["OnSubMenuHide"]		= function() return selfVar, ctrl end,
+		["OnEntrySelected"]		= function() return selfVar, ctrl, data, hasSubmenu end,
+		["OnEntryMouseExit"]	= function() return selfVar, ctrl, data, hasSubmenu end,
+		["OnEntryMouseEnter"]	= function() return selfVar, ctrl, data, hasSubmenu end,
+		["OnCheckboxUpdated"]	= function() return selfVar, ctrl, data end,
+		["OnComboBoxMouseExit"] = function() return selfVar, ctrl end,
+		["OnComboBoxMouseEnter"]= function() return selfVar, ctrl end,
 	}
 	--Create a table with the callback functions parameters
 	if eventCallbackFunctionsSignatures[eventName] == nil then return end
