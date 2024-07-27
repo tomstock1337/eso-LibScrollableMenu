@@ -5165,6 +5165,8 @@ WORKING ON - Current version: 2.3
 	TESTED: OPEN
 	18. Open context menu at submenu and then click left on any submenu entry of an LSM: Context menu closes and submenu entry get's selected. Should be this though: Context menu closes only, nothing selected
 	TESTED: BUG
+	19. Radiobuttons change their slected state upon scrolling the menu, and they call teir callbacks each time on scrolling
+	TESTED: BUG
 
 
 	check divider entry.
