@@ -2545,6 +2545,7 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler)
 
 		if data.enabled then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
+				--todo 20240727 Prevent selection of entries if a context menu was opened and a left click was done "outside of the context menu"
 				if not ignoreHandler and runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
 					self:OnEntrySelected(control)
 				else
