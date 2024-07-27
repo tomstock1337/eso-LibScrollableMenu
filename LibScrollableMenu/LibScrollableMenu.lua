@@ -4380,7 +4380,7 @@ function contextMenuClass:GetHiddenForReasons(button)
 	--local owningWindow, mocCtrl1, comboBox1, mocEntry = getMouseOver_HiddenFor_Info()
 
 	return function(owningWindow, mocCtrl, comboBox, entry)
-..d(">context menu clicked")
+--d(">context menu clicked")
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 			--Is there no LSM comboBox available? Close the context menu
 			if not comboBox then return true end
