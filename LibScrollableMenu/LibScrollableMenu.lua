@@ -2546,7 +2546,9 @@ d(debugPrefix .. "OnEntryMouseUp - button: " ..tos(button) .. ", upInside: " .. 
 
 		if data.enabled then
 
-LSM_debug = {
+LSM_debug = LSM_debug or {}
+LSM_debug.OnEntryMouseUp = LSM_debug.OnEntryMouseUp or {}
+LSM_debug.OnEntryMouseUp[control:GetName()] =	{
 	self = self,
 	control = control,
 	data = data,
@@ -3328,6 +3330,19 @@ end
 function comboBox_base:HiddenForReasons(button)
 	d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
+
+	local isOwnedByComboBox = self.m_dropdownObject:IsOwnedByComboBox(comboBox)
+d(">isOwnedByComboBox: " .. tos(isOwnedByComboBox))
+
+LSM_debug = LSM_debug or {}
+LSM_debug.HiddenForReasons = LSM_debug.HiddenForReasons or {}
+LSM_debug.HiddenForReasons[mocCtrl:GetName()] =	{
+	mocCtrl = mocCtrl,
+	comboBox = comboBox,
+	owningWindow = owningWindow,
+	mocEntry = mocEntry,
+	self = self,
+}
 
 	if self.m_dropdownObject:IsOwnedByComboBox(comboBox) or self.m_dropdownObject:WasTextSearchContextMenuEntryClicked() then
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
