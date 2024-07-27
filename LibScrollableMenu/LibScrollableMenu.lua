@@ -5173,6 +5173,8 @@ WORKING ON - Current version: 2.3
 	17. Added LSM_ENTRY_TYPE_RADIOBUTTON with radioButtonGroups. data.radioButtonGroup number adds them to the same group. data.checked = true defines which radiobutton in the group is the default checked one.
 	data.radioButtonGroupSelectionChangedCallback can be a function that is only called if a radiobutton group really changes the selected radiobutton. data.callback will be executed on each click on a radiobutton
 	TESTED: OPEN
+	18. Open context menu at submenu and then click left on any submenu entry of an LSM: Context menu closes and submenu entry get's selected. Should be this though: Context menu closes only, nothing selected
+	TESTED: BUG
 
 
 	check divider entry.

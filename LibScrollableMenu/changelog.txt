@@ -18,6 +18,7 @@
 --Added LSM_ENTRY_TYPE_RADIOBUTTON with radioButtonGroups. data.buttonTemplate can be sued to define the buttons XML template. Clicking a button keeps the dropdown opened!
     data.radioButtonGroup number adds them to the same group. data.checked = true defines which radiobutton in the group is the default checked one.
 	data.radioButtonGroupSelectionChangedCallback can be a function that is only called if a radiobutton group really changes the selected radiobutton. data.callback will be executed on each click on a radiobutton
+	data.buttonGroup defines the (radio) button group
 
 
 --Added API function GetCustomScrollableMenuRowData(rowControl)
