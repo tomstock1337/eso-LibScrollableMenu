@@ -2536,12 +2536,12 @@ function dropdownClass:OnMouseExitTimeout(control)
 end
 
 
---todo 20240727 Prevent selection of entries if a context menu was opened and a left click was done "outside of the context menu"
+--20240727 Prevent selection of entries if a context menu was opened and a left click was done "outside of the context menu"
 local function checkIfContextMenuOpenedAndEntryOutsideWasClicked(control, comboBox, buttonId)
 	if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
-d(">isContextMenu !!!")
+--d(">isContextMenu !!!")
 		if comboBox:HiddenForReasons(buttonId) == true then
-d(">>HiddenForReasons !!!")
+--d(">>HiddenForReasons !!!")
 			return true
 		end
 	end
@@ -2550,7 +2550,7 @@ end
 
 function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntryMouseUp - control: %s, button: %s, upInside: %s", tos(getControlName(control)), tos(button), tos(upInside))
-d(debugPrefix .. "OnEntryMouseUp - button: " ..tos(button) .. ", upInside: " .. tos(upInside) .. ", ignoreHandler: " ..tos(ignoreHandler))
+--d(debugPrefix .. "OnEntryMouseUp - button: " ..tos(button) .. ", upInside: " .. tos(upInside) .. ", ignoreHandler: " ..tos(ignoreHandler))
 
 	if upInside then
 		local data = getControlData(control)
@@ -2562,7 +2562,6 @@ d(debugPrefix .. "OnEntryMouseUp - button: " ..tos(button) .. ", upInside: " .. 
 
 			if checkIfContextMenuOpenedAndEntryOutsideWasClicked(control, comboBox, button) == true then return end
 
-d(">>>>got here!!!!!!")
 
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				if not ignoreHandler and runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
