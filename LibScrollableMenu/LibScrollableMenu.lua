@@ -3216,18 +3216,22 @@ function comboBox_base:AddCustomEntryTemplates(options)
 end
 
 function comboBox_base:OnGlobalMouseUp(eventId, button)
-d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", isMOC: " ..tos(self.m_dropdownObject:IsMouseOverControl()) .. ", hiddenForReasons: " ..tos(self:HiddenForReasons(button)) .. ", dropddownVisible: " ..tos(self:IsDropdownVisible())  )
+d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button))
 	if self:IsDropdownVisible() then
+d(">isDropdownVisible")
 		if not self.m_dropdownObject:IsMouseOverControl() then
+d(">>not IsMouseOverControl")
 			if self:HiddenForReasons(button) then
+d(">>>HiddenForReasons -> Hiding dropdown now")
 				return self:HideDropdown()
 			end
 		end
 	else
-d(">else - containerIsHidden: " .. tos(self.m_container:IsHidden()))
 		if self.m_container:IsHidden() then
+d(">else - containerIsHidden")
 			self:HideDropdown()
 		else
+d("<SHOW DROPDOWN OnMouseUp")
 			lib.openMenu = self
 			-- If shown in ShowDropdownInternal, the global mouseup will fire and immediately dismiss the combo box. We need to
 			-- delay showing it until the first one fires.
@@ -3304,6 +3308,7 @@ d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
 	if self.m_dropdownObject:IsOwnedByComboBox(comboBox) or self.m_dropdownObject:WasTextSearchContextMenuEntryClicked() then
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
+d(">returning via mouseLeft -> " ..tos(mocCtrl.closeOnSelect))
 				--Clicked entry should close after selection?
 				return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
@@ -3314,7 +3319,7 @@ d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
 		end
 	end
 
-	local hiddenForReasons = self:GetHiddenForReasons()
+	local hiddenForReasons = self:GetHiddenForReasons(button) --call e.g. contextMenuClass:GetHiddenForReasons()
 	return hiddenForReasons(owningWindow, mocCtrl, comboBox, mocEntry)
 end
 
@@ -3903,7 +3908,7 @@ function comboBoxClass:GetMenuPrefix()
 	return 'Menu'
 end
 
-function comboBoxClass:GetHiddenForReasons()
+function comboBoxClass:GetHiddenForReasons(button)
 	return function(owningWindow, mocCtrl, comboBox, entry)
 		-- context menu was last clicked
 		return not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox)
