@@ -2972,9 +2972,12 @@ function buttonGroupClass:SetButtonState(button, clickedButton, enabled)
             button.label:SetColor(self.labelColorEnabled:UnpackRGB())
         end
 
-		if (button.toggleFunction ~= nil) and checked then
-			button:toggleFunction(checked)
+		if not self.preventCallback then
+			if (button.toggleFunction ~= nil) and checked then
+				button:toggleFunction(checked)
+			end
 		end
+		self.preventCallback = false
     else
         if(button == clickedButton) then
             button:SetState(BSTATE_DISABLED_PRESSED, true)
@@ -3671,8 +3674,17 @@ do -- Row setup functions
 			buttonControl.m_buttonGroup = buttonGroup
 			buttonControl.m_buttonGroupIndex = groupIndex
 
-		--	buttonGroup:SetButtonState(control, data.clicked, isEnabled)
-			buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
+			--todo 20240727 Assure that the clickHandler is not called by self:SetButtonState !
+			--From ZOs code:
+			--[[
+  				-- NOTE: This doesn't update the state of the clicked button, because that could
+				-- potentially call a click handler that shouldn't be called at this time, or cause
+				-- more data to need to be updated externally...it's a best practice to first figure
+				-- out which buttons need to be validOptions, and then allow the clicked button to change.
+				self:SetButtonState(button, self:GetClickedButton(), self.m_enabled and isValidOption)
+			]]
+			buttonGroup.preventCallback = true
+			buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled) -- calls buttonGroup:SetButtonState
 		end
 
 		return buttonControl, buttonGroup
