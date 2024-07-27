@@ -2937,10 +2937,10 @@ function buttonGroupClass:Add(button, isRadioButton)
 
 				--d( debugPrefix..'isRadioButton ' .. tos(isRadioButton))
 			if isRadioButton then
-d(debugPrefix .. "buttonGroup:Add - OnClicked handler set")
+--d(debugPrefix .. "buttonGroup:Add - OnClicked handler set")
 				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
 				local newHandler = function(control, buttonId, ignoreCallback)
-					d( debugPrefix.. 'buttonGroup -> OnClicked handler. Calling HandleClick')
+					--d( debugPrefix.. 'buttonGroup -> OnClicked handler. Calling HandleClick')
 					selfVar:HandleClick(control, buttonId, ignoreCallback)
 				end
 
@@ -3321,26 +3321,16 @@ local function getMouseOver_HiddenFor_Info()
 end
 
 function comboBox_base:HiddenForReasons(button)
-	d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
+	--d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
 
 	local isOwnedByComboBox = self.m_dropdownObject:IsOwnedByComboBox(comboBox)
-d(">isOwnedByComboBox: " .. tos(isOwnedByComboBox))
-
-LSM_debug = LSM_debug or {}
-LSM_debug.HiddenForReasons = LSM_debug.HiddenForReasons or {}
-LSM_debug.HiddenForReasons[mocCtrl:GetName()] =	{
-	mocCtrl = mocCtrl,
-	comboBox = comboBox,
-	owningWindow = owningWindow,
-	mocEntry = mocEntry,
-	self = self,
-}
+	--d(">isOwnedByComboBox: " .. tos(isOwnedByComboBox))
 
 	if self.m_dropdownObject:IsOwnedByComboBox(comboBox) or self.m_dropdownObject:WasTextSearchContextMenuEntryClicked() then
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
-				d(">returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+				--d(">returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 				--Clicked entry should close after selection?
 				return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
@@ -4188,7 +4178,7 @@ function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
 		end
 	end
 
-	d("[LSM]comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(headerCollapsed))
+	--d(debugPrefix.."comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(headerCollapsed))
 	refreshDropdownHeader(self, headerControl, self.options, headerCollapsed)
 	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
 end
@@ -4386,11 +4376,11 @@ function contextMenuClass:GetMenuPrefix()
 end
 
 function contextMenuClass:GetHiddenForReasons(button)
-d(debugPrefix .. "contextMenuClass:HiddenForReasons - button: " .. tos(button))
+--d(debugPrefix .. "contextMenuClass:HiddenForReasons - button: " .. tos(button))
 	--local owningWindow, mocCtrl1, comboBox1, mocEntry = getMouseOver_HiddenFor_Info()
 
 	return function(owningWindow, mocCtrl, comboBox, entry)
-d(">context menu clicked")
+..d(">context menu clicked")
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 			--Is there no LSM comboBox available? Close the context menu
 			if not comboBox then return true end
