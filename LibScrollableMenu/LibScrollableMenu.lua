@@ -3235,22 +3235,22 @@ function comboBox_base:AddCustomEntryTemplates(options)
 end
 
 function comboBox_base:OnGlobalMouseUp(eventId, button)
-d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button))
+--d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button))
 	if self:IsDropdownVisible() then
-d(">isDropdownVisible")
+--d(">isDropdownVisible")
 		if not self.m_dropdownObject:IsMouseOverControl() then
-d(">>not IsMouseOverControl")
+--d(">>not IsMouseOverControl")
 			if self:HiddenForReasons(button) then
-d(">>>HiddenForReasons -> Hiding dropdown now")
+--d(">>>HiddenForReasons -> Hiding dropdown now")
 				return self:HideDropdown()
 			end
 		end
 	else
 		if self.m_container:IsHidden() then
-d(">else - containerIsHidden")
+--d(">else - containerIsHidden")
 			self:HideDropdown()
 		else
-d("<SHOW DROPDOWN OnMouseUp")
+--d("<SHOW DROPDOWN OnMouseUp")
 			lib.openMenu = self
 			-- If shown in ShowDropdownInternal, the global mouseup will fire and immediately dismiss the combo box. We need to
 			-- delay showing it until the first one fires.
