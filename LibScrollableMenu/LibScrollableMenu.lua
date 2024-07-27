@@ -2537,6 +2537,7 @@ end
 
 function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntryMouseUp - control: %s, button: %s, upInside: %s", tos(getControlName(control)), tos(button), tos(upInside))
+d(debugPrefix .. "OnEntryMouseUp - button: " ..tos(button) .. ", upInside: " .. tos(upInside) .. ", ignoreHandler: " ..tos(ignoreHandler))
 
 	if upInside then
 		local data = getControlData(control)
@@ -2544,8 +2545,30 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler)
 		local comboBox = control.m_owner
 
 		if data.enabled then
+
+LSM_debug = {
+	self = self,
+	control = control,
+	data = data,
+	comboBox = comboBox,
+	g_contextMenu = g_contextMenu,
+	hiddenForReasons = comboBox:HiddenForReasons(button),
+}
+			--todo 20240727 Prevent selection of entries if a context menu was opened and a left click was done "outside of the context menu"
+
+			if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
+d(">isContextMenu !!!")
+				if comboBox:HiddenForReasons(button) == true then
+					d(">>HiddenForReasons !!!")
+					return true
+				else
+d(">not HiddenForReasons")
+				end
+			end
+
+d(">>>>got here!!!!!!")
+
 			if button == MOUSE_BUTTON_INDEX_LEFT then
-				--todo 20240727 Prevent selection of entries if a context menu was opened and a left click was done "outside of the context menu"
 				if not ignoreHandler and runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
 					self:OnEntrySelected(control)
 				else
@@ -3309,7 +3332,7 @@ d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
 	if self.m_dropdownObject:IsOwnedByComboBox(comboBox) or self.m_dropdownObject:WasTextSearchContextMenuEntryClicked() then
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
-d(">returning via mouseLeft -> " ..tos(mocCtrl.closeOnSelect))
+d(">returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 				--Clicked entry should close after selection?
 				return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
@@ -4991,6 +5014,24 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 	if not isRadioButton then
 		local originalClicked = control:GetHandler('OnClicked')
 		control:SetHandler('OnClicked', function(p_control, buttonId, ignoreCallback, ...)
+			local comboBox = control.m_owner
+
+LSM_debug = LSM_debug or {}
+LSM_debug.OnClickedButton = {
+	control = control,
+	comboBox = comboBox,
+}
+
+			if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
+d(">isContextMenu !!!")
+				if comboBox:HiddenForReasons(buttonId) == true then
+					d(">>HiddenForReasons !!!")
+					return true
+				else
+d(">not HiddenForReasons")
+				end
+			end
+
 			--PlaySound(SOUNDS.DEFAULT_CLICK)
 			--local dropdown = control:GetOwningWindow().m_dropdownObject
 			--playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
