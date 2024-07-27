@@ -5002,17 +5002,37 @@ lib.SetButtonGroupState = setButtonGroupState
 ------------------------------------------------------------------------------------------------------------------------
 -- XML handler functions
 ------------------------------------------------------------------------------------------------------------------------
+local function checkIfContextMenuOpenedAndEntryOutsideWasClicked(control, comboBox, buttonId)
+	LSM_debug = LSM_debug or {}
+	LSM_debug.OnClickedButton = {
+		control = control,
+		comboBox = comboBox,
+	}
+
+				if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
+	d(">isContextMenu !!!")
+					if comboBox:HiddenForReasons(buttonId) == true then
+						d(">>HiddenForReasons !!!")
+						return true
+					else
+	d(">not HiddenForReasons")
+					end
+				end
+	return false
+end
+
 --XML OnClick handler for checkbox and radiobuttons
 function lib.ButtonOnInitialize(control, isRadioButton)
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
 --d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
 		if upInside then
+			if checkIfContextMenuOpenedAndEntryOutsideWasClicked(control, control.m_owner, buttonId) == true then return end
 			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
 				local data = getControlData(parent)
 				playSelectedSoundCheck(parent.m_dropdownObject, data.entryType)
 
 				local onClickedHandler = control:GetHandler('OnClicked')
---d(">>OnClickedHandler: " ..tos(onClickedHandler))
+				--d(">>OnClickedHandler: " ..tos(onClickedHandler))
 				if onClickedHandler then
 					onClickedHandler(control, buttonId, upInside, ...)
 				end
@@ -5031,22 +5051,7 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 		local originalClicked = control:GetHandler('OnClicked')
 		control:SetHandler('OnClicked', function(p_control, buttonId, ignoreCallback, ...)
 			local comboBox = control.m_owner
-
-LSM_debug = LSM_debug or {}
-LSM_debug.OnClickedButton = {
-	control = control,
-	comboBox = comboBox,
-}
-
-			if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
-d(">isContextMenu !!!")
-				if comboBox:HiddenForReasons(buttonId) == true then
-					d(">>HiddenForReasons !!!")
-					return true
-				else
-d(">not HiddenForReasons")
-				end
-			end
+			if checkIfContextMenuOpenedAndEntryOutsideWasClicked(control, control.m_owner, buttonId) == true then return end
 
 			--PlaySound(SOUNDS.DEFAULT_CLICK)
 			--local dropdown = control:GetOwningWindow().m_dropdownObject
