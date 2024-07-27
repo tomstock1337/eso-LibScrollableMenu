@@ -3326,13 +3326,13 @@ local function getMouseOver_HiddenFor_Info()
 end
 
 function comboBox_base:HiddenForReasons(button)
-d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
+	d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
 
 	if self.m_dropdownObject:IsOwnedByComboBox(comboBox) or self.m_dropdownObject:WasTextSearchContextMenuEntryClicked() then
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
-d(">returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+				d(">returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 				--Clicked entry should close after selection?
 				return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
@@ -3343,6 +3343,7 @@ d(">returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 		end
 	end
 
+	if not self.GetHiddenForReasons then return false end
 	local hiddenForReasons = self:GetHiddenForReasons(button) --call e.g. contextMenuClass:GetHiddenForReasons()
 	return hiddenForReasons(owningWindow, mocCtrl, comboBox, mocEntry)
 end
