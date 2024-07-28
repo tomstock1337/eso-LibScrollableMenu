@@ -2993,6 +2993,7 @@ end
 function buttonGroupClass:SetButtonState(button, clickedButton, enabled, ignoreCallback)
 	local callToggleFunc = true
 	local checked = true
+d(debugPrefix .. "buttonGroupClass:SetButtonState  - button: " .. tos(button:GetName()) .. ", clickedButton: " .. tos(clickedButton ~= nil and clickedButton) .. ", enabled: " .. tos(enabled) .. "; ignoreCallback: " ..tos(ignoreCallback))
 
     if(enabled) then
         if(button == clickedButton) then
@@ -3007,10 +3008,8 @@ function buttonGroupClass:SetButtonState(button, clickedButton, enabled, ignoreC
             button.label:SetColor(self.labelColorEnabled:UnpackRGB())
         end
 
-		if not ignoreCallback then
-			if (button.toggleFunction ~= nil) and checked then
-				button:toggleFunction(checked)
-			end
+		if not ignoreCallback and button.toggleFunction ~= nil and checked then
+			button:toggleFunction(checked)
 		end
     else
         if(button == clickedButton) then
@@ -3804,7 +3803,8 @@ do -- Row setup functions
 		if radioButtonGroup then
 			if data.checked == true then
 				-- Only 1 can be set as "checked" here.
-				radioButtonGroup:SetClickedButton(radioButton)
+				local IGNORECALLBACK = true
+				radioButtonGroup:SetClickedButton(radioButton, IGNORECALLBACK)
 			end
 		end
 	end
