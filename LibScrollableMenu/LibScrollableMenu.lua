@@ -2939,19 +2939,20 @@ end
 
 local buttonGroupClass = ZO_RadioButtonGroup:Subclass()
 
-function buttonGroupClass:Add(button, isRadioButton)
+function buttonGroupClass:Add(button, entryType)
 	if button then
 		--local buttonGroupIndex = button.m_buttonGroupIndex
 --d(debugPrefix .. "buttonGroup:Add - groupIndex: " ..tos(buttonGroupIndex) .. ", button: " .. tos(button:GetName()))
 		if self.m_buttons[button] == nil then
 			local selfVar = self
 --d(">>adding new button to group now...")
+
 			-- Remember the original handler so that its call can be forced.
 			local originalHandler = button:GetHandler("OnClicked")
-			self.m_buttons[button] = { originalHandler = originalHandler, isValidOption = true } -- newly added buttons always start as valid options for now.
+			self.m_buttons[button] = { originalHandler = originalHandler, isValidOption = true, entryType = entryType } -- newly added buttons always start as valid options for now.
 
 			--d( debugPrefix..'isRadioButton ' .. tos(isRadioButton))
-			if isRadioButton then
+			if entryType == LSM_ENTRY_TYPE_RADIOBUTTON then
 				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
 				local newHandler = function(control, buttonId, ignoreCallback)
 					--d( debugPrefix.. 'buttonGroup -> OnClicked handler. Calling HandleClick')
@@ -2965,14 +2966,7 @@ function buttonGroupClass:Add(button, isRadioButton)
 					button.label:SetColor(self.labelColorEnabled:UnpackRGB())
 				end
 			end
-		else
-			if isRadioButton then
-	--d("<<<!!!!! buttonGroup:Add - self.m_buttons[button] exists already!")
-			end
-		end
-	else
-		if isRadioButton then
---d("<<<!!!!! buttonGroup:Add - button is nil!")
+			return true
 		end
 	end
 end
@@ -3672,17 +3666,27 @@ do -- Row setup functions
 		control.m_label:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
 	end
 
-	local function addButton(comboBox, control, data, buttonType, toggleFunction)
-		local buttonControl = control.m_button or control:GetNamedChild(buttonType)
+	local entryTypeToButtonType = {
+		[LSM_ENTRY_TYPE_CHECKBOX] = "CheckBox",
+		[LSM_ENTRY_TYPE_RADIOBUTTON] = "RadioButton",
+	}
+
+	local function addButton(comboBox, control, data, toggleFunction)
+		local entryType = control.typeId
+		if entryType == nil then return end
+		local childName = entryTypeToButtonType[entryType]
+		if childName == nil then return end
+
+		local buttonControl = control.m_button or control:GetNamedChild(childName)
 		control.m_button = buttonControl
-		buttonControl.buttonType = buttonType
+		buttonControl.entryType = entryType
 
 		local isEnabled = data.enabled ~= false
-      	buttonControl:SetMouseEnabled(isEnabled)
+		buttonControl:SetMouseEnabled(isEnabled)
 		buttonControl.enabled = isEnabled
 
 		ZO_CheckButton_SetToggleFunction(buttonControl, toggleFunction)
-	--	ZO_CheckButton_SetEnableState(buttonControl, data.enabled ~= false)
+		--	ZO_CheckButton_SetEnableState(buttonControl, data.enabled ~= false)
 
 		local buttonGroup
 		local groupIndex = getValueOrCallback(data.buttonGroup, data)
@@ -3690,10 +3694,11 @@ do -- Row setup functions
 		if type(groupIndex) == "number" then
 			-- Prepare buttonGroup
 			comboBox.m_buttonGroup = comboBox.m_buttonGroup or {}
-			comboBox.m_buttonGroup[groupIndex] = comboBox.m_buttonGroup[groupIndex] or buttonGroupClass:New()
-			buttonGroup = comboBox.m_buttonGroup[groupIndex]
+			comboBox.m_buttonGroup[entryType] = comboBox.m_buttonGroup[entryType] or {}
+			comboBox.m_buttonGroup[entryType][groupIndex] = comboBox.m_buttonGroup[entryType][groupIndex] or buttonGroupClass:New()
+			buttonGroup = comboBox.m_buttonGroup[entryType][groupIndex]
 
---d(debugPrefix .. "setupFunc RB - addButton, groupIndex: " ..tos(groupIndex))
+			--d(debugPrefix .. "setupFunc RB - addButton, groupIndex: " ..tos(groupIndex))
 
 			if type(data.buttonGroupOnSelectionChangedCallback) == "function" then
 				buttonGroup:SetSelectionChangedCallback(data.buttonGroupOnSelectionChangedCallback)
@@ -3706,11 +3711,11 @@ do -- Row setup functions
 			-- Add buttonControl to buttonGroup
 			buttonControl.m_buttonGroup = buttonGroup
 			buttonControl.m_buttonGroupIndex = groupIndex
-			buttonGroup:Add(buttonControl, control.isRadioButton)
+			buttonGroup:Add(buttonControl, entryType)
 
 			local IGNORECALLBACK = true
 			buttonGroup:SetButtonState(buttonControl, data.clicked, isEnabled, IGNORECALLBACK)
-		--	buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
+			--	buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
 		end
 
 		return buttonControl, buttonGroup
@@ -3799,7 +3804,7 @@ do -- Row setup functions
 		control.isRadioButton = true
 		control.typeId = LSM_ENTRY_TYPE_RADIOBUTTON
 
-		local radioButton, radioButtonGroup = addButton(self, control, data, "RadioButton", toggleFunction)
+		local radioButton, radioButtonGroup = addButton(self, control, data, toggleFunction)
 		if radioButtonGroup then
 			if data.checked == true then
 				-- Only 1 can be set as "checked" here.
@@ -3831,7 +3836,7 @@ do -- Row setup functions
 		control.isCheckbox = true
 		control.typeId = LSM_ENTRY_TYPE_CHECKBOX
 
-		local checkbox = addButton(self, control, data, "Checkbox", toggleFunction)
+		local checkbox = addButton(self, control, data, toggleFunction)
 		ZO_CheckButton_SetCheckState(checkbox, getValueOrCallback(data.checked, data))
 	end
 
@@ -4974,7 +4979,13 @@ end
 
 -- API to set all buttons in a group based on Select all, Unselect All, Invert all.
 local function setButtonGroupState(comboBox, control, data)
+	local buttonGroup = comboBox.m_buttonGroup
+	if buttonGroup == nil then return end
 	local groupIndex = getValueOrCallback(data.buttonGroup, data)
+	if groupIndex == nil then return end
+	local entryType = getValueOrCallback(data.entryType, data)
+	if entryType == nil then return end
+
 	local buttonGroupSetAll = {
 		{ -- LSM_ENTRY_TYPE_NORMAL selecct and close.
 			name = GetString(SI_LSM_CNTXT_CHECK_ALL), --Check All
@@ -4986,9 +4997,9 @@ local function setButtonGroupState(comboBox, control, data)
 				-- ignoreCallback = true -- Just a thought
 			},
 			callback = function()
-				if comboBox.m_buttonGroup and comboBox.m_buttonGroup[groupIndex] then
-					return comboBox.m_buttonGroup[groupIndex]:SetChecked(control, true, data.ignoreCallback) -- Setas all as selected
-				end
+				local buttonGroupOfEntryType = comboBox.m_buttonGroup and comboBox.m_buttonGroup[groupIndex] and comboBox.m_buttonGroup[entryType][groupIndex]
+				if buttonGroupOfEntryType == nil then return end
+				return buttonGroupOfEntryType:SetChecked(control, true, data.ignoreCallback) -- Setas all as selected
 			end,
 		},
 		{
@@ -4999,18 +5010,18 @@ local function setButtonGroupState(comboBox, control, data)
 				selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
 			},
 			callback = function()
-				if comboBox.m_buttonGroup and comboBox.m_buttonGroup[groupIndex] then
-					return comboBox.m_buttonGroup[groupIndex]:SetChecked(control, false, data.ignoreCallback) -- Sets all as unselected
-				end
+				local buttonGroupOfEntryType = comboBox.m_buttonGroup and comboBox.m_buttonGroup[groupIndex] and comboBox.m_buttonGroup[entryType][groupIndex]
+				if buttonGroupOfEntryType == nil then return end
+				return buttonGroupOfEntryType:SetChecked(control, false, data.ignoreCallback) -- Sets all as unselected
 			end,
 		},
 		{ -- LSM_ENTRY_TYPE_BUTTON allows for, invert, undo, invert, undo
 			name = GetString(SI_LSM_CNTXT_CHECK_INVERT), -- Invert
 			entryType = LSM_ENTRY_TYPE_BUTTON,
 			callback = function()
-				if comboBox.m_buttonGroup and comboBox.m_buttonGroup[groupIndex] then
-					return comboBox.m_buttonGroup[groupIndex]:SetInverse(control, data.ignoreCallback) -- sets all as oposite of what they cerrently are set t.
-				end
+				local buttonGroupOfEntryType = comboBox.m_buttonGroup and comboBox.m_buttonGroup[groupIndex] and comboBox.m_buttonGroup[entryType][groupIndex]
+				if buttonGroupOfEntryType == nil then return end
+				return comboBox.m_buttonGroup[groupIndex]:SetInverse(control, data.ignoreCallback) -- sets all as oposite of what they cerrently are set t.
 			end,
 		},
 	}

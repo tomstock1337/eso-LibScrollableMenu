@@ -606,9 +606,12 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("I clicked checkbox group3-1 with the name: " .. tostring(itemName))
 				end,
 				buttonGroup = 3,
+				contextMenuCallback = function(...)
+					LibScrollableMenu.SetButtonGroupState(...)
+				end,
 			},
 			{
-				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
+				entryType		= LSM_ENTRY_TYPE_CHECKBOX,
 				label			= "Checkbox group 3-2",
 				name            = "Checkbox group 3-2",
 				tooltip         = "cButton2 cbutton2 cbutton2...",
@@ -617,7 +620,10 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("I clicked checkbox group3-2 with the name: " .. tostring(itemName))
 				end,
 				buttonGroup = function() return 3 end,
-				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("checkbox group 3 selection changed callback!")  end
+				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("checkbox group 3 selection changed callback!")  end,
+				rightClickCallback = function(...)
+					LibScrollableMenu.SetButtonGroupState(...)
+				end,
 			},
 			{
 				additionalData = {
