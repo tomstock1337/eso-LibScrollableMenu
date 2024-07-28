@@ -2990,7 +2990,7 @@ function buttonGroupClass:Remove(button)
 	end
 end
 
-function buttonGroupClass:SetButtonState(button, clickedButton, enabled)
+function buttonGroupClass:SetButtonState(button, clickedButton, enabled, ignoreCallback)
 	local callToggleFunc = true
 	local checked = true
 
@@ -3007,12 +3007,11 @@ function buttonGroupClass:SetButtonState(button, clickedButton, enabled)
             button.label:SetColor(self.labelColorEnabled:UnpackRGB())
         end
 
-		if not self.preventCallback then
+		if not ignoreCallback then
 			if (button.toggleFunction ~= nil) and checked then
 				button:toggleFunction(checked)
 			end
 		end
-		self.preventCallback = false
     else
         if(button == clickedButton) then
             button:SetState(BSTATE_DISABLED_PRESSED, true)
@@ -3024,7 +3023,6 @@ function buttonGroupClass:SetButtonState(button, clickedButton, enabled)
             button.label:SetColor(self.labelColorDisabled:UnpackRGB())
         end
     end
-
 end
 
 function buttonGroupClass:HandleClick(control, buttonId, ignoreCallback)
@@ -3696,7 +3694,7 @@ do -- Row setup functions
 			comboBox.m_buttonGroup[groupIndex] = comboBox.m_buttonGroup[groupIndex] or buttonGroupClass:New()
 			buttonGroup = comboBox.m_buttonGroup[groupIndex]
 
-d(debugPrefix .. "setupFunc RB - addButton, groupIndex: " ..tos(groupIndex))
+--d(debugPrefix .. "setupFunc RB - addButton, groupIndex: " ..tos(groupIndex))
 
 			if type(data.buttonGroupOnSelectionChangedCallback) == "function" then
 				buttonGroup:SetSelectionChangedCallback(data.buttonGroupOnSelectionChangedCallback)
@@ -3711,17 +3709,9 @@ d(debugPrefix .. "setupFunc RB - addButton, groupIndex: " ..tos(groupIndex))
 			buttonControl.m_buttonGroupIndex = groupIndex
 			buttonGroup:Add(buttonControl, control.isRadioButton)
 
-			--todo 20240727 Assure that the clickHandler is not called by self:SetButtonState !
-			--From ZOs code:
-			--[[
-  				-- NOTE: This doesn't update the state of the clicked button, because that could
-				-- potentially call a click handler that shouldn't be called at this time, or cause
-				-- more data to need to be updated externally...it's a best practice to first figure
-				-- out which buttons need to be validOptions, and then allow the clicked button to change.
-				self:SetButtonState(button, self:GetClickedButton(), self.m_enabled and isValidOption)
-			]]
-			buttonGroup.preventCallback = true
-			buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled) -- calls buttonGroup:SetButtonState
+			local IGNORECALLBACK = true
+			buttonGroup:SetButtonState(control, data.clicked, isEnabled, IGNORECALLBACK)
+		--	buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
 		end
 
 		return buttonControl, buttonGroup
