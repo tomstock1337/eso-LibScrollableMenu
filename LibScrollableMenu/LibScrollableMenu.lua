@@ -3046,7 +3046,7 @@ function buttonGroupClass:HandleClick(control, buttonId, ignoreCallback)
 		-- then set it to unpressed, but disabled.
 		for k, v in pairs(self.m_buttons) do
 		--	self:SetButtonState(k, nil, v.isValidOption)
-			self:SetButtonState(k, control, v.isValidOption)
+			self:SetButtonState(k, control, v.isValidOption, ignoreCallback)
 		end
 
 		-- Set the clicked button to pressed and lock it down (so that it stays pressed.)
