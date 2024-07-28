@@ -2941,7 +2941,7 @@ local buttonGroupClass = ZO_RadioButtonGroup:Subclass()
 
 function buttonGroupClass:Add(button, isRadioButton)
 	if button then
-		local buttonGroupIndex = button.m_buttonGroupIndex
+		--local buttonGroupIndex = button.m_buttonGroupIndex
 --d(debugPrefix .. "buttonGroup:Add - groupIndex: " ..tos(buttonGroupIndex) .. ", button: " .. tos(button:GetName()))
 		if self.m_buttons[button] == nil then
 			local selfVar = self
@@ -5037,7 +5037,7 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 				local onClickedHandler = control:GetHandler('OnClicked')
 				--d(">>OnClickedHandler: " ..tos(onClickedHandler))
 				if onClickedHandler then
-					onClickedHandler(control, buttonId, upInside, ...)
+					onClickedHandler(control, buttonId)
 				end
 
 			elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
