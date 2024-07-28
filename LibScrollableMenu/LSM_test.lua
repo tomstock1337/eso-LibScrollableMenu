@@ -552,49 +552,72 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
-				label			= "Radiobutton 1",
-				name            = "RadioButton1",
+				label			= "Radiobutton group 1-1",
+				name            = "Radiobutton group 1-1",
 				tooltip         = "Button button button...",
 				checked 		= true,
 				callback 		= function(comboBox, itemName, item, checked)
-					d("I clicked radio button 1 with the name: " .. tostring(itemName))
+					d("I clicked Radiobutton group 1-1 with the name: " .. tostring(itemName))
 				end,
 				buttonGroup = 1,
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
-				label			= "Radiobutton 2",
-				name            = "RadioButton2",
+				label			= "Radiobutton group 1-2",
+				name            = "Radiobutton group 1-2",
 				tooltip         = "Button button button...",
 				checked 		= false,
 				callback 		= function(comboBox, itemName, item, checked)
-					d("I clicked radio button 2 with the name: " .. tostring(itemName))
+					d("I clicked Radiobutton group 1-2 with the name: " .. tostring(itemName))
 				end,
 				buttonGroup = function() return 1 end,
-				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("radio button group 1 selection changed callback!")  end
+				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("radio Radiobutton group 1 selection changed callback!")  end
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
-				label			= "Radiobutton 3",
-				name            = "RadioButton3",
+				label			= "Radiobutton group 2-3",
+				name            = "Radiobutton group 2-3",
 				tooltip         = "Button button button...",
 				checked 		= true,
 				callback 		= function(comboBox, itemName, item, checked)
-					d("I clicked radio button 3 with the name: " .. tostring(itemName))
+					d("I clicked Radiobutton group 2-3 with the name: " .. tostring(itemName))
 				end,
 				buttonGroup = 2,
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
-				label			= "Radiobutton 4",
-				name            = "RadioButton4",
+				label			= "Radiobutton group 2-4",
+				name            = "Radiobutton group 2-4",
 				tooltip         = "Button button button...",
 				checked 		= false,
 				callback 		= function(comboBox, itemName, item, checked)
-					d("I clicked radio button 4 with the name: " .. tostring(itemName))
+					d("I clicked Radiobutton group 2-4 with the name: " .. tostring(itemName))
 				end,
 				buttonGroup = function() return 2 end,
 				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("radio button group 2 selection changed callback!")  end
+			},
+			{
+				entryType		= LSM_ENTRY_TYPE_CHECKBOX,
+				label			= "Checkbox group 3-1",
+				name            = "Checkbox group 3-1",
+				tooltip         = "cButton cbutton cbutton...",
+				checked 		= true,
+				callback 		= function(comboBox, itemName, item, checked)
+					d("I clicked checkbox group3-1 with the name: " .. tostring(itemName))
+				end,
+				buttonGroup = 3,
+			},
+			{
+				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
+				label			= "Checkbox group 3-2",
+				name            = "Checkbox group 3-2",
+				tooltip         = "cButton2 cbutton2 cbutton2...",
+				checked 		= false,
+				callback 		= function(comboBox, itemName, item, checked)
+					d("I clicked checkbox group3-2 with the name: " .. tostring(itemName))
+				end,
+				buttonGroup = function() return 3 end,
+				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("checkbox group 3 selection changed callback!")  end
 			},
 			{
 				additionalData = {
