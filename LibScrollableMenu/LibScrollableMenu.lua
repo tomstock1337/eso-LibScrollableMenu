@@ -3710,7 +3710,7 @@ do -- Row setup functions
 			buttonGroup:Add(buttonControl, control.isRadioButton)
 
 			local IGNORECALLBACK = true
-			buttonGroup:SetButtonState(control, data.clicked, isEnabled, IGNORECALLBACK)
+			buttonGroup:SetButtonState(buttonControl, data.clicked, isEnabled, IGNORECALLBACK)
 		--	buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
 		end
 
