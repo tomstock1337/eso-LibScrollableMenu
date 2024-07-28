@@ -3716,6 +3716,10 @@ do -- Row setup functions
 			local IGNORECALLBACK = true
 			buttonGroup:SetButtonState(buttonControl, data.clicked, isEnabled, IGNORECALLBACK)
 			--	buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
+
+			if entryType == LSM_ENTRY_TYPE_CHECKBOX and data.rightClickCallback == nil and data.contextMenuCallback == nil then
+				data.rightClickCallback = lib.SetButtonGroupState
+			end
 		end
 
 		return buttonControl, buttonGroup
