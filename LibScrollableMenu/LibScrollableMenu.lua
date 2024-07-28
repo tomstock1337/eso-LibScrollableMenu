@@ -2338,14 +2338,8 @@ local function poolControlReset(control)
 	if button then
 		local buttonGroup = button.m_buttonGroup
 		if buttonGroup ~= nil then
-LSM_Debug = LSM_Debug or {}
-LSM_Debug.buttonPoolCotrolReset = LSM_Debug.buttonPoolCotrolReset or {}
-LSM_Debug.buttonPoolCotrolReset[button:GetName()] = {
-	buttonGroup = buttonGroup,
-	button = button,
-}
 			local buttonGroupIndex = button.m_buttonGroupIndex
-d(debugPrefix .. "poolControlReset - buttonGroup[" .. tos(buttonGroupIndex) ..", countLeft: " .. tos(NonContiguousCount(buttonGroup.m_buttons)))
+--d(debugPrefix .. "poolControlReset - buttonGroup[" .. tos(buttonGroupIndex) ..", countLeft: " .. tos(NonContiguousCount(buttonGroup.m_buttons)))
 			buttonGroup:Remove(button)
 		end
 	end
@@ -2948,10 +2942,10 @@ local buttonGroupClass = ZO_RadioButtonGroup:Subclass()
 function buttonGroupClass:Add(button, isRadioButton)
 	if button then
 		local buttonGroupIndex = button.m_buttonGroupIndex
-d(debugPrefix .. "buttonGroup:Add - groupIndex: " ..tos(buttonGroupIndex) .. ", button: " .. tos(button:GetName()))
+--d(debugPrefix .. "buttonGroup:Add - groupIndex: " ..tos(buttonGroupIndex) .. ", button: " .. tos(button:GetName()))
 		if self.m_buttons[button] == nil then
 			local selfVar = self
-d(">>adding new button to group now...")
+--d(">>adding new button to group now...")
 			-- Remember the original handler so that its call can be forced.
 			local originalHandler = button:GetHandler("OnClicked")
 			self.m_buttons[button] = { originalHandler = originalHandler, isValidOption = true } -- newly added buttons always start as valid options for now.
@@ -2973,12 +2967,12 @@ d(">>adding new button to group now...")
 			end
 		else
 			if isRadioButton then
-	d("<<<!!!!! buttonGroup:Add - self.m_buttons[button] exists already!")
+	--d("<<<!!!!! buttonGroup:Add - self.m_buttons[button] exists already!")
 			end
 		end
 	else
 		if isRadioButton then
-d("<<<!!!!! buttonGroup:Add - button is nil!")
+--d("<<<!!!!! buttonGroup:Add - button is nil!")
 		end
 	end
 end
@@ -2986,7 +2980,7 @@ end
 function buttonGroupClass:Remove(button)
 	local buttonData = self.m_buttons[button]
 	if buttonData then
-d(debugPrefix .. "buttonGroupClass:Removed  - button: " .. tos(button:GetName()))
+--d(debugPrefix .. "buttonGroupClass:Removed  - button: " .. tos(button:GetName()))
 		self:SetButtonState(button, nil, buttonData.isValidOption)
 		button:SetHandler("OnClicked", buttonData.originalHandler)
 		if self.m_clickedButton == button then
