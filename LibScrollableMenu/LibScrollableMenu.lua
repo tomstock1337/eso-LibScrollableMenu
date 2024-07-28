@@ -2324,6 +2324,7 @@ function dropdownClass:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	self.owner:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint) -->comboBox_base:Narrate(...)
 end
 
+
 local function poolControlReset(control)
     control:SetHidden(true)
 
@@ -2332,7 +2333,24 @@ local function poolControlReset(control)
 			control.m_owner.m_submenu:Hideropdown()
 		end
 	end
+
+	local button = control.m_button
+	if button then
+		local buttonGroup = button.m_buttonGroup
+		if buttonGroup ~= nil then
+LSM_Debug = LSM_Debug or {}
+LSM_Debug.buttonPoolCotrolReset = LSM_Debug.buttonPoolCotrolReset or {}
+LSM_Debug.buttonPoolCotrolReset[button:GetName()] = {
+	buttonGroup = buttonGroup,
+	button = button,
+}
+			local buttonGroupIndex = button.m_buttonGroupIndex
+d(debugPrefix .. "poolControlReset - buttonGroup[" .. tos(buttonGroupIndex) ..", countLeft: " .. tos(NonContiguousCount(buttonGroup.m_buttons)))
+			buttonGroup:Remove(button)
+		end
+	end
 end
+
 
 function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AddCustomEntryTemplate - entryTemplate: %s, entryHeight: %s, setupFunction: %s, widthPadding: %s", tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding))
@@ -2929,15 +2947,17 @@ local buttonGroupClass = ZO_RadioButtonGroup:Subclass()
 
 function buttonGroupClass:Add(button, isRadioButton)
 	if button then
+		local buttonGroupIndex = button.m_buttonGroupIndex
+d(debugPrefix .. "buttonGroup:Add - groupIndex: " ..tos(buttonGroupIndex) .. ", button: " .. tos(button:GetName()))
 		if self.m_buttons[button] == nil then
 			local selfVar = self
+d(">>adding new button to group now...")
 			-- Remember the original handler so that its call can be forced.
 			local originalHandler = button:GetHandler("OnClicked")
 			self.m_buttons[button] = { originalHandler = originalHandler, isValidOption = true } -- newly added buttons always start as valid options for now.
 
-				--d( debugPrefix..'isRadioButton ' .. tos(isRadioButton))
+			--d( debugPrefix..'isRadioButton ' .. tos(isRadioButton))
 			if isRadioButton then
---d(debugPrefix .. "buttonGroup:Add - OnClicked handler set")
 				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
 				local newHandler = function(control, buttonId, ignoreCallback)
 					--d( debugPrefix.. 'buttonGroup -> OnClicked handler. Calling HandleClick')
@@ -2951,7 +2971,28 @@ function buttonGroupClass:Add(button, isRadioButton)
 					button.label:SetColor(self.labelColorEnabled:UnpackRGB())
 				end
 			end
+		else
+			if isRadioButton then
+	d("<<<!!!!! buttonGroup:Add - self.m_buttons[button] exists already!")
+			end
 		end
+	else
+		if isRadioButton then
+d("<<<!!!!! buttonGroup:Add - button is nil!")
+		end
+	end
+end
+
+function buttonGroupClass:Remove(button)
+	local buttonData = self.m_buttons[button]
+	if buttonData then
+d(debugPrefix .. "buttonGroupClass:Removed  - button: " .. tos(button:GetName()))
+		self:SetButtonState(button, nil, buttonData.isValidOption)
+		button:SetHandler("OnClicked", buttonData.originalHandler)
+		if self.m_clickedButton == button then
+			self.m_clickedButton = nil
+		end
+		self.m_buttons[button] = nil
 	end
 end
 
@@ -3661,6 +3702,8 @@ do -- Row setup functions
 			comboBox.m_buttonGroup[groupIndex] = comboBox.m_buttonGroup[groupIndex] or buttonGroupClass:New()
 			buttonGroup = comboBox.m_buttonGroup[groupIndex]
 
+d(debugPrefix .. "setupFunc RB - addButton, groupIndex: " ..tos(groupIndex))
+
 			if type(data.buttonGroupOnSelectionChangedCallback) == "function" then
 				buttonGroup:SetSelectionChangedCallback(data.buttonGroupOnSelectionChangedCallback)
 			end
@@ -3670,9 +3713,9 @@ do -- Row setup functions
 			end
 
 			-- Add buttonControl to buttonGroup
-			buttonGroup:Add(buttonControl, control.isRadioButton)
 			buttonControl.m_buttonGroup = buttonGroup
 			buttonControl.m_buttonGroupIndex = groupIndex
+			buttonGroup:Add(buttonControl, control.isRadioButton)
 
 			--todo 20240727 Assure that the clickHandler is not called by self:SetButtonState !
 			--From ZOs code:
