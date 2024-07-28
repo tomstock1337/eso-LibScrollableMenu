@@ -2338,7 +2338,7 @@ local function poolControlReset(control)
 	if button then
 		local buttonGroup = button.m_buttonGroup
 		if buttonGroup ~= nil then
-			local buttonGroupIndex = button.m_buttonGroupIndex
+			--local buttonGroupIndex = button.m_buttonGroupIndex
 --d(debugPrefix .. "poolControlReset - buttonGroup[" .. tos(buttonGroupIndex) ..", countLeft: " .. tos(NonContiguousCount(buttonGroup.m_buttons)))
 			buttonGroup:Remove(button)
 		end
