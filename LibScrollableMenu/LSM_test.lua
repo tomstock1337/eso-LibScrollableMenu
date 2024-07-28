@@ -571,7 +571,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("I clicked radio button 2 with the name: " .. tostring(itemName))
 				end,
 				buttonGroup = function() return 1 end,
-				buttonGroupOnSelectionChangedCallback = function() d("radio button group 1 selection changed callback!")  end
+				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("radio button group 1 selection changed callback!")  end
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
@@ -594,7 +594,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("I clicked radio button 4 with the name: " .. tostring(itemName))
 				end,
 				buttonGroup = function() return 2 end,
-				buttonGroupOnSelectionChangedCallback = function() d("radio button group 2 selection changed callback!")  end
+				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("radio button group 2 selection changed callback!")  end
 			},
 			{
 				additionalData = {
