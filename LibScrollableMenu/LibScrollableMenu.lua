@@ -2998,27 +2998,25 @@ function buttonGroupClass:Remove(button)
 end
 
 function buttonGroupClass:SetButtonState(button, clickedButton, enabled, ignoreCallback)
-	local callToggleFunc = true
-	local checked = true
 --d(debugPrefix .. "buttonGroupClass:SetButtonState  - button: " .. tos(button:GetName()) .. ", clickedButton: " .. tos(clickedButton ~= nil and clickedButton) .. ", enabled: " .. tos(enabled) .. "; ignoreCallback: " ..tos(ignoreCallback))
-
-    if(enabled) then
-        if(button == clickedButton) then
-            button:SetState(BSTATE_PRESSED, true)
-        else
-            button:SetState(BSTATE_NORMAL, false)
+	if(enabled) then
+		local checked = true
+		if(button == clickedButton) then
+			button:SetState(BSTATE_PRESSED, true)
+		else
+			button:SetState(BSTATE_NORMAL, false)
 			checked = false
-			callToggleFunc = false
-        end
+		end
 
-        if button.label then
-            button.label:SetColor(self.labelColorEnabled:UnpackRGB())
-        end
+		if button.label then
+			button.label:SetColor(self.labelColorEnabled:UnpackRGB())
+		end
+		-- move here and always update
 
-		if not ignoreCallback and button.toggleFunction ~= nil and checked then
+		if (button.toggleFunction ~= nil) and not ignoreCallback and checked then
 			button:toggleFunction(checked)
 		end
-    else
+	else
         if(button == clickedButton) then
             button:SetState(BSTATE_DISABLED_PRESSED, true)
         else
@@ -3805,12 +3803,14 @@ do -- Row setup functions
 			local rowData = getControlData(button:GetParent())
 			rowData.checked = checked
 
-			dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - calling radiobutton callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
-			selfVar:RunItemCallback(data, data.ignoreCallback, checked)
+			if checked then
+				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - calling radiobutton callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
+				selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 
-			selfVar:Narrate("OnRadioButtonUpdated", button, data, nil)
-			lib:FireCallbacks('RadioButtonUpdated', control, data, checked)
-			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: RadioButtonUpdated - control: %q, checked: %s", tos(getControlName(button)), tos(checked))
+				selfVar:Narrate("OnRadioButtonUpdated", button, data, nil)
+				lib:FireCallbacks('RadioButtonUpdated', control, data, checked)
+				dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: RadioButtonUpdated - control: %q, checked: %s", tos(getControlName(button)), tos(checked))
+			end
 		end
 		self:SetupEntryLabel(control, data, list)
 		control.isRadioButton = true
