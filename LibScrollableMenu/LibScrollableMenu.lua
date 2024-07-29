@@ -192,6 +192,12 @@ for key, value in pairs(scrollListRowTypes) do
 	_G[key] = value
 end
 
+--Mapping table for entryType to button's childName (in XML template)
+local entryTypeToButtonChildName = {
+	[LSM_ENTRY_TYPE_CHECKBOX] = 	"Checkbox",
+	[LSM_ENTRY_TYPE_RADIOBUTTON] = 	"RadioButton",
+}
+
 --Used in API RunCustomScrollableMenuItemsCallback and comboBox_base:AddCustomEntryTemplates to validate passed in entryTypes
 local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_NORMAL] = 	true,
@@ -2937,6 +2943,13 @@ end
 --  (radio) buttons in a group will change their checked state to false if another button in the group was clicked
 --------------------------------------------------------------------
 
+local function getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
+	local buttonGroupObject = comboBox.m_buttonGroup
+	local buttonGroupOfEntryType = buttonGroupObject and buttonGroupObject[groupIndex] and buttonGroupObject[entryType][groupIndex]
+	return buttonGroupOfEntryType
+end
+
+
 local buttonGroupClass = ZO_RadioButtonGroup:Subclass()
 
 function buttonGroupClass:Add(button, entryType)
@@ -3666,15 +3679,10 @@ do -- Row setup functions
 		control.m_label:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
 	end
 
-	local entryTypeToButtonType = {
-		[LSM_ENTRY_TYPE_CHECKBOX] = "CheckBox",
-		[LSM_ENTRY_TYPE_RADIOBUTTON] = "RadioButton",
-	}
-
 	local function addButton(comboBox, control, data, toggleFunction)
 		local entryType = control.typeId
 		if entryType == nil then return end
-		local childName = entryTypeToButtonType[entryType]
+		local childName = entryTypeToButtonChildName[entryType]
 		if childName == nil then return end
 
 		local buttonControl = control.m_button or control:GetNamedChild(childName)
@@ -4981,6 +4989,7 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	myAddonCallbackFunc(comboBox, item, itemsForCallbackFunc, ...)
 end
 
+
 -- API to set all buttons in a group based on Select all, Unselect All, Invert all.
 local function setButtonGroupState(comboBox, control, data)
 	local buttonGroup = comboBox.m_buttonGroup
@@ -5001,7 +5010,7 @@ local function setButtonGroupState(comboBox, control, data)
 				-- ignoreCallback = true -- Just a thought
 			},
 			callback = function()
-				local buttonGroupOfEntryType = comboBox.m_buttonGroup and comboBox.m_buttonGroup[groupIndex] and comboBox.m_buttonGroup[entryType][groupIndex]
+				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 				if buttonGroupOfEntryType == nil then return end
 				return buttonGroupOfEntryType:SetChecked(control, true, data.ignoreCallback) -- Setas all as selected
 			end,
@@ -5014,7 +5023,7 @@ local function setButtonGroupState(comboBox, control, data)
 				selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
 			},
 			callback = function()
-				local buttonGroupOfEntryType = comboBox.m_buttonGroup and comboBox.m_buttonGroup[groupIndex] and comboBox.m_buttonGroup[entryType][groupIndex]
+				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 				if buttonGroupOfEntryType == nil then return end
 				return buttonGroupOfEntryType:SetChecked(control, false, data.ignoreCallback) -- Sets all as unselected
 			end,
@@ -5023,9 +5032,9 @@ local function setButtonGroupState(comboBox, control, data)
 			name = GetString(SI_LSM_CNTXT_CHECK_INVERT), -- Invert
 			entryType = LSM_ENTRY_TYPE_BUTTON,
 			callback = function()
-				local buttonGroupOfEntryType = comboBox.m_buttonGroup and comboBox.m_buttonGroup[groupIndex] and comboBox.m_buttonGroup[entryType][groupIndex]
+				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 				if buttonGroupOfEntryType == nil then return end
-				return comboBox.m_buttonGroup[groupIndex]:SetInverse(control, data.ignoreCallback) -- sets all as oposite of what they cerrently are set t.
+				return buttonGroupOfEntryType:SetInverse(control, data.ignoreCallback) -- sets all as oposite of what they cerrently are set t.
 			end,
 		},
 	}
@@ -5056,10 +5065,12 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 				end
 
 			elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
-				local rightClickCallback = parent.m_data.contextMenuCallback or parent.m_data.rightClickCallback
-				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(parent.m_owner) then
+				local owner = parent.m_owner
+				local data = getControlData(parent)
+				local rightClickCallback = data.contextMenuCallback or data.rightClickCallback
+				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(owner) then
 					dLog(LSM_LOGTYPE_VERBOSE, "m_button OnMouseUp!")
-					rightClickCallback(parent.m_owner, parent, parent.m_data)
+					rightClickCallback(owner, parent, data)
 				end
 			end
 		end
@@ -5068,10 +5079,8 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 	if not isRadioButton then
 		local originalClicked = control:GetHandler('OnClicked')
 		control:SetHandler('OnClicked', function(p_control, buttonId, ignoreCallback, ...)
-			local comboBox = control.m_owner
+			--local comboBox = control.m_owner
 			if checkIfContextMenuOpenedAndEntryOutsideWasClicked(control, control.m_owner, buttonId) == true then return end
-
-			--PlaySound(SOUNDS.DEFAULT_CLICK)
 			--local dropdown = control:GetOwningWindow().m_dropdownObject
 			--playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
 			if p_control.checked ~= nil then
@@ -5207,7 +5216,7 @@ WORKING ON - Current version: 2.3
 		control['ZO_SelectionHighlight'], control['ZO_SelectionHighlight_SubmenuBreadcrumb']
 		control['LibScrollableMenu_Highlight_Green'], control['LibScrollableMenu_Highlight_Green_SubmenuBreadcrumb']
 		they are still created on demand.
-	TESTED: TO FIX
+	TESTED: TO FIX ?
 	14. Fixed API function RunCustomScrollableMenuItemsCallback, params ...
 	TESTED: TESTED
 	15. Added item.m_owner to RefreshSortedItems
@@ -5218,9 +5227,9 @@ WORKING ON - Current version: 2.3
 	data.radioButtonGroupSelectionChangedCallback can be a function that is only called if a radiobutton group really changes the selected radiobutton. data.callback will be executed on each click on a radiobutton
 	TESTED: OPEN
 	18. Open context menu at submenu and then click left on any submenu entry of an LSM: Context menu closes and submenu entry get's selected. Should be this though: Context menu closes only, nothing selected
-	TESTED: BUG
-	19. Radiobuttons change their slected state upon scrolling the menu, and they call teir callbacks each time on scrolling
-	TESTED: OPEN
+	TESTED: TO FIX
+	19. Radiobuttons change their selected state upon scrolling the menu, and they call their callbacks each time on scrolling
+	TESTED: OK
 
 
 	check divider entry.
