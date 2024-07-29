@@ -2945,7 +2945,7 @@ end
 
 local function getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 	local buttonGroupObject = comboBox.m_buttonGroup
-	local buttonGroupOfEntryType = buttonGroupObject and buttonGroupObject[groupIndex] and buttonGroupObject[entryType][groupIndex]
+	local buttonGroupOfEntryType = (buttonGroupObject ~= nil and buttonGroupObject[entryType] ~= nil and buttonGroupObject[entryType][groupIndex]) or nil
 	return buttonGroupOfEntryType
 end
 
@@ -2954,11 +2954,11 @@ local buttonGroupClass = ZO_RadioButtonGroup:Subclass()
 
 function buttonGroupClass:Add(button, entryType)
 	if button then
-		local buttonGroupIndex = button.m_buttonGroupIndex
-d("Add - groupIndex: " ..tos(buttonGroupIndex) .. ", button: " .. tos(button:GetName()))
+		--local buttonGroupIndex = button.m_buttonGroupIndex
+--d("Add - groupIndex: " ..tos(buttonGroupIndex) .. ", button: " .. tos(button:GetName()))
 		if self.m_buttons[button] == nil then
 			local selfVar = self
-d(">>adding new button to group now...")
+--d(">>adding new button to group now...")
 
 			-- Remember the original handler so that its call can be forced.
 			local originalHandler = button:GetHandler("OnClicked")
@@ -2987,7 +2987,7 @@ end
 function buttonGroupClass:Remove(button)
 	local buttonData = self.m_buttons[button]
 	if buttonData then
-d("Removed  - button: " .. tos(button:GetName()))
+--d("Removed  - button: " .. tos(button:GetName()))
 		--self:SetButtonState(button, nil, buttonData.isValidOption)
 		button:SetHandler("OnClicked", buttonData.originalHandler)
 		if self.m_clickedButton == button then
@@ -2998,7 +2998,7 @@ d("Removed  - button: " .. tos(button:GetName()))
 end
 
 function buttonGroupClass:SetButtonState(button, clickedButton, enabled, ignoreCallback)
-d("SetButtonState  - button: " .. tos(button:GetName()) .. ", clickedButton: " .. tos(clickedButton ~= nil and clickedButton) .. ", enabled: " .. tos(enabled) .. "; ignoreCallback: " ..tos(ignoreCallback))
+--d("SetButtonState  - button: " .. tos(button:GetName()) .. ", clickedButton: " .. tos(clickedButton ~= nil and clickedButton) .. ", enabled: " .. tos(enabled) .. "; ignoreCallback: " ..tos(ignoreCallback))
 	if(enabled) then
 		local checked = true
 		if(button == clickedButton) then
@@ -3012,7 +3012,7 @@ d("SetButtonState  - button: " .. tos(button:GetName()) .. ", clickedButton: " .
 			button.label:SetColor(self.labelColorEnabled:UnpackRGB())
 		end
 		-- move here and always update
-d(">checked: " .. tos(checked))
+--d(">checked: " .. tos(checked))
 
 		if (button.toggleFunction ~= nil) and not ignoreCallback then -- and checked then
 			button:toggleFunction(checked)
@@ -3030,7 +3030,7 @@ d(">checked: " .. tos(checked))
 end
 
 function buttonGroupClass:HandleClick(control, buttonId, ignoreCallback)
-d("HandleClick - button: " .. getControlName(control))
+--d("HandleClick - button: " .. getControlName(control))
 	if not self.m_enabled or self.m_clickedButton == control then
 		return
 	end
@@ -3050,7 +3050,7 @@ d("HandleClick - button: " .. getControlName(control))
 		-- Set all buttons in the group to unpressed, and unlocked.
 		-- If the button is disabled externally (maybe it isn't a valid option at this time)
 		-- then set it to unpressed, but disabled.
-d(">>> for k, v in pairs(self.buttons) -> SetButtonState")
+--d(">>> for k, v in pairs(self.buttons) -> SetButtonState")
 		for k, v in pairs(self.m_buttons) do
 		--	self:SetButtonState(k, nil, v.isValidOption)
 			self:SetButtonState(k, control, v.isValidOption, ignoreCallback)
@@ -3085,6 +3085,7 @@ d("SetChecked - control: " .. getControlName(control) .. ", checked: " ..tos(che
 
 	local valueChanged = false
 	for button, controlData in pairs(self.m_buttons) do
+d(">button: " ..getControlName(button) .. ", enabled: " ..tos(button.enabled))
 		if button.enabled then
 			if ZO_CheckButton_IsChecked(button) ~= checked then
 				valueChanged = true
@@ -3092,6 +3093,7 @@ d("SetChecked - control: " .. getControlName(control) .. ", checked: " ..tos(che
 				button.checked = checked
 				table.insert(updatedButtons, button)
 				if controlData.originalHandler then
+d(">>calling originalHandler")
 					controlData.originalHandler(button, buttonId, ignoreCallback)
 				end
 			end
@@ -3803,7 +3805,7 @@ do -- Row setup functions
 
 		local selfVar = self
 		local function toggleFunction(button, checked)
-d(debugPrefix .. "RB toggleFunc - button: " ..tos(getControlName(button)) .. ", checked: " .. tos(checked))
+--d(debugPrefix .. "RB toggleFunc - button: " ..tos(getControlName(button)) .. ", checked: " .. tos(checked))
 			local rowData = getControlData(button:GetParent())
 			rowData.checked = checked
 
@@ -5003,28 +5005,30 @@ local function setButtonGroupState(comboBox, control, data)
 	local entryType = getValueOrCallback(data.entryType, data)
 	if entryType == nil then return end
 
+--d("[LSM]setButtonGroupState - comboBox: " .. tos(comboBox) .. ", control: " .. tos(getControlName(control)) .. ", entryType: " .. tos(entryType) .. ", groupIndex: " .. tos(groupIndex))
+
 	local buttonGroupSetAll = {
 		{ -- LSM_ENTRY_TYPE_NORMAL selecct and close.
 			name = GetString(SI_LSM_CNTXT_CHECK_ALL), --Check All
 			--entryType = LSM_ENTRY_TYPE_BUTTON,
 			entryType = LSM_ENTRY_TYPE_NORMAL,
 			additionalData = {
-				horizontalAlignment = TEXT_ALIGN_CENTER,
-				selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
+				--horizontalAlignment = TEXT_ALIGN_CENTER,
+				--selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
 				-- ignoreCallback = true -- Just a thought
 			},
 			callback = function()
 				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 				if buttonGroupOfEntryType == nil then return end
-				return buttonGroupOfEntryType:SetChecked(control, true, data.ignoreCallback) -- Setas all as selected
+				return buttonGroupOfEntryType:SetChecked(control, true, data.ignoreCallback) -- Sets all as selected
 			end,
 		},
 		{
 			name = GetString(SI_LSM_CNTXT_CHECK_NONE),-- Check none
 			entryType = LSM_ENTRY_TYPE_NORMAL,
 			additionalData = {
-				horizontalAlignment = TEXT_ALIGN_CENTER,
-				selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
+				--horizontalAlignment = TEXT_ALIGN_CENTER,
+				--selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
 			},
 			callback = function()
 				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
@@ -5034,7 +5038,7 @@ local function setButtonGroupState(comboBox, control, data)
 		},
 		{ -- LSM_ENTRY_TYPE_BUTTON allows for, invert, undo, invert, undo
 			name = GetString(SI_LSM_CNTXT_CHECK_INVERT), -- Invert
-			entryType = LSM_ENTRY_TYPE_BUTTON,
+			entryType = LSM_ENTRY_TYPE_NORMAL,
 			callback = function()
 				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 				if buttonGroupOfEntryType == nil then return end
