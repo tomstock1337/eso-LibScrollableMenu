@@ -1687,9 +1687,9 @@ d("<2not comboBox -> true")
 			else
 				--Is the mocEntry an empty table (something else was clicked than a LSM entry)
 				if ZO_IsTableEmpty(entry) then
-d("<2ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject))
-					-- Was e.g. the search header's editBox left clicked?
-					if mocCtrl and contextMenuDropdownObject == mocCtrl.m_dropdownObject then
+d("<2ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown))
+					-- Was e.g. a context menu's submenu search header's editBox or the refresh button left clicked?
+					if mocCtrl and (contextMenuDropdownObject == mocCtrl.m_dropdownObject or (mocCtrl.GetOwningWindow and mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown)) then
 						returnValue = false
 						doNotHideContextMenu = true
 					else
