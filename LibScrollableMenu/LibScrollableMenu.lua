@@ -2961,6 +2961,7 @@ end
 --------------------------------------------------------------------
 
 local function setTextSearchEditBoxText(selfVar, filterBox, newText)
+d(debugPrefix .. "setTextSearchEditBoxText")
 	selfVar.wasTextSearchContextMenuEntryClicked = true
 	filterBox:SetText(newText) --will call dropdownClass:SetFilterString() then
 end
@@ -2993,16 +2994,16 @@ local function addTextSearchEditBoxTextToHistory(comboBox, filterBox, historyTex
 end
 
 function dropdownClass:WasTextSearchContextMenuEntryClicked(mocCtrl)
-	--d("dropdownClass:WasTextSearchContextMenuEntryClicked - wasTextSearchContextMenuEntryClicked: " ..tos(self.wasTextSearchContextMenuEntryClicked))
+d("dropdownClass:WasTextSearchContextMenuEntryClicked - wasTextSearchContextMenuEntryClicked: " ..tos(self.wasTextSearchContextMenuEntryClicked))
 	--Internal variable was set as we selected a ZO_Menu entry?
 	if self.wasTextSearchContextMenuEntryClicked then
 		self.wasTextSearchContextMenuEntryClicked = nil
---d(">wasTextSearchContextMenuEntryClicked was TRUE")
+d(">wasTextSearchContextMenuEntryClicked was TRUE")
 		return true
 	end
 	--Clicked control is known and the owner is ZO_Menus -> then assume we did open the ZO_Menu above an LSM and need the LSM to stay open
 	if mocCtrl ~= nil and mocCtrl:GetOwningWindow() == ZO_Menus then
---d(">ZO_Menus entry clicked!")
+d(">ZO_Menus entry clicked!")
 		return true
 	end
 	return false
@@ -3557,6 +3558,9 @@ function comboBox_base:HiddenForReasons(button)
 	local isContextMenuVisible = g_contextMenu:IsDropdownVisible()
 	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
 	local wasTextSearchContextMenuEntryClicked = dropdownObject:WasTextSearchContextMenuEntryClicked()
+	if isContextMenuVisible and not wasTextSearchContextMenuEntryClicked then
+		wasTextSearchContextMenuEntryClicked = g_contextMenu.m_dropdownObject:WasTextSearchContextMenuEntryClicked()
+	end
 	d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked))
 
 	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true then
@@ -3567,7 +3571,11 @@ d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry
 				if isContextMenuVisible == true then
 					--Is the actual mocCtrl's owner the contextMenu? Or did we click some other non-context menu entry/control?
 					if owningWindow ~= g_contextMenu.m_container then
-						d(">>>returing nothing because is or isOpened -> contextMenu. Going to GetHiddenForReasons")
+d(">>>returing nothing because is or isOpened -> contextMenu. Going to GetHiddenForReasons")
+						if wasTextSearchContextMenuEntryClicked == true then
+d(">>>returing false cuz textSearchEntry was selected")
+							return false
+						end
 					else
 						d("<<returning contextmenu via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 						return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
