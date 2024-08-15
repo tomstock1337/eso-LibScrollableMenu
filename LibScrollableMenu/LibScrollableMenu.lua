@@ -1699,9 +1699,11 @@ d(">>2 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 d(">>2 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
 								--Does moc entry belong to a LSM menu but it's not the current contextMenu?
 								--Is it a submenu entry of the context menu?
-								if (isSubmenu == true or owner.isSubmenu == true) then
+								if (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
+d(">>>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
 									returnValue = not mocCtrl.closeOnSelect
 								else
+d(">>>2 - clicked other coboBox! return true")
 									returnValue = true
 								end
 							end
@@ -2721,9 +2723,9 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler)
 		local comboBox = control.m_owner
 
 		if data.enabled then
-			if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then return end
 
 			if button == MOUSE_BUTTON_INDEX_LEFT then
+				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then return end
 				if not ignoreHandler and runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside) then
 					self:OnEntrySelected(control)
 				else
@@ -3110,8 +3112,8 @@ function buttonGroupClass:Add(button, entryType)
 			if entryType == LSM_ENTRY_TYPE_RADIOBUTTON then
 				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
 				local newHandler = function(control, buttonId, ignoreCallback)
-d( debugPrefix.. 'buttonGroup -> OnClicked handler. Calling HandleClick')
-					--todo 2024-08-15 Add checkIfContextMenuWasOpened here at direct radioButton click as OnClick handler does not work here!
+--d( debugPrefix.. 'buttonGroup -> OnClicked handler. Calling HandleClick')
+					--2024-08-15 Add checkIfContextMenuWasOpened here at direct radioButton click as OnClick handler does not work here!
 					if checkIfContextMenuOpenedButOtherControlWasClicked(control, control:GetParent().m_owner, buttonId) == true then return end
 					selfVar:HandleClick(control, buttonId, ignoreCallback)
 				end
