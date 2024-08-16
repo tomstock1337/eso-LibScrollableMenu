@@ -9,17 +9,23 @@
 
 -[Additions]
 --Accept a custom filter function via options.customFilterFunc
+----function customFilterFunc(p_item, p_filterString) return boolean true (found) / false (not found)
 --Added option.highlightContextMenuOpeningControl: highlight the openingControl passed in to ShowCustomScrollableMenu(openingControl)
+----Boolean or function returning boolean if the openingControl of a context menu should be highlighted. Only works at the contextMenu options!
+----If you set this to true you also need to set data.m_highlightTemplate at the row and provide the XML template name for the highLight, e.g. "LibScrollableMenu_Highlight_Red"
 --Changed IsFilterEnabled function to return false if only 1 entry in the dropdown. Updating the header to hide the filter visually then
 --Added comboBox to checkbox's callback 4th param so that API funcs like RunCustomScrollableMenuItemsCallback can use it
 --Added a collapsible header + button via options.headerCollapsible to toggle the header's height. State will be saved in SavedVariables per openingControl or combobox name.
 --Added option.headerCollapsed to always show the collapsible header at that state if the menu opens
---Added LSM_ENTRY_TYPE_BUTTON data.buttonTemplate can be sued to define the buttons XML template. Clicking a button keeps the dropdown opened!
---Added LSM_ENTRY_TYPE_RADIOBUTTON with radioButtonGroups. data.buttonTemplate can be sued to define the buttons XML template. Clicking a button keeps the dropdown opened!
-    data.radioButtonGroup number adds them to the same group. data.checked = true defines which radiobutton in the group is the default checked one.
+--Added LSM_ENTRY_TYPE_BUTTON data.buttonTemplate can be used to define the buttons XML template. Clicking a button keeps the dropdown opened!
+--Added LSM_ENTRY_TYPE_RADIOBUTTON with radioButtonGroups. data.buttonTemplate can be used to define the buttons XML template. Clicking a radio button keeps the dropdown opened!
+	data.buttonGroup defines the (radio) button group. Specifying several radioButtons with the same group number adds them to the same group.
+	data.checked = true defines which radiobutton in the group is the default checked one.
 	data.radioButtonGroupSelectionChangedCallback can be a function that is only called if a radiobutton group really changes the selected radiobutton. data.callback will be executed on each click on a radiobutton
-	data.buttonGroup defines the (radio) button group
-
+--Added LSM_ENTRY_TYPE_CHECKBOX with checkboxButtonGroups. data.buttonTemplate can be used to define the buttons XML template. Clicking a checkbox keeps the dropdown opened!
+	data.buttonGroup defines the button group. Specifying several checkboxes with the same group number adds them to the same group.
+--Added API function LibScrollableMenu.SetButtonGroupState(...) for checkboxes which belong to a buttonGroup. Use it from data.contextMenuCallback e.g. to show a "Select all" , "Unselect all" and "Invert selection" context menu
+----contextMenuCallback = function(...) LibScrollableMenu.SetButtonGroupState(...) end,
 
 --Added API function GetCustomScrollableMenuRowData(rowControl)
 --Added item.m_owner to RefreshSortedItems

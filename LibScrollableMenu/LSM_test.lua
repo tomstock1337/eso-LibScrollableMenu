@@ -274,10 +274,13 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 
 					AddCustomScrollableMenuEntry("Context Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 
-					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, enableFilter = true })
+					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, enableFilter = true,
+						highlightContextMenuOpeningControl = true,
+					})
 				end,
 				--tooltip         = "Submenu Entry Test 1",
 				--icon 			= nil,
+				m_highlightTemplate = "LibScrollableMenu_Highlight_Red",
 			},
 			{
 

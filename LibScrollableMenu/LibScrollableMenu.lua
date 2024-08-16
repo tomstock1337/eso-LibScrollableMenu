@@ -643,7 +643,8 @@ local function highlightControl(self, control)
 	
 	local highlightTemplate, animationFieldName = self:GetHighlightTemplate(control)
 	dLog(LSM_LOGTYPE_VERBOSE, "highlightControl - highlightTemplate: " ..tos(highlightTemplate))
-	
+--d("[LSM]highlightControl - highlightTemplate: " ..tos(highlightTemplate))
+
 	control.breadcrumbName = string.format('%s_%s', animationFieldName, self.breadcrumbName)
 	
 	playAnimationOnControl(control, control.breadcrumbName, highlightTemplate, 0.5)
@@ -4692,6 +4693,8 @@ function contextMenuClass:ShowContextMenu(parentControl)
 
 	self:UpdateOptions(self.optionsData)
 
+
+--d("[LSM]ctxMen-optionsData.highlightContextMenuOpeningControl: " ..tos(self.optionsData.highlightContextMenuOpeningControl))
 	if self.openingControl then
 		if self.optionsData.highlightContextMenuOpeningControl then
 			highlightControl(self, self.openingControl)
@@ -4771,7 +4774,8 @@ end
 --		table headerColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for header entries
 --		table normalColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all normal (enabled) entries
 --		table disabledColor:optional 			table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all disabled entries
---		boolean highlightContextMenuOpeningControl Boolean or function returning boolean if the openingControl of a context menu should be highlighted
+--		boolean highlightContextMenuOpeningControl Boolean or function returning boolean if the openingControl of a context menu should be highlighted. Only works at the contextMenu options!
+--												If you set this to true you also need to set data.m_highlightTemplate at the row and provide the XML template name for the highLight, e.g. "LibScrollableMenu_Highlight_Green"
 -->  ===Dropdown header/title ==========================================================================================
 --		string titleText:optional				String or function returning a string: Title text to show above the dropdown entries
 --		string titleFont:optional				String or function returning a font string: Title text's font. Default: "ZoFontHeader3"
@@ -4839,7 +4843,7 @@ end
 --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --[API - Custom scrollable context menu at any control]
 --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
---Params: userdata rowControl - Returns the m_data.dataSource table of the rowControl
+--Params: userdata rowControl - Returns the m_sortedItems.dataSource or m_data.dataSource or data of the rowControl, or an empty table {}
 GetCustomScrollableMenuRowData = getControlData
 
 
@@ -5394,47 +5398,59 @@ WORKING ON - Current version: 2.3
 	1. Accept a custom filter function via options.customFilterFunc
 	TESTED: OK
 	2. Fixed iconData nil check for multi icon control
-	TESTED: OPEN
+	TESTED: OK
 	3. Fixed getComboBox to pass in 2nd param boolean -> to select the m_comboBox and not the m_owner
 	TESTED: OK
 	4. Added option.highlightContextMenuOpeningControl
 	TESTED: OK
-	5. Removed duplicate recursive loop over all (nseted)submenu entries to update the values -> in function UpdateItems
-	TESTED: OPEN
-	6. Added collapsible header and options.headerCollapsible
-	TESTED: OPEN
+	5. Removed duplicate recursive loop over all (nested)submenu entries to update the values -> in function UpdateItems
+	TESTED: OK
+	6. Added a collapsible header + button via options.headerCollapsible to toggle the header's height. State will be saved in SavedVariables per openingControl or combobox name.
+	Option.headerCollapsed always shows the collapsible header at that state if the menu opens
+	TESTED: OK
 	7. Using proper function GetOptions() where needed now
-	TESTED: OPEN
+	TESTED: OK
 	8. Callback functions for checkboxes now use the similar signature like normal entry callbacks:	function(comboBox, itemName, item, checked)
-	TESTED: OPEN
+	TESTED: OK
 	9. Added API function GetCustomScrollableMenuRowData(rowControl)
-	TESTED: OPEN
+	TESTED: OK
 	10. Fixed API RunCustomScrollableMenuItemsCallback to use the m_sortedItems, and not a copy (so updating the dataSource works)
-	TESTED: OPEN
-	11. Added a collapsible header + button via options.headerCollapsible to toggle the header's height. State will be saved in SavedVariables per openingControl or combobox name.
-	TESTED: OPEN
-	12. Added option.headerCollapsed to always show the collapsible header at that state if the menu opens
-	TESTED: OPEN
-	13. Bug with data.m_highlightTemplate = 'LibScrollableMenu_Highlight_Green' -> 1st repeated pool control (e.g. 15 rows -> 16th is 1st repeated pool control then) will use the normal blue highlight
+	TESTED: OK
+	11. Bug with data.m_highlightTemplate = 'LibScrollableMenu_Highlight_Green' -> 1st repeated pool control (e.g. 15 rows -> 16th is 1st repeated pool control then) will use the normal blue highlight
 	because control.HighlightAnimation on scrollist row was set with old animation already and does not update properly
 	fixed - it now uses the temmplate as the animation name. Depending on what one is currently set to use, that's what is used,
 		control['ZO_SelectionHighlight'], control['ZO_SelectionHighlight_SubmenuBreadcrumb']
 		control['LibScrollableMenu_Highlight_Green'], control['LibScrollableMenu_Highlight_Green_SubmenuBreadcrumb']
 		they are still created on demand.
-	TESTED: TO FIX ?
-	14. Fixed API function RunCustomScrollableMenuItemsCallback, params ...
-	TESTED: TESTED
-	15. Added item.m_owner to RefreshSortedItems
-	TESTED: TESTED
-	16. Added LSM_ENTRY_TYPE_BUTTON
-	TESTED: OPEN
-	17. Added LSM_ENTRY_TYPE_RADIOBUTTON with radioButtonGroups. data.radioButtonGroup number adds them to the same group. data.checked = true defines which radiobutton in the group is the default checked one.
-	data.radioButtonGroupSelectionChangedCallback can be a function that is only called if a radiobutton group really changes the selected radiobutton. data.callback will be executed on each click on a radiobutton
-	TESTED: OPEN
-	18. Open context menu at submenu and then click left on any submenu entry of an LSM: Context menu closes and submenu entry get's selected. Should be this though: Context menu closes only, nothing selected
-	TESTED: TO FIX
-	19. Radiobuttons change their selected state upon scrolling the menu, and they call their callbacks each time on scrolling
 	TESTED: OK
+	12. Fixed API function RunCustomScrollableMenuItemsCallback, params ...
+	TESTED: OK
+	13. Added item.m_owner to RefreshSortedItems
+	TESTED: OK
+	14. Added LSM_ENTRY_TYPE_BUTTON
+	TESTED: OK
+	15. Added LSM_ENTRY_TYPE_RADIOBUTTON with radioButtonGroups. data.radioButtonGroup number adds them to the same group. data.checked = true defines which radiobutton in the group is the default checked one.
+	data.radioButtonGroupSelectionChangedCallback can be a function that is only called if a radiobutton group really changes the selected radiobutton. data.callback will be executed on each click on a radiobutton
+	TESTED: OK
+	16. Open context menu at submenu and then click left on any submenu entry of an LSM: Context menu closes and submenu entry get's selected. Should be this though: Context menu closes only, nothing selected
+	TESTED: OK
+	17. Radiobuttons change their selected state upon scrolling the menu, and they call their callbacks each time on scrolling
+	TESTED: OK
+	18. Checkbox in a nested submenu will close the total dropdown if it is clicked (either on the cbox or the label)
+	TESTED: BUG
+
+
+
+-------------------
+TODO - To check (future versions)
+-------------------
+
+	1. Make Options update same style like updateDataValues does for entries
+	2. Accept a custom filter function
+	3. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
+	4. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
+	- fired on handlers dropdown_OnShow dropdown_OnHide
+	5. Check if entries' .tooltip can be a function and then call that function and show it as normal ZO_Tooltips_ShowTextTooltip(control, text) instead of having to use .customTooltip for that
 
 
 	check divider entry.
@@ -5457,16 +5473,6 @@ WORKING ON - Current version: 2.3
 	filter, custom control
 	custom control
 
--------------------
-TODO - To check (future versions)
--------------------
-
-	1. Make Options update same style like updateDataValues does for entries
-	2. Accept a custom filter function
-	3. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
-	4. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
-	- fired on handlers dropdown_OnShow dropdown_OnHide
-	5. Check if entries' .tooltip can be a function and then call that function and show it as normal ZO_Tooltips_ShowTextTooltip(control, text) instead of having to use .customTooltip for that
 
 -------------------
 UPCOMING FEATURES  - What will be added in the future?
