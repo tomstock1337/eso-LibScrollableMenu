@@ -1626,7 +1626,7 @@ local function checkIfHiddenForReasons(selfVar, button, isContextMenu, owningWin
 	local contextMenuDropdownObject = g_contextMenu.m_dropdownObject
 	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
 	local isCntxtMenOwnedByComboBox = contextMenuDropdownObject:IsOwnedByComboBox(comboBox)
-d(">isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu))
+--d(">isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu))
 
 
 	if not isContextMenu then
@@ -1637,31 +1637,31 @@ d(">isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isC
 				if not comboBox then
 					--todo check if submenu opened -> How?
 
-d("<1not comboBox -> true")
+--d("<1not comboBox -> true")
 					returnValue = true
 				else
 					--Is the mocEntry an empty table (something else was clicked than a LSM entry)
 					if ZO_IsTableEmpty(entry) then
-d("<1ZO_IsTableEmpty(entry) -> true")
+--d("<1ZO_IsTableEmpty(entry) -> true")
 						returnValue = true
 					else
 
 						if mocCtrl then
 							local owner = mocCtrl.m_owner
 							if owner then
-d("1>>owner found")
+--d("1>>owner found")
 								--Does moc entry belong to a LSM menu and it IS the current comboBox?
 								if owner == comboBox then
-d(">>1 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+--d(">>1 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 									returnValue = mocCtrl.closeOnSelect
 								else
-d(">>1 - true")
+--d(">>1 - true")
 									--Does moc entry belong to a LSM menu but it's not the current comboBox?
 									returnValue = true
 								end
 							end
 						else
-d(">>1 - no mocCtrl")
+--d(">>1 - no mocCtrl")
 						end
 					end
 				end
@@ -1682,12 +1682,12 @@ d(">>1 - no mocCtrl")
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 			--Is there no LSM comboBox available? Close the context menu
 			if not comboBox then
-d("<2not comboBox -> true")
+--d("<2not comboBox -> true")
 				returnValue = true
 			else
 				--Is the mocEntry an empty table (something else was clicked than a LSM entry)
 				if ZO_IsTableEmpty(entry) then
-d("<2ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown))
+--d("<2ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown))
 					-- Was e.g. a context menu's submenu search header's editBox or the refresh button left clicked?
 					if mocCtrl and (contextMenuDropdownObject == mocCtrl.m_dropdownObject or (mocCtrl.GetOwningWindow and mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown)) then
 						returnValue = false
@@ -1700,25 +1700,25 @@ d("<2ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(con
 					if mocCtrl then
 						local owner = mocCtrl.m_owner
 						if owner then
-d(">>2owner found")
+--d(">>2owner found")
 							--Does moc entry belong to a LSM menu and it IS the current contextMenu?
 							if owner == g_contextMenu then --comboBox then
-d(">>2 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+--d(">>2 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 								returnValue = mocCtrl.closeOnSelect
 							else
-d(">>2 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
+--d(">>2 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
 								--Does moc entry belong to a LSM menu but it's not the current contextMenu?
 								--Is it a submenu entry of the context menu?
 								if (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
-d(">>>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
+--d(">>>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
 									returnValue = not mocCtrl.closeOnSelect
 								else
-d(">>>2 - true")
+--d(">>>2 - true")
 									returnValue = true
 								end
 							end
 						else
-d(">>2 - owner not found")
+--d(">>2 - owner not found")
 						end
 					end
 				end
@@ -2993,16 +2993,16 @@ local function addTextSearchEditBoxTextToHistory(comboBox, filterBox, historyTex
 end
 
 function dropdownClass:WasTextSearchContextMenuEntryClicked(mocCtrl)
-d("dropdownClass:WasTextSearchContextMenuEntryClicked - wasTextSearchContextMenuEntryClicked: " ..tos(self.wasTextSearchContextMenuEntryClicked))
+--d("dropdownClass:WasTextSearchContextMenuEntryClicked - wasTextSearchContextMenuEntryClicked: " ..tos(self.wasTextSearchContextMenuEntryClicked))
 	--Internal variable was set as we selected a ZO_Menu entry?
 	if self.wasTextSearchContextMenuEntryClicked then
 		self.wasTextSearchContextMenuEntryClicked = nil
-d(">wasTextSearchContextMenuEntryClicked was TRUE")
+--d(">wasTextSearchContextMenuEntryClicked was TRUE")
 		return true
 	end
 	--Clicked control is known and the owner is ZO_Menus -> then assume we did open the ZO_Menu above an LSM and need the LSM to stay open
 	if mocCtrl ~= nil and mocCtrl:GetOwningWindow() == ZO_Menus then
-d(">ZO_Menus entry clicked!")
+--d(">ZO_Menus entry clicked!")
 		return true
 	end
 	return false
@@ -5229,7 +5229,7 @@ local function setButtonGroupState(comboBox, control, data)
 			callback = function()
 				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 				if buttonGroupOfEntryType == nil then return end
-				return buttonGroupOfEntryType:SetInverse(control, data.ignoreCallback) -- sets all as oposite of what they cerrently are set t.
+				return buttonGroupOfEntryType:SetInverse(control, data.ignoreCallback) -- sets all as oposite of what they currently are set to.
 			end,
 		},
 	}
@@ -5284,13 +5284,17 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 
 			--local dropdown = control:GetOwningWindow().m_dropdownObject
 			--playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
-			if p_control.checked ~= nil then
-				ZO_CheckButton_SetCheckState(p_control, p_control.checked)
-			else
+			--if p_control.checked ~= nil then
+				--cBox contextmenu: Enable all/Disable all get's here
+--d(">1 ZO_CheckButton_SetCheckState - checked: " ..tos(p_control.checked))
+				--ZO_CheckButton_SetCheckState(p_control, p_control.checked)
+			--else
+				--cBox contextmenu: Invert get's here
 				if originalClicked then
+--d(">2 originalClicked")
 					originalClicked(p_control, buttonId, ignoreCallback, ...)
 				end
-			end
+			--end
 			p_control.checked = nil
 		end)
 	end
