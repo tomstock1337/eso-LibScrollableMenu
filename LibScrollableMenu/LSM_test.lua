@@ -603,7 +603,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				tooltip         = "cButton cbutton cbutton...",
 				checked 		= true,
 				callback 		= function(comboBox, itemName, item, checked)
-					d("I clicked checkbox group3-1 with the name: " .. tostring(itemName) .. ", checked: " .. tos(checked))
+					d("I clicked checkbox group3-1 with the name: " .. tostring(itemName) .. ", checked: " .. tostring(checked))
 				end,
 				buttonGroup = 3,
 				contextMenuCallback = function(...)
@@ -617,7 +617,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				tooltip         = "cButton2 cbutton2 cbutton2...",
 				checked 		= false,
 				callback 		= function(comboBox, itemName, item, checked)
-					d("I clicked checkbox group3-2 with the name: " .. tostring(itemName) .. ", checked: " .. tos(checked))
+					d("I clicked checkbox group3-2 with the name: " .. tostring(itemName) .. ", checked: " .. tostring(checked))
 				end,
 				buttonGroup = function() return 3 end,
 				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("checkbox group 3 selection changed callback!")  end,
