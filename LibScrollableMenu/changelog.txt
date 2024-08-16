@@ -1,4 +1,4 @@
--v- ---------------LSM v2.3 - 2024-xx------------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.3 - 2024-08-xx---------------------------------------------------------------------------- -v-
 -[Fixes]-
 --Fixed iconData nil check for multi icon control
 --Fixed getComboBox to return the actual context menu combobox so that submenu entries clicked run their callback
