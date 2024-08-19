@@ -5288,7 +5288,7 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 			local comboBox = parent.m_owner
 			skipHiddenForReasonsCheck = skipHiddenForReasonsCheck or false
 
-d("[LSM]RB: OnClickedHandler - skipHiddenForReasonsCheck: " ..tos(skipHiddenForReasonsCheck))
+--d("[LSM]RB: OnClickedHandler - skipHiddenForReasonsCheck: " ..tos(skipHiddenForReasonsCheck))
 			if not skipHiddenForReasonsCheck then
 				if checkIfContextMenuOpenedButOtherControlWasClicked(p_control, comboBox, buttonId) == true then return end
 			end
@@ -5302,7 +5302,7 @@ d("[LSM]RB: OnClickedHandler - skipHiddenForReasonsCheck: " ..tos(skipHiddenForR
 			--else
 				--cBox contextmenu: Invert get's here
 				if originalClicked then
-d(">2 originalClicked")
+--d(">2 originalClicked")
 					originalClicked(p_control, buttonId, ignoreCallback, ...)
 				end
 			--end
