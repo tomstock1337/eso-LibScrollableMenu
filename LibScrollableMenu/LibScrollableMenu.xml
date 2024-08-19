@@ -11,8 +11,28 @@
 		<!-- Highlight for ZO_SortFilterList entries where a submenu got a callback function - Light green
 			Normal highlight is ZO_SelectionHighlight  -light blue -->
 		<Backdrop name="LibScrollableMenu_Highlight_Green" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00"/>
-		
-		<!-- Base row template with Multi-Icon -->
+		<Backdrop name="LibScrollableMenu_Highlight_Red" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="ff0000" edgeColor="ff0000"/>
+		<Backdrop name="LibScrollableMenu_Highlight_Blue" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="0000ff" edgeColor="0000ff"/>
+		<Backdrop name="LibScrollableMenu_Highlight_White" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="ffffff" edgeColor="ffffff"/>
+
+		<!-- Divider | no icon no handlers -->
+		<Texture name="LibScrollableMenu_ComboBoxDividerEntry" inherits="ZO_BaseTooltipDivider" virtual="true">
+			<Dimensions y="6" />
+			<Anchor point="LEFT" offsetX="-0" offsetY="-2.5" />
+			<Anchor point="RIGHT" offsetX="0" offsetY="2.5" />
+		</Texture>
+
+		<!--Control name="LibScrollableMenu_ComboBoxDividerEntry" virtual="true">
+			<Dimensions y="6" />
+			<Controls>
+				<Texture name="$(parent)Divider" hidden="false" inherits="ZO_BaseTooltipDivider">
+					<Anchor point="LEFT" offsetX="-0" offsetY="-2.5" />
+					<Anchor point="RIGHT" offsetX="0" offsetY="2.5" />
+				</Texture>
+			</Controls>
+		</Control-->
+
+		<!-- Base row templates -->
 		<Control name="LibScrollableMenu_IconEntry_Template" virtual="true">
 			<Anchor point="LEFT" offsetX="8" offsetY="0" />
 			<Dimensions y="6" />
@@ -42,7 +62,7 @@
 			</Controls>
 		</Control>
 
-		<Control name="LibScrollableMenu_ComboBoxEntry_Behavior" inherits="LibScrollableMenu_IconEntry_Template" level="3" mouseEnabled="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxEntry_Behavior" level="3" mouseEnabled="true" virtual="true">
 			<OnMouseEnter> <!-- name="BaseHandler"-->
 				local dropdown = self.m_dropdownObject
 				if dropdown then
@@ -60,25 +80,17 @@
 			<OnMouseUp>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
-					dropdown:OnEntrySelected(self, button, upInside)
+						--d("[LSM]dropdown.OnEntryMouseUp - button: " ..tostring(button) .. ", upInside: " .. tostring(upInside))
+						--LibScrollableMenu._debug = { self = self, button = button, upInside = upInside }
+					dropdown:OnEntryMouseUp(self, button, upInside)
 				end
 			</OnMouseUp>
 		</Control>
 
 		<!-- Row templates -->
-		<!-- Divider | no icon no handlers -->
-		<Control name="LibScrollableMenu_ComboBoxDividerEntry" virtual="true">
-			<Dimensions y="6" />
-			<Controls>
-				<Texture name="$(parent)Divider" hidden="false" inherits="ZO_BaseTooltipDivider">
-					<Anchor point="LEFT" offsetX="-0" offsetY="-2.5" />
-					<Anchor point="RIGHT" offsetX="0" offsetY="2.5" />
-				</Texture>
-			</Controls>
-		</Control>
 
 		<!-- Header | no handlers-->
-		<Control name="LibScrollableMenu_ComboBoxHeaderEntry" inherits="LibScrollableMenu_ComboBoxEntry_Behavior" mouseEnabled="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxHeaderEntry" inherits="LibScrollableMenu_IconEntry_Template" mouseEnabled="true" virtual="true">
 			<Dimensions y="25" />
 			<OnInitialized>
 				self.isHeader = true
@@ -98,7 +110,7 @@
 		</Control>
 
 		<!-- Normal entry -->
-		<Control name="LibScrollableMenu_ComboBoxEntry" inherits="LibScrollableMenu_ComboBoxEntry_Behavior" mouseEnabled="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxEntry" inherits="LibScrollableMenu_IconEntry_Template LibScrollableMenu_ComboBoxEntry_Behavior" mouseEnabled="true" virtual="true">
 			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
 			<OnInitialized>
 				<!-- Is this still needed? -->
@@ -119,11 +131,16 @@
 
 			<OnInitialized>
 				self.Checkbox = self:GetNamedChild('Checkbox')
+				self.isCheckbox = true
 			</OnInitialized>
-			
+
 			<Controls>
-				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton" level="2">
-					<!-- Centered on the icon -->
+				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton" level="3">
+					<OnInitialized>
+						<!-- We propogate the row OnMouseUp to the button's OnClicked so clicking the row simulates clicking the button -->
+						LibScrollableMenu.ButtonOnInitialize(self)
+					</OnInitialized>
+
 					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
 						ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
 					</OnMouseEnter>
@@ -131,10 +148,48 @@
 					<OnMouseExit name="ZO_PropagateMouseOverBehavior">
 						ZO_PropagateHandlerToNearestAncestor("OnMouseExit", ...)
 					</OnMouseExit>
+
+					<!-- Centered on the icon -->
 					<Anchor point="LEFT" relativeTo="$(parent)IconContainer" relativePoint="RIGHT" offsetX="1"/>
 				</Button>
-				<Label name="$(parent)Label" verticalAlignment="CENTER" override="true" wrapMode="ELLIPSIS" maxLineCount="1">
+
+				<Label name="$(parent)Label" override="true" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
 					<Anchor point="LEFT" relativeTo="$(parent)Checkbox" relativePoint="RIGHT" offsetX="4"/>
+					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+				</Label>
+			</Controls>
+		</Control>
+
+		<!-- RadioButton -->
+		<Control name="LibScrollableMenu_ComboBoxRadioButtonEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
+			<Dimensions y="25" />
+
+			<OnInitialized>
+				self.RadioButton = self:GetNamedChild('RadioButton')
+				self.isRadioButton = true
+			</OnInitialized>
+
+			<Controls>
+				<Button name="$(parent)RadioButton" inherits="ZO_RadioButton" level="3">
+					<OnInitialized>
+						<!-- We propogate the row OnMouseUp to the button's OnClicked so clicking the row simulates clicking the button -->
+						LibScrollableMenu.ButtonOnInitialize(self, true)
+					</OnInitialized>
+
+					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
+						ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
+					</OnMouseEnter>
+
+					<OnMouseExit name="ZO_PropagateMouseOverBehavior">
+						ZO_PropagateHandlerToNearestAncestor("OnMouseExit", ...)
+					</OnMouseExit>
+					<!-- Centered on the icon -->
+					<Anchor point="LEFT" relativeTo="$(parent)IconContainer" relativePoint="RIGHT" offsetX="1"/>
+				</Button>
+
+				<Label name="$(parent)Label" override="true" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+
+					<Anchor point="LEFT" relativeTo="$(parent)RadioButton" relativePoint="RIGHT" offsetX="4"/>
 					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
 				</Label>
 			</Controls>
@@ -159,6 +214,22 @@
 			</Controls>
 		</Control>
 
+		<!-- Button entry -->
+		<Button name="LibScrollableMenu_ComboBoxButtonEntry" inherits="LibScrollableMenu_ComboBoxEntry ZO_DefaultTextButton" mouseEnabled="true" virtual="true">
+			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
+			<OnInitialized>
+				self.isButton = true
+			</OnInitialized>
+
+			<Controls>
+				<Label name="$(parent)Label" override="true" horizontalAlignment="CENTER" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+					<Dimensions x="128" y="28" />
+					<Anchor point="TOPLEFT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+					<Anchor point="BOTTOMRIGHT" offsetX="-ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+				</Label>
+			</Controls>
+		</Button>
+
 		<!-- The genuine Dropdown control. The scroll list container.
 			TLC so it can be forced above other dropdowns without having to consider layering
 			Since some UI panels have layering set, we set it as overlay high, so it will be above those
@@ -166,12 +237,8 @@
 		-->
 		<!-- The template used for initializing all dropdowns -->
 		<TopLevelControl name="LibScrollableMenu_Dropdown_Behavior" virtual="true">
-			<OnEffectivelyShown name="BringToTop">
-				self:BringWindowToTop()
-			</OnEffectivelyShown>
-
-			<OnEffectivelyHidden name="HideDropdown" >
-				-- Handler set normally in ZO_ComboBox:Initialize
+			<OnEffectivelyHidden name="HideDrop	down" >
+				<!-- Handler set normally in ZO_ComboBox:Initialize -->
 				if self.object then
 					self.object:HideDropdown()
 				end
@@ -213,83 +280,83 @@
 			<OnInitialized>
 			</OnInitialized>
 			<Controls>
-				<Control name="$(parent)Header" hidden="true">
+				<Control name="$(parent)Header" resizeToFitDescendents="false" hidden="true">
 					<OnInitialized>
+						local title = self:GetNamedChild("Title")
+						local subTitle = self:GetNamedChild("SubTitle")
+						local filterContainer = self:GetNamedChild("FilterContainer")
 						local headerControls = LibScrollableMenu.headerControls
-						local titleContainer = self:GetNamedChild("TitleContainer")
 						self.controls = {
-							[headerControls.PARENT] = self,
-							[headerControls.TITLE] = titleContainer:GetNamedChild("Title"),
-							[headerControls.SUBTITLE] = titleContainer:GetNamedChild("SubTitle"),
-							[headerControls.CENTER_BASELINE] = self:GetNamedChild("CenterAnchor"),
-							[headerControls.TITLE_BASELINE] = titleContainer,
-							[headerControls.DIVIDER_SIMPLE] = self:GetNamedChild("DividerSimple"),
-							[headerControls.FILTER_CONTAINER] = self:GetNamedChild("FilterContainer"),
-							[headerControls.CUSTOM_CONTROL] = self:GetNamedChild("CustomControl"),
+							[headerControls.PARENT] 			= self,
+							[headerControls.TITLE] 				= title,
+							[headerControls.SUBTITLE] 			= subTitle,
+							[headerControls.CENTER_BASELINE] 	= self:GetNamedChild("CenterAnchor"),
+							[headerControls.DIVIDER_SIMPLE] 	= self:GetNamedChild("DividerSimple"),
+							[headerControls.FILTER_CONTAINER] 	= filterContainer,
+							[headerControls.CUSTOM_CONTROL] 	= self:GetNamedChild("CustomControl"),
+							[headerControls.TOGGLE_BUTTON] 		= self:GetNamedChild("ToggleHeader"),
 						}
 						self:GetParent().header = self
+
+						ZO_SharedGamepadEntry_SetHeightFromLabelOnly({label = title})
+						ZO_SharedGamepadEntry_SetHeightFromLabelOnly({label = subTitle})
 					</OnInitialized>
 					
 					<!-- These anchors set it to span from left to right -->
-					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />
-					<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
+					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT"/>
+					<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT"/>
+					<!--
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT"/>
+					<Anchor point="TOPRIGHT
+					-->
 
 					<Controls>
 						<!-- Provides an area that clearly shows the border of the header -->
-						<Backdrop name="$(parent)BG">
+						<Control name="$(parent)BG" excludeFromResizeToFitExtents="true" >
 							<AnchorFill />
-							
-							<Edge file="EsoUI/Art/Tooltips/UI-Border.dds" edgeFileWidth="128" edgeFileHeight="16" />
-							<!--Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds" /-->
-							<Center file="" />
-							<Insets left="16" top="16" right="-16" bottom="-16" />
-							
-							<OnInitialized>
-								self:SetCenterColor(0, 0, 0, 0)
-							</OnInitialized>
-							
 							<Controls>
 								<Texture name="$(parent)MungeOverlay" textureFile="EsoUI/Art/Tooltips/munge_overlay.dds" addressMode="WRAP">
 									<AnchorFill />
 								</Texture>
+								
+								<Texture name="$(parent)Divider" inherits="ZO_Options_Divider" alpha="0.8">
+									<TextureCoords left="0" right=".625" top="0" bottom=".625" />
+									<Anchor point="BOTTOMLEFT" offsetY="0"/>
+									<Anchor point="BOTTOMRIGHT"  offsetX="-5" offsetY="2" />
+								</Texture>
 							</Controls>
-						</Backdrop>
+						</Control>
 
 						<!-- Used to anchor the first control to the header -->
-						<Control name="$(parent)CenterAnchor" resizeToFitDescendents="true" hidden="true">
-							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />
-							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
+						<Control name="$(parent)CenterAnchor" excludeFromResizeToFitExtents="true" hidden="true">
+							<Dimensions y="5" />
+							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="25" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
+							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="-25" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
 						</Control>
-						<Control name="$(parent)TitleContainer" inherits="ZO_GamepadHeaderTitleAnchors">
+
+						<!--Label name="$(parent)Title" inherits="ZO_GamepadScreenHeaderTitleTextTemplate" excludeFromResizeToFitExtents="true" -->
+						<Label name="$(parent)Title" hidden="true"/>
+						<!--Label name="$(parent)SubTitle" inherits="ZO_GamepadHeaderLabelTextTemplate" horizontalAlignment="CENTER" excludeFromResizeToFitExtents="true" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"-->
+						<Label name="$(parent)SubTitle" horizontalAlignment="CENTER" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"/>
+
+						<Control name="$(parent)DividerSimple" hidden="true">
+							<Dimensions y="16" />
 							<Controls>
-								<!--Label name="$(parent)Title" inherits="ZO_GamepadScreenHeaderTitleTextTemplate" excludeFromResizeToFitExtents="true" -->
-								<Label name="$(parent)Title" excludeFromResizeToFitExtents="true" >
-									<Anchor point="BOTTOMLEFT" />
-									<Anchor point="BOTTOMRIGHT" />
-								</Label>
-								<!--Label name="$(parent)SubTitle" inherits="ZO_GamepadHeaderLabelTextTemplate" horizontalAlignment="CENTER" excludeFromResizeToFitExtents="true" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"-->
-								<Label name="$(parent)SubTitle" horizontalAlignment="CENTER" excludeFromResizeToFitExtents="true" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true">
-									<Anchor point="TOPLEFT" relativeTo="$(parent)Title" relativePoint="BOTTOMLEFT" offsetY="-10" />
-									<Anchor point="TOPRIGHT" relativeTo="$(parent)Title" relativePoint="BOTTOMRIGHT" offsetY="-10" />
-								</Label>
+								<Texture name="$(parent)Divider" hidden="false" inherits="LibScrollableMenu_ComboBoxDividerEntry">
+									<Dimensions y="6" />
+									<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0"/>
+									<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" />
+								</Texture>
 							</Controls>
 						</Control>
 
-						<!--This control fakes the area of where a divider would go so that content header is at least as tall as a header would normally be
-							With a divider.  This ensures controls anchoring to the header begin where the Datas would be if there is no data -->
-						<Control name="$(parent)DividerSimple" inherits="LibScrollableMenu_ComboBoxDividerEntry">
-							<Dimensions y="0" />
-							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="BOTTOMLEFT" />
-							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetY="ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y" />
-						</Control>
-						
-						<Control name="$(parent)FilterContainer" resizeToFitDescendents="false" hidden="true">
-							<Dimensions y="36" />
+						<Control name="$(parent)FilterContainer" hidden="true">
+							<Dimensions y="37"/>
 							<Controls>
-								<Button name="$(parent)Reset" inherits="ZO_ButtonBehaviorClickSound">
+								<Button name="$(parent)Reset" excludeFromResizeToFitExtents="true" inherits="ZO_ButtonBehaviorClickSound">
 									<Dimensions x="32" y="32" />
-									<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="0" />
-							
+									<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="-5" offsetY="0" />
+
 									<Textures
 										normal="EsoUI/Art/Help/help_tabIcon_feedback_up.dds"
 										pressed="EsoUI/Art/Help/help_tabIcon_feedback_down.dds"
@@ -326,11 +393,12 @@
 										owningWindow.filterBox.m_dropdownObject = owningWindow.object
 									</OnInitialized>
 					
-									<Anchor point="LEFT" relativeTo="$(parent)Reset" relativePoint="RIGHT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
-									<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="-25"/>
+									<Dimensions y="32"/>
+									<Anchor point="TOPLEFT" relativeTo="$(parent)Reset" relativePoint="TOPRIGHT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
+									<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
 									
 									<Controls>
-										<EditBox name="$(parent)Box" verticalAlignment="CENTER" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
+										<EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
 											<OnTextChanged>
 												ZO_Tooltips_HideTextTooltip()
 												ClearMenu()
@@ -439,13 +507,66 @@
 										ClearTooltip(InformationTooltip)
 									</OnMouseExit>
 								</Button-->
+
 							</Controls>
 						</Control>
-						
+
 						<Control name="$(parent)CustomControl" resizeToFitDescendents="false" hidden="true">
-							<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />
+							<!--
+							Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="0" offsetY="0" />
 							<Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
+							-->
 						</Control>
+
+						<Button name="$(parent)ToggleHeader" inherits="ZO_ButtonBehaviorClickSound" hidden="true">
+							<DimensionConstraints minY="24" maxY="24" minX="24" />
+
+							<OnInitialized>
+								local owningWindow = self:GetOwningWindow()
+								owningWindow.toggleButton = self
+								self.toggleFunction = function(button, checked)
+									if owningWindow.object and owningWindow.object.m_comboBox then
+										owningWindow.object.m_comboBox:UpdateDropdownHeader(self)
+									end
+								end
+								
+								self.GetTooltipText = function()
+									local currentState = self:GetState()
+									if currentState == BSTATE_PRESSED then
+										return GetString(SI_ITEM_SETS_BOOK_HEADER_EXPAND) -- "Expand"
+									elseif currentState == BSTATE_NORMAL then
+										return GetString(SI_ITEM_SETS_BOOK_HEADER_COLLAPSE) -- "Collapse"
+									end
+									return ''
+								end
+							</OnInitialized>
+
+							<Textures
+								normal="EsoUI/Art/Buttons/large_uparrow_up.dds"
+								mouseOver="EsoUI/Art/Buttons/large_uparrow_over.dds"
+								disabled="EsoUI/Art/Buttons/large_uparrow_disabled.dds"
+
+								pressed="EsoUI/Art/Buttons/large_downarrow_up.dds"
+								pressedMouseOver="EsoUI/Art/Buttons/large_downarrow_over.dds"
+								disabledPressed="EsoUI/Art/Buttons/large_downarrow_disabled.dds"
+							/>
+
+							<OnMouseEnter>
+								local owningWindow = self:GetOwningWindow()
+								if owningWindow.object then
+									owningWindow.object:ShowTextTooltip(self, BOTTOM, self:GetTooltipText(), owningWindow)
+								end
+							</OnMouseEnter>
+
+							<OnMouseExit>
+								ZO_Tooltips_HideTextTooltip()
+							</OnMouseExit>
+
+							<OnClicked>
+								ZO_Tooltips_HideTextTooltip()
+								ZO_CheckButton_OnClicked(self)
+							</OnClicked>
+						</Button>
 					</Controls>
 				</Control>
 				
