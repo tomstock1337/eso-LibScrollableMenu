@@ -1749,6 +1749,7 @@ end
 --while a context menu was opened and one directly clicks on that other entry
 local function checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, buttonId)
 	dLog(LSM_LOGTYPE_VERBOSE, "checkIfContextMenuOpenedButOtherControlWasClicked - cbox == ctxtMenu? " .. tos(comboBox == g_contextMenu) .. "; cntxt dropdownVis? " .. tos(g_contextMenu:IsDropdownVisible()))
+--d("checkIfContextMenuOpenedButOtherControlWasClicked - cbox == ctxtMenu? " .. tos(comboBox == g_contextMenu) .. "; cntxt dropdownVis? " .. tos(g_contextMenu:IsDropdownVisible()))
 	if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
 --d("!!!!ContextMenu - check if OPENED!!!!! comboBox: " ..tos(comboBox))
 		if comboBox ~= nil then
@@ -2752,6 +2753,7 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler)
 
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
+--d(">suppressNextOnGlobalMouseUp was set TRUE")
 					suppressNextOnGlobalMouseUp = true
 					return
 				end
@@ -3141,7 +3143,7 @@ function buttonGroupClass:Add(button, entryType)
 			if entryType == LSM_ENTRY_TYPE_RADIOBUTTON then
 				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
 				local newHandler = function(control, buttonId, ignoreCallback)
---d( debugPrefix.. 'buttonGroup -> OnClicked handler. Calling HandleClick')
+d( debugPrefix.. 'buttonGroup -> OnClicked handler. Calling HandleClick')
 					--2024-08-15 Add checkIfContextMenuWasOpened here at direct radioButton click as OnClick handler does not work here!
 					if checkIfContextMenuOpenedButOtherControlWasClicked(control, control:GetParent().m_owner, buttonId) == true then return end
 					selfVar:HandleClick(control, buttonId, ignoreCallback)
@@ -3260,7 +3262,7 @@ function buttonGroupClass:SetChecked(control, checked, ignoreCallback)
 
 	local valueChanged = false
 	for button, controlData in pairs(self.m_buttons) do
---d(">button: " ..getControlName(button) .. ", enabled: " ..tos(button.enabled))
+d(">button: " ..getControlName(button) .. ", enabled: " ..tos(button.enabled))
 		if button.enabled then
 			if ZO_CheckButton_IsChecked(button) ~= checked then
 				valueChanged = true
@@ -3268,7 +3270,7 @@ function buttonGroupClass:SetChecked(control, checked, ignoreCallback)
 				button.checked = checked
 				table.insert(updatedButtons, button)
 				if controlData.originalHandler then
---d(">>calling originalHandler")
+d(">>calling originalHandler")
 					local skipHiddenForReasonsCheck = true
 					controlData.originalHandler(button, buttonId, ignoreCallback, skipHiddenForReasonsCheck) --As a normal OnClicked handler is called here: prevent doing nothing-> So we need to skip the HiddenForReasons check at the checkboxes!
 				end
@@ -3457,22 +3459,24 @@ end
 
 function comboBox_base:OnGlobalMouseUp(eventId, button)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
+--d("comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
 	if suppressNextOnGlobalMouseUp then
 		suppressNextOnGlobalMouseUp = nil
 		return false
 	end
 
 	if self:IsDropdownVisible() then
+--d(">dropdownVisible -> true")
 		if not self.m_dropdownObject:IsMouseOverControl() then
-			--d(">>dropdownVisible -> not IsMouseOverControl")
+--d(">>not IsMouseOverControl")
 			if self:HiddenForReasons(button) then
-				--d(">>>HiddenForReasons -> Hiding dropdown now")
+--d(">>>HiddenForReasons -> Hiding dropdown now")
 				return self:HideDropdown()
 			end
 		end
 	else
 		if self.m_container:IsHidden() then
-			--d(">>>else - containerIsHidden -> Hiding dropdown now")
+--d(">>>else - containerIsHidden -> Hiding dropdown now")
 			self:HideDropdown()
 		else
 			--d("<SHOW DROPDOWN OnMouseUp")
@@ -3539,8 +3543,8 @@ end
 function comboBox_base:HiddenForReasons(button)
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:HiddenForReasons - button: " .. tos(button))
-
-	--[[
+--d("comboBox_base:HiddenForReasons - button: " .. tos(button))
+--[[
 	LSM_debug = LSM_debug or {}
 	LSM_debug.HiddenForReasons = LSM_debug.HiddenForReasons or {}
 	local tabEntryName = getControlName(mocCtrl) or "n/a"
@@ -3554,8 +3558,7 @@ function comboBox_base:HiddenForReasons(button)
 		selfOwner = self.owner,
 		dropdownObjectOwner = self.m_dropdownObject.owner,
 	}
-	]]
-
+]]
 	local dropdownObject = self.m_dropdownObject
 	local isContextMenuVisible = g_contextMenu:IsDropdownVisible()
 	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
@@ -3579,11 +3582,11 @@ function comboBox_base:HiddenForReasons(button)
 							return false
 						end
 					else
-						--d("<<returning contextmenu via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+--d("<<returning contextmenu via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 						return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 					end
 				else
-					--d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+--d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 					--Clicked entry should close after selection?
 					return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 				end
@@ -4209,6 +4212,7 @@ end
 
 function comboBoxClass:GetHiddenForReasons(button)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:GetHiddenForReasons - button: " ..tos(button))
+--d("comboBoxClass:GetHiddenForReasons - button: " ..tos(button))
 	local selfVar = self
 	return function(owningWindow, mocCtrl, comboBox, entry) return checkIfHiddenForReasons(selfVar, button, false, owningWindow, mocCtrl, comboBox, entry) end
 end
@@ -4584,6 +4588,7 @@ end
 
 function submenuClass:GetHiddenForReasons(button)
 	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:GetHiddenForReasons - button: " ..tos(button))
+--d("submenuClass:GetHiddenForReasons - button: " ..tos(button))
 	local selfVar = self
 	return function(owningWindow, mocCtrl, comboBox, entry) return checkIfHiddenForReasons(selfVar, button, false, owningWindow, mocCtrl, comboBox, entry, true) end
 end
@@ -4657,6 +4662,7 @@ end
 
 function contextMenuClass:GetHiddenForReasons(button)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:GetHiddenForReasons - button: " ..tos(button))
+--d("contextMenuClass:GetHiddenForReasons - button: " ..tos(button))
 	local selfVar = self
 	return function(owningWindow, mocCtrl, comboBox, entry) return checkIfHiddenForReasons(selfVar, button, true, owningWindow, mocCtrl, comboBox, entry) end
 end
@@ -5250,8 +5256,8 @@ lib.SetButtonGroupState = setButtonGroupState
 --XML OnClick handler for checkbox and radiobuttons
 function lib.ButtonOnInitialize(control, isRadioButton)
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
---d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
 		if upInside then
+--d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
 			if checkIfContextMenuOpenedButOtherControlWasClicked(control, parent.m_owner, buttonId) == true then return end
 			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
 				local data = getControlData(parent)
@@ -5282,6 +5288,7 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 			local comboBox = parent.m_owner
 			skipHiddenForReasonsCheck = skipHiddenForReasonsCheck or false
 
+d("[LSM]RB: OnClickedHandler - skipHiddenForReasonsCheck: " ..tos(skipHiddenForReasonsCheck))
 			if not skipHiddenForReasonsCheck then
 				if checkIfContextMenuOpenedButOtherControlWasClicked(p_control, comboBox, buttonId) == true then return end
 			end
@@ -5295,7 +5302,7 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 			--else
 				--cBox contextmenu: Invert get's here
 				if originalClicked then
---d(">2 originalClicked")
+d(">2 originalClicked")
 					originalClicked(p_control, buttonId, ignoreCallback, ...)
 				end
 			--end
@@ -5436,9 +5443,6 @@ WORKING ON - Current version: 2.3
 	TESTED: OK
 	17. Radiobuttons change their selected state upon scrolling the menu, and they call their callbacks each time on scrolling
 	TESTED: OK
-	18. Checkbox in a nested submenu will close the total dropdown if it is clicked (either on the cbox or the label)
-	TESTED: BUG
-
 
 
 -------------------
