@@ -1627,7 +1627,7 @@ local function checkIfHiddenForReasons(selfVar, button, isContextMenu, owningWin
 	local contextMenuDropdownObject = g_contextMenu.m_dropdownObject
 	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
 	local isCntxtMenOwnedByComboBox = contextMenuDropdownObject:IsOwnedByComboBox(comboBox)
-d(">isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu))
+--d(">isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu))
 
 
 	if not isContextMenu then
@@ -1638,31 +1638,31 @@ d(">isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isC
 				if not comboBox then
 					--todo check if submenu opened -> How?
 
-					d("<1not comboBox -> true")
+					--d("<1not comboBox -> true")
 					returnValue = true
 				else
 					--Is the mocEntry an empty table (something else was clicked than a LSM entry)
 					if ZO_IsTableEmpty(entry) then
-						d("<1ZO_IsTableEmpty(entry) -> true")
+						--d("<1ZO_IsTableEmpty(entry) -> true")
 						returnValue = true
 					else
 
 						if mocCtrl then
 							local owner = mocCtrl.m_owner
 							if owner then
-								d("1>>owner found")
+								--d("1>>owner found")
 								--Does moc entry belong to a LSM menu and it IS the current comboBox?
 								if owner == comboBox then
-									d(">>1 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+									--d(">>1 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 									returnValue = mocCtrl.closeOnSelect
 								else
-									d(">>1 - true")
+									--d(">>1 - true")
 									--Does moc entry belong to a LSM menu but it's not the current comboBox?
 									returnValue = true
 								end
 							end
 						else
-							d(">>1 - no mocCtrl")
+							--d(">>1 - no mocCtrl")
 						end
 					end
 				end
@@ -1683,12 +1683,12 @@ d(">isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isC
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 			--Is there no LSM comboBox available? Close the context menu
 			if not comboBox then
-				d("<2not comboBox -> true")
+				--d("<2not comboBox -> true")
 				returnValue = true
 			else
 				--Is the mocEntry an empty table (something else was clicked than a LSM entry)
 				if ZO_IsTableEmpty(entry) then
-					d("<2ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown))
+					--d("<2ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown))
 					-- Was e.g. a context menu's submenu search header's editBox or the refresh button left clicked?
 					if mocCtrl and (contextMenuDropdownObject == mocCtrl.m_dropdownObject or (mocCtrl.GetOwningWindow and mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown)) then
 						returnValue = false
@@ -1701,25 +1701,25 @@ d(">isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isC
 					if mocCtrl then
 						local owner = mocCtrl.m_owner
 						if owner then
-							d(">>2owner found")
+							--d(">>2owner found")
 							--Does moc entry belong to a LSM menu and it IS the current contextMenu?
 							if owner == g_contextMenu then --comboBox then
-								d(">>2 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+								--d(">>2 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 								returnValue = mocCtrl.closeOnSelect
 							else
-								d(">>2 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
+								--d(">>2 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
 								--Does moc entry belong to a LSM menu but it's not the current contextMenu?
 								--Is it a submenu entry of the context menu?
 								if (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
-									d(">>>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
+									--d(">>>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
 									returnValue = not mocCtrl.closeOnSelect
 								else
-									d(">>>2 - true")
+									--d(">>>2 - true")
 									returnValue = true
 								end
 							end
 						else
-							d(">>2 - owner not found")
+							--d(">>2 - owner not found")
 						end
 					end
 				end
@@ -1727,6 +1727,8 @@ d(">isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isC
 			--Do not hide the contextMenu if the mocCtrl clicked should keep the menu opened
 			if mocCtrl and mocCtrl.closeOnSelect == false then
 				doNotHideContextMenu = true
+				suppressNextOnGlobalMouseUp = true
+				returnValue = false
 			end
 
 		elseif button == MOUSE_BUTTON_INDEX_RIGHT then
@@ -1754,12 +1756,12 @@ end
 local function checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, buttonId)
 	dLog(LSM_LOGTYPE_VERBOSE, "checkIfContextMenuOpenedButOtherControlWasClicked - cbox == ctxtMenu? " .. tos(comboBox == g_contextMenu) .. "; cntxt dropdownVis? " .. tos(g_contextMenu:IsDropdownVisible()))
 	if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
-d("!!!!ContextMenu - check if OPENED!!!!! comboBox: " ..tos(comboBox))
+--d("!!!!ContextMenu - check if OPENED!!!!! comboBox: " ..tos(comboBox))
 		if comboBox ~= nil then
 			return comboBox:HiddenForReasons(buttonId)
 		end
 	end
-d("<<combobox not hidden for reasons")
+--d("<<combobox not hidden for reasons")
 	return false
 end
 
@@ -3461,7 +3463,7 @@ end
 
 function comboBox_base:OnGlobalMouseUp(eventId, button)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
-d("comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
+--d("comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
 	if suppressNextOnGlobalMouseUp then
 		suppressNextOnGlobalMouseUp = nil
 		return false
@@ -3469,18 +3471,18 @@ d("comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouse
 
 	if self:IsDropdownVisible() then
 		if not self.m_dropdownObject:IsMouseOverControl() then
-d(">>dropdownVisible -> not IsMouseOverControl")
+--d(">>dropdownVisible -> not IsMouseOverControl")
 			if self:HiddenForReasons(button) then
-d(">>>HiddenForReasons -> Hiding dropdown now")
+--d(">>>HiddenForReasons -> Hiding dropdown now")
 				return self:HideDropdown()
 			end
 		end
 	else
 		if self.m_container:IsHidden() then
-d(">>>else - containerIsHidden -> Hiding dropdown now")
+--d(">>>else - containerIsHidden -> Hiding dropdown now")
 			self:HideDropdown()
 		else
-d("<SHOW DROPDOWN OnMouseUp")
+--d("<SHOW DROPDOWN OnMouseUp")
 			lib.openMenu = self
 			-- If shown in ShowDropdownInternal, the global mouseup will fire and immediately dismiss the combo box. We need to
 			-- delay showing it until the first one fires.
@@ -3544,7 +3546,7 @@ end
 function comboBox_base:HiddenForReasons(button)
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:HiddenForReasons - button: " .. tos(button))
-d("comboBox_base:HiddenForReasons - button: " .. tos(button))
+--d("comboBox_base:HiddenForReasons - button: " .. tos(button))
 
 	LSM_debug = LSM_debug or {}
 	LSM_debug.HiddenForReasons = LSM_debug.HiddenForReasons or {}
@@ -3567,27 +3569,27 @@ d("comboBox_base:HiddenForReasons - button: " .. tos(button))
 	if isContextMenuVisible and not wasTextSearchContextMenuEntryClicked then
 		wasTextSearchContextMenuEntryClicked = g_contextMenu.m_dropdownObject:WasTextSearchContextMenuEntryClicked()
 	end
-d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked))
+--d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked))
 
 	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true then
-d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()))
+--d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()))
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				--do not close or keep open based on clicked entry but do checks in contextMenuClass:GetHiddenForReasons instead
 				if isContextMenuVisible == true then
 					--Is the actual mocCtrl's owner the contextMenu? Or did we click some other non-context menu entry/control?
 					if owningWindow ~= g_contextMenu.m_container then
-d(">>>returing nothing because is or isOpened -> contextMenu. Going to GetHiddenForReasons")
+--d(">>>returing nothing because is or isOpened -> contextMenu. Going to GetHiddenForReasons")
 						if wasTextSearchContextMenuEntryClicked == true then
-d(">>>returing false cuz textSearchEntry was selected")
+--d(">>>returing false cuz textSearchEntry was selected")
 							return false
 						end
 					else
-d("<<returning contextmenu via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+--d("<<returning contextmenu via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 						return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 					end
 				else
-d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+--d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 					--Clicked entry should close after selection?
 					return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 				end
@@ -3601,7 +3603,7 @@ d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 
 	local hiddenForReasons
 	if not self.GetHiddenForReasons then
-d("<<self:GetHiddenForReasons is NIL! isContextMenuVisible: " .. tos(isContextMenuVisible))
+--d("<<self:GetHiddenForReasons is NIL! isContextMenuVisible: " .. tos(isContextMenuVisible))
 --LSM_debug.HiddenForReasons[tabEntryName]._GetHiddenForReasonsMissing = true
 		return false
 	end
@@ -4213,7 +4215,7 @@ end
 
 function comboBoxClass:GetHiddenForReasons(button)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:GetHiddenForReasons - button: " ..tos(button))
-d("111111111111111 comboBoxClass:GetHiddenForReasons - button: " ..tos(button))
+--d("111111111111111 comboBoxClass:GetHiddenForReasons - button: " ..tos(button))
 	local selfVar = self
 	return function(owningWindow, mocCtrl, comboBox, entry) return checkIfHiddenForReasons(selfVar, button, false, owningWindow, mocCtrl, comboBox, entry) end
 end
@@ -4589,7 +4591,7 @@ end
 
 function submenuClass:GetHiddenForReasons(button)
 	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:GetHiddenForReasons - button: " ..tos(button))
-d("222222222222222 submenuClass:GetHiddenForReasons - button: " ..tos(button))
+--d("222222222222222 submenuClass:GetHiddenForReasons - button: " ..tos(button))
 	local selfVar = self
 	return function(owningWindow, mocCtrl, comboBox, entry) return checkIfHiddenForReasons(selfVar, button, false, owningWindow, mocCtrl, comboBox, entry, true) end
 end
@@ -4663,7 +4665,7 @@ end
 
 function contextMenuClass:GetHiddenForReasons(button)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:GetHiddenForReasons - button: " ..tos(button))
-d("3333333333333333 contextMenuClass:GetHiddenForReasons - button: " ..tos(button))
+--d("3333333333333333 contextMenuClass:GetHiddenForReasons - button: " ..tos(button))
 	local selfVar = self
 	return function(owningWindow, mocCtrl, comboBox, entry) return checkIfHiddenForReasons(selfVar, button, true, owningWindow, mocCtrl, comboBox, entry) end
 end
@@ -5403,7 +5405,7 @@ LibScrollableMenu = lib
 WORKING ON - Current version: 2.31
 -------------------
 	1. Bug: Clicking a checkbox/button in a context menu's submenu closes the context menu
-	TESTED: BUG
+	TESTED: OK
 
 
 
