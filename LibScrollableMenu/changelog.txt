@@ -1,4 +1,9 @@
--v- ---------------LSM v2.3 - 2024-08-xx---------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.3 - 2024-08-25---------------------------------------------------------------------------- -v-
+-[Fixes]-
+--Clicking a checkbox/button in a context menu's submenu closes the context menu
+
+
+-v- ---------------LSM v2.3 - 2024-08-19---------------------------------------------------------------------------- -v-
 -[Fixes]-
 --Fixed iconData nil check for multi icon control
 --Fixed getComboBox to return the actual context menu combobox so that submenu entries clicked run their callback
@@ -33,8 +38,7 @@
 -[Changes]
 --Callback functions for checkboxes now use the similar signature like normal entry callbacks:	function(comboBox, itemName, item, checked)
 
-
--v- ---------------LSM v2.21 - 2024-06-02---------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.21 - 2024-06-02--------------------------------------------------------------------------- -v-
 -[Fixes]-
 --Search/filter edtibox resets to empty if options.enableFilter == false
 

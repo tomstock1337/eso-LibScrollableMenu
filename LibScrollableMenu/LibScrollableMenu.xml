@@ -237,7 +237,7 @@
 		-->
 		<!-- The template used for initializing all dropdowns -->
 		<TopLevelControl name="LibScrollableMenu_Dropdown_Behavior" virtual="true">
-			<OnEffectivelyHidden name="HideDrop	down" >
+			<OnEffectivelyHidden name="HideDropDown" >
 				<!-- Handler set normally in ZO_ComboBox:Initialize -->
 				if self.object then
 					self.object:HideDropdown()

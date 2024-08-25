@@ -165,6 +165,14 @@ local function test()
 		--==============================================================================================================
 		local submenuEntriesForContextMenu = {
 			{
+				label = 		"Test Checkbox in context menu submenu",
+				callback = function()
+					d("Checkbox in context menu submenu clicked")
+				end,
+				entryType = LSM_ENTRY_TYPE_CHECKBOX,
+
+			},
+			{
 				--name            = "CntxtMenu - Submenu entry 1:1",
 				label = 			"Test name missing - only label",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
