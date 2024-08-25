@@ -1690,36 +1690,53 @@ local function checkIfHiddenForReasons(selfVar, button, isContextMenu, owningWin
 				if ZO_IsTableEmpty(entry) then
 					--d("<2ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown))
 					-- Was e.g. a context menu's submenu search header's editBox or the refresh button left clicked?
-					if mocCtrl and (contextMenuDropdownObject == mocCtrl.m_dropdownObject or (mocCtrl.GetOwningWindow and mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown)) then
-						returnValue = false
-						doNotHideContextMenu = true
+					if mocCtrl then
+						if (contextMenuDropdownObject == mocCtrl.m_dropdownObject or (mocCtrl.GetOwningWindow and mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown)) then
+--d(">>2 - submenu search header editBox or refresh button clicked")
+							returnValue = false
+							doNotHideContextMenu = true
+						else
+							-- or was a checkbox's [ ] box control in a contextMenu's submenu clicked directly?
+							if mocCtrl.m_owner == nil then
+								local parent = mocCtrl:GetParent()
+								mocCtrl = parent
+							end
+							local owner = mocCtrl.m_owner
+--d(">>2 - isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
+							if owner and (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
+--d(">>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
+								returnValue = not mocCtrl.closeOnSelect
+							else
+								returnValue = true
+							end
+						end
 					else
 						returnValue = true
 					end
 				else
 
 					if mocCtrl then
-						local owner = mocCtrl.m_owner
+						local owner = mocCtrl.m_owner or mocCtrl:GetParent().m_owner
 						if owner then
-							--d(">>2owner found")
+							--d(">>2_1owner found")
 							--Does moc entry belong to a LSM menu and it IS the current contextMenu?
 							if owner == g_contextMenu then --comboBox then
-								--d(">>2 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+								--d(">>2_1 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
 								returnValue = mocCtrl.closeOnSelect
 							else
-								--d(">>2 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
+								--d(">>2_1 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
 								--Does moc entry belong to a LSM menu but it's not the current contextMenu?
 								--Is it a submenu entry of the context menu?
 								if (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
-									--d(">>>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
+									--d(">>>2_1 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
 									returnValue = not mocCtrl.closeOnSelect
 								else
-									--d(">>>2 - true")
+									--d(">>>2_1 - true")
 									returnValue = true
 								end
 							end
 						else
-							--d(">>2 - owner not found")
+							--d(">>2_1 - owner not found")
 						end
 					end
 				end
@@ -2740,7 +2757,7 @@ end
 
 function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntryMouseUp - control: %s, button: %s, upInside: %s", tos(getControlName(control)), tos(button), tos(upInside))
-d(debugPrefix .. "OnEntryMouseUp - button: " ..tos(button) .. ", upInside: " .. tos(upInside) .. ", ignoreHandler: " ..tos(ignoreHandler))
+--d(debugPrefix .. "OnEntryMouseUp - button: " ..tos(button) .. ", upInside: " .. tos(upInside) .. ", ignoreHandler: " ..tos(ignoreHandler))
 
 	--20240816 Suppress the next global mouseup event raised from a comboBox's dropdown (e.g. if a submenu entry outside of a context menu was clicked
 	--while a context menu was opened, and the context menu was closed then due to this click, but the global mouse up handler on the sbmenu entry runs
@@ -3548,6 +3565,7 @@ function comboBox_base:HiddenForReasons(button)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:HiddenForReasons - button: " .. tos(button))
 --d("comboBox_base:HiddenForReasons - button: " .. tos(button))
 
+	--[[
 	LSM_debug = LSM_debug or {}
 	LSM_debug.HiddenForReasons = LSM_debug.HiddenForReasons or {}
 	local tabEntryName = getControlName(mocCtrl) or "n/a"
@@ -3561,6 +3579,7 @@ function comboBox_base:HiddenForReasons(button)
 		selfOwner = self.owner,
 		dropdownObjectOwner = self.m_dropdownObject.owner,
 	}
+	]]
 
 	local dropdownObject = self.m_dropdownObject
 	local isContextMenuVisible = g_contextMenu:IsDropdownVisible()
@@ -5268,7 +5287,7 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 
 				local onClickedHandler = control:GetHandler('OnClicked')
 				if onClickedHandler then
-d("[LSM]RB: OnClickedHandler: " ..tos(onClickedHandler))
+--d("[LSM]RB: OnClickedHandler: " ..tos(onClickedHandler))
 					onClickedHandler(control, buttonId)
 				end
 
@@ -5304,7 +5323,7 @@ d("[LSM]RB: OnClickedHandler: " ..tos(onClickedHandler))
 			--else
 				--cBox contextmenu: Invert get's here
 				if originalClicked then
-d(">2 originalClicked")
+--d(">2 originalClicked")
 					originalClicked(p_control, buttonId, ignoreCallback, ...)
 				end
 			--end
@@ -5405,7 +5424,7 @@ LibScrollableMenu = lib
 WORKING ON - Current version: 2.31
 -------------------
 	1. Bug: Clicking a checkbox/button in a context menu's submenu closes the context menu
-	TESTED: OK
+	TESTED: BUG
 
 
 

@@ -1,6 +1,6 @@
 -v- ---------------LSM v2.3 - 2024-08-25---------------------------------------------------------------------------- -v-
 -[Fixes]-
---Working on bug: Clicking a checkbox/button in a context menu's submenu closes the context menu
+--Clicking a checkbox/button in a context menu's submenu closes the context menu
 
 
 -v- ---------------LSM v2.3 - 2024-08-19---------------------------------------------------------------------------- -v-
