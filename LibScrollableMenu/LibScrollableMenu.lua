@@ -825,7 +825,7 @@ do
 			control:SetHidden(true)
 
 			local hidden = not refreshResults[controlId]
-			-- There are no other header controls showing, so hide the togle button
+			-- There are no other header controls showing, so hide the toggle button, and it's extension
 			if not collapsed and (controlId == TOGGLE_BUTTON or controlId == TOGGLE_BUTTON_CLICK_EXTENSION) and g_currentBottomLeftHeader == DEFAULT_CONTROLID then
 				hidden = true
 			end
@@ -2388,6 +2388,14 @@ local lastEntryVisible  = true	--Was the last entry processed visible at the res
 local filterString				--the search string
 local filterFunc				--the filter function to use. Default is "defaultFilterFunc". Custom filterFunc can be added via options.customFilterFunc
 
+--options.customFilterFunc needs the same signature/parameters like this function
+--return value needs to be a boolean: true = found/false = not found
+-->Attention: prefix "/" in the filterString still jumps this function for submenus as non-matching will be always found that way!
+local function defaultFilterFunc(p_item, p_filterString)
+	local name = p_item.label or p_item.name
+	return zo_strlower(name):find(p_filterString) ~= nil
+end
+
 --Check if entry should be added to the search/filter of the string search of the collapsible header
 -->Returning true: item must be considered for the search / false: item should be skipped
 local function passItemToSearch(item)
@@ -2399,14 +2407,6 @@ local function passItemToSearch(item)
 		return not filterNamesExempts[name]
 	end
 	return false
-end
-
---options.customFilterFunc needs the same signature/parameters like this function
---return value needs to be a boolean: true = found/false = not found
--->Attention: prefix "/" in the filterString still jumps this function for submenus as non-matching will be always found that way!
-local function defaultFilterFunc(p_item, p_filterString)
-	local name = p_item.label or p_item.name
-	return zo_strlower(name):find(p_filterString) ~= nil
 end
 
 --Search the item's label or name now, if the entryType of the item should be processed by text search, and if the entry
