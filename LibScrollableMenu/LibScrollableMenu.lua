@@ -4661,9 +4661,14 @@ function contextMenuClass:Initialize(comboBoxContainer)
 end
 
 --LSM v2.4 - ZO_Menu and LibCustomMenu hooks to make it compatible
+local isAnyCustomScrollableZO_MenuContextMenuRegistered
 function contextMenuClass:ZO_MenuHooks()
-	--Did any addon, or LSM itsself via slash command /lsmuseforinv, register a replacement hook of ZO_Menu -> with LSM?
-	if not lib.IsAnyCustomScrollableZO_MenuContextMenuRegistered() then
+	isAnyCustomScrollableZO_MenuContextMenuRegistered = isAnyCustomScrollableZO_MenuContextMenuRegistered or lib.IsAnyCustomScrollableZO_MenuContextMenuRegistered
+
+	--Did any addon, or LSM itsself via slash command /lsmcontextmenu, register a replacement hook of ZO_Menu -> with LSM?
+	-->If not: Clear all internal build variables and tables again
+	if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then
+		if lib.debugLCM then d("["..MAJOR.."]ZO_MenuHooks - Resettinf als LSM ZO_Menu variables as no LSM replacement for ZO_Menu is registered") end
 		lib.ZO_MenuData = {}
 		lib.ZO_MenuData_CurrentIndex = 0
 		lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
@@ -4676,16 +4681,16 @@ function contextMenuClass:ZO_MenuHooks()
 	-->But only if we aren't currently in a ShowMenu() process where we build the entries in lib.ZO_MenuData (accross
 	-->vanilla menus and addon added menu entries -> ShowMenu could be called several times then, and ClearMenu() [by LSM] too)
 	if not lib.preventClearCustomScrollableMenuToClearZO_MenuData then
-		if lib.debugLCM then d("["..MAJOR.."]Clearing ZO_MenuData* again") end
+		if lib.debugLCM then d("["..MAJOR.."]ZO_MenuHooks - Clearing ZO_MenuData* again") end
 		lib.ZO_MenuData = {}
 		lib.ZO_MenuData_CurrentIndex = 0
 		lib.ZO_Menu_cBoxControlsToMonitor = {}
 	end
 
 	--Clear the ZO_Menu items if we clear the LSM context menu items?
-	if lib.callZO_MenuClearMenuOnClearCustomScrollableMenu then
+	if lib.callZO_MenuClearMenuOnClearCustomScrollableMenu == true then
 		lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
-		if lib.debugLCM then d("["..MAJOR.."]Calling ClearMenu() because of callZO_MenuClearMenuOnClearCustomScrollableMenu = true") end
+		if lib.debugLCM then d("["..MAJOR.."]ZO_MenuHooks - Calling ClearMenu() because of callZO_MenuClearMenuOnClearCustomScrollableMenu = true") end
 		ClearMenu()
 	end
 end
@@ -4718,6 +4723,9 @@ function contextMenuClass:ClearItems()
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ClearItems")
 	self:SetContextMenuOptions(nil)
 	self:ResetToDefaults()
+
+	--LSM v2.4 - Check if any ZO_Menu Hooks are active and need to run extra code
+	self:ZO_MenuHooks()
 
 --	ZO_ComboBox_HideDropdown(self:GetContainer())
 	ZO_ComboBox_HideDropdown(self)

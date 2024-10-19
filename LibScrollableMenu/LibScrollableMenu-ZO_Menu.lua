@@ -109,6 +109,19 @@ local listRowsAllowedPatternsForContextMenu = {
 }
 ]]
 
+--Add controls here (or parent controls, or owningWindow controls) which are allowed for ZO_Menu -> LSM mapping.
+-->LSM will be shown and used for them -> LibScrollableMenu does not hook into it
+local whitelistedControlNamesForZO_MenuReplacement = {
+	--Player Inventory
+	["ZO_PlayerInventory"] = true,
+	--Player bank
+	--House bank
+	--Guild bank
+	--Companion
+	--Crafting tables
+}
+
+
 --Add controls here (or parent controls, or owningWindow controls) which got blacklisted for ZO_Menu -> LSM mapping.
 -->ZO_Menu will be shown and used normally for them and LibScrollableMenu does not hook into it
 local blacklistedControlsForZO_MenuReplacement = {
@@ -116,10 +129,10 @@ local blacklistedControlsForZO_MenuReplacement = {
 	--["ZO_ChatWindowTextEntryEditBox"] = true,
 }
 
---The table with the already registered LSM inventory context menu hooks
+--The table with the already registered LSM context menu hooks
 -->See API function lib.RegisterZO_MenuContextMenuReplacement below
-local registeredCustomScrollableInventoryContextMenus = {}
-lib.registeredCustomScrollableInventoryContextMenus = registeredCustomScrollableInventoryContextMenus
+local registeredCustomScrollableContextMenus        = {}
+lib.registeredCustomScrollableContextMenus = registeredCustomScrollableContextMenus
 
 
 
@@ -132,7 +145,7 @@ local LSMAlreadyMappedItemNum = 0
 local lastAddedZO_MenuItemsIndex = 0
 
 --Table of last created (theoretically, not shown!) ZO_Menu items -> Which LSM will then show instead on next ShowMenu() call
-lib.ZO_MenuData = {}
+lib.ZO_MenuData = {} --Will be reset in LibScrollableMenu.lua, class method contextMenuClass:ZO_MenuHooks()
 lib.ZO_MenuData_CurrentIndex = 0
 --Preventer variable to keep the current lib.ZO_MenuData entries (e.g. if ClearMenu() is called from ShowMenu() function)
 lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
@@ -161,6 +174,32 @@ local LCM_AddItemFunctionsHooked = false
 --Local helper functions
 ------------------------------------------------------------------------------------------------------------------------
 
+--Is the control allowed -> Means: Does this control use LSM for ZO_Menu/LCM entries?
+--> LSM will be used normally then
+local function isAllowedControl(owner)
+	if owner ~= nil then
+		local ownerName = getControlName(owner)
+		if whitelistedControlNamesForZO_MenuReplacement[ownerName] then
+			return true, ownerName
+		end
+		local parent = owner.GetParent and owner:GetParent()
+		if parent ~= nil then
+			ownerName = getControlName(parent)
+			if whitelistedControlNamesForZO_MenuReplacement[ownerName] then
+				return true, ownerName
+			end
+			local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
+			if owningWindow ~= nil then
+				ownerName = getControlName(owningWindow)
+				if whitelistedControlNamesForZO_MenuReplacement[ownerName] then
+					return true, ownerName
+				end
+			end
+		end
+	end
+	return false, nil
+end
+
 --Is the control blacklisted -> Means: Does this control prevent the LSM usage for ZO_Menu/LCM entries?
 --> ZO_Menu will be used normally then
 local function isBlacklistedControl(owner)
@@ -179,7 +218,7 @@ local function isBlacklistedControl(owner)
 			end
 		end
 	end
-	return false
+	return false, nil
 end
 
 --[[ Currently disabled as ALL rows should try to replace the context menu entries
@@ -242,7 +281,7 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 --Is any custom scrollable ZO_Menu replacement context menu registered?
 local function isAnyCustomScrollableZO_MenuContextMenuRegistered()
-	return not ZO_IsTableEmpty(registeredCustomScrollableInventoryContextMenus)
+	return not ZO_IsTableEmpty(registeredCustomScrollableContextMenus)
 end
 lib.IsAnyCustomScrollableZO_MenuContextMenuRegistered = isAnyCustomScrollableZO_MenuContextMenuRegistered
 
@@ -725,7 +764,9 @@ function lib.LoadZO_MenuHooks()
 			--->The currently last added entry index will be stored in lib.ZO_MenuData_CurrentIndex, and we will only add the "new added" (after that index)
 			--->entries of our table lib.ZO_MenuData to the current menu then
 			ZO_PreHook("ShowMenu", function(owner, initialRefCount, menuType)
+				--Unhide the TLC so the menus of ZO_Menu will show properly in any case
 				ZO_Menus:SetHidden(false)
+				--No LSM replacement for ZO_Menu is registered at all? Abort here now and show ZO_Menu normally
 				if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then
 					resetZO_MenuClearVariables()
 					return false -- run original ZO_Menu's ShowMenu()
@@ -767,8 +808,17 @@ function lib.LoadZO_MenuHooks()
 					return false -- run original ZO_Menu's ShowMenu()
 				end
 
-				--local isAllowed, _ = isSupportedInventoryRowPattern(owner, ownerName)
-				local isBlocked, ownerName = isBlacklistedControl(owner)
+				--Is the control allowed to exchange ZO_Menu? e.g. inventory context menu
+				local isAllowed, ownerName = isAllowedControl(owner)
+				if not isAllowed then
+					if lib.debugLCM then d("<ABORT: Menu owner " .. tos(ownerName) .. " is not allowed for LSM usage") end
+					resetZO_MenuClearVariables()
+					return false
+				end
+
+				--Is the control blocked?
+				local isBlocked = false
+				isBlocked, ownerName = isBlacklistedControl(owner, ownerName)
 				if isBlocked == true then
 					if lib.debugLCM then d("<ABORT: Menu owner " .. tos(ownerName) .. " is a blocked control") end
 					resetZO_MenuClearVariables()
@@ -860,21 +910,21 @@ function lib.LoadZO_MenuHooks()
 	-- API functions for ZO_Menu hooks of LSM
 	--------------------------------------------------------------------------------------------------------------------
 
-	--Similar to LibCustomMenu: Register a hook for your addon to use LibScrollableMenu for the inventory context menus
-	-->If ANY CustomScrollableInventoryContextMenu was registered with LibScrollableMenu:
-	-->LibCustomMenu and vanilla ZO_Menu inventory context menus will be suppressed then, mapped into LSM entries and
+	--Similar to LibCustomMenu: Register a hook for your addon to use LibScrollableMenu for the context menus
+	-->If ANY CustomScrollableContextMenu was registered with LibScrollableMenu:
+	-->LibCustomMenu and vanilla ZO_Menu context menus will be suppressed then, mapped into LSM entries and
 	-->LSM context menu will be shown instead
-	-->Else: Normal ZO_Menu and LibCustomMenu inventory context menus will be used
+	-->Else: Normal ZO_Menu and LibCustomMenu context menus will be used
 	function lib.RegisterZO_MenuContextMenuReplacement(addonName)
-		assert(addonName ~= nil and registeredCustomScrollableInventoryContextMenus[addonName] == nil, sfor('['..MAJOR..'.RegisterZO_MenuContextMenuReplacement] \'addonName\' missing or already registered: %q', tos(addonName)))
-		registeredCustomScrollableInventoryContextMenus[addonName] = true
+		assert(addonName ~= nil and registeredCustomScrollableContextMenus[addonName] == nil, sfor('['..MAJOR..'.RegisterZO_MenuContextMenuReplacement] \'addonName\' missing or already registered: %q', tos(addonName)))
+		registeredCustomScrollableContextMenus[addonName] = true
 		clearZO_MenuAndLSM()
 		addZO_Menu_ShowMenuHook()
 	end
 	local registerZO_MenuContextMenuReplacement = lib.RegisterZO_MenuContextMenuReplacement
 
 
-	--Unregister a before registered custom scrollable invetory context menu again
+	--Unregister a before registered custom scrollable context menu again
 	--Returns true if addon was unregistered, false if addon was not unregistered
 	function lib.UnregisterZO_MenuContextMenuReplacement(addonName)
 		if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then
@@ -882,8 +932,8 @@ function lib.LoadZO_MenuHooks()
 			return
 		end
 		assert(addonName ~= nil, sfor('['..MAJOR..'.UnregisterZO_MenuContextMenuReplacement] \'addonName\' missing: %q', tos(addonName)))
-		if registeredCustomScrollableInventoryContextMenus[addonName] ~= nil then
-			registeredCustomScrollableInventoryContextMenus[addonName] = nil
+		if registeredCustomScrollableContextMenus[addonName] ~= nil then
+			registeredCustomScrollableContextMenus[addonName] = nil
 			clearZO_MenuAndLSM()
 			return true
 		end
@@ -898,7 +948,7 @@ function lib.LoadZO_MenuHooks()
 			return false
 		end
 		assert(addonName ~= nil, sfor('['..MAJOR..'.IsZO_MenuContextMenuReplacementRegistered] \'addonName\' missing: %q', tos(addonName)))
-		return registeredCustomScrollableInventoryContextMenus[addonName] ~= nil
+		return registeredCustomScrollableContextMenus[addonName] ~= nil
 	end
 	local isZO_MenuContextMenuReplacementRegistered = lib.IsZO_MenuContextMenuReplacementRegistered
 
@@ -908,7 +958,7 @@ function lib.LoadZO_MenuHooks()
 	--------------------------------------------------------------------------------------------------------------------
 
 	--Add a control to a blacklist that should not be replacing ZO_Menu context menus with LibScrollableMenu context menu.
-	-->For these added controls on the blacklist the LSM context menu will not be shown, instead of ZO_Menu, but ZO_Menu
+	-->For these added controls on the blacklist the LSM context menu will not be shown instead of ZO_Menu, but ZO_Menu
 	-->will be used.
 	-->The controlName must be the name of the control where the context menu opens on, the parent control of that control or
 	-->the openingWindow control of that control!
@@ -926,7 +976,7 @@ function lib.LoadZO_MenuHooks()
 		blacklistedControlsForZO_MenuReplacement[controlName] = nil
 	end
 
-	--Did an addon register a custom scrollable menu as replacement for ZO_Menu?
+	--Check if the controlName is on the blacklist (to prevent LSM usage for ZO_Menu)
 	function lib.IsControlOnZO_MenuContextMenuReplacementBlacklist(controlName)
 		local controlNameType = type(controlName)
 		assert(controlNameType == "string", sfor('['..MAJOR..'.IsControlOnZO_MenuContextMenuReplacementBlacklist] \'controlName\' missing or wrong type %q. Name: %q', tos(controlNameType), tos(controlName)))
@@ -935,10 +985,36 @@ function lib.LoadZO_MenuHooks()
 
 
 
+	--Add a control to a whitelist/allowed list that should be replacing ZO_Menu context menus with LibScrollableMenu context menu.
+	-->For these added controls on the whitelist the LSM context menu will be shown instead of ZO_Menu.
+	-->The controlName must be the name of the control where the context menu opens on, the parent control of that control or
+	-->the openingWindow control of that control!
+	function lib.AddControlToZO_MenuContextMenuReplacementWhitelist(controlName)
+		local controlNameType = type(controlName)
+		assert(controlNameType == "string" and whitelistedControlNamesForZO_MenuReplacement[controlName] == nil, sfor('['..MAJOR..'.AddControlToZO_MenuContextMenuReplacementWhitelist] \'controlName\' missing, wrong type %q, or already added. Name: %q', tos(controlNameType), tos(controlName)))
+		whitelistedControlNamesForZO_MenuReplacement[controlName] = true
+	end
+
+	--Remove a control from the whitelist/allowed list that should be replacing ZO_Menu context menus with LibScrollableMenu context menu.
+	-->For these removed controls the ZO_Menu context menu will be shown, instead of LSM
+	function lib.RemoveControlFromZO_MenuContextMenuReplacementWhitelist(controlName)
+		local controlNameType = type(controlName)
+		assert(controlNameType == "string" and whitelistedControlNamesForZO_MenuReplacement[controlName] ~= nil, sfor('['..MAJOR..'.RemoveControlFromZO_MenuContextMenuReplacementWhitelist] \'controlName\' missing, wrong type %q, or was not added yet. Name: %q', tos(controlNameType), tos(controlName)))
+		whitelistedControlNamesForZO_MenuReplacement[controlName] = nil
+	end
+
+	--Check if the controlName is on the whitelist (to use LSM instead of ZO_Menu)
+	function lib.IsControlOnZO_MenuContextMenuReplacementWhitelist(controlName)
+		local controlNameType = type(controlName)
+		assert(controlNameType == "string", sfor('['..MAJOR..'.IsControlOnZO_MenuContextMenuReplacementWhitelist] \'controlName\' missing or wrong type %q. Name: %q', tos(controlNameType), tos(controlName)))
+		return whitelistedControlNamesForZO_MenuReplacement[controlName] ~= nil
+	end
+
+
 	--------------------------------------------------------------------------------------------------------------------
 	-- Load the ZO_Menu & LCM -> LSM hook via a slash command
 	--------------------------------------------------------------------------------------------------------------------
-	local function invContextMenuZO_MenuReplacement()
+	local function contextMenuZO_MenuReplacement()
 		if isZO_MenuContextMenuReplacementRegistered(MAJOR) then
 			unregisterZO_MenuContextMenuReplacement(MAJOR)
 			d("["..MAJOR.."]Using default (ZO_Menu) game context menus for the inventory")
@@ -949,8 +1025,8 @@ function lib.LoadZO_MenuHooks()
 	end
 
 	--Toggle the replacement of ZO_Menu (including LibCustomMenu) at iventory contextmenus on/off
-	SLASH_COMMANDS["/lsminvcontextmenu"] = function()
-        invContextMenuZO_MenuReplacement()
+	SLASH_COMMANDS["/lsmcontextmenu"] = function()
+        contextMenuZO_MenuReplacement()
     end
 
 
