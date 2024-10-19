@@ -295,6 +295,7 @@
 							[headerControls.FILTER_CONTAINER] 	= filterContainer,
 							[headerControls.CUSTOM_CONTROL] 	= self:GetNamedChild("CustomControl"),
 							[headerControls.TOGGLE_BUTTON] 		= self:GetNamedChild("ToggleHeader"),
+							[headerControls.TOGGLE_BUTTON_CLICK_EXTENSION] 		= self:GetNamedChild("ToggleHeaderClickExtension"),
 						}
 						self:GetParent().header = self
 
@@ -565,6 +566,35 @@
 							<OnClicked>
 								ZO_Tooltips_HideTextTooltip()
 								ZO_CheckButton_OnClicked(self)
+							</OnClicked>
+						</Button>
+
+						<Button name="$(parent)ToggleHeaderClickExtension" inherits="ZO_ButtonBehaviorClickSound" hidden="true">
+							<DimensionConstraints minY="0" maxY="24" minX="0" />
+
+							<OnInitialized>
+								local owningWindow = self:GetOwningWindow()
+								owningWindow.toggleButtonClickExtension = self
+							</OnInitialized>
+
+							<OnMouseEnter>
+								local owningWindow = self:GetOwningWindow()
+								if owningWindow.object then
+									local toggleButton = owningWindow.toggleButton
+									owningWindow.object:ShowTextTooltip(self, BOTTOM, toggleButton:GetTooltipText(), owningWindow)
+								end
+							</OnMouseEnter>
+
+							<OnMouseExit>
+								ZO_Tooltips_HideTextTooltip()
+							</OnMouseExit>
+
+							<OnClicked>
+								ZO_Tooltips_HideTextTooltip()
+
+								local owningWindow = self:GetOwningWindow()
+								local toggleButton = owningWindow.toggleButton
+								ZO_CheckButton_OnClicked(toggleButton)
 							</OnClicked>
 						</Button>
 					</Controls>
