@@ -711,6 +711,7 @@ lib.headerControls = {
 	FILTER_CONTAINER	= 4,
 	CUSTOM_CONTROL		= 5,
 	TOGGLE_BUTTON		= 6,
+	TOGGLE_BUTTON_CLICK_EXTENSION = 7, -- control that anchors to the toggle buttons left to make the whole header's width clickable to toggle the collapsed state
 }
 local headerControls = lib.headerControls
 
@@ -726,6 +727,7 @@ do
 	local FILTER_CONTAINER	= headerControls.FILTER_CONTAINER
 	local CUSTOM_CONTROL	= headerControls.CUSTOM_CONTROL
 	local TOGGLE_BUTTON		= headerControls.TOGGLE_BUTTON
+	local TOGGLE_BUTTON_CLICK_EXTENSION	= headerControls.TOGGLE_BUTTON_CLICK_EXTENSION
 
 	local DEFAULT_CONTROLID = CENTER_BASELINE
 	
@@ -748,13 +750,10 @@ do
 
 							-- {point, relativeTo_controlId, relativePoint, offsetX, offsetY}
 	local anchors = {
-		[TOGGLE_BUTTON]		= { Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0)},
-		--Try to anchor the toggleButton to the bottom right but make it's width the total width of the header so you
-		--can click the whole header to toggle it -> 2nd anchor to bottom left
-		--[[
-		[TOGGLE_BUTTON]		= { Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0),
-							    Anchor:New(BOTTOMLEFT, PARENT, BOTTOMLEFT, 0, 0) },
-		]]
+		[TOGGLE_BUTTON]		= { Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0) },
+		--Show a control left of the toggle button: We can click this to expand the header again, and after that the control resizes to 0pixels and hides
+		[TOGGLE_BUTTON_CLICK_EXTENSION]	= { Anchor:New(BOTTOMRIGHT, TOGGLE_BUTTON, BOTTOMLEFT, 0, 0),
+							    	Anchor:New(BOTTOMLEFT, PARENT, BOTTOMLEFT, -ROW_OFFSET_Y, 0) },
 		[DIVIDER_SIMPLE]	= { Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y),
 								Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) }, -- ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y
 								
@@ -790,6 +789,19 @@ do
 		if controlId == TOGGLE_BUTTON then
 			-- We want to keep height if collapsed but not add height for the button if not.
 			height = collapsed and height or 0
+		--The control processed is the collapsed header's toggle button "click extension"
+		elseif controlId == TOGGLE_BUTTON_CLICK_EXTENSION then
+			--Always fixed header height addition = 0 as the toggleButton already provided the extra height for the header
+			--and this click extensikon control only is placed on the left to make it easier to expand the header again
+			height = 0
+			if collapsed then
+				control:SetHidden(false)
+				control:SetHeight(controls[TOGGLE_BUTTON]:GetHeight())
+			else
+				control:SetHidden(true)
+				control:ClearAnchors()
+				control:SetDimensions(0, 0)
+			end
 		end
 
 		return height
@@ -811,19 +823,19 @@ do
 		for controlId, control in ipairs(controls) do
 			control:ClearAnchors()
 			control:SetHidden(true)
-			
+
 			local hidden = not refreshResults[controlId]
 			-- There are no other header controls showing, so hide the togle button
-			if not collapsed and controlId == TOGGLE_BUTTON and g_currentBottomLeftHeader == DEFAULT_CONTROLID then
+			if not collapsed and (controlId == TOGGLE_BUTTON or controlId == TOGGLE_BUTTON_CLICK_EXTENSION) and g_currentBottomLeftHeader == DEFAULT_CONTROLID then
 				hidden = true
 			end
-			
+
 			if not hidden then
 				if showHeaderDivider(controlId) then
 					-- Only show the divider if g_currentBottomLeftHeader is before DIVIDER_SIMPLE and controlId is after DIVIDER_SIMPLE
 					headerHeight = headerHeight + header_applyAnchorSetToControl(headerControl, anchors[DIVIDER_SIMPLE], DIVIDER_SIMPLE)
 				end
-				
+
 				local anchorSet = anchors[controlId] or anchors[DEFAULT_ANCHOR]
 				headerHeight = headerHeight + header_applyAnchorSetToControl(headerControl, anchorSet, controlId, collapsed)
 			end
@@ -834,7 +846,6 @@ do
 				headerHeight = headerHeight + (ROW_OFFSET_Y * 3)
 			end
 			headerControl:SetHeight(headerHeight)
-
 		end
 	end
 	
@@ -925,7 +936,8 @@ do
 		refreshResults[FILTER_CONTAINER] = header_processData(controls[FILTER_CONTAINER], comboBox:IsFilterEnabled(), collapsed)
 		refreshResults[CUSTOM_CONTROL] = header_processControl(controls[CUSTOM_CONTROL], getValueOrCallback(options.customHeaderControl, options), collapsed)
 		refreshResults[TOGGLE_BUTTON] = header_processData(controls[TOGGLE_BUTTON], getValueOrCallback(options.headerCollapsible, options))
-		
+		refreshResults[TOGGLE_BUTTON_CLICK_EXTENSION] = header_processData(controls[TOGGLE_BUTTON_CLICK_EXTENSION], getValueOrCallback(options.headerCollapsible, options))
+
 		header_updateAnchors(headerControl, refreshResults, collapsed)
 	end
 end
@@ -4215,8 +4227,6 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth, ini
 	comboBox_base.Initialize(self, parent, comboBoxContainer, options, depth)
 
 	--Custom added controls
-	-->Header - Collapse&Expand toggle button
---	self.m_dropdown.headerCollapseButton:SetHidden(true)
 
 	return self
 end
@@ -4470,6 +4480,7 @@ function comboBoxClass:SetupDropdownHeader()
 	end
 end
 
+--Toggle function called as the collapsible header is clicked
 function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s, toggleButton: %s", tos(self.options), tos(toggleButtonCtrl))
 	local headerControl, dropdownControl = getHeaderControl(self)
@@ -5435,9 +5446,9 @@ LibScrollableMenu = lib
 -------------------
 WORKING ON - Current version: 2.32
 -------------------
-	1. Feature: Add attribute ".doNotFilter boolean" to all entryTypes. If true then do not hide those controls if a search/filter is used
+	1. Feature: Added attribute ".doNotFilter boolean" to all entryTypes. If true then do not hide those controls if a search/filter is used
 	   -> e.g. used for a button "Apply changes" at a submenu to apply checkboxes checked/unchecked state now even if search filter was hiding non-matching checkboxes
-
+	2. Changed collapsible header to expand if you click the whole header, and not only the small v^ button
 
 -------------------
 TODO - To check (future versions)

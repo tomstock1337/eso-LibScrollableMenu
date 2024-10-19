@@ -1,7 +1,13 @@
--v- ---------------LSM v2.3 - 2024-08-25---------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.32 - 2024-10-19---------------------------------------------------------------------------- -v-
+-[Additions]-
+-Added attribute ".doNotFilter boolean" to all entryTypes. If true then do not hide those controls if a search/filter is used
+  -> e.g. used for a button "Apply changes" at a submenu to apply checkboxes checked/unchecked state now even if search filter was hiding non-matching checkboxes
+-Changed collapsible header to expand if you click the whole header, and not only the small v^ button
+
+
+-v- ---------------LSM v2.31 - 2024-08-25---------------------------------------------------------------------------- -v-
 -[Fixes]-
 --Clicking a checkbox/button in a context menu's submenu closes the context menu
-
 
 -v- ---------------LSM v2.3 - 2024-08-19---------------------------------------------------------------------------- -v-
 -[Fixes]-
