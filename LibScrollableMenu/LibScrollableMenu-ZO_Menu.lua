@@ -1,61 +1,76 @@
---Add support for ZO_Menu (including LibCustomMenu) context menus
-
-
-if LibScrollableMenu == nil then return end
-
 --------------------------------------------------------------------
 -- LibScrollableMenu - Support for ZO_Menu (including LibCustomMenu)
-
 
 local lib = LibScrollableMenu
 if lib == nil then return end
 
-local MAJOR = lib.name
+------------------------------------------------------------------------------------------------------------------------
+-- Overview of what the ZO_Menu & LibCustomMenu integration does
+------------------------------------------------------------------------------------------------------------------------
+--[[
+	ZO_Menu is the ZOs control used to show context menus or context-menu like menus (at the chat text input, to show last entered values e.g., or at the
+	player inventory to show a list of possible actions like "Link to chat" etc.) at controls.
+	Vanilla code and/or addons add entries via AddMenuItem (or LibCustomMenu uses AddCustomMenuItem and AddCustomSubMenuItem -> both call AddMenuItem internally in the end!)
+	and show them via the ShowMenu(ownerControl) function. ClearMenu() hides the menu again and clears internal values.
+
+	AddMenuItem will increase an index ZO_Menu.currentIndex by 1 and add the entries to ZO_Menu.items[index] table.
+	ShowMenu does read all entries in ZO_Menu.items from 1 to last and creates menu item controls, anchored to each other (below each other).
+	ShowMenu will be called by each addon adding items to a context menu, e.g. adding entries to a player inventory row! That means that it can be called
+	multiple times after another to draw a complete menu (always starting at 1 and recreating all entries again and again :-( ). This makes it hard to
+	properly capture all cases of vanilla dn addon added context menu entries -> transfer them to LibScrollableMenu properly.
+
+	What does LibScrollableMenu do now?
+	It hooks into the ZO_Menu functions like AddMenuItem, and LibCustomMenu AddMenuItem and AddSubmenuItem functions, to build an internal table
+	LibScrollableMenu.ZO_MenuData -> with mapped data of the ZO_Menu.items -> mapped to the LibScrollableMenu context menu entry format.
+	At ShowMenu it basically does the same like ZO_Menu did and loops all LibScrollableMenu.ZO_MenuData entries and shows them at the scrollable list menu of LSM.
+	ZO_Menu will then be supressed/hidden (items in ZO_Menu.items will be kept until ClearMenu is called by the game itsself or until the LSM context menu closes, then
+	ClearMenu will be called too).
+	That way LibCustomMenu and ZO_Menu are still able to add entries to ZO_Menu, but LibScrollableMenu will read those, map them to LSM entries, suppress the ZO_Menu
+	showing them and shows them via LSM UI then in the end, which makes the menus scrollable, searchable etc.
+
+	[Where is done what?]
+	Function code to map the ZO_Menu/LCM items to LSM is here in this lua file:
+	->See function lib.LoadZO_MenuHooks()
+
+	Additional hook code is in file LibScrollableMenu:
+	-> See function onAddonLoaded(event, name) -> calling lib.LoadZO_MenuHooks() of this file here
+	-> Additional hooks to LSM context menus see function contextMenuClass:ZO_MenuHooks()
+
+	!Many thanks to votan for creating LibCustomMenu and providing API functions for LSM which we can hook to get the menu and submenu data more easily!
+]]
+
+----Variables etc.
 
 --local ZOs references
 local tos = tostring
 local sfor = string.format
 
 --Local libray references
---Variables
-local LSM_ENTRY_TYPE_NORMAL = 	LSM_ENTRY_TYPE_NORMAL
-local LSM_ENTRY_TYPE_DIVIDER = 	LSM_ENTRY_TYPE_DIVIDER
-local LSM_ENTRY_TYPE_HEADER = 	LSM_ENTRY_TYPE_HEADER
-local LSM_ENTRY_TYPE_CHECKBOX = LSM_ENTRY_TYPE_CHECKBOX
+local MAJOR = lib.name
+local scrollListRowTypes = lib.scrollListRowTypes
+
+--Entry type variables
+local LSM_ENTRY_TYPE_NORMAL = 		scrollListRowTypes["LSM_ENTRY_TYPE_NORMAL"]
+local LSM_ENTRY_TYPE_DIVIDER = 		scrollListRowTypes["LSM_ENTRY_TYPE_DIVIDER"]
+local LSM_ENTRY_TYPE_HEADER = 		scrollListRowTypes["LSM_ENTRY_TYPE_HEADER"]
+local LSM_ENTRY_TYPE_CHECKBOX = 	scrollListRowTypes["LSM_ENTRY_TYPE_CHECKBOX"]
+local LSM_ENTRY_TYPE_SUBMENU = 		scrollListRowTypes["LSM_ENTRY_TYPE_SUBMENU"]
+local LSM_ENTRY_TYPE_BUTTON = 		scrollListRowTypes["LSM_ENTRY_TYPE_BUTTON"]
+local LSM_ENTRY_TYPE_RADIOBUTTON = 	scrollListRowTypes["LSM_ENTRY_TYPE_RADIOBUTTON"]
 
 local libDivider = lib.DIVIDER
+
 local comboBoxDefaults = lib.comboBoxDefaults
+
 
 --Functions
 local getValueOrCallback = lib.GetValueOrCallback
 local clearCustomScrollableMenu = ClearCustomScrollableMenu
 local getControlName = lib.GetControlName
 
+
 --ZOs controls
 local zoListDialog = ZO_ListDialog1
-
-
-------------------------------------------------------------------------------------------------------------------------
--- Overview of what the ZO_Menu & LibCustomMenu integration does
-------------------------------------------------------------------------------------------------------------------------
---[[
-	ZO_Menu is the ZOs control used to show context menus or context-menu like menus (at the chat text input, to show last entered values e.g.) at controls.
-	Vanilla code and/or addons add entries via AddMenuItem (or LibCustomMenu uses AddCustomMenuItem and AddCustomSubMenuItem -> both call AddMenuItem in the end!)
-	and show them via the ShowMenu(ownerControl) function. ClearMenu() hides the menu again and clears internal values.
-	AddMenuItem will increase an index ZO_Menu.currentIndex by 1 and add the entries to ZO_Menu.items[index] table.
-	ShowMenu does read all entries in ZO_Menu.items from 1 to last and creates menu item controls, anchored to each other (below each other).
-	ShowMenu will be called by each addon adding items to a context menu, e.g. adding entries to a player inventory row.
-
-	What does LibScrollableMenu do now?
-	It hooks into the ZO_Menu functions like AddMenuItem, and LibCustomMenu AddMenuItem and AddSubmenuItem functions, to build an internal table
-	LibScrollableMenu.ZO_MenuData -> with mapped data of teh ZO_Menu.items to the LibScrollableMenu contex menu entry format.
-	At ShowMenu it basically does the same like ZO_Menu did and loops all LibScrollableMenu.ZO_MenuData entriies and shows them at the scrollable list menu of LSM.
-	ZO_Menu will then be supressed/hidden (items in ZO_Menu.items will be kept until ClearMenu is called by the game itsself or until the LSM context menu closes, then
-	ClearMenu will be called too).
-	That way LibCustomMenu and ZO_Menu are still able to add entries to ZO_Menu, but LibScrollableMenu will read those, map them to LSM entries and suppress the ZO_Menu
-	showing then.
-]]
-
 
 
 --[[
@@ -80,28 +95,32 @@ local listRowsAllowedPatternsForContextMenu = {
 }
 ]]
 
---Add controls here (or parent or owningWindow controls) which got blacklisted for ZO_Menu -> LSM mapping.
+--Add controls here (or parent controls, or owningWindow controls) which got blacklisted for ZO_Menu -> LSM mapping.
 -->ZO_Menu will be shown and used normally for them and LibScrollableMenu does not hook into it
 local blacklistedControlsForZO_MenuReplacement = {
 	--Chat editbox
 	--["ZO_ChatWindowTextEntryEditBox"] = true,
 }
 
+--The table with the already registered LSM inventory context menu hooks
+-->See API function lib.RegisterZO_MenuContextMenuReplacement below
 local registeredCustomScrollableInventoryContextMenus = {}
 
 --Preventer variable with the name and callback and itemtype (and optional isSubmenu boolean) for AddMenuItem function hook
---> Prevents that if LibCustomMenu is enabled the function calls to AddCustom*MenuItem, that internally call AddMenuItem again,
---> will add duplicate data
+--> Prevents that if LibCustomMenu is enabled the function calls to AddCustom*MenuItem, which internally call AddMenuItem again,
+--> will add duplicate data in the end
 lib.LCMLastAddedMenuItem                 = {}
 local LCMLastAddedMenuItem = lib.LCMLastAddedMenuItem
 
+
 ------------------------------------------------------------------------------------------------------------------------
---Table of last created (theoretically, not shown!) ZO_Menu items -> Which LSM will then show on ShowMenu() call
+--Table of last created (theoretically, not shown!) ZO_Menu items -> Which LSM will then show instead on next ShowMenu() call
 lib.ZO_MenuData = {}
 lib.ZO_MenuData_CurrentIndex = 0
 --Preventer variable to keep the current lib.ZO_MenuData entries (e.g. if ClearMenu() is called from ShowMenu() function)
 lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
 --Explicitly call ClearMenu() of ZO_Menu if ClearCustomScrollableMenu() ( -> g_contextMenu:ClearItems()) is called?
+--> See function contextMenuClass:ZO_MenuHooks()
 lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
 --Checkbox Controls of ZO_Menu where we need to monitor "the next" change of the state, so we can update the LSMentry in
 --lib.ZO_MenuData properly
