@@ -5476,15 +5476,22 @@ local function buildLibraryLAMSettingsMenu()
             getFunc = function() return contextMenuOwnerControlName end,
             setFunc = function(newValue)
 				contextMenuOwnerControlName = newValue
-				if _G[contextMenuOwnerControlName] == nil then
-					d("["..MAJOR.."]ERROR - Control " .. tos(contextMenuOwnerControlName) .." does not globally exist!")
+				if contextMenuOwnerControlName ~= "" then
+					if _G[contextMenuOwnerControlName] == nil then
+						d("["..MAJOR.."]ERROR - Control " .. tos(contextMenuOwnerControlName) .." does not globally exist!")
+						contextMenuOwnerControlName = nil
+						selectedExistingOwnerName = nil
+						newVisibleRowsForControlName = nil
+						newVisibleRowsSubmenuForControlName = nil
+					else
+						newVisibleRowsForControlName = (sv.visibleRowsContextMenu and sv.visibleRowsContextMenu[contextMenuOwnerControlName] and sv.visibleRowsContextMenu[contextMenuOwnerControlName]["visibleRows"]) or comboBoxDefaults.visibleRows
+						newVisibleRowsSubmenuForControlName = (sv.visibleRowsContextMenu and sv.visibleRowsContextMenu[contextMenuOwnerControlName] and sv.visibleRowsContextMenu[contextMenuOwnerControlName]["visibleRowsSubmenu"]) or comboBoxDefaults.visibleRowsSubmenu
+					end
+				else
 					contextMenuOwnerControlName = nil
 					selectedExistingOwnerName = nil
 					newVisibleRowsForControlName = nil
 					newVisibleRowsSubmenuForControlName = nil
-				else
-					newVisibleRowsForControlName = (sv.visibleRowsContextMenu and sv.visibleRowsContextMenu[contextMenuOwnerControlName] and sv.visibleRowsContextMenu[contextMenuOwnerControlName]["visibleRows"]) or comboBoxDefaults.visibleRows
-					newVisibleRowsSubmenuForControlName = (sv.visibleRowsContextMenu and sv.visibleRowsContextMenu[contextMenuOwnerControlName] and sv.visibleRowsContextMenu[contextMenuOwnerControlName]["visibleRowsSubmenu"]) or comboBoxDefaults.visibleRowsSubmenu
 				end
 			end,
             disabled = function() return false end,
