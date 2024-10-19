@@ -946,15 +946,17 @@ end
 -- Local functions
 --------------------------------------------------------------------
 
+local throttledCallDelaySuffixCounter = 0
 local function throttledCall(callback, delay, throttledCallNameSuffix)
 	delay = delay or throttledCallDelay
-	throttledCallNameSuffix = throttledCallNameSuffix or ""
-	dLog(LSM_LOGTYPE_VERBOSE, "REGISTERING throttledCall - callback: %s, delay: %s", tos(callback), tos(delay))
+	throttledCallDelaySuffixCounter = throttledCallDelaySuffixCounter + 1
+	throttledCallNameSuffix = throttledCallNameSuffix or tos(throttledCallDelaySuffixCounter)
 	local throttledCallDelayTotalName = throttledCallDelayName .. throttledCallNameSuffix
+	dLog(LSM_LOGTYPE_VERBOSE, "REGISTERING throttledCall - callback: %s, delay: %s, name: %s", tos(callback), tos(delay), tos(throttledCallDelayTotalName))
 	EM:UnregisterForUpdate(throttledCallDelayTotalName)
 	EM:RegisterForUpdate(throttledCallDelayTotalName, delay, function()
 		EM:UnregisterForUpdate(throttledCallDelayTotalName)
-		dLog(LSM_LOGTYPE_VERBOSE, "DELAYED throttledCall -> CALLING callback now: %s", tos(callback))
+		dLog(LSM_LOGTYPE_VERBOSE, "DELAYED throttledCall -> CALLING callback now: %s, name: %s", tos(callback), tos(throttledCallDelayTotalName))
 		callback()
 	end)
 end
