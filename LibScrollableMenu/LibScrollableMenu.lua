@@ -302,6 +302,7 @@ local comboBoxDefaults = {
 	m_maxNumSelections = 			nil,
 	m_height = 						DEFAULT_HEIGHT,
 	horizontalAlignment = 			TEXT_ALIGN_LEFT,
+	itemYPad = 						0, --LibScrollableMenu support
 
 	--LibScrollableMenu internal (e.g. .options)
 	disableFadeGradient = 			false,
@@ -311,6 +312,7 @@ local comboBoxDefaults = {
 	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 	headerCollapsed = 				false,
 }
+lib.comboBoxDefaults = comboBoxDefaults
 
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
 local defaultComboBoxOptions  = {

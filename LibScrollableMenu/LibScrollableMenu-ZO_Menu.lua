@@ -521,8 +521,8 @@ function lib.LoadZO_MenuHooks()
 				lsmEntry.m_highlightColor = highlightColor or comboBoxDefaults.m_highlightColor
 
 				--TODO LSM 2.4 Add Support for those in LSM comboBoxDefaults etc.!
-				lsmEntry.m_itemYPad = 			 itemYPad or comboBoxDefaults.m_itemYPad
-				lsmEntry.m_horizontalAlignment = horizontalAlignment or comboBoxDefaults.m_horizontalAlignment
+				lsmEntry.m_itemYPad = 			 itemYPad or comboBoxDefaults.itemYPad
+				lsmEntry.m_horizontalAlignment = horizontalAlignment or comboBoxDefaults.horizontalAlignment
 
 				lsmEntry.enabled = 			enabled
 			end
