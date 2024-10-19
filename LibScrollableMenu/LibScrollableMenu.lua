@@ -9,7 +9,7 @@ lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
 
 lib.author = "IsJustaGhost, Baertram, tomstock, Kyoma"
-lib.version = "2.32"
+lib.version = "2.40"
 
 if not lib then return end
 
@@ -4660,6 +4660,36 @@ function contextMenuClass:Initialize(comboBoxContainer)
 	self.isContextMenu = true
 end
 
+--LSM v2.4 - ZO_Menu and LibCustomMenu hooks to make it compatible
+function contextMenuClass:ZO_MenuHooks()
+	--Did any addon, or LSM itsself via slash command /lsmuseforinv, register a replacement hook of ZO_Menu -> with LSM?
+	if not lib.IsAnyCustomScrollableZO_MenuContextMenuRegistered() then
+		lib.ZO_MenuData = {}
+		lib.ZO_MenuData_CurrentIndex = 0
+		lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
+		lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
+		lib.ZO_Menu_cBoxControlsToMonitor = {}
+		return
+	end
+
+	--Clear cached entries of LSM (which have been build based on ZO_Menu items)
+	-->But only if we aren't currently in a ShowMenu() process where we build the entries in lib.ZO_MenuData (accross
+	-->vanilla menus and addon added menu entries -> ShowMenu could be called several times then, and ClearMenu() [by LSM] too)
+	if not lib.preventClearCustomScrollableMenuToClearZO_MenuData then
+		if lib.debugLCM then d("["..MAJOR.."]Clearing ZO_MenuData* again") end
+		lib.ZO_MenuData = {}
+		lib.ZO_MenuData_CurrentIndex = 0
+		lib.ZO_Menu_cBoxControlsToMonitor = {}
+	end
+
+	--Clear the ZO_Menu items if we clear the LSM context menu items?
+	if lib.callZO_MenuClearMenuOnClearCustomScrollableMenu then
+		lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
+		if lib.debugLCM then d("["..MAJOR.."]Calling ClearMenu() because of callZO_MenuClearMenuOnClearCustomScrollableMenu = true") end
+		ClearMenu()
+	end
+end
+
 function contextMenuClass:GetUniqueName()
 	if self.openingControl then
 		return getControlName(self.openingControl)
@@ -5298,6 +5328,12 @@ lib.SetButtonGroupState = setButtonGroupState
 
 
 ------------------------------------------------------------------------------------------------------------------------
+-- API functions for custom scrollable inventory context menu (ZO_Menu / LibCustomMenu support)
+------------------------------------------------------------------------------------------------------------------------
+--> See ZO_Menu2LSM_Mapping.lua
+
+
+------------------------------------------------------------------------------------------------------------------------
 -- XML handler functions
 ------------------------------------------------------------------------------------------------------------------------
 --XML OnClick handler for checkbox and radiobuttons
@@ -5427,6 +5463,9 @@ local function onAddonLoaded(event, name)
 			dLog(LSM_LOGTYPE_DEBUG, "Verbose debugging turned %s / Debugging: %s", tos(lib.doVerboseDebug and "ON" or "OFF"), tos(lib.doDebug and "ON" or "OFF"))
 		end
 	end
+
+	--Load the hooks for ZO_Menu and allow replacement of ZO_Menu items with LSM entries
+	lib.LoadZO_MenuHooks()
 end
 EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
@@ -5446,11 +5485,9 @@ LibScrollableMenu = lib
 
 --[[
 -------------------
-WORKING ON - Current version: 2.32
+WORKING ON - Current version: 2.4
 -------------------
-	1. Feature: Added attribute ".doNotFilter boolean" to all entryTypes. If true then do not hide those controls if a search/filter is used
-	   -> e.g. used for a button "Apply changes" at a submenu to apply checkboxes checked/unchecked state now even if search filter was hiding non-matching checkboxes
-	2. Changed collapsible header to expand if you click the whole header, and not only the small v^ button
+	1. Feature: Add support for ZO_Menu, including LibCustomMenu, at the inventory right click context menus
 
 -------------------
 TODO - To check (future versions)
@@ -5467,7 +5504,6 @@ TODO - To check (future versions)
 UPCOMING FEATURES  - What will be added in the future?
 -------------------
 	1. Sort headers for the dropdown (ascending/descending) (maybe: allowing custom sort functions too)
-	2. LibCustomMenu and ZO_Menu support in inventories
 ]]
 
 --[[

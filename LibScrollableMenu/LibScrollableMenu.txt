@@ -5,19 +5,26 @@
 
 ## Title: LibScrollableMenu
 ## Description: Adds scrollable menu&nested submenus functionality to combobox. Originally developed by Kyoma's Titlizer
-## Version: 2.32
-## AddOnVersion: 020302
+## Version: 2.40
+## AddOnVersion: 020400
 ## IsLibrary: true
 ## Author: IsJustaGhost, Baertram, tomstock (, Kyoma)
 ## APIVersion: 101043 101044
-## OptionalDependsOn: LibDebugLogger>=263
+## OptionalDependsOn: LibDebugLogger>=263 LibCustomMenu>=722
 ## SavedVariables: LibScrollableMenu_SavedVars
 
 lang/en.lua
 lang/$(language).lua
 
+##Library lua code files
 LibScrollableMenu.lua
+
+##Library XML templates files
 LibScrollableMenu.xml
+
+## Add support for ZO_Menu context menus
+LibScrollableMenu-ZO_Menu.lua
+
 
 ## Uncomment this to test the combobox with different menu entryTypes and submenus
 ## Use slash command /lsmtest to show the test UI
