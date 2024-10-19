@@ -13,13 +13,18 @@ lib.version = "2.40"
 
 if not lib then return end
 
+--Other libarries
+local LAM2 = LibAddonMenu2
+
+
 --------------------------------------------------------------------
 --SavedVariables
 --------------------------------------------------------------------
 --The default SV variables
 local lsmSVDefaults = {
-	textSearchHistory = {},
-	collapsedHeaderState = {},
+	textSearchHistory = {},			--The header'S text search right click entries (10 last used search terms) per comboBox header
+	collapsedHeaderState = {},		--The collapsed state of the header per owner (comboBox, owningWindow or control opening the contextMenu -> Depending on control type e.g. list control with rows, or not)
+	contextMenuVisibleRows = {}, 	--The context menu visible rows and submenu visible rows per owner (owningWindow or control opening the contextMenu)
 }
 local svName = "LibScrollableMenu_SavedVars"
 lib.SV = {} --will be init properly at the onAddonLoaded function
@@ -4670,7 +4675,7 @@ function contextMenuClass:ZO_MenuHooks()
 	--Did any addon, or LSM itsself via slash command /lsmcontextmenu, register a replacement hook of ZO_Menu -> with LSM?
 	-->If not: Clear all internal build variables and tables again
 	if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then
-		if lib.debugLCM then d("["..MAJOR.."]ZO_MenuHooks - Resettinf als LSM ZO_Menu variables as no LSM replacement for ZO_Menu is registered") end
+		if lib.debugLCM then d("["..MAJOR.."]ZO_MenuHooks - Resetting, because no LSM replacement of ZO_Menu is registered") end
 		lib.ZO_MenuData = {}
 		lib.ZO_MenuData_CurrentIndex = 0
 		lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
@@ -5407,6 +5412,189 @@ end
 -- Init
 ------------------------------------------------------------------------------------------------------------------------
 
+local function buildExistingOwnerNamesList()
+	local existingOwnerNamesList = {}
+	sv = lib.SV
+	if sv.visibleRowsContextMenu ~= nil then
+		for ownerControlName, _ in pairs(sv.visibleRowsContextMenu) do
+			existingOwnerNamesList[#existingOwnerNamesList + 1] = ownerControlName
+		end
+	end
+	return existingOwnerNamesList
+end
+
+local function buildLibraryLAMSettingsMenu()
+	LAM2 = LibAddonMenu2
+	if LAM2 == nil then return end
+
+	--Add the LAM settings menufor the library to e.g. control the default values for visibleRows of all contextMenus, or
+	--change those for contextMenu's ownerNames (e.g. the ZO_PlayerInventory)
+	local panelData = {
+		type = "panel",
+		name = MAJOR,
+		displayName = MAJOR,
+		author = lib.author,
+		version = lib.version,
+		slashCommand = "/lsmsettings",
+		registerForRefresh = true,
+		registerForDefaults = false,
+	}
+    local LSMLAMPanelName = MAJOR .. "_LAMSettings"
+
+	lib.LAMsettingsPanel = LAM2:RegisterAddonPanel(LSMLAMPanelName, panelData)
+	sv = lib.SV
+
+	local contextMenuOwnerControlName, selectedExistingOwnerName, newVisibleRowsForControlName, newVisibleRowsSubmenuForControlName
+	local existingOwnerNamesList = buildExistingOwnerNamesList()
+
+	local optionsData = {
+		{
+			type = "header",
+			name = MAJOR,
+		},
+		{
+			type = "description",
+			title = "Context menus",
+			text = "Test description here\n\ntest test test\n\n\nbla blubb",
+		},
+        {
+            type = "editbox",
+            name = "Owner control name",
+            tooltip = "Enter here the control name of a context menu owner, e.g. ZO_PlayerInventory",
+            getFunc = function() return contextMenuOwnerControlName end,
+            setFunc = function(newValue)
+				contextMenuOwnerControlName = newValue
+				if _G[contextMenuOwnerControlName] == nil then
+					d("["..MAJOR.."]ERROR - Control " .. tos(contextMenuOwnerControlName) .." does not globally exist!")
+					contextMenuOwnerControlName = nil
+					selectedExistingOwnerName = nil
+					newVisibleRowsForControlName = nil
+					newVisibleRowsSubmenuForControlName = nil
+				end
+			end,
+            disabled = function() return false end,
+			width = "full",
+			default = "",
+        },
+        {
+            type = "slider",
+            name = "Visible rows #",
+            tooltip = "Enter the number of visible rows at the contextmenu of the owner's controlName",
+            getFunc = function()
+				return newVisibleRowsForControlName
+			end,
+            setFunc = function(newValue)
+				newVisibleRowsForControlName = newValue
+            end,
+			step = 1,
+			min = 5,
+			max = 30,
+            disabled = function() return contextMenuOwnerControlName == nil or contextMenuOwnerControlName == "" end,
+			width = "half",
+			default = comboBoxDefaults.visibleRows,
+        },
+        {
+            type = "slider",
+            name = "Visible rows #, submenus",
+            tooltip = "Enter the number of visible rows at the contextmenu's submenus of the owner's controlName",
+            getFunc = function()
+				return newVisibleRowsSubmenuForControlName
+			end,
+            setFunc = function(newValue)
+				newVisibleRowsSubmenuForControlName = newValue
+            end,
+			step = 1,
+			min = 5,
+			max = 30,
+            disabled = function() return contextMenuOwnerControlName == nil or contextMenuOwnerControlName == "" end,
+			width = "half",
+			default = comboBoxDefaults.visibleRowsSubmenu,
+        },
+        {
+            type = "button",
+            name = "Apply visibleRows",
+            tooltip = "Change the visible rows and visible rows of the submenu for the entered context menu owner's controlName.",
+            func = function()
+				if contextMenuOwnerControlName ~= nil and (newVisibleRowsForControlName ~= nil or newVisibleRowsSubmenuForControlName ~= nil) then
+					--Add the savedvariables update of sv.visibleRowsContextMenu[contextMenuOwnerControlName]
+					if newVisibleRowsForControlName ~= nil then
+						sv.visibleRowsContextMenu = sv.visibleRowsContextMenu or {}
+						sv.visibleRowsContextMenu[contextMenuOwnerControlName] = sv.visibleRowsContextMenu[contextMenuOwnerControlName] or {}
+						sv.visibleRowsContextMenu[contextMenuOwnerControlName].visibleRows = newVisibleRowsForControlName
+					end
+					if newVisibleRowsSubmenuForControlName ~= nil then
+						sv.visibleRowsContextMenu = sv.visibleRowsContextMenu or {}
+						sv.visibleRowsContextMenu[contextMenuOwnerControlName] = sv.visibleRowsContextMenu[contextMenuOwnerControlName] or {}
+						sv.visibleRowsContextMenu[contextMenuOwnerControlName].visibleRowsSubmenu = newVisibleRowsSubmenuForControlName
+					end
+					contextMenuOwnerControlName = nil
+					selectedExistingOwnerName = nil
+					newVisibleRowsForControlName = nil
+					newVisibleRowsSubmenuForControlName = nil
+				end
+			end,
+            disabled = function() return (contextMenuOwnerControlName == nil or contextMenuOwnerControlName == "") or (newVisibleRowsForControlName == nil and newVisibleRowsSubmenuForControlName == nil) end,
+        },
+        {
+            type = "dropdown",
+			name = "Already added owner names",
+			tooltip = "Choose an already added owner's controlName to change the values, or to delete it.",
+			choices = existingOwnerNamesList,
+			getFunc = function() return selectedExistingOwnerName end,
+			setFunc = function(selectedOwnerName)
+				selectedExistingOwnerName = selectedOwnerName
+				contextMenuOwnerControlName = selectedOwnerName
+				newVisibleRowsForControlName = (sv.visibleRowsContextMenu and sv.visibleRowsContextMenu[selectedOwnerName] and sv.visibleRowsContextMenu[selectedOwnerName]["visibleRows"]) or comboBoxDefaults.visibleRows
+				newVisibleRowsSubmenuForControlName = (sv.visibleRowsContextMenu and sv.visibleRowsContextMenu[selectedOwnerName] and sv.visibleRowsContextMenu[selectedOwnerName]["visibleRowsSubmenu"]) or comboBoxDefaults.visibleRowsSubmenu
+				--[[
+				for ownerName, _ in pairs(sv.visibleRowsContextMenu) do
+					if ownerName == selectedOwnerName then
+						selectedExistingOwnerName = selectedOwnerName
+						contextMenuOwnerControlName = selectedOwnerName
+                        break
+					end
+				end
+				]]
+			end,
+            scrollable = true,
+			width = "half",
+			default = function() return nil end,
+			reference = "LSM_LAM_DROPDOWN_SELECTED_EXISTING_OWNER_NAME"
+        },
+        {
+            type = "button",
+            name = "Delete control name",
+            tooltip = "Delete the selected owner's controlName from the saved controls list",
+            func = function()
+				if selectedExistingOwnerName ~= nil then
+					if sv.visibleRowsContextMenu and sv.visibleRowsContextMenu[selectedExistingOwnerName] ~= nil then
+						sv.visibleRowsContextMenu[selectedExistingOwnerName] = nil
+					end
+					selectedExistingOwnerName = nil
+					contextMenuOwnerControlName = nil
+					newVisibleRowsForControlName = nil
+					newVisibleRowsSubmenuForControlName = nil
+
+					existingOwnerNamesList = buildExistingOwnerNamesList()
+					if LSM_LAM_DROPDOWN_SELECTED_EXISTING_OWNER_NAME ~= nil then
+						LSM_LAM_DROPDOWN_SELECTED_EXISTING_OWNER_NAME:UpdateChoices(existingOwnerNamesList)
+					end
+				end
+			end,
+            disabled = function() return selectedExistingOwnerName == nil or selectedExistingOwnerName == "" or contextMenuOwnerControlName == nil or contextMenuOwnerControlName == "" or contextMenuOwnerControlName ~= selectedExistingOwnerName end,
+        },
+
+	}
+	LAM2:RegisterOptionControls(LSMLAMPanelName, optionsData)
+
+	--[[
+    local function openedPanel(panel)
+        if panel ~= lib.LAMsettingsPanel then return end
+    end
+    CALLBACK_MANAGER:RegisterCallback("LAM-PanelOpened", openedPanel)
+    ]]
+end
+
 --Load of the addon/library starts
 local function onAddonLoaded(event, name)
 	if name:find("^ZO_") then return end
@@ -5479,6 +5667,10 @@ local function onAddonLoaded(event, name)
 
 	--Load the hooks for ZO_Menu and allow replacement of ZO_Menu items with LSM entries
 	lib.LoadZO_MenuHooks()
+
+
+	--Build the library settings menu if LAM is available
+	buildLibraryLAMSettingsMenu()
 end
 EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)

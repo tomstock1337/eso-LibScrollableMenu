@@ -50,6 +50,8 @@ local MAJOR = lib.name
 local scrollListRowTypes = lib.scrollListRowTypes
 local libDivider = lib.DIVIDER
 
+local sv = lib.SV
+
 --Entry type variables
 local LSM_ENTRY_TYPE_NORMAL = 		scrollListRowTypes["LSM_ENTRY_TYPE_NORMAL"]
 local LSM_ENTRY_TYPE_DIVIDER = 		scrollListRowTypes["LSM_ENTRY_TYPE_DIVIDER"]
@@ -287,6 +289,54 @@ local function isAnyCustomScrollableZO_MenuContextMenuRegistered()
 	return isAnyLSMContextMenuReplacementRegistered
 end
 lib.IsAnyCustomScrollableZO_MenuContextMenuRegistered = isAnyCustomScrollableZO_MenuContextMenuRegistered
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+--Local Show context menu helper functions
+------------------------------------------------------------------------------------------------------------------------
+local function getOwnerControlSavedVars(ownerName, svTableName)
+	--todo SavedVariables reading with "ownerName" as key and subtable data visibleRows and visibleRowsSubmenu
+	local visibleRows, visibleRowsSubmenu
+	sv = lib.SV
+	local savedContextMenuVisibleRows = sv ~= nil and sv[svTableName]
+	if ownerName ~= nil and savedContextMenuVisibleRows ~= nil then
+		local savedDataPerOwnerName = savedContextMenuVisibleRows[ownerName]
+		if savedDataPerOwnerName ~= nil then
+			visibleRows			= savedDataPerOwnerName["visibleRows"]
+			visibleRowsSubmenu	= savedDataPerOwnerName["visibleRowsSubmenu"]
+		end
+	end
+	visibleRows = visibleRows or comboBoxDefaults.visibleRows --default value: 10
+	visibleRowsSubmenu = visibleRowsSubmenu or comboBoxDefaults.visibleRowsSubmenu --default value: 10
+
+	return visibleRows, visibleRowsSubmenu
+end
+
+local function getVisibleRowsByOwnerControlSettings(owner, ownerName)
+	local isZOListDialogHidden = zoListDialog:IsHidden()
+	if ownerName == nil or ownerName == "" then
+		return comboBoxDefaults.visibleRows, comboBoxDefaults.visibleRowsSubmenu, isZOListDialogHidden
+	end
+
+	--Read the SavedVariables: If the ownerName was saved with own set visible rows, use that
+	local visibleRows, visibleRowsSubmenu = getOwnerControlSavedVars(ownerName, "contextMenuVisibleRows")
+	return visibleRows, visibleRowsSubmenu, isZOListDialogHidden
+end
+
+local function showLSMReplacmentContextMenuForZO_MenuNow(owner, ownerName)
+	--Show the LSM context menu now with the mapped and added ZO_Menu entries, in LSM format.
+	-->ShowCustomScrollableMenu will show all previously added entries
+
+	local visibleRows, visibleRowsSubmenu, isZOListDialogHidden = getVisibleRowsByOwnerControlSettings(owner, ownerName)
+
+	if lib.debugLCM then d("< ~~ SHOWING LSM! ShowCustomScrollableMenu - isZOListDialogHidden: " ..tos(isZOListDialogHidden) .."; visibleRows: " ..tos(visibleRows) .."; visibleRowsSubmenu: " ..tos(visibleRowsSubmenu) .." ~~~") end
+	ShowCustomScrollableMenu(owner, {
+		sortEntries = 			false,
+		visibleRowsDropdown = 	visibleRows,
+		visibleRowsSubmenu = 	visibleRowsSubmenu,
+	})
+end
 
 
 
@@ -894,18 +944,11 @@ function lib.LoadZO_MenuHooks()
 				--> So only visually "hide" the ZO_Menu here but do not call ClearMenu() as this would empty the ZO_Menu.items early!
 				customClearMenu()
 
+
 				--Show the LSM context menu now with the mapped and added ZO_Menu entries, in LSM format.
 				-->ShowCustomScrollableMenu will show all previously added entries plus the new ones
-				local isZOListDialogHidden = zoListDialog:IsHidden()
-				--todo: Make this maybe configurable via a settings menu, based on each "owner" control? So users can dynamically decide how many entries to see?
-				local visibleRows = (isZOListDialogHidden and 20) or 15
+				showLSMReplacmentContextMenuForZO_MenuNow(owner, ownerName)
 
-				if lib.debugLCM then d("< ~~ SHOWING LSM! ShowCustomScrollableMenu - isZOListDialogHidden: " ..tos(isZOListDialogHidden) .."; visibleRows: " ..tos(visibleRows) .." ~~~") end
-				ShowCustomScrollableMenu(owner, {
-					sortEntries = 			false,
-					visibleRowsDropdown = 	visibleRows,
-					visibleRowsSubmenu = 	visibleRows,
-				})
 				--Hide the ZO_Menu TLC now -> Delayed to next frame (to hide that small [ ] menu TLC near the right clicked mouse position)
 				--> TODO: Moved to customClearMenu() function above. Test if that works
 				--[[
@@ -922,8 +965,6 @@ function lib.LoadZO_MenuHooks()
 			ZO_Menu_showMenuHooked = true
 		end
 	end
-
-
 
 
 	--------------------------------------------------------------------------------------------------------------------

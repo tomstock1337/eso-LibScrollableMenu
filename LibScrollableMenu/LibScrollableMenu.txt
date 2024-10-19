@@ -10,7 +10,7 @@
 ## IsLibrary: true
 ## Author: IsJustaGhost, Baertram, tomstock (, Kyoma)
 ## APIVersion: 101043 101044
-## OptionalDependsOn: LibDebugLogger>=263 LibCustomMenu>=722
+## OptionalDependsOn: LibAddonMenu-2.0>=37 LibDebugLogger>=263 LibCustomMenu>=722
 ## SavedVariables: LibScrollableMenu_SavedVars
 
 lang/en.lua
