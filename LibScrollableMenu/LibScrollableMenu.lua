@@ -5436,6 +5436,8 @@ local function onAddonLoaded(event, name)
 	end)
 
 	--ZO_Menu - ShowMenu hook: Hide LSM if a ZO_Menu menu opens
+	--[[
+	--Disabled here as this needs to be moved to file LibScrollableMenu-ZO_Menu.lua, PreHook of ShowMenu!
 	ZO_PreHook("ShowMenu", function(owner, initialRefCount, menuType)
 		dLog(LSM_LOGTYPE_VERBOSE, "ZO_Menu -> ShowMenu. Items#: " ..tos(#ZO_Menu.items) .. ", menuType: " ..tos(menuType))
 		--Do not close on other menu types (only default menu type supported)
@@ -5446,13 +5448,14 @@ local function onAddonLoaded(event, name)
 			return false
 		end
 		--Should the ZO_Menu not close any opened LSM? e.g. to show the textSearchHistory at the LSM text filter search box
-		if lib.preventLSMClosingZO_Menu then
+		if lib.preventLSMClosingZO_Menu == true then
 			lib.preventLSMClosingZO_Menu = nil
 			return
 		end
 		hideCurrentlyOpenedLSMAndContextMenu()
 		return false
 	end)
+	]]
 
 	--------------------------------------------------------------------------------------------------------------------
 	--Slash commands
