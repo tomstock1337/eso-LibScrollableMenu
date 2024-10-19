@@ -5412,6 +5412,7 @@ end
 -- Init
 ------------------------------------------------------------------------------------------------------------------------
 
+local existingOwnerNamesList
 local function buildExistingOwnerNamesList()
 	local existingOwnerNamesList = {}
 	sv = lib.SV
@@ -5421,6 +5422,17 @@ local function buildExistingOwnerNamesList()
 		end
 	end
 	return existingOwnerNamesList
+end
+
+local function updateExistingOwerNamesList(noLAMControlUpdate)
+	noLAMControlUpdate = noLAMControlUpdate or false
+	existingOwnerNamesList = buildExistingOwnerNamesList()
+
+	if not noLAMControlUpdate then
+		if LSM_LAM_DROPDOWN_SELECTED_EXISTING_OWNER_NAME ~= nil then
+			LSM_LAM_DROPDOWN_SELECTED_EXISTING_OWNER_NAME:UpdateChoices(existingOwnerNamesList)
+		end
+	end
 end
 
 local function buildLibraryLAMSettingsMenu()
@@ -5445,7 +5457,7 @@ local function buildLibraryLAMSettingsMenu()
 	sv = lib.SV
 
 	local contextMenuOwnerControlName, selectedExistingOwnerName, newVisibleRowsForControlName, newVisibleRowsSubmenuForControlName
-	local existingOwnerNamesList = buildExistingOwnerNamesList()
+	updateExistingOwerNamesList(true)
 
 	local optionsData = {
 		{
@@ -5470,6 +5482,9 @@ local function buildLibraryLAMSettingsMenu()
 					selectedExistingOwnerName = nil
 					newVisibleRowsForControlName = nil
 					newVisibleRowsSubmenuForControlName = nil
+				else
+					newVisibleRowsForControlName = (sv.visibleRowsContextMenu and sv.visibleRowsContextMenu[contextMenuOwnerControlName] and sv.visibleRowsContextMenu[contextMenuOwnerControlName]["visibleRows"]) or comboBoxDefaults.visibleRows
+					newVisibleRowsSubmenuForControlName = (sv.visibleRowsContextMenu and sv.visibleRowsContextMenu[contextMenuOwnerControlName] and sv.visibleRowsContextMenu[contextMenuOwnerControlName]["visibleRowsSubmenu"]) or comboBoxDefaults.visibleRowsSubmenu
 				end
 			end,
             disabled = function() return false end,
@@ -5481,7 +5496,7 @@ local function buildLibraryLAMSettingsMenu()
             name = "Visible rows #",
             tooltip = "Enter the number of visible rows at the contextmenu of the owner's controlName",
             getFunc = function()
-				return newVisibleRowsForControlName
+				return newVisibleRowsForControlName or comboBoxDefaults.visibleRows
 			end,
             setFunc = function(newValue)
 				newVisibleRowsForControlName = newValue
@@ -5498,7 +5513,7 @@ local function buildLibraryLAMSettingsMenu()
             name = "Visible rows #, submenus",
             tooltip = "Enter the number of visible rows at the contextmenu's submenus of the owner's controlName",
             getFunc = function()
-				return newVisibleRowsSubmenuForControlName
+				return newVisibleRowsSubmenuForControlName or comboBoxDefaults.visibleRowsSubmenu
 			end,
             setFunc = function(newValue)
 				newVisibleRowsSubmenuForControlName = newValue
@@ -5531,6 +5546,8 @@ local function buildLibraryLAMSettingsMenu()
 					selectedExistingOwnerName = nil
 					newVisibleRowsForControlName = nil
 					newVisibleRowsSubmenuForControlName = nil
+
+					updateExistingOwerNamesList(false)
 				end
 			end,
             disabled = function() return (contextMenuOwnerControlName == nil or contextMenuOwnerControlName == "") or (newVisibleRowsForControlName == nil and newVisibleRowsSubmenuForControlName == nil) end,
@@ -5575,10 +5592,7 @@ local function buildLibraryLAMSettingsMenu()
 					newVisibleRowsForControlName = nil
 					newVisibleRowsSubmenuForControlName = nil
 
-					existingOwnerNamesList = buildExistingOwnerNamesList()
-					if LSM_LAM_DROPDOWN_SELECTED_EXISTING_OWNER_NAME ~= nil then
-						LSM_LAM_DROPDOWN_SELECTED_EXISTING_OWNER_NAME:UpdateChoices(existingOwnerNamesList)
-					end
+					updateExistingOwerNamesList(false)
 				end
 			end,
             disabled = function() return selectedExistingOwnerName == nil or selectedExistingOwnerName == "" or contextMenuOwnerControlName == nil or contextMenuOwnerControlName == "" or contextMenuOwnerControlName ~= selectedExistingOwnerName end,
@@ -5587,12 +5601,17 @@ local function buildLibraryLAMSettingsMenu()
 	}
 	LAM2:RegisterOptionControls(LSMLAMPanelName, optionsData)
 
-	--[[
     local function openedPanel(panel)
         if panel ~= lib.LAMsettingsPanel then return end
+
+		selectedExistingOwnerName = nil
+		contextMenuOwnerControlName = nil
+		newVisibleRowsForControlName = nil
+		newVisibleRowsSubmenuForControlName = nil
+
+		updateExistingOwerNamesList(false)
     end
     CALLBACK_MANAGER:RegisterCallback("LAM-PanelOpened", openedPanel)
-    ]]
 end
 
 --Load of the addon/library starts
