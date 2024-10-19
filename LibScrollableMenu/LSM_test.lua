@@ -560,6 +560,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
 					d("I clicked a button with the name: " .. tostring(itemName))
 				end,
+				doNotFilter		= true,
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
@@ -571,6 +572,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 					d("I clicked Radiobutton group 1-1 with the name: " .. tostring(itemName))
 				end,
 				buttonGroup = 1,
+				doNotFilter		= true,
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,

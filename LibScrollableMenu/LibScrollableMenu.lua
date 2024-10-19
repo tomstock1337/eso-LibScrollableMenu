@@ -9,7 +9,7 @@ lib.name = "LibScrollableMenu"
 local MAJOR = lib.name
 
 lib.author = "IsJustaGhost, Baertram, tomstock, Kyoma"
-lib.version = "2.31"
+lib.version = "2.32"
 
 if not lib then return end
 
@@ -280,7 +280,7 @@ local possibleEntryDataWithFunction = {
 ------------------------------------------------------------------------------------------------------------------------
 --Default options/settings and values
 
---ZO_ComboBox default settings: Will be copied over as default attributes to comboBoxClass and inherited scrollable
+--ZO_ComboBox default settings: Will be copied over as default attributes to comboBoxClass and inherited to the scrollable
 --dropdown helper classes
 local comboBoxDefaults = {
 	--From ZO_ComboBox
@@ -417,6 +417,7 @@ lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCall
 
 -- Pass-through variables:
 --If submenuClass_exposedVariables[key] == true: if submenu[key] is nil, returns submenu.m_comboBox[key]
+--> where key = e.g. "m_font"
 local submenuClass_exposedVariables = {
 	-- ZO_ComboBox
 	["m_font"] = true, --
@@ -470,13 +471,13 @@ local submenuClass_exposedFunctions = {
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Search filter
-
+--No entry found in main menu
 local noEntriesResults = {
 	enabled = false,
 	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS),
 	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
 }
-
+--No entry found in sub menu
 local noEntriesSubmenu = {
 	name = GetString(SI_QUICKSLOTS_EMPTY),
 	enabled = false,
@@ -494,11 +495,11 @@ local filteredEntryTypes = {
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
 	--[LSM_ENTRY_TYPE_DIVIDER] = false,
 }
---Table defines if some names of the entries count as "to search" or not.
---true: Item's name does not need to be searched / false: search the item's name
+--Table defines if some names of the entries count as "search them or skip them".
+--true: Item's name does not need to be searched -> skip them / false: search the item's name as usual
 local filterNamesExempts = {
 	--Direct check via "name" string
-	[''] = true,
+	[""] = true,
 	[noEntriesSubmenu.name] = true, -- "Empty"
 	--Check via type(name)
 	--['nil'] = true,
@@ -710,6 +711,7 @@ lib.headerControls = {
 	FILTER_CONTAINER	= 4,
 	CUSTOM_CONTROL		= 5,
 	TOGGLE_BUTTON		= 6,
+	TOGGLE_BUTTON_CLICK_EXTENSION = 7, -- control that anchors to the toggle buttons left to make the whole header's width clickable to toggle the collapsed state
 }
 local headerControls = lib.headerControls
 
@@ -725,6 +727,7 @@ do
 	local FILTER_CONTAINER	= headerControls.FILTER_CONTAINER
 	local CUSTOM_CONTROL	= headerControls.CUSTOM_CONTROL
 	local TOGGLE_BUTTON		= headerControls.TOGGLE_BUTTON
+	local TOGGLE_BUTTON_CLICK_EXTENSION	= headerControls.TOGGLE_BUTTON_CLICK_EXTENSION
 
 	local DEFAULT_CONTROLID = CENTER_BASELINE
 	
@@ -747,13 +750,10 @@ do
 
 							-- {point, relativeTo_controlId, relativePoint, offsetX, offsetY}
 	local anchors = {
-		[TOGGLE_BUTTON]		= { Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0)},
-		--Try to anchor the toggleButton to the bottom right but make it's width the total width of the header so you
-		--can click the whole header to toggle it -> 2nd anchor to bottom left
-		--[[
-		[TOGGLE_BUTTON]		= { Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0),
-							    Anchor:New(BOTTOMLEFT, PARENT, BOTTOMLEFT, 0, 0) },
-		]]
+		[TOGGLE_BUTTON]		= { Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0) },
+		--Show a control left of the toggle button: We can click this to expand the header again, and after that the control resizes to 0pixels and hides
+		[TOGGLE_BUTTON_CLICK_EXTENSION]	= { Anchor:New(BOTTOMRIGHT, TOGGLE_BUTTON, BOTTOMLEFT, 0, 0),
+							    	Anchor:New(BOTTOMLEFT, PARENT, BOTTOMLEFT, -ROW_OFFSET_Y, 0) },
 		[DIVIDER_SIMPLE]	= { Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y),
 								Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) }, -- ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y
 								
@@ -789,6 +789,19 @@ do
 		if controlId == TOGGLE_BUTTON then
 			-- We want to keep height if collapsed but not add height for the button if not.
 			height = collapsed and height or 0
+		--The control processed is the collapsed header's toggle button "click extension"
+		elseif controlId == TOGGLE_BUTTON_CLICK_EXTENSION then
+			--Always fixed header height addition = 0 as the toggleButton already provided the extra height for the header
+			--and this click extensikon control only is placed on the left to make it easier to expand the header again
+			height = 0
+			if collapsed then
+				control:SetHidden(false)
+				control:SetHeight(controls[TOGGLE_BUTTON]:GetHeight())
+			else
+				control:SetHidden(true)
+				control:ClearAnchors()
+				control:SetDimensions(0, 0)
+			end
 		end
 
 		return height
@@ -810,19 +823,19 @@ do
 		for controlId, control in ipairs(controls) do
 			control:ClearAnchors()
 			control:SetHidden(true)
-			
+
 			local hidden = not refreshResults[controlId]
 			-- There are no other header controls showing, so hide the togle button
-			if not collapsed and controlId == TOGGLE_BUTTON and g_currentBottomLeftHeader == DEFAULT_CONTROLID then
+			if not collapsed and (controlId == TOGGLE_BUTTON or controlId == TOGGLE_BUTTON_CLICK_EXTENSION) and g_currentBottomLeftHeader == DEFAULT_CONTROLID then
 				hidden = true
 			end
-			
+
 			if not hidden then
 				if showHeaderDivider(controlId) then
 					-- Only show the divider if g_currentBottomLeftHeader is before DIVIDER_SIMPLE and controlId is after DIVIDER_SIMPLE
 					headerHeight = headerHeight + header_applyAnchorSetToControl(headerControl, anchors[DIVIDER_SIMPLE], DIVIDER_SIMPLE)
 				end
-				
+
 				local anchorSet = anchors[controlId] or anchors[DEFAULT_ANCHOR]
 				headerHeight = headerHeight + header_applyAnchorSetToControl(headerControl, anchorSet, controlId, collapsed)
 			end
@@ -833,7 +846,6 @@ do
 				headerHeight = headerHeight + (ROW_OFFSET_Y * 3)
 			end
 			headerControl:SetHeight(headerHeight)
-
 		end
 	end
 	
@@ -924,7 +936,8 @@ do
 		refreshResults[FILTER_CONTAINER] = header_processData(controls[FILTER_CONTAINER], comboBox:IsFilterEnabled(), collapsed)
 		refreshResults[CUSTOM_CONTROL] = header_processControl(controls[CUSTOM_CONTROL], getValueOrCallback(options.customHeaderControl, options), collapsed)
 		refreshResults[TOGGLE_BUTTON] = header_processData(controls[TOGGLE_BUTTON], getValueOrCallback(options.headerCollapsible, options))
-		
+		refreshResults[TOGGLE_BUTTON_CLICK_EXTENSION] = header_processData(controls[TOGGLE_BUTTON_CLICK_EXTENSION], getValueOrCallback(options.headerCollapsible, options))
+
 		header_updateAnchors(headerControl, refreshResults, collapsed)
 	end
 end
@@ -1260,6 +1273,8 @@ local function verifyLabelString(data)
 end
 
 -- Recursively loop over drdopdown entries, and submenu dropdown entries of that parent dropdown, and check if e.g. isNew needs to be updated
+-- Used for the search of the collapsible header too
+-- Param updateSubmenuValues boolean controls if the submenu's values like additionalData subtable should be updated too (via function preUpdateSubItems)
 local function recursiveOverEntries(entry, callback, updateSubmenuValues)
 	callback = callback or defaultRecursiveCallback
 	
@@ -1268,7 +1283,7 @@ local function recursiveOverEntries(entry, callback, updateSubmenuValues)
 
 	--local submenuType = type(submenu)
 	--assert(submenuType == 'table', sfor('['..MAJOR..':recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
-	if  type(submenu) == "table" and #submenu > 0 then
+	if type(submenu) == "table" and #submenu > 0 then
 		for _, subEntry in pairs(submenu) do
 			local subEntryResult = recursiveOverEntries(subEntry, callback, updateSubmenuValues)
 			if subEntryResult then
@@ -1583,7 +1598,7 @@ lib.getComboBoxsSortedItems = getComboBoxsSortedItems
 --Functions to run per item's entryType, after the item has been setup (e.g. to add missing mandatory data or change visuals)
 local postItemSetupFunctions = {
 	[LSM_ENTRY_TYPE_SUBMENU] = function(comboBox, itemEntry)
-		itemEntry.isNew = recursiveOverEntries(itemEntry, preUpdateSubItems)
+		itemEntry.isNew = recursiveOverEntries(itemEntry, preUpdateSubItems, nil)
 	end,
 	[LSM_ENTRY_TYPE_HEADER] = function(comboBox, itemEntry)
 		itemEntry.font = itemEntry.font or comboBox.m_headerFont
@@ -2016,16 +2031,16 @@ Function to show and hide a custom tooltip control. Pass that in to the data tab
 Your function needs to create and show/hide that control, and populate the text etc to the control too!
 Parameters:
 -control The control the tooltip blongs to
--inside boolean to show if your mouse is inside the control. Will be false if tooltip should hide
+-doShow boolean to show if your mouse is inside the control and should show the tooltip. Must be false if tooltip should hide
 -data The table with the current data of the rowControl
 	-> To distinguish if the tooltip should be hidden or shown:	If 1st param data is missing the tooltip will be hidden! If data is provided the tooltip wil be shown
 -rowControl The userdata of the control the tooltip should show about
 -point, offsetX, offsetY, relativePoint: Suggested anchoring points
 
 Example - Show an item tooltip of an inventory item
-data.customTooltip = function(control, inside, data, relativeTo, point, offsetX, offsetY, relativePoint)
+data.customTooltip = function(control, doShow, data, relativeTo, point, offsetX, offsetY, relativePoint)
 	ClearTooltip(ItemTooltip)
-	if inside and data then
+	if doShow and data then
 		InitializeTooltip(ItemTooltip, relativeTo, point, offsetX, offsetY, relativePoint)
 		ItemTooltip:SetBagItem(data.bagId, data.slotIndex)
 		ItemTooltipTopLevel:BringWindowToTop()
@@ -2033,7 +2048,7 @@ data.customTooltip = function(control, inside, data, relativeTo, point, offsetX,
 end
 
 Another example using a custom control of your addon to show the tooltip:
-customTooltipFunc = function(control, inside, data, rowControl, point, offsetX, offsetY, relativePoint)
+customTooltipFunc = function(control, doShow, data, rowControl, point, offsetX, offsetY, relativePoint)
 	if not inside or data == nil then
 		myAddon.myTooltipControl:SetHidden(true)
 	else
@@ -2373,15 +2388,17 @@ local lastEntryVisible  = true	--Was the last entry processed visible at the res
 local filterString				--the search string
 local filterFunc				--the filter function to use. Default is "defaultFilterFunc". Custom filterFunc can be added via options.customFilterFunc
 
---Check if name of entry counts as "to search", or not
--->Returning true: item's name does not need to be searched / false: search the item's name
-local function filterNameExempt(item)
-	if filterString ~= '' then
+--Check if entry should be added to the search/filter of the string search of the collapsible header
+-->Returning true: item must be considered for the search / false: item should be skipped
+local function passItemToSearch(item)
+	--Check if name of entry counts as "to search", or not
+	if filterString ~= "" then
 		local name = item.label or item.name
-		return name == nil or filterNamesExempts[name] --or filterNamesExempts[type(name)] --> Shows nil too
-	else
-		return true
+		--Name is missing: Do not filter
+		if name == nil then return false end
+		return not filterNamesExempts[name]
 	end
+	return false
 end
 
 --options.customFilterFunc needs the same signature/parameters like this function
@@ -2392,11 +2409,18 @@ local function defaultFilterFunc(p_item, p_filterString)
 	return zo_strlower(name):find(p_filterString) ~= nil
 end
 
---Search the item's label or name now, if the entryType of the item should be processed by text search
+--Search the item's label or name now, if the entryType of the item should be processed by text search, and if the entry
+--was not marked as "not to search" (always show in search results) in it's data
 local function filterResults(item)
 	local entryType = item.entryType
 	if not entryType or filteredEntryTypes[entryType] then
-		if not filterNameExempt(item) then
+		--Should the item be skipped at the search filters?
+		local doNotFilter = getValueOrCallback(item.doNotFilter, item) or false
+		if doNotFilter == true then
+			return true -- always included
+		end
+		--Check for other prerequisites
+		if passItemToSearch(item) == true then
 			--Not excluded, do the string comparison now
 			return filterFunc(item, filterString)
 		end
@@ -2412,7 +2436,7 @@ local function itemPassesFilter(item, doFilter)
 	if verifyLabelString(item) then
 		if doFilter then
 			--Recursively check menu entries (submenu and nested submenu entries) for the matching search string
-			return recursiveOverEntries(item, filterResults)
+			return recursiveOverEntries(item, filterResults, nil)
 		else
 			return true
 		end
@@ -4203,8 +4227,6 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth, ini
 	comboBox_base.Initialize(self, parent, comboBoxContainer, options, depth)
 
 	--Custom added controls
-	-->Header - Collapse&Expand toggle button
---	self.m_dropdown.headerCollapseButton:SetHidden(true)
 
 	return self
 end
@@ -4458,6 +4480,7 @@ function comboBoxClass:SetupDropdownHeader()
 	end
 end
 
+--Toggle function called as the collapsible header is clicked
 function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s, toggleButton: %s", tos(self.options), tos(toggleButtonCtrl))
 	local headerControl, dropdownControl = getHeaderControl(self)
@@ -5421,44 +5444,21 @@ LibScrollableMenu = lib
 
 --[[
 -------------------
-WORKING ON - Current version: 2.31
+WORKING ON - Current version: 2.32
 -------------------
-	1. Bug: Clicking a checkbox/button in a context menu's submenu closes the context menu
-	TESTED: BUG
-
-
+	1. Feature: Added attribute ".doNotFilter boolean" to all entryTypes. If true then do not hide those controls if a search/filter is used
+	   -> e.g. used for a button "Apply changes" at a submenu to apply checkboxes checked/unchecked state now even if search filter was hiding non-matching checkboxes
+	2. Changed collapsible header to expand if you click the whole header, and not only the small v^ button
 
 -------------------
 TODO - To check (future versions)
 -------------------
 
 	1. Make Options update same style like updateDataValues does for entries
-	2. Accept a custom filter function
-	3. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
-	4. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
+	2. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
+	3. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
 	- fired on handlers dropdown_OnShow dropdown_OnHide
-	5. Check if entries' .tooltip can be a function and then call that function and show it as normal ZO_Tooltips_ShowTextTooltip(control, text) instead of having to use .customTooltip for that
-
-
-	check divider entry.
-
-	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	Adjust header anchors to fit by sets
-
-	title
-	title, subtitle
-	title, subtitle, divider, filter
-	title, subtitle, divider, filter, custom control
-	title, subtitle, divider, custom control
-
-	subtitle
-	subtitle, divider, filter
-	subtitle, divider, filter, custom control
-	subtitle, divider, custom control
-
-	filter
-	filter, custom control
-	custom control
+	4. todo: Still a bug? Clicking a checkbox/button in a context menu's submenu closes the context menu
 
 
 -------------------
@@ -5466,15 +5466,10 @@ UPCOMING FEATURES  - What will be added in the future?
 -------------------
 	1. Sort headers for the dropdown (ascending/descending) (maybe: allowing custom sort functions too)
 	2. LibCustomMenu and ZO_Menu support in inventories
-
-	3. Collapsable filter container?
-		COllapsable may be difficult
-		It may require pushing the header bottom down when open and up when closed. Have not had much luck with resize to fit descendants
-		making it as a comboBox would not change the current dimminsions. And, it would add dificulties in passing the filter into the parent dropdown
 ]]
 
 --[[
-Placed here as a reminer to inspect how comboBox enabled is being handeled
+Placed here as a reminder to inspect how comboBox enabled is being handeled
 not to be confused with itemData.enabled
 
 function ZO_ComboBox_Base:SetEnabled(enabled)
