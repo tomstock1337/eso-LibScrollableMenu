@@ -18,6 +18,7 @@ lang/$(language).lua
 
 ##Library lua code files
 LibScrollableMenu.lua
+LibScrollableMenu-LAMSettings.lua
 
 ##Library XML templates files
 LibScrollableMenu.xml
