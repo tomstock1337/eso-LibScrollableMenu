@@ -4719,8 +4719,9 @@ end
 -- Renamed from AddItem since AddItem can be the same as base. This function is only to pre-set data for updating on show,
 function contextMenuClass:AddContextMenuItem(itemEntry, updateOptions)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:AddContextMenuItem - itemEntry: %s, updateOptions: %s", tos(itemEntry), tos(updateOptions))
-	tins(self.data, itemEntry)
-
+	local indexAdded = tins(self.data, itemEntry)
+	indexAdded = indexAdded or #self.data
+	return indexAdded
 --	m_unsortedItems
 end
 
@@ -4988,6 +4989,7 @@ GetCustomScrollableMenuRowData = getControlData
 --		   font = "ZO_FontGame", label="test label", name="test value", enabled = true, checked = true, customValue1="foo", cutomValue2="bar", ... }
 --		--[[ Attention: additionalData keys which are maintained in table LSMOptionsKeyToZO_ComboBoxOptionsKey will be mapped to ZO_ComboBox's key and taken over into the entry.data[ZO_ComboBox's key]. All other "custom keys" will stay in entry.data.additionalData[key]! ]]
 --)
+---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additionalData)
 	--Special handling for dividers
 	local options = g_contextMenu:GetOptions()
@@ -5073,41 +5075,47 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 
 	--Add the line of the context menu to the internal tables. Will be read as the ZO_ComboBox's dropdown opens and calls
 	--:AddMenuItems() -> Added to internal scroll list then
-	g_contextMenu:AddContextMenuItem(newEntry, ZO_COMBOBOX_SUPPRESS_UPDATE)
+	local indexAdded = g_contextMenu:AddContextMenuItem(newEntry, ZO_COMBOBOX_SUPPRESS_UPDATE)
+
+	return indexAdded, newEntry
 end
 local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 
 --Adds an entry having a submenu (or maybe nested submenues) in the entries table/entries function whch returns a table
 --> See examples for the table "entries" values above AddCustomScrollableMenuEntry
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableSubMenuEntry(text, entries)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableSubMenuEntry - text: %s, entries: %s", tos(text), tos(entries))
-	addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_SUBMENU, entries, nil)
+	return addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_SUBMENU, entries, nil)
 end
 
 --Adds a divider line to the context menu entries
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuDivider()
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuDivider")
-	addCustomScrollableMenuEntry(libDivider, nil, LSM_ENTRY_TYPE_DIVIDER, nil, nil)
+	return addCustomScrollableMenuEntry(libDivider, nil, LSM_ENTRY_TYPE_DIVIDER, nil, nil)
 end
 
 --Adds a header line to the context menu entries
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuHeader(text, additionalData)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuHeader-text: %s", tos(text))
-	addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_HEADER, nil, additionalData)
+	return addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_HEADER, nil, additionalData)
 end
 
 --Adds a checkbox line to the context menu entries
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuCheckbox(text, callback, checked, additionalData)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuCheckbox-text: %s, checked: %s", tos(text), tos(checked))
 	if checked ~= nil then
 		additionalData = additionalData or {}
 		additionalData.checked = checked
 	end
-	addCustomScrollableMenuEntry(text, callback, LSM_ENTRY_TYPE_CHECKBOX, nil, additionalData)
+	return addCustomScrollableMenuEntry(text, callback, LSM_ENTRY_TYPE_CHECKBOX, nil, additionalData)
 end
 
 
@@ -5147,11 +5155,15 @@ local clearCustomScrollableMenu = ClearCustomScrollableMenu
 
 --Pass in a table/function returning a table with predefined context menu entries and let them all be added in order of the table's number key
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+---> returns boolean allWereAdded, nilable:table indicesOfNewAddedEntries, nilable:table newEntriesData
 function AddCustomScrollableMenuEntries(contextMenuEntries)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuEntries - contextMenuEntries: %s", tos(contextMenuEntries))
 
+	local indicesAdded = nil
+	local newAddedEntriesData = nil
+
 	contextMenuEntries = validateContextMenuSubmenuEntries(contextMenuEntries, nil, "AddCustomScrollableMenuEntries")
-	if ZO_IsTableEmpty(contextMenuEntries) then return end
+	if ZO_IsTableEmpty(contextMenuEntries) then return false, nil, nil end
 	for _, v in ipairs(contextMenuEntries) do
 		--If a label was explicitly requested
 		local label = v.label
@@ -5164,15 +5176,22 @@ function AddCustomScrollableMenuEntries(contextMenuEntries)
 				v.additionalData.label = label
 			end
 		end
-		addCustomScrollableMenuEntry(v.name, v.callback, v.entryType, v.entries, v.additionalData)
+		local indexAdded, newAddedEntry = addCustomScrollableMenuEntry(v.name, v.callback, v.entryType, v.entries, v.additionalData)
+		if indexAdded == nil or newAddedEntry == nil then return false, nil, nil end
+
+		indicesAdded = indicesAdded or {}
+		tins(indicesAdded, indexAdded)
+		newAddedEntriesData = newAddedEntriesData or {}
+		tins(newAddedEntriesData, newAddedEntry)
 	end
-	return true
+	return true, indicesAdded, newAddedEntriesData
 end
 local addCustomScrollableMenuEntries = AddCustomScrollableMenuEntries
 
 --Populate a new scrollable context menu with the defined entries table/a functinon returning the entries.
 --Existing context menu entries will be reset, because ClearCustomScrollableMenu will be called!
 --You can add more entries later, prior to showing, via AddCustomScrollableMenuEntry / AddCustomScrollableMenuEntries functions too
+---> returns boolean allWereAdded, nilable:table indicesOfNewAddedEntries, nilable:table newEntriesData
 function AddCustomScrollableMenu(entries, options)
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenu - entries: %s, options: %s", tos(entries), tos(options))
 	--Clear the existing LSM context menu entries
@@ -5232,6 +5251,7 @@ end
 --If the param filterEntryTypes is nil: All entries will be selected and passed to the myAddonCallbackFunc's param openingMenusEntries.
 --
 --If the boolean/function returning a boolean parameter fromParentMenu is true: The menu items of the opening (parent) menu will be returned. If false: The currently shown menu's items will be returned
+---> returns boolean customCallbackFuncWasExecuted, nilable:any customCallbackFunc's return value
 function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
 	local assertFuncName = "RunCustomScrollableMenuItemsCallback"
 	local addonCallbackFuncType = type(myAddonCallbackFunc)
@@ -5258,7 +5278,7 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	--comboBox would be the comboBox or dropdown of the context menu -> if RunCustomScrollableMenuCheckboxCallback was called from the callback of a contex menu entry
 	--item could have a control or something like that from where we can get the owner and then check if the owner got a openingControl or similar?
 	local sortedItems = getComboBoxsSortedItems(comboBox, fromParentMenu, false)
-	if ZO_IsTableEmpty(sortedItems) then return end
+	if ZO_IsTableEmpty(sortedItems) then return false end
 
 	local itemsForCallbackFunc = sortedItems
 
@@ -5287,12 +5307,12 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 		end
 	end
 
-	myAddonCallbackFunc(comboBox, item, itemsForCallbackFunc, ...)
+	return true, myAddonCallbackFunc(comboBox, item, itemsForCallbackFunc, ...)
 end
 
 
--- API to set all buttons in a group based on Select all, Unselect All, Invert all.
-local function setButtonGroupState(comboBox, control, data)
+-- API to show a context menu at a buttonGrouop where you can set all buttons in a group based on Select all, Unselect All, Invert all.
+local function buttonGroupDefaultContextMenu(comboBox, control, data)
 	local buttonGroup = comboBox.m_buttonGroup
 	if buttonGroup == nil then return end
 	local groupIndex = getValueOrCallback(data.buttonGroup, data)
@@ -5345,7 +5365,8 @@ local function setButtonGroupState(comboBox, control, data)
 	addCustomScrollableMenuEntries(buttonGroupSetAll)
 	ShowCustomScrollableMenu()
 end
-lib.SetButtonGroupState = setButtonGroupState
+--lib.SetButtonGroupState = buttonGroupDefaultContextMenu
+lib.ButtonGroupDefaultContextMenu = buttonGroupDefaultContextMenu
 
 
 ------------------------------------------------------------------------------------------------------------------------

@@ -754,7 +754,10 @@ local function addZO_Menu_ShowMenuHook()
 		if lib.debugLCM then d(">>> PostHooked ZO_CheckButton_SetUnChecked") end
 
 
-		--ZO_Menu's AddMenuitem function. Attention: Will be called internally by LibCustomMenu's AddCustom*MenuItem too!
+		--ZO_Menu's AddMenuItem function. It will be called for each added context menu item once.
+		--Attention: Will be called internally by LibCustomMenu's AddCustom*MenuItem too!
+		--Grab the added data here and transfer it to our internal tables, as mapped LSM entryType, via function storeZO_MenuItemDataForLSM.
+		---Also checks for checkboxes that were added before and prepares their current state update properly as this might happen after the AddMenuItem function was called
 		SecurePostHook("AddMenuItem", function(labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
 			updateZO_MenuVariables()
 			ZOMenus:SetHidden(false)
@@ -822,7 +825,7 @@ local function addZO_Menu_ShowMenuHook()
 		if lib.debugLCM then d(">>> PostHooked AddMenuItem") end
 
 
-		--Hook the ClearMenu function so we can clear our LSM variables too
+		--Hook the ZO_Menu's ClearMenu function so we can clear our LSM variables too
 		SecurePostHook("ClearMenu", function()
 			if lib.debugLCM then
 				d("<<<<<<<<<<<<<<<<<<<<<<<")
@@ -835,6 +838,7 @@ local function addZO_Menu_ShowMenuHook()
 			clearCustomScrollableMenu()
 		end)
 		if lib.debugLCM then d(">>> PostHooked ClearMenu") end
+
 
 		--PreHook the ShowMenu function of ZO_Menu in order to map the ZO_Menu.items to the LSM entries
 		--and suppress the ZO_Menu to show -> Instead show LSM context menu
@@ -934,9 +938,10 @@ local function addZO_Menu_ShowMenuHook()
 				if lsmEntry ~= nil and lsmEntry.name ~= nil then
 					if lib.debugLCM then d("~~~~ Add item of ZO_Menu["..tos(idx).."]: " ..tos(lsmEntry.name)) end
 
-					--Transfer the menu entry now to LibScrollableMenu, instead of ZO_Menu
-					--->pass in lsmEntry as additionlData (last parameter) so m_normalColor etc. will be applied properly too
-					AddCustomScrollableMenuEntry(lsmEntry.name, lsmEntry.callback, lsmEntry.entryType, lsmEntry.entries, lsmEntry)
+					--Add the menu entry now to LibScrollableMenu's context menu, instead of ZO_Menu
+					--->pass in lsmEntry as additionlData (last parameter) so m_normalColor etc. will properly be applied to the entry too
+					local indexAdded, newEntry = AddCustomScrollableMenuEntry(lsmEntry.name, lsmEntry.callback, lsmEntry.entryType, lsmEntry.entries, lsmEntry)
+
 					numLSMItemsAddedDuringThisShowMenu = numLSMItemsAddedDuringThisShowMenu + 1
 				else
 					if lib.debugLCM then d("???? ERROR: item of ZO_Menu["..tos(idx).."] is nil, or got no name!") end
