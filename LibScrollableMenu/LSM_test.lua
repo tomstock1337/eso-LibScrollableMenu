@@ -620,7 +620,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				end,
 				buttonGroup = 3,
 				contextMenuCallback = function(...)
-					LibScrollableMenu.SetButtonGroupState(...)
+					LibScrollableMenu.ButtonGroupDefaultContextMenu(...)
 				end,
 			},
 			{
@@ -635,7 +635,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				buttonGroup = function() return 3 end,
 				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("checkbox group 3 selection changed callback!")  end,
 				rightClickCallback = function(...)
-					LibScrollableMenu.SetButtonGroupState(...)
+					LibScrollableMenu.ButtonGroupDefaultContextMenu(...)
 				end,
 			},
 			{
