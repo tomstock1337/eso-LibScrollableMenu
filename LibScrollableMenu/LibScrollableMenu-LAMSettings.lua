@@ -17,7 +17,8 @@ local sv = lib.SV
 
 
 --Other libraries
-local LAM2 = LibAddonMenu2
+local LAM2 = lib.LAM2 or LibAddonMenu2
+
 
 ------------------------------------------------------------------------------------------------------------------------
 --LAM settings menu - local helper functions
@@ -82,6 +83,19 @@ function lib.BuildLAMSettingsMenu()
 			type = "description",
 			title = "Context menus",
 			text = "Test description here\n\ntest test test\n\n\nbla blubb",
+		},
+		{
+			type = "checkbox",
+			name = "Replace all ZO_Menu context menus",
+			tooltip = "Replace the context menus (ZO_Menu, LibCustomMenu) with LibScrolableMenu's scrollable context menu",
+			getFunc = function() return sv.ZO_MenuContextMenuReplacement end,
+			setFunc = function(checked)
+				--sv.ZO_MenuContextMenuReplacement = checked
+				lib.ContextMenuZO_MenuReplacement(checked, false) -- show chat output
+			end,
+			--disabled = function() return false end,
+			default = false,
+			reference = "LSM_LAM_CHECKBOX_REPLACE_ZO_MENU_CONTEXTMENUS"
 		},
         {
             type = "editbox",
@@ -176,7 +190,7 @@ function lib.BuildLAMSettingsMenu()
         {
             type = "dropdown",
 			name = "Already added owner names",
-			tooltip = "Choose an already added owner's controlName to change the values, or to delete it.",
+			tooltip = "Choose an already added owner's controlName to change the values, or to delete the saved values in total.",
 			choices = existingOwnerNamesList,
 			getFunc = function() return selectedExistingOwnerName end,
 			setFunc = function(selectedOwnerName)

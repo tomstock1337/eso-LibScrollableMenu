@@ -13,6 +13,9 @@ lib.version = "2.40"
 
 if not lib then return end
 
+--Other libraries
+local LAM2 = LibAddonMenu2
+local LCM = LibCustomMenu
 
 --------------------------------------------------------------------
 --SavedVariables
@@ -21,6 +24,7 @@ if not lib then return end
 local lsmSVDefaults = {
 	textSearchHistory = {},			--The header'S text search right click entries (10 last used search terms) per comboBox header
 	collapsedHeaderState = {},		--The collapsed state of the header per owner (comboBox, owningWindow or control opening the contextMenu -> Depending on control type e.g. list control with rows, or not)
+	ZO_MenuContextMenuReplacement = false, --Replace all ZO_Menu and LibCustomMenu contextMenus with LSM?
 	contextMenuSettings = {
 		["ZO_PlayerInventory"] = {
 			visibleRows = 15,
@@ -5421,6 +5425,12 @@ local function onAddonLoaded(event, name)
 	loadLogger()
 	dLog(LSM_LOGTYPE_DEBUG, "~~~~~ onAddonLoaded ~~~~~")
 
+	--Other libraries
+	LAM2 = LAM2 or LibAddonMenu2
+	lib.LAM2 = LAM2
+	LCM = LCM or LibCustomMenu
+	lib.LCM = LCM
+
 	--SavedVariables
 	lib.SV = ZO_SavedVars:NewAccountWide(svName, 1, "LSM", lsmSVDefaults)
 	sv = lib.SV
@@ -5466,6 +5476,14 @@ local function onAddonLoaded(event, name)
 	end)
 	]]
 
+	--Build the library settings menu if LAM is available
+	lib.BuildLAMSettingsMenu()
+
+	--Enable the ZO_Menu contextmenu hooks if they were switche don
+	lib.ContextMenuZO_MenuReplacement((sv ~= nil and sv.ZO_MenuContextMenuReplacement == true and true) or false, true) --silent, no chat output
+
+
+
 	--------------------------------------------------------------------------------------------------------------------
 	--Slash commands
 	--------------------------------------------------------------------------------------------------------------------
@@ -5483,13 +5501,6 @@ local function onAddonLoaded(event, name)
 			dLog(LSM_LOGTYPE_DEBUG, "Verbose debugging turned %s / Debugging: %s", tos(lib.doVerboseDebug and "ON" or "OFF"), tos(lib.doDebug and "ON" or "OFF"))
 		end
 	end
-
-	--Load the hooks for ZO_Menu and allow replacement of ZO_Menu items with LSM entries
-	lib.LoadZO_MenuHooks()
-
-
-	--Build the library settings menu if LAM is available
-	lib.BuildLAMSettingsMenu()
 end
 EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
