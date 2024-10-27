@@ -124,13 +124,35 @@ local listRowsAllowedPatternsForContextMenu = {
 --Add controls here (or parent controls, or owningWindow controls) which are allowed for ZO_Menu -> LSM mapping.
 -->LSM will be shown and used for them -> LibScrollableMenu does not hook into it
 local whitelistedControlNamesForZO_MenuReplacement = {
+	--Character
+	["ZO_Character"] = true,
 	--Player Inventory
 	["ZO_PlayerInventory"] = true,
+	--CraftBag
+    ["ZO_CraftBag"] = true,
 	--Player bank
+	["ZO_PlayerBank"] = true,
 	--House bank
+	["ZO_HouseBank"] = true,
 	--Guild bank
+	["ZO_GuildBank"] = true,
 	--Companion
-	--Crafting tables
+	["ZO_CompanionCharacterWindow_Keyboard_TopLevel"] = true,
+	["ZO_CompanionEquipment_Panel_Keyboard"] = true,
+	["ZO_CompanionSkills_Panel_Keyboard"] = true,
+	--Store
+	["ZO_StoreWindow"] = true,
+	--Guild Store
+	["ZO_GuildStore"] = true,
+	--Chat Window
+	["ZO_ChatWindow"] = true,
+	--Crafting Tables
+	["ZO_SmithingTopLevel"] = true,
+	["ZO_ProvisionerTopLevel"] = true,
+	["ZO_EnchantingTopLevel"] = true,
+	["ZO_AlchemyTopLevel"] = true,
+	--Universal Deconstruction
+	["ZO_UniversalDeconstructionTopLevel_Keyboard"] = true,
 }
 
 
@@ -193,30 +215,45 @@ local function updateZO_MenuVariables()
 	ZOMenuHighlight = ZO_MenuHighlight
 end
 
+local function getControlParentAndOwningWindowNames(owner)
+	local ownerName, ownerParentName, ownerOwningWindowName
+	if owner ~= nil then
+		ownerName = getControlName(owner)
+		local parent = owner.GetParent and owner:GetParent()
+		ownerParentName = (parent ~= nil and getControlName(parent)) or nil
+		local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
+		ownerOwningWindowName = (owningWindow ~= nil and getControlName(owningWindow)) or nil
+	end
+	return ownerName, ownerParentName, ownerOwningWindowName
+end
+
 --Is the control allowed -> Means: Does this control use LSM for ZO_Menu/LCM entries?
 --> LSM will be used normally then
 local function isAllowedControl(owner)
 	if owner ~= nil then
 		local ownerName = getControlName(owner)
-		if whitelistedControlNamesForZO_MenuReplacement[ownerName] then
+		if ownerName ~= nil and whitelistedControlNamesForZO_MenuReplacement[ownerName] then
 			return true, ownerName
 		end
 		local parent = owner.GetParent and owner:GetParent()
 		if parent ~= nil then
 			ownerName = getControlName(parent)
-			if whitelistedControlNamesForZO_MenuReplacement[ownerName] then
+			if ownerName ~= nil and whitelistedControlNamesForZO_MenuReplacement[ownerName] then
 				return true, ownerName
 			end
 			local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
 			if owningWindow ~= nil then
 				ownerName = getControlName(owningWindow)
-				if whitelistedControlNamesForZO_MenuReplacement[ownerName] then
+				if ownerName ~= nil and whitelistedControlNamesForZO_MenuReplacement[ownerName] then
 					return true, ownerName
 				end
 			end
 		end
+		return false, ownerName
+	else
+		--No owner found -> Okay to be used with LSM (e.g. chat stuff)
+		return true, nil
 	end
-	return false, nil
 end
 
 --Is the control blacklisted -> Means: Does this control prevent the LSM usage for ZO_Menu/LCM entries?
@@ -255,6 +292,7 @@ local function isSupportedInventoryRowPattern(ownerCtrl, controlName)
     return false, nil
 end
 ]]
+
 
 --Reset internal variables of LSM so ZO_Menu/LCM is used normally, or LSM is not doing any extra steps
 local function resetZO_MenuClearVariables()
@@ -316,40 +354,54 @@ lib.IsAnyCustomScrollableZO_MenuContextMenuRegistered = isAnyCustomScrollableZO_
 ------------------------------------------------------------------------------------------------------------------------
 --Local Show context menu helper functions
 ------------------------------------------------------------------------------------------------------------------------
-local function getOwnerControlSavedVars(ownerName, svTableName)
-	--todo SavedVariables reading with "ownerName" as key and subtable data visibleRows and visibleRowsSubmenu
+local function getOwnerControlSavedVars(ownerName, ownerParentName, ownerOwningWindowName, svTableName)
 	local visibleRows, visibleRowsSubmenu
 	sv = lib.SV
+	local savedDataPerOwnerName
 	local savedContextMenuVisibleRows = sv ~= nil and sv[svTableName]
-	if ownerName ~= nil and savedContextMenuVisibleRows ~= nil then
-		local savedDataPerOwnerName = savedContextMenuVisibleRows[ownerName]
+	if lib.debugLCM_ZO_Menu_Replacement then d(">getOwnerControlSavedVars - owner: " ..tos(ownerName) .."; ownerParent: " ..tos(ownerParentName) .. "; ownerOwningWindow: " .. tos(ownerOwningWindowName) .. "; svTableName: " .. tos(svTableName)) end
+	if savedContextMenuVisibleRows ~= nil then
+		if ownerName ~= nil then
+			savedDataPerOwnerName = savedContextMenuVisibleRows[ownerName]
+		end
+		if savedDataPerOwnerName == nil and ownerParentName ~= nil then
+			savedDataPerOwnerName = savedContextMenuVisibleRows[ownerParentName]
+		end
+		if savedDataPerOwnerName == nil and ownerOwningWindowName ~= nil then
+			savedDataPerOwnerName = savedContextMenuVisibleRows[ownerOwningWindowName]
+		end
+
 		if savedDataPerOwnerName ~= nil then
 			visibleRows			= savedDataPerOwnerName["visibleRows"]
 			visibleRowsSubmenu	= savedDataPerOwnerName["visibleRowsSubmenu"]
 		end
 	end
+
 	visibleRows = visibleRows or comboBoxDefaults.visibleRows --default value: 10
 	visibleRowsSubmenu = visibleRowsSubmenu or comboBoxDefaults.visibleRowsSubmenu --default value: 10
 
 	return visibleRows, visibleRowsSubmenu
 end
 
-local function getVisibleRowsByOwnerControlSettings(owner, ownerName)
+local function getVisibleRowsByOwnerControlSettings(owner)
 	local isZOListDialogHidden = zoListDialog:IsHidden()
-	if ownerName == nil or ownerName == "" then
+	if lib.debugLCM_ZO_Menu_Replacement then d(">getVisibleRowsByOwnerControlSettings - owner: " ..tos(owner)) end
+	--No owner control, then use default values for the context menu
+	if owner == nil then
 		return comboBoxDefaults.visibleRows, comboBoxDefaults.visibleRowsSubmenu, isZOListDialogHidden
 	end
+	--Get the owner's, the parent's of the owner and the owningWindow's name of the owner control
+	local ownerName, ownerParentName, ownerOwningWindowName = getControlParentAndOwningWindowNames(owner)
 
 	--Read the SavedVariables: If the ownerName was saved with own set visible rows, use that
-	local visibleRows, visibleRowsSubmenu = getOwnerControlSavedVars(ownerName, "contextMenuVisibleRows")
+	local visibleRows, visibleRowsSubmenu = getOwnerControlSavedVars(ownerName, ownerParentName, ownerOwningWindowName, "contextMenuSettings")
 	return visibleRows, visibleRowsSubmenu, isZOListDialogHidden
 end
 
-local function showLSMReplacmentContextMenuForZO_MenuNow(owner, ownerName)
+local function showLSMReplacmentContextMenuForZO_MenuNow(owner)
 	--Show the LSM context menu now with the mapped and added ZO_Menu entries, in LSM format.
 	-->ShowCustomScrollableMenu will show all previously added entries
-
-	local visibleRows, visibleRowsSubmenu, isZOListDialogHidden = getVisibleRowsByOwnerControlSettings(owner, ownerName)
+	local visibleRows, visibleRowsSubmenu, isZOListDialogHidden = getVisibleRowsByOwnerControlSettings(owner)
 
 	if lib.debugLCM_ZO_Menu_Replacement then d("< ~~ SHOWING LSM! ShowCustomScrollableMenu - isZOListDialogHidden: " ..tos(isZOListDialogHidden) .."; visibleRows: " ..tos(visibleRows) .."; visibleRowsSubmenu: " ..tos(visibleRowsSubmenu) .." ~~~") end
 	ShowCustomScrollableMenu(owner, {
@@ -358,6 +410,101 @@ local function showLSMReplacmentContextMenuForZO_MenuNow(owner, ownerName)
 		visibleRowsSubmenu = 	visibleRowsSubmenu,
 	})
 end
+
+--Check if the ShowMenu function's owner was determined and validate it against the whitelisted and blacklisted cotnrols/parents/owningWindows
+local function showMenuOwnerChecks(owner, menuDataOfLSM)
+	if lib.debugLCM_ZO_Menu_Replacement then d(">showMenuOwnerChecks - Menu owner " .. tos(owner)) end
+	if owner == nil then
+		if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: No menu owner determined") end
+		resetZO_MenuClearVariables()
+		return false -- run original ZO_Menu's ShowMenu()
+	end
+
+	--Is the control allowed to exchange ZO_Menu? e.g. inventory context menu
+	local isAllowed, ownerName = isAllowedControl(owner)
+	if isAllowed == false then
+		if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is not allowed for LSM usage") end
+		resetZO_MenuClearVariables()
+		return false
+	end
+
+	--Is the control blocked?
+	local isBlocked = false
+	isBlocked, ownerName = isBlacklistedControl(owner, ownerName)
+	if isBlocked == true then
+		if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is a blocked control") end
+		resetZO_MenuClearVariables()
+		return false -- run original ZO_Menu's ShowMenu()
+	end
+
+	--Build new LSM context menu now
+	local numLSMItemsAddedDuringThisShowMenu = 0
+	--The last index added for an LSM entry in the current context menu (so we do not add the same entries again and again with each ShowMenu() call)
+	local lastUsedItemIndex                  = lib.ZO_MenuData_CurrentIndex
+
+	--for idx, lsmEntry in ipairs(lib.ZO_MenuData) do
+	local numItems = #menuDataOfLSM
+	local startIndex = lastUsedItemIndex + 1
+	if startIndex > numItems then
+		if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems)) end
+		resetZO_MenuClearVariables()
+		return false -- run original ZO_Menu's ShowMenu()
+	end
+
+	--Now loop all new added entries (> lib.ZO_MenuData_CurrentIndex) from ZO_MenuData and add them to the LSM context menu
+	for idx=startIndex, numItems, 1  do
+		local lsmEntry = menuDataOfLSM[idx]
+
+		if lsmEntry ~= nil and lsmEntry.name ~= nil then
+			if lib.debugLCM_ZO_Menu_Replacement then d("~~~~ Add item of ZO_Menu["..tos(idx).."]: " ..tos(lsmEntry.name)) end
+
+			--Add the menu entry now to LibScrollableMenu's context menu, instead of ZO_Menu
+			--->pass in lsmEntry as additionlData (last parameter) so m_normalColor etc. will properly be applied to the entry too
+			local indexAdded, newEntry = AddCustomScrollableMenuEntry(lsmEntry.name, lsmEntry.callback, lsmEntry.entryType, lsmEntry.entries, lsmEntry)
+
+			numLSMItemsAddedDuringThisShowMenu = numLSMItemsAddedDuringThisShowMenu + 1
+		else
+			if lib.debugLCM_ZO_Menu_Replacement then d("???? ERROR: item of ZO_Menu["..tos(idx).."] is nil, or got no name!") end
+		end
+
+		--Set the last added index now, for next call to ShowMenu()
+		lib.ZO_MenuData_CurrentIndex = idx
+	end
+
+	--No LSM mapped items found? Show normal ZO_Menu now
+	if lib.debugLCM_ZO_Menu_Replacement then d(">>> number of new added LSM items: " ..tos(numLSMItemsAddedDuringThisShowMenu)) end
+	if numLSMItemsAddedDuringThisShowMenu <= 0 then
+		resetZO_MenuClearVariables()
+		return false -- run original ZO_Menu's ShowMenu()
+	end
+
+	--Set flag to suppress the original ZO_Menu now
+	--suppressOriginalZO_Menu = true
+
+	--Set the variable to call ClearMenu() on next reset of the LSM contextmenu (if LSM context menu closes e.g.)
+	lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = true
+
+	--Hide original ZO_Menu (and LibCustomMenu added entries) now -> Do this here AFTER preparing LSM entries,
+	-- else the ZO_Menu.items and sub controls will be emptied already (nil)!
+	-->Important: Do NOT clear the ZO_Menu here!  Keep all entries in ZO_Menu.items. Entries with the same index
+	-->are skipped due to the usage of the index offset lib.ZO_MenuData_CurrentIndex!
+	--> So only visually "hide" the ZO_Menu here but do not call ClearMenu() as this would empty the ZO_Menu.items early!
+	customClearMenu()
+
+	--Show the LSM context menu now with the mapped and added ZO_Menu entries, in LSM format.
+	-->ShowCustomScrollableMenu will show all previously added entries plus the new ones
+	showLSMReplacmentContextMenuForZO_MenuNow(owner)
+
+	--Hide the ZO_Menu TLC now -> Delayed to next frame (to hide that small [ ] menu TLC near the right clicked mouse position)
+	--> TODO: Moved to customClearMenu() function above. Test if that works
+	--[[
+	zo_callLater(function()
+		ZOMenus:SetHidden(true)
+	end, 1)
+	]]
+	return true --LSM menu was shown
+end
+
 
 
 
@@ -891,98 +1038,17 @@ local function addZO_Menu_ShowMenuHook()
 				return false -- run original ZO_Menu's ShowMenu()
 			end
 
+			--Flag for the original ZO_Menu call via this' PreHooks return value (boolean true = suppress the original code of ShowMenu())
+			local suppressOriginalZO_Menu = false
+
+
 			owner = owner or GetMenuOwner(ZOMenu)
 			--No owner provided? Get the control below the mouse cursor
-			owner = owner or moc()
-			if owner == nil then
-				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: No menu owner determined") end
-				resetZO_MenuClearVariables()
-				return false -- run original ZO_Menu's ShowMenu()
-			end
-
-			--Is the control allowed to exchange ZO_Menu? e.g. inventory context menu
-			local isAllowed, ownerName = isAllowedControl(owner)
-			if not isAllowed then
-				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is not allowed for LSM usage") end
-				resetZO_MenuClearVariables()
-				return false
-			end
-
-			--Is the control blocked?
-			local isBlocked = false
-			isBlocked, ownerName = isBlacklistedControl(owner, ownerName)
-			if isBlocked == true then
-				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is a blocked control") end
-				resetZO_MenuClearVariables()
-				return false -- run original ZO_Menu's ShowMenu()
-			end
-
-			--Build new LSM context menu now
-			local numLSMItemsAddedDuringThisShowMenu = 0
-			--The last index added for an LSM entry in the current context menu (so we do not add the same entries again and again with each ShowMenu() call)
-			local lastUsedItemIndex                  = lib.ZO_MenuData_CurrentIndex
-
-			--for idx, lsmEntry in ipairs(lib.ZO_MenuData) do
-			local numItems = #ZO_MenuData
-			local startIndex = lastUsedItemIndex + 1
-			if startIndex > numItems then
-				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems)) end
-				resetZO_MenuClearVariables()
-				return false -- run original ZO_Menu's ShowMenu()
-			end
-
-			--Now loop all new added entries (> lib.ZO_MenuData_CurrentIndex) from ZO_MenuData and add them to the LSM context menu
-			for idx=startIndex, numItems, 1  do
-				local lsmEntry = ZO_MenuData[idx]
-
-				if lsmEntry ~= nil and lsmEntry.name ~= nil then
-					if lib.debugLCM_ZO_Menu_Replacement then d("~~~~ Add item of ZO_Menu["..tos(idx).."]: " ..tos(lsmEntry.name)) end
-
-					--Add the menu entry now to LibScrollableMenu's context menu, instead of ZO_Menu
-					--->pass in lsmEntry as additionlData (last parameter) so m_normalColor etc. will properly be applied to the entry too
-					local indexAdded, newEntry = AddCustomScrollableMenuEntry(lsmEntry.name, lsmEntry.callback, lsmEntry.entryType, lsmEntry.entries, lsmEntry)
-
-					numLSMItemsAddedDuringThisShowMenu = numLSMItemsAddedDuringThisShowMenu + 1
-				else
-					if lib.debugLCM_ZO_Menu_Replacement then d("???? ERROR: item of ZO_Menu["..tos(idx).."] is nil, or got no name!") end
-				end
-
-				--Set the last added index now, for next call to ShowMenu()
-				lib.ZO_MenuData_CurrentIndex = idx
-			end
-
-			--No LSM mapped items found? Show normal ZO_Menu now
-			if lib.debugLCM_ZO_Menu_Replacement then d(">>> nummber of new added LSM items: " ..tos(numLSMItemsAddedDuringThisShowMenu)) end
-			if numLSMItemsAddedDuringThisShowMenu <= 0 then
-				resetZO_MenuClearVariables()
-				return false -- run original ZO_Menu's ShowMenu()
-			end
-
-			--Set the variable to call ClearMenu() on next reset of the LSM contextmenu (if LSM context menu closes e.g.)
-			lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = true
-
-			--Hide original ZO_Menu (and LibCustomMenu added entries) now -> Do this here AFTER preparing LSM entries,
-			-- else the ZO_Menu.items and sub controls will be emptied already (nil)!
-			-->Important: Do NOT clear the ZO_Menu here!  Keep all entries in ZO_Menu.items. Entries with the same index
-			-->are skipped due to the usage of the index offset lib.ZO_MenuData_CurrentIndex!
-			--> So only visually "hide" the ZO_Menu here but do not call ClearMenu() as this would empty the ZO_Menu.items early!
-			customClearMenu()
-
-
-			--Show the LSM context menu now with the mapped and added ZO_Menu entries, in LSM format.
-			-->ShowCustomScrollableMenu will show all previously added entries plus the new ones
-			showLSMReplacmentContextMenuForZO_MenuNow(owner, ownerName)
-
-			--Hide the ZO_Menu TLC now -> Delayed to next frame (to hide that small [ ] menu TLC near the right clicked mouse position)
-			--> TODO: Moved to customClearMenu() function above. Test if that works
-			--[[
-			zo_callLater(function()
-				ZOMenus:SetHidden(true)
-			end, 1)
-			]]
+			if owner == nil then owner = moc() end
+			suppressOriginalZO_Menu = showMenuOwnerChecks(owner, ZO_MenuData)
 
 			--Suppress original ZO_Menu building and "Show" LSM entries now (se above via ShowCustomScrollableMenu( ... ) )
-			return true
+			return suppressOriginalZO_Menu
 		end)
 		if lib.debugLCM_ZO_Menu_Replacement then d(">>> PreHooked ShowMenu") end
 
@@ -1105,6 +1171,8 @@ local function contextMenuZO_MenuReplacement(switchedOn, silent)
 	silent = silent or false
 	local onOffTag = ""
 	local currentStateOfReplacement = false
+	sv = lib.SV
+
 	--Coming from LAM settings switch?
 	if switchedOn ~= nil then
 		currentStateOfReplacement = switchedOn

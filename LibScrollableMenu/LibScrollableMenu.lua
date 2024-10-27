@@ -5503,7 +5503,7 @@ local function onAddonLoaded(event, name)
 	lib.BuildLAMSettingsMenu()
 
 	--Enable the ZO_Menu contextmenu hooks if they were switche don
-	lib.ContextMenuZO_MenuReplacement((sv ~= nil and sv.ZO_MenuContextMenuReplacement == true and true) or false, true) --silent, no chat output
+	lib.ContextMenuZO_MenuReplacement((sv ~= nil and sv.ZO_MenuContextMenuReplacement == true and true) or false, false) --silent, no chat output
 
 
 
