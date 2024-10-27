@@ -299,6 +299,7 @@ end
 local function resetZO_MenuClearVariables()
 	lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
 	lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
+	lib.skipLSMClearOnOnClearMenu = false
 end
 
 --Hide currently shown context menus, LSM and ZO_Menu/LSM
@@ -449,10 +450,9 @@ local function showMenuOwnerChecks(owner, menuDataOfLSM)
 	if startIndex > numItems then
 		if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems)) end
 
-		--todo: 20241027 Bugfix for Chat menu showing ZO_Menu below the LSM context menu
+		--20241027 Bugfix for Chat menu showing ZO_Menu below the LSM context menu
 		lib.skipLSMClearOnOnClearMenu = true
 		ClearMenu()
-		lib.skipLSMClearOnOnClearMenu = false
 
 		resetZO_MenuClearVariables()
 		return false -- run original ZO_Menu's ShowMenu()
