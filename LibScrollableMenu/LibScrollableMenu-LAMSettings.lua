@@ -81,13 +81,13 @@ function lib.BuildLAMSettingsMenu()
 		},
 		{
 			type = "description",
-			title = "Context menus",
-			text = "Test description here\n\ntest test test\n\n\nbla blubb",
+			title = GetString(SI_LSM_LAM_HEADER_CNTXTMENU),
+			text = GetString(SI_LSM_LAM_CNTXTMENU_DESC)
 		},
 		{
 			type = "checkbox",
-			name = "Replace all ZO_Menu context menus",
-			tooltip = "Replace the context menus (ZO_Menu, LibCustomMenu) with LibScrolableMenu's scrollable context menu",
+    		name = GetString(SI_LSM_LAM_CNTXTMEN_REPLACE),
+    		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_REPLACE_TT),
 			getFunc = function() return sv.ZO_MenuContextMenuReplacement end,
 			setFunc = function(checked)
 				--sv.ZO_MenuContextMenuReplacement = checked
@@ -99,8 +99,8 @@ function lib.BuildLAMSettingsMenu()
 		},
         {
             type = "editbox",
-            name = "Owner control name",
-            tooltip = "Enter here the control name of a context menu owner, e.g. ZO_PlayerInventory",
+    		name = GetString(SI_LSM_LAM_CNTXTMEN_OWNER_NAME),
+    		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_OWNER_NAME_TT),
             getFunc = function() return contextMenuOwnerControlName end,
             setFunc = function(newValue)
 				contextMenuOwnerControlName = newValue
@@ -128,8 +128,8 @@ function lib.BuildLAMSettingsMenu()
         },
         {
             type = "slider",
-            name = "Visible rows #",
-            tooltip = "Enter the number of visible rows at the contextmenu of the owner's controlName",
+    		name = GetString(SI_LSM_LAM_CNTXTMEN_VIS_ROWS),
+    		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_VIS_ROWS_TT),
             getFunc = function()
 				return newVisibleRowsForControlName or comboBoxDefaults.visibleRows
 			end,
@@ -145,8 +145,8 @@ function lib.BuildLAMSettingsMenu()
         },
         {
             type = "slider",
-            name = "Visible rows #, submenus",
-            tooltip = "Enter the number of visible rows at the contextmenu's submenus of the owner's controlName",
+    		name = GetString(SI_LSM_LAM_CNTXTMEN_VIS_ROWS_SUBMENU),
+    		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_VIS_ROWS_SUBMENU_TT),
             getFunc = function()
 				return newVisibleRowsSubmenuForControlName or comboBoxDefaults.visibleRowsSubmenu
 			end,
@@ -162,6 +162,8 @@ function lib.BuildLAMSettingsMenu()
         },
         {
             type = "button",
+    		name = GetString(SI_LSM_LAM_CNTXTMEN_APPLY_VIS_ROWS),
+    		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_APPLY_VIS_ROWS_TT),
             name = "Apply visibleRows",
             tooltip = "Change the visible rows and visible rows of the submenu for the entered context menu owner's controlName.",
             func = function()
@@ -189,8 +191,8 @@ function lib.BuildLAMSettingsMenu()
         },
         {
             type = "dropdown",
-			name = "Already added owner names",
-			tooltip = "Choose an already added owner's controlName to change the values, or to delete the saved values in total.",
+            name = GetString(SI_LSM_LAM_CNTXTMEN_ADDED_OWNERS_DD),
+            tooltip = GetString(SI_LSM_LAM_CNTXTMEN_ADDED_OWNERS_DD_TT),
 			choices = existingOwnerNamesList,
 			getFunc = function() return selectedExistingOwnerName end,
 			setFunc = function(selectedOwnerName)
@@ -215,8 +217,8 @@ function lib.BuildLAMSettingsMenu()
         },
         {
             type = "button",
-            name = "Delete control name",
-            tooltip = "Delete the selected owner's controlName from the saved controls list",
+            name = GetString(SI_LSM_LAM_CNTXTMEN_DELETE_OWNER),
+            tooltip = GetString(SI_LSM_LAM_CNTXTMEN_DELETE_OWNER_TT),
             func = function()
 				if selectedExistingOwnerName ~= nil then
 					if sv.contextMenuSettings and sv.contextMenuSettings[selectedExistingOwnerName] ~= nil then
@@ -235,6 +237,7 @@ function lib.BuildLAMSettingsMenu()
 
 	}
 	LAM2:RegisterOptionControls(LSMLAMPanelName, optionsData)
+
 
     local function openedPanel(panel)
         if panel ~= lib.LAMsettingsPanel then return end
