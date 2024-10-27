@@ -124,6 +124,8 @@ local listRowsAllowedPatternsForContextMenu = {
 --Add controls here (or parent controls, or owningWindow controls) which are allowed for ZO_Menu -> LSM mapping.
 -->LSM will be shown and used for them -> LibScrollableMenu does not hook into it
 local whitelistedControlNamesForZO_MenuReplacement = {
+	--Dialogs
+	["ZO_Dialog1"] = true,
 	--Character
 	["ZO_Character"] = true,
 	--Player Inventory
@@ -143,7 +145,7 @@ local whitelistedControlNamesForZO_MenuReplacement = {
 	--Store
 	["ZO_StoreWindow"] = true,
 	--Guild Store
-	["ZO_GuildStore"] = true,
+	["ZO_TradingHouse"] = true,
 	--Chat Window
 	["ZO_ChatWindow"] = true,
 	--Crafting Tables
@@ -153,6 +155,12 @@ local whitelistedControlNamesForZO_MenuReplacement = {
 	["ZO_AlchemyTopLevel"] = true,
 	--Universal Deconstruction
 	["ZO_UniversalDeconstructionTopLevel_Keyboard"] = true,
+	--Group
+	["ZO_GroupList"] = true,
+	--Friends
+	["ZO_KeyboardFriendsList"] = true,
+	--Guilds
+	["ZO_GuildList"] = true,
 }
 
 

@@ -137,7 +137,7 @@ function lib.BuildLAMSettingsMenu()
 				newVisibleRowsForControlName = newValue
             end,
 			step = 1,
-			min = 5,
+			min = 2,
 			max = 30,
             disabled = function() return contextMenuOwnerControlName == nil or contextMenuOwnerControlName == "" end,
 			width = "half",
