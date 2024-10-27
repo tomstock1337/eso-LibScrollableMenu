@@ -194,8 +194,9 @@ lib.ZO_Menu_cBoxControlsToMonitor = {}
 --> will add duplicate data in the end
 lib.LCMLastAddedMenuItem                 = {}
 local LCMLastAddedMenuItem = lib.LCMLastAddedMenuItem
-
-
+--Prevent the call to ClearCustomScrollableMenu from ClearMenu, if e.g. Chat context menu calls ShowMenu twice and shows LSM and ZO_Mneu below LSM then
+-->Only ClaerMenu is called to clear the ZO_Menu
+lib.skipLSMClearOnOnClearMenu = false
 
 ------------------------------------------------------------------------------------------------------------------------
 -- local variables for the ZO_Menu hooks
@@ -447,6 +448,12 @@ local function showMenuOwnerChecks(owner, menuDataOfLSM)
 	local startIndex = lastUsedItemIndex + 1
 	if startIndex > numItems then
 		if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems)) end
+
+		--todo: 20241027 Bugfix for Chat menu showing ZO_Menu below the LSM context menu
+		lib.skipLSMClearOnOnClearMenu = true
+		ClearMenu()
+		lib.skipLSMClearOnOnClearMenu = false
+
 		resetZO_MenuClearVariables()
 		return false -- run original ZO_Menu's ShowMenu()
 	end
@@ -982,7 +989,10 @@ local function addZO_Menu_ShowMenuHook()
 			ZOMenus:SetHidden(false)
 
 			--Clear the existing LSM context menu entries
-			clearCustomScrollableMenu()
+			if not lib.skipLSMClearOnOnClearMenu then
+				clearCustomScrollableMenu()
+			end
+			lib.skipLSMClearOnOnClearMenu = false
 		end)
 		if lib.debugLCM_ZO_Menu_Replacement then d(">>> PostHooked ClearMenu") end
 

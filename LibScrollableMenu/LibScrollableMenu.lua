@@ -4688,6 +4688,7 @@ function contextMenuClass:ZO_MenuHooks()
 		lib.ZO_MenuData_CurrentIndex = 0
 		lib.preventClearCustomScrollableMenuToClearZO_MenuData = false
 		lib.callZO_MenuClearMenuOnClearCustomScrollableMenu = false
+		lib.skipLSMClearOnOnClearMenu = false
 		lib.ZO_Menu_cBoxControlsToMonitor = {}
 		return
 	end
@@ -4708,6 +4709,7 @@ function contextMenuClass:ZO_MenuHooks()
 		if lib.debugLCM_ZO_Menu_Replacement then d("["..MAJOR.."]ZO_MenuHooks - Calling ClearMenu() because of callZO_MenuClearMenuOnClearCustomScrollableMenu = true") end
 		ClearMenu()
 	end
+	lib.skipLSMClearOnOnClearMenu = false
 end
 
 function contextMenuClass:GetUniqueName()
