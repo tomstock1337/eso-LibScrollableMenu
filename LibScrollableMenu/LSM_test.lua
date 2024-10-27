@@ -1219,6 +1219,15 @@ SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
 --Update LSM test UI combobox with new options
 SLASH_COMMANDS["/lsmtest2"] = function() lib.Test2() end
 
+--Test for ZO_Menu / LibCustomMenu replacement
+function lib.Test3()
+	if lib.IsZO_MenuContextMenuReplacementRegistered(MAJOR) then
+		--Add another inventory context menu entry
+		AddCustomScrollableMenuEntry("Inv. context menu - Test entry 1", function() d("Inv. context test entry 1 clicked") end, LSM_ENTRY_TYPE_NORMAL, nil, nil)
+		ShowCustomScrollableMenu()
+	end
+end
+SLASH_COMMANDS["/lsmtest3"] = function() lib.Test3() end
 
 
 --[[

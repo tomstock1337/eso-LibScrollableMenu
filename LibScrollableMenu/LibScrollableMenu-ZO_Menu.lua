@@ -292,7 +292,7 @@ end
 --Clear all internally used LSM variables of the ZO_Menu item's mapping, preventer variables for SHowMenu and ClearMenu etc.
 --so that ZO_Menu and LibCustomMenu work normal again
 local function clearInternalZO_MenuToLSMMappingData()
-	if lib.debugLCM then d("["..MAJOR.."]clearInternalZO_MenuToLSMMappingData") end
+	if lib.debugLCM_ZO_Menu_Replacement then d("["..MAJOR.."]clearInternalZO_MenuToLSMMappingData") end
 	LCMLastAddedMenuItem              = {}
 	lastAddedZO_MenuItemsIndex        = 0
 	lib.ZO_Menu_cBoxControlsToMonitor = {}
@@ -306,7 +306,7 @@ end
 --Is any custom scrollable ZO_Menu replacement context menu registered?
 local function isAnyCustomScrollableZO_MenuContextMenuRegistered()
 	local isAnyLSMContextMenuReplacementRegistered = not ZO_IsTableEmpty(registeredCustomScrollableContextMenus)
-	if lib.debugLCM then d("["..MAJOR.."]isAnyCustomScrollableZO_MenuContextMenuRegistered: " .. tos(isAnyLSMContextMenuReplacementRegistered)) end
+	if lib.debugLCM_ZO_Menu_Replacement then d("["..MAJOR.."]isAnyCustomScrollableZO_MenuContextMenuRegistered: " .. tos(isAnyLSMContextMenuReplacementRegistered)) end
 	return isAnyLSMContextMenuReplacementRegistered
 end
 lib.IsAnyCustomScrollableZO_MenuContextMenuRegistered = isAnyCustomScrollableZO_MenuContextMenuRegistered
@@ -351,7 +351,7 @@ local function showLSMReplacmentContextMenuForZO_MenuNow(owner, ownerName)
 
 	local visibleRows, visibleRowsSubmenu, isZOListDialogHidden = getVisibleRowsByOwnerControlSettings(owner, ownerName)
 
-	if lib.debugLCM then d("< ~~ SHOWING LSM! ShowCustomScrollableMenu - isZOListDialogHidden: " ..tos(isZOListDialogHidden) .."; visibleRows: " ..tos(visibleRows) .."; visibleRowsSubmenu: " ..tos(visibleRowsSubmenu) .." ~~~") end
+	if lib.debugLCM_ZO_Menu_Replacement then d("< ~~ SHOWING LSM! ShowCustomScrollableMenu - isZOListDialogHidden: " ..tos(isZOListDialogHidden) .."; visibleRows: " ..tos(visibleRows) .."; visibleRowsSubmenu: " ..tos(visibleRowsSubmenu) .." ~~~") end
 	ShowCustomScrollableMenu(owner, {
 		sortEntries = 			false,
 		visibleRowsDropdown = 	visibleRows,
@@ -373,7 +373,7 @@ end
 local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSubmenu)
 	updateZO_MenuVariables()
 	LSMAlreadyMappedItemNum = LSMAlreadyMappedItemNum + 1
-	if lib.debugLCM then
+	if lib.debugLCM_ZO_Menu_Replacement then
 		if isBuildingSubmenu == true then
 			d("-_-_-_-_- RECURSIVE CALL -_-_-_-_-")
 		end
@@ -442,11 +442,11 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 			--Is this an entry opening a submenu?
 			local submenuData = ZO_Menu_ItemCtrl.submenuData
 			local submenuItems = (submenuData ~= nil and submenuData.entries ~= nil and submenuData.entries) or nil
-			if lib.debugLCM then d(">entryData: " ..tos(entryData) .."; submenuData: " ..tos(submenuData) .."; #entries: " ..tos(submenuItems ~= nil and #submenuItems or 0)) end
+			if lib.debugLCM_ZO_Menu_Replacement then d(">entryData: " ..tos(entryData) .."; submenuData: " ..tos(submenuData) .."; #entries: " ..tos(submenuItems ~= nil and #submenuItems or 0)) end
 
 			-->LCM Submenu
 			if submenuData ~= nil and not ZO_IsTableEmpty(submenuItems) then
-				if lib.debugLCM then d(">LCM  found Submenu items: " ..tos(#submenuItems)) end
+				if lib.debugLCM_ZO_Menu_Replacement then d(">LCM  found Submenu items: " ..tos(#submenuItems)) end
 				processVanillaZO_MenuItem = false
 
 				entryName = 			entryData.mytext
@@ -499,7 +499,7 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 						end
 					end
 
-					if lib.debugLCM then
+					if lib.debugLCM_ZO_Menu_Replacement then
 						local subMenuEntryCheckedState = getValueOrCallback(submenuEntry.entryData.checked, submenuEntry.entryData)
 						d(">>Submenu item-name: " ..tos(submenuEntry.entryData.mytext) .."; itemType: " ..tos(submenuEntry.entryData.itemType) .. "; checked: " .. tos(subMenuEntryCheckedState))
 					end
@@ -535,13 +535,13 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 					enabled = entryData.enabled
 				end
 
-				if lib.debugLCM then d(">LCM found normal item-processVanillaZO_MenuItem: " .. tos(processVanillaZO_MenuItem)) end
+				if lib.debugLCM_ZO_Menu_Replacement then d(">LCM found normal item-processVanillaZO_MenuItem: " .. tos(processVanillaZO_MenuItem)) end
 			end
 		end
 
 		--Normal ZO_Menu item added via AddMenuItem (without LibCustomMenu, if with LCM but data was missig -> Fill up)
 		if processVanillaZO_MenuItem == true then
-			if lib.debugLCM then d(">LCM process vanilla ZO_Menu item") end
+			if lib.debugLCM_ZO_Menu_Replacement then d(">LCM process vanilla ZO_Menu item") end
 			entryName = 	entryName or (ZO_Menu_ItemCtrl.nameLabel and ZO_Menu_ItemCtrl.nameLabel:GetText())
 			callbackFunc = 	callbackFunc or ZO_Menu_ItemCtrl.OnSelect
 			isHeader = 		isHeader or ZO_Menu_ItemCtrl.isHeader
@@ -561,7 +561,7 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 		if isHeader then entryType = LSM_ENTRY_TYPE_HEADER end
 
 
-		if lib.debugLCM then
+		if lib.debugLCM_ZO_Menu_Replacement then
 			d(">>LSM entry[" .. tos(LSMAlreadyMappedItemNum) .. "]-name: " ..tos(entryName) .. ", callbackFunc: " ..tos(callbackFunc) .. ", type: " ..tos(entryType) .. ", hasSubmenu: " .. tos(hasSubmenu) .. ", entries: " .. tos(submenuEntries))
 		end
 
@@ -597,7 +597,7 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 
 			lsmEntry.enabled = 			enabled
 		end
-	elseif lib.debugLCM then
+	elseif lib.debugLCM_ZO_Menu_Replacement then
 		d("<ABORT: item data not found")
 	end
 	return lsmEntry
@@ -611,10 +611,10 @@ lib.MapZO_MenuItemToLibScrollableMenuEntry = mapZO_MenuItemToLSMEntry
 --> mapZO_MenuItemToLSMEntry, and shown at ShowMenu() then
 --======================================================================================================================
 local function storeZO_MenuItemDataForLSM(index, mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled, entries, isDivider)
-	if lib.debugLCM then d("[LSM]storeLCMEntryDataToLSM-index: " ..tos(index) .."; mytext: " ..tos(mytext) .. "; entries: " .. tos(entries)) end
+	if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]storeLCMEntryDataToLSM-index: " ..tos(index) .."; mytext: " ..tos(mytext) .. "; entries: " .. tos(entries)) end
 
 	if index == nil or mytext == nil or lib.ZO_MenuData[index] ~= nil then
-		if lib.debugLCM then d("<ABORT index: " ..tos(index).. ", name: " ..mytext .. ", exists: " ..tos(lib.ZO_MenuData[index] ~= nil)) end
+		if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT index: " ..tos(index).. ", name: " ..mytext .. ", exists: " ..tos(lib.ZO_MenuData[index] ~= nil)) end
 		return
 	end
 
@@ -629,7 +629,7 @@ local function storeZO_MenuItemDataForLSM(index, mytext, myfunction, itemType, m
 		if isCheckbox == true and lastAddedZO_MenuItem.checkbox ~= nil then
 			--Get ZO_Menu's checkbox's current checked state
 			isChecked = ZO_CheckButton_IsChecked(lastAddedZO_MenuItem.checkbox)
-			if lib.debugLCM then d("[LSM]storeZO_MenuItemDataForLSM - checkbox: " .. tos(getControlName(lastAddedZO_MenuItem.checkbox)) .. ", currentState: " .. tos(isChecked)) end
+			if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]storeZO_MenuItemDataForLSM - checkbox: " .. tos(getControlName(lastAddedZO_MenuItem.checkbox)) .. ", currentState: " .. tos(isChecked)) end
 		end
 
 		--Prepare the data table that should be mapped
@@ -658,10 +658,10 @@ local function storeZO_MenuItemDataForLSM(index, mytext, myfunction, itemType, m
 		--Map the entry of ZO_Menu to LSM entries now and add it to our internal ZO_MenuData table
 		local lsmEntryMapped = mapZO_MenuItemToLSMEntry(lastAddedZO_MenuItem, index, false)
 		if lsmEntryMapped ~= nil then
-			if lib.debugLCM then d(">>ADDED LSMEntryMapped, index: " ..tos(index) ..", name: " ..mytext) end
+			if lib.debugLCM_ZO_Menu_Replacement then d(">>ADDED LSMEntryMapped, index: " ..tos(index) ..", name: " ..mytext) end
 			lib.ZO_MenuData[index] = lsmEntryMapped
 		end
-	elseif lib.debugLCM then
+	elseif lib.debugLCM_ZO_Menu_Replacement then
 		d("<ABORT 2: lastAddedZO_MenuItemCtrl is NIL")
 	end
 end
@@ -670,7 +670,7 @@ end
 ---- HOOKs ----
 --Add a hook to the SHowMenu() function, if any addon registered a custom LSM replacement for ZO_menu via API function lib.RegisterZO_MenuContextMenuReplacement(addonName)
 local function addZO_Menu_ShowMenuHook()
-	if lib.debugLCM then d("["..MAJOR.."]addZO_Menu_ShowMenuHook") end
+	if lib.debugLCM_ZO_Menu_Replacement then d("["..MAJOR.."]addZO_Menu_ShowMenuHook") end
 	updateZO_MenuVariables()
 	if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then clearInternalZO_MenuToLSMMappingData() return end
 
@@ -678,7 +678,7 @@ local function addZO_Menu_ShowMenuHook()
 	if libCustomMenuIsLoaded == true then
 		--Check if LibCustomMenu hooks were done
 		if LCM_AddItemFunctionsHooked == true then return end
-		if lib.debugLCM then d("["..MAJOR.."]LibCustomMenu: Enabled / Applying hooks") end
+		if lib.debugLCM_ZO_Menu_Replacement then d("["..MAJOR.."]LibCustomMenu: Enabled / Applying hooks") end
 
 		--Needed functions of LCM do not exist (wrong LCM version loaded)?
 		--LibCustomMenu.AddMenuItem(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
@@ -688,7 +688,7 @@ local function addZO_Menu_ShowMenuHook()
 
 			--Add the entry to lib.ZO_MenuData = {} now
 			LCMLastAddedMenuItem = { index = ZOMenu.currentIndex, name = mytext, callback = myfunction, itemType = itemType }
-			if lib.debugLCM then d("[LSM]PreHook LCM.AddMenuItem-name: " ..tos(mytext) .. "; itemType: " ..tos(itemType)) end
+			if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]PreHook LCM.AddMenuItem-name: " ..tos(mytext) .. "; itemType: " ..tos(itemType)) end
 		end)
 		--LibCustomMenu.AddSubMenuItem(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, entries, isDivider)
 		ZO_PreHook(LCM, "AddSubMenuItem", function(mytext, myfunction, itemType, myFont, normalColor, highlightColor, itemYPad, entries, isDivider)
@@ -697,7 +697,7 @@ local function addZO_Menu_ShowMenuHook()
 
 			--Add the entry to lib.ZO_MenuData = {} now
 			LCMLastAddedMenuItem = { index = ZOMenu.currentIndex, name = mytext, callback = myfunction, itemType = itemType, isSubmenu = true, entries = entries }
-			if lib.debugLCM then d("[LSM]PreHook LCM.AddSubMenuItem-name: " ..tos(mytext) .. "; entries: " ..tos(entries)) end
+			if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]PreHook LCM.AddSubMenuItem-name: " ..tos(mytext) .. "; entries: " ..tos(entries)) end
 		end)
 
 		--LibCustomMenu - Tooltip function hook to add the ZO_Menu.items[index].customTooltip function (if needed)
@@ -709,7 +709,7 @@ local function addZO_Menu_ShowMenuHook()
 			--Add the tooltip func as customTooltip to the mapped LSM entry now
 			local lsmEntry = lib.ZO_MenuData[index]
 			if lsmEntry == nil then return end
-			if lib.debugLCM then d("[LSM]AddCustomMenuTooltip-index: " ..tos(index) .. "; entry: " .. tos(lsmEntry.label or lsmEntry.name)) end
+			if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]AddCustomMenuTooltip-index: " ..tos(index) .. "; entry: " .. tos(lsmEntry.label or lsmEntry.name)) end
 			lsmEntry.tooltip = nil
 			lsmEntry.customTooltip = tooltipFunc
 		end)
@@ -722,7 +722,7 @@ local function addZO_Menu_ShowMenuHook()
 
 	--Check if ZO_Menu hooks were done
 	if ZO_Menu_showMenuHooked == false then
-		if lib.debugLCM then d("["..MAJOR.."]ZO_Menu / Applying hooks") end
+		if lib.debugLCM_ZO_Menu_Replacement then d("["..MAJOR.."]ZO_Menu / Applying hooks") end
 
 		--Checkboxes: If they were added to ZO_Menu via AddMenuItem - Monitor those so the first time they get checked/unchecked properly via the ZOs API functions
 		--they will update that value to the LSMentry too
@@ -730,7 +730,7 @@ local function addZO_Menu_ShowMenuHook()
 		local function checkIfZO_MenuCheckboxStateChanged(cBoxControl)
 			if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then clearInternalZO_MenuToLSMMappingData() return end
 			local ZO_MenuIndexofCheckbox = lib.ZO_Menu_cBoxControlsToMonitor[cBoxControl]
-			if lib.debugLCM then d("[LSM]checkIfZO_MenuCheckboxStateChanged-ZO_MenuIndexofCheckbox: " ..tos(ZO_MenuIndexofCheckbox) .. "; name: " .. tos(getControlName(cBoxControl))) end
+			if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]checkIfZO_MenuCheckboxStateChanged-ZO_MenuIndexofCheckbox: " ..tos(ZO_MenuIndexofCheckbox) .. "; name: " .. tos(getControlName(cBoxControl))) end
 			if cBoxControl == nil or ZO_MenuIndexofCheckbox == nil then return end
 			--Clear the monitored checkbox control from the table: Only update the checked state once
 			lib.ZO_Menu_cBoxControlsToMonitor[cBoxControl] = nil
@@ -743,7 +743,7 @@ local function addZO_Menu_ShowMenuHook()
 			local isChecked = ZO_CheckButton_IsChecked(cBoxControl)
 			if isChecked == nil then return end
 
-			if lib.debugLCM then d(">>found LSMEntry, current checked state: " ..tos(getValueOrCallback(lsmEntryForCheckbox.checked)) .. ", newState: " .. tos(isChecked)) end
+			if lib.debugLCM_ZO_Menu_Replacement then d(">>found LSMEntry, current checked state: " ..tos(getValueOrCallback(lsmEntryForCheckbox.checked)) .. ", newState: " .. tos(isChecked)) end
 			--If the LSMentry's .checked is nil or not a function (which would be run properly to update it's checked state), we set it manually now once
 			if type(lsmEntryForCheckbox.checked) ~= "function" then
 				lsmEntryForCheckbox.checked = isChecked
@@ -751,7 +751,7 @@ local function addZO_Menu_ShowMenuHook()
 		end
 		SecurePostHook("ZO_CheckButton_SetChecked", checkIfZO_MenuCheckboxStateChanged)
 		SecurePostHook("ZO_CheckButton_SetUnchecked", checkIfZO_MenuCheckboxStateChanged)
-		if lib.debugLCM then d(">>> PostHooked ZO_CheckButton_SetUnChecked") end
+		if lib.debugLCM_ZO_Menu_Replacement then d(">>> PostHooked ZO_CheckButton_SetUnChecked") end
 
 
 		--ZO_Menu's AddMenuItem function. It will be called for each added context menu item once.
@@ -767,7 +767,7 @@ local function addZO_Menu_ShowMenuHook()
 			lastAddedZO_MenuItemsIndex = ZOMenu.currentIndex - 1
 			local lastAddedLCMEntryName = LCMLastAddedMenuItem ~= nil and LCMLastAddedMenuItem.name
 
-			if lib.debugLCM then d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; index: " ..tos(LCMLastAddedMenuItem.index) .."/last: " ..tos(lastAddedZO_MenuItemsIndex) .."; entries: " ..tos(LCMLastAddedMenuItem.entries)) end
+			if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; index: " ..tos(LCMLastAddedMenuItem.index) .."/last: " ..tos(lastAddedZO_MenuItemsIndex) .."; entries: " ..tos(LCMLastAddedMenuItem.entries)) end
 
 			--Was the item added via LibCustomMenu?
 			local entries
@@ -784,7 +784,7 @@ local function addZO_Menu_ShowMenuHook()
 					--> As storeZO_MenuItemDataForLSM will be called directly after these line here it should add an entry to lib.ZO_MenuData[lastAddedIndex]
 					local cBoxControl = ZOMenu.items[lastAddedZO_MenuItemsIndex].checkbox
 					if cBoxControl ~= nil then
-						if lib.debugLCM then d("[LSM]AddMenuItem-Added cbox control with index: "..tos(lastAddedZO_MenuItemsIndex) .. ", to ZO_Menu_cBoxControlsToMonitor") end
+						if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]AddMenuItem-Added cbox control with index: "..tos(lastAddedZO_MenuItemsIndex) .. ", to ZO_Menu_cBoxControlsToMonitor") end
 						lib.ZO_Menu_cBoxControlsToMonitor[cBoxControl] = lastAddedZO_MenuItemsIndex
 					end
 				else
@@ -822,12 +822,12 @@ local function addZO_Menu_ShowMenuHook()
 					entries,
 					isDivider)
 		end)
-		if lib.debugLCM then d(">>> PostHooked AddMenuItem") end
+		if lib.debugLCM_ZO_Menu_Replacement then d(">>> PostHooked AddMenuItem") end
 
 
 		--Hook the ZO_Menu's ClearMenu function so we can clear our LSM variables too
 		SecurePostHook("ClearMenu", function()
-			if lib.debugLCM then
+			if lib.debugLCM_ZO_Menu_Replacement then
 				d("<<<<<<<<<<<<<<<<<<<<<<<")
 				d("[LSM]ClearMenu - preventClearCustomScrollableMenuToClearZO_MenuData: " ..tos(lib.preventClearCustomScrollableMenuToClearZO_MenuData))
 				d("<<<<<<<<<<<<<<<<<<<<<<<")
@@ -837,7 +837,7 @@ local function addZO_Menu_ShowMenuHook()
 			--Clear the existing LSM context menu entries
 			clearCustomScrollableMenu()
 		end)
-		if lib.debugLCM then d(">>> PostHooked ClearMenu") end
+		if lib.debugLCM_ZO_Menu_Replacement then d(">>> PostHooked ClearMenu") end
 
 
 		--PreHook the ShowMenu function of ZO_Menu in order to map the ZO_Menu.items to the LSM entries
@@ -863,14 +863,14 @@ local function addZO_Menu_ShowMenuHook()
 				resetZO_MenuClearVariables()
 				return false -- run original ZO_Menu's ShowMenu()
 			end
-			if lib.debugLCM then
+			if lib.debugLCM_ZO_Menu_Replacement then
 				d("!!!!!!!!!!!!!!!!!!!!")
 				d("[LSM]ShowMenu - initialRefCount: " ..tos(initialRefCount) .. ", menuType: " ..tos(menuType))
 				d("!!!!!!!!!!!!!!!!!!!!")
 			end
 			--Any items to show in the ZO_Menu?
 			if next(ZOMenu.items) == nil then
-				if lib.debugLCM then d("<ABORT: No ZO_Menu.items available") end
+				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: No ZO_Menu.items available") end
 				resetZO_MenuClearVariables()
 				return false -- run original ZO_Menu's ShowMenu() -> Will return false in there directly then
 			end
@@ -878,7 +878,7 @@ local function addZO_Menu_ShowMenuHook()
 			--No entries added to internal LSM mapped enties table yet (nothing was available in ZO_Menu?) -> Show normal ZO_Menu.items data then
 			local ZO_MenuData = lib.ZO_MenuData
 			if ZO_IsTableEmpty(ZO_MenuData) then
-				if lib.debugLCM then d("<ABORT: No LSM.ZO_MenuData mapped entries available") end
+				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: No LSM.ZO_MenuData mapped entries available") end
 				resetZO_MenuClearVariables()
 				return false -- run original ZO_Menu's ShowMenu()
 			end
@@ -886,7 +886,7 @@ local function addZO_Menu_ShowMenuHook()
 			--Do not support any non default menu types (e.g. dropdown special menus like ZO_AutoComplete)
 			menuType = menuType or MENU_TYPE_DEFAULT
 			if menuType ~= MENU_TYPE_DEFAULT then
-				if lib.debugLCM then d("<ABORT: Non supported menu type: " .. tos(menuType)) end
+				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Non supported menu type: " .. tos(menuType)) end
 				resetZO_MenuClearVariables()
 				return false -- run original ZO_Menu's ShowMenu()
 			end
@@ -895,7 +895,7 @@ local function addZO_Menu_ShowMenuHook()
 			--No owner provided? Get the control below the mouse cursor
 			owner = owner or moc()
 			if owner == nil then
-				if lib.debugLCM then d("<ABORT: No menu owner determined") end
+				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: No menu owner determined") end
 				resetZO_MenuClearVariables()
 				return false -- run original ZO_Menu's ShowMenu()
 			end
@@ -903,7 +903,7 @@ local function addZO_Menu_ShowMenuHook()
 			--Is the control allowed to exchange ZO_Menu? e.g. inventory context menu
 			local isAllowed, ownerName = isAllowedControl(owner)
 			if not isAllowed then
-				if lib.debugLCM then d("<ABORT: Menu owner " .. tos(ownerName) .. " is not allowed for LSM usage") end
+				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is not allowed for LSM usage") end
 				resetZO_MenuClearVariables()
 				return false
 			end
@@ -912,7 +912,7 @@ local function addZO_Menu_ShowMenuHook()
 			local isBlocked = false
 			isBlocked, ownerName = isBlacklistedControl(owner, ownerName)
 			if isBlocked == true then
-				if lib.debugLCM then d("<ABORT: Menu owner " .. tos(ownerName) .. " is a blocked control") end
+				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is a blocked control") end
 				resetZO_MenuClearVariables()
 				return false -- run original ZO_Menu's ShowMenu()
 			end
@@ -926,7 +926,7 @@ local function addZO_Menu_ShowMenuHook()
 			local numItems = #ZO_MenuData
 			local startIndex = lastUsedItemIndex + 1
 			if startIndex > numItems then
-				if lib.debugLCM then d("<ABORT: startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems)) end
+				if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems)) end
 				resetZO_MenuClearVariables()
 				return false -- run original ZO_Menu's ShowMenu()
 			end
@@ -936,7 +936,7 @@ local function addZO_Menu_ShowMenuHook()
 				local lsmEntry = ZO_MenuData[idx]
 
 				if lsmEntry ~= nil and lsmEntry.name ~= nil then
-					if lib.debugLCM then d("~~~~ Add item of ZO_Menu["..tos(idx).."]: " ..tos(lsmEntry.name)) end
+					if lib.debugLCM_ZO_Menu_Replacement then d("~~~~ Add item of ZO_Menu["..tos(idx).."]: " ..tos(lsmEntry.name)) end
 
 					--Add the menu entry now to LibScrollableMenu's context menu, instead of ZO_Menu
 					--->pass in lsmEntry as additionlData (last parameter) so m_normalColor etc. will properly be applied to the entry too
@@ -944,7 +944,7 @@ local function addZO_Menu_ShowMenuHook()
 
 					numLSMItemsAddedDuringThisShowMenu = numLSMItemsAddedDuringThisShowMenu + 1
 				else
-					if lib.debugLCM then d("???? ERROR: item of ZO_Menu["..tos(idx).."] is nil, or got no name!") end
+					if lib.debugLCM_ZO_Menu_Replacement then d("???? ERROR: item of ZO_Menu["..tos(idx).."] is nil, or got no name!") end
 				end
 
 				--Set the last added index now, for next call to ShowMenu()
@@ -952,7 +952,7 @@ local function addZO_Menu_ShowMenuHook()
 			end
 
 			--No LSM mapped items found? Show normal ZO_Menu now
-			if lib.debugLCM then d(">>> nummber of new added LSM items: " ..tos(numLSMItemsAddedDuringThisShowMenu)) end
+			if lib.debugLCM_ZO_Menu_Replacement then d(">>> nummber of new added LSM items: " ..tos(numLSMItemsAddedDuringThisShowMenu)) end
 			if numLSMItemsAddedDuringThisShowMenu <= 0 then
 				resetZO_MenuClearVariables()
 				return false -- run original ZO_Menu's ShowMenu()
@@ -984,7 +984,7 @@ local function addZO_Menu_ShowMenuHook()
 			--Suppress original ZO_Menu building and "Show" LSM entries now (se above via ShowCustomScrollableMenu( ... ) )
 			return true
 		end)
-		if lib.debugLCM then d(">>> PreHooked ShowMenu") end
+		if lib.debugLCM_ZO_Menu_Replacement then d(">>> PreHooked ShowMenu") end
 
 		ZO_Menu_showMenuHooked = true
 	end
@@ -1037,7 +1037,6 @@ function lib.IsZO_MenuContextMenuReplacementRegistered(addonName)
 	assert(addonName ~= nil, sfor('['..MAJOR..'.IsZO_MenuContextMenuReplacementRegistered] \'addonName\' missing: %q', tos(addonName)))
 	return registeredCustomScrollableContextMenus[addonName] ~= nil
 end
---local isZO_MenuContextMenuReplacementRegistered = lib.IsZO_MenuContextMenuReplacementRegistered
 
 
 
@@ -1111,6 +1110,8 @@ local function contextMenuZO_MenuReplacement(switchedOn, silent)
 		currentStateOfReplacement = switchedOn
 	else
 		currentStateOfReplacement = (sv ~= nil and sv.ZO_MenuContextMenuReplacement == true and true) or false
+		--Invert the current state now
+		currentStateOfReplacement = not currentStateOfReplacement
 	end
 
 	if currentStateOfReplacement == true then
@@ -1128,44 +1129,3 @@ local function contextMenuZO_MenuReplacement(switchedOn, silent)
 	return currentStateOfReplacement
 end
 lib.ContextMenuZO_MenuReplacement = contextMenuZO_MenuReplacement
-
-
-
-
-
---------------------------------------------------------------------------------------------------------------------
---Slash commands - Context menus
---------------------------------------------------------------------------------------------------------------------
---Toggle the replacement of ZO_Menu (including LibCustomMenu) at iventory contextmenus on/off and update the LAM settings menu
-SLASH_COMMANDS["/lsmcontextmenu"] = function()
-	contextMenuZO_MenuReplacement(nil, false)
-	--Is the LAM panel shown then update the checkbox
-	--Refresh the whole LAM panel as the checkbox alone would maybe not be enough (to refresh dependencies)
-	if LAM2 ~= nil then
-		--[[
-		if LSM_LAM_CHECKBOX_REPLACE_ZO_MENU_CONTEXTMENUS ~= nil and not LSM_LAM_CHECKBOX_REPLACE_ZO_MENU_CONTEXTMENUS:IsHidden() then
-			LSM_LAM_CHECKBOX_REPLACE_ZO_MENU_CONTEXTMENUS:UpdateValue(currentStateOfReplacement)
-		end
-		]]
-		local LAMaddonPanel = lib.LAMsettingsPanel
-		if not LAMaddonPanel:IsHidden() and LAM2.currentAddonPanel == LAMaddonPanel then
-			LAMaddonPanel:RefreshPanel()
-		end
-	end
-end
-
-SLASH_COMMANDS["/lsmdebugcontextmenu"] = function()
-	lib.debugLCM = not lib.debugLCM
-	d("["..MAJOR.."]Debugging ZO_Menu context menus for whitelisted controls: " .. tos(lib.debugLCM))
-end
-
---[[
---Test for ZO_Menu / LibCustomMenu replacement
-function lib.Test3()
-	if isZO_MenuContextMenuReplacementRegistered(MAJOR) then
-		--Add another inventory context menu entry
-		AddCustomScrollableMenuEntry("Inv. context menu - Test entry 1", function() d("Inv. context test entry 1 clicked") end, LSM_ENTRY_TYPE_NORMAL, nil, nil)
-		ShowCustomScrollableMenu()
-	end
-end
-]]
