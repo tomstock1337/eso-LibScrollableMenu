@@ -391,21 +391,25 @@ local function showMenuOwnerChecks(owner, menuDataOfLSM)
 		return false -- run original ZO_Menu's ShowMenu()
 	end
 
-	--Is the control allowed to exchange ZO_Menu? e.g. inventory context menu
-	local isAllowed, ownerName = isAllowedControl(owner)
-	if isAllowed == false then
-		if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is not allowed for LSM usage") end
-		resetZO_MenuClearVariables()
-		return false
-	end
-
-	--Is the control blocked?
-	local isBlocked = false
-	isBlocked, ownerName = isBlacklistedControl(owner, ownerName)
-	if isBlocked == true then
-		if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is a blocked control") end
-		resetZO_MenuClearVariables()
-		return false -- run original ZO_Menu's ShowMenu()
+	--Context menu replacement is globally active for all ZO_Menu/LibCustomMenu?
+	if sv.contextMenuReplacementControls.replaceAll == true then
+		--Only check blacklisted controls then
+		--Is the control blocked?
+		local isBlocked, ownerName = isBlacklistedControl(owner)
+		if isBlocked == true then
+			if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is a blocked control") end
+			resetZO_MenuClearVariables()
+			return false -- run original ZO_Menu's ShowMenu()
+		end
+	else
+		--Check WhiteListed controls
+		--Is the control allowed to exchange ZO_Menu? e.g. inventory context menu
+		local isAllowed, ownerName = isAllowedControl(owner)
+		if isAllowed == false then
+			if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is not allowed for LSM usage") end
+			resetZO_MenuClearVariables()
+			return false
+		end
 	end
 
 	--Build new LSM context menu now

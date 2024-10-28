@@ -53,6 +53,8 @@ local contextMenuLookupBlackList = lib.contextMenuLookupLists.blackList
 
 local existingWhiteList, existingBlackList
 local function buildControlListsNew()
+	contextMenuLookupWhiteList = lib.contextMenuLookupLists.whiteList
+	contextMenuLookupBlackList = lib.contextMenuLookupLists.blackList
 	contextMenuLookupWhiteList = {}
 	contextMenuLookupBlackList = {}
 
@@ -62,13 +64,15 @@ local function buildControlListsNew()
 	if sv and sv.contextMenuReplacementControls ~= nil then
 		for _, controlName in ipairs(sv.contextMenuReplacementControls.whiteList) do
 			existingWhiteListLoc[#existingWhiteListLoc + 1] = controlName
-			contextMenuLookupWhiteList[controlName] = true
+			lib.contextMenuLookupLists.whiteList[controlName] = true
 		end
 		for _, controlName in ipairs(sv.contextMenuReplacementControls.blackList) do
 			existingBlackListLoc[#existingBlackListLoc + 1] = controlName
-			contextMenuLookupBlackList[controlName] = true
+			lib.contextMenuLookupLists.blackList[controlName] = true
 		end
 	end
+	contextMenuLookupWhiteList = lib.contextMenuLookupLists.whiteList
+	contextMenuLookupBlackList = lib.contextMenuLookupLists.blackList
 	return existingWhiteListLoc, existingBlackListLoc
 end
 
@@ -85,6 +89,7 @@ local function updateExistingBlackAndWhiteLists(noLAMControlUpdate)
 		end
 	end
 end
+lib.updateExistingBlackAndWhiteLists = updateExistingBlackAndWhiteLists
 
 ------------------------------------------------------------------------------------------------------------------------
 -- LibAddonMenu - Settings menu for LibScrollableMenu
