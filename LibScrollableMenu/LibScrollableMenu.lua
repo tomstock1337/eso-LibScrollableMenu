@@ -120,18 +120,21 @@ local function prepareSVValues()
 		if ZO_IsTableEmpty(sv.contextMenuReplacementControls.blackList) then
 			sv.contextMenuReplacementControls.blackList = {}
 			for controlName, isEnabled in pairs(blacklistedControlsForZO_MenuReplacement) do
-				sv.contextMenuReplacementControls.blackList[#sv.contextMenuReplacementControls.blackList + 1] = controlName
+				if isEnabled then
+					sv.contextMenuReplacementControls.blackList[#sv.contextMenuReplacementControls.blackList + 1] = controlName
+				end
 			end
 		end
 		if ZO_IsTableEmpty(sv.contextMenuReplacementControls.whiteList) then
 			sv.contextMenuReplacementControls.whiteList = {}
 			for controlName, isEnabled in pairs(whitelistedControlNamesForZO_MenuReplacement) do
-				sv.contextMenuReplacementControls.whiteList[#sv.contextMenuReplacementControls.whiteList + 1] = controlName
+				if isEnabled then
+					sv.contextMenuReplacementControls.whiteList[#sv.contextMenuReplacementControls.whiteList + 1] = controlName
+				end
 			end
 		end
 	end
 end
-
 
 local function getSavedVariable(svOptionName, subTableName)
 	if svOptionName == nil then return end

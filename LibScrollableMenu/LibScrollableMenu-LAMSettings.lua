@@ -234,6 +234,7 @@ function lib.BuildLAMSettingsMenu()
 				]]
 			end,
 			scrollable = true,
+			sort = "name-up",
 			width = "half",
 			default = function() return nil end,
 			disabled = function() return not sv.ZO_MenuContextMenuReplacement end,
@@ -283,6 +284,7 @@ function lib.BuildLAMSettingsMenu()
 				selectedContextMenuControlWhitelistEntry = entry
 			end,
             scrollable = true,
+			sort = "name-up",
 			width = "half",
 			default = function() return nil end,
 			disabled = function() return not sv.ZO_MenuContextMenuReplacement or sv.contextMenuReplacementControls.replaceAll end,
@@ -298,6 +300,7 @@ function lib.BuildLAMSettingsMenu()
 				selectedContextMenuControlBlacklistEntry = entry
 			end,
             scrollable = true,
+			sort = "name-up",
 			width = "half",
 			default = function() return nil end,
 			disabled = function() return not sv.ZO_MenuContextMenuReplacement or not sv.contextMenuReplacementControls.replaceAll end,
