@@ -46,10 +46,14 @@ local function updateExistingOwerNamesList(noLAMControlUpdate)
 	end
 end
 
+
+local contextMenuLookupWhiteList = lib.contextMenuLookupLists.whiteList
+local contextMenuLookupBlackList = lib.contextMenuLookupLists.blackList
+
 local existingWhiteList, existingBlackList
 local function buildControlListsNew()
-	lib.contextMenuLookupLists.whiteList = {}
-	lib.contextMenuLookupLists.blackList = {}
+	contextMenuLookupWhiteList = {}
+	contextMenuLookupBlackList = {}
 
 	local existingWhiteListLoc = {}
 	local existingBlackListLoc = {}
@@ -57,11 +61,11 @@ local function buildControlListsNew()
 	if sv and sv.contextMenuReplacementControls ~= nil then
 		for _, controlName in ipairs(sv.contextMenuReplacementControls.whiteList) do
 			existingWhiteListLoc[#existingWhiteListLoc + 1] = controlName
-			lib.contextMenuLookupLists.whiteList[controlName] = true
+			contextMenuLookupWhiteList[controlName] = true
 		end
 		for _, controlName in ipairs(sv.contextMenuReplacementControls.blackList) do
 			existingBlackListLoc[#existingBlackListLoc + 1] = controlName
-			lib.contextMenuLookupLists.blackList[controlName] = true
+			contextMenuLookupBlackList[controlName] = true
 		end
 	end
 	return existingWhiteListLoc, existingBlackListLoc
@@ -337,24 +341,6 @@ function lib.BuildLAMSettingsMenu()
             tooltip = GetString(SI_LSM_LAM_CNTXTMEN_WHITELIST_ADD_TT),
             func = function()
 				if contextMenuListControlName ~= nil then
-					sv.contextMenuReplacementControls.blackList[#sv.contextMenuReplacementControls.blackList + 1] = contextMenuListControlName
-					existingWhiteList, existingBlackList = buildControlListsNew()
-					contextMenuListControlName = nil
-					selectedContextMenuControlWhitelistEntry = nil
-					selectedContextMenuControlBlacklistEntry = nil
-
-					sv.contextMenuReplacementControls._wasChanged = true
-				end
-			end,
-            disabled = function() return not sv.ZO_MenuContextMenuReplacement or (contextMenuListControlName == nil or contextMenuListControlName == "") end,
-			width = "half"
-        },
-        {
-            type = "button",
-            name = GetString(SI_LSM_LAM_CNTXTMEN_BLACKLIST_ADD),
-            tooltip = GetString(SI_LSM_LAM_CNTXTMEN_BLACKLIST_ADD_TT),
-            func = function()
-				if contextMenuListControlName ~= nil then
 					sv.contextMenuReplacementControls.whiteList[#sv.contextMenuReplacementControls.whiteList + 1] = contextMenuListControlName
 					existingWhiteList, existingBlackList = buildControlListsNew()
 					contextMenuListControlName = nil
@@ -364,7 +350,71 @@ function lib.BuildLAMSettingsMenu()
 					sv.contextMenuReplacementControls._wasChanged = true
 				end
 			end,
-            disabled = function() return not sv.ZO_MenuContextMenuReplacement or (contextMenuListControlName == nil or contextMenuListControlName == "") end,
+            disabled = function() return not sv.ZO_MenuContextMenuReplacement or (contextMenuListControlName == nil or contextMenuListControlName == "" or contextMenuLookupWhiteList[contextMenuListControlName]) end,
+			width = "half"
+        },
+        {
+            type = "button",
+            name = GetString(SI_LSM_LAM_CNTXTMEN_BLACKLIST_ADD),
+            tooltip = GetString(SI_LSM_LAM_CNTXTMEN_BLACKLIST_ADD_TT),
+            func = function()
+				if contextMenuListControlName ~= nil then
+					sv.contextMenuReplacementControls.blackList[#sv.contextMenuReplacementControls.blackList + 1] = contextMenuListControlName
+					existingWhiteList, existingBlackList = buildControlListsNew()
+					contextMenuListControlName = nil
+					selectedContextMenuControlWhitelistEntry = nil
+					selectedContextMenuControlBlacklistEntry = nil
+
+					sv.contextMenuReplacementControls._wasChanged = true
+				end
+			end,
+            disabled = function() return not sv.ZO_MenuContextMenuReplacement or (contextMenuListControlName == nil or contextMenuListControlName == "" or contextMenuLookupBlackList[contextMenuListControlName]) end,
+			width = "half"
+        },
+        {
+            type = "button",
+            name = GetString(SI_LSM_LAM_CNTXTMEN_WHITELIST_DEL),
+            tooltip = GetString(SI_LSM_LAM_CNTXTMEN_WHITELIST_DEL_TT),
+            func = function()
+				if contextMenuListControlName ~= nil then
+					for idx, controlName in ipairs(sv.contextMenuReplacementControls.whiteList) do
+						if controlName == contextMenuListControlName then
+							sv.contextMenuReplacementControls.whiteList[idx] = nil
+							break
+						end
+					end
+					existingWhiteList, existingBlackList = buildControlListsNew()
+					contextMenuListControlName = nil
+					selectedContextMenuControlWhitelistEntry = nil
+					selectedContextMenuControlBlacklistEntry = nil
+
+					sv.contextMenuReplacementControls._wasChanged = true
+				end
+			end,
+            disabled = function() return not sv.ZO_MenuContextMenuReplacement or (contextMenuListControlName == nil or contextMenuListControlName == "" or contextMenuLookupWhiteList[contextMenuListControlName] == nil) end,
+			width = "half"
+        },
+        {
+            type = "button",
+            name = GetString(SI_LSM_LAM_CNTXTMEN_BLACKLIST_DEL),
+            tooltip = GetString(SI_LSM_LAM_CNTXTMEN_BLACKLIST_DEL_TT),
+            func = function()
+				if contextMenuListControlName ~= nil then
+					for idx, controlName in ipairs(sv.contextMenuReplacementControls.blackList) do
+						if controlName == contextMenuListControlName then
+							sv.contextMenuReplacementControls.blackList[idx] = nil
+							break
+						end
+					end
+					existingWhiteList, existingBlackList = buildControlListsNew()
+					contextMenuListControlName = nil
+					selectedContextMenuControlWhitelistEntry = nil
+					selectedContextMenuControlBlacklistEntry = nil
+
+					sv.contextMenuReplacementControls._wasChanged = true
+				end
+			end,
+            disabled = function() return not sv.ZO_MenuContextMenuReplacement or (contextMenuListControlName == nil or contextMenuListControlName == "" or contextMenuLookupBlackList[contextMenuListControlName] == nil) end,
 			width = "half"
         },
 
