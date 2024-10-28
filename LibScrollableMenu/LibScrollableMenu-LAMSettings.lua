@@ -331,18 +331,15 @@ function lib.BuildLAMSettingsMenu()
             getFunc = function() return contextMenuListControlName end,
             setFunc = function(newValue)
 				contextMenuListControlName = newValue
+				selectedContextMenuControlWhitelistEntry = nil
+				selectedContextMenuControlBlacklistEntry = nil
 				if contextMenuListControlName ~= "" then
 					if _G[contextMenuListControlName] == nil then
 						d("["..MAJOR.."]ERROR - Control " .. tos(contextMenuListControlName) .." does not globally exist!")
 						contextMenuListControlName = nil
-						selectedContextMenuControlWhitelistEntry = nil
-						selectedContextMenuControlBlacklistEntry = nil
-					else
 					end
 				else
 					contextMenuListControlName = nil
-					selectedContextMenuControlWhitelistEntry = nil
-					selectedContextMenuControlBlacklistEntry = nil
 				end
 			end,
             disabled = function() return not sv.ZO_MenuContextMenuReplacement end,
@@ -399,7 +396,7 @@ function lib.BuildLAMSettingsMenu()
 						end
 					end
 					if delIdx ~= nil then
-						trem(sv.contextMenuReplacementControls.whiteList[delIdx])
+						trem(sv.contextMenuReplacementControls.whiteList, delIdx)
 						updateExistingBlackAndWhiteLists(false)
 						sv.contextMenuReplacementControls._wasChanged = true
 					end
@@ -425,7 +422,7 @@ function lib.BuildLAMSettingsMenu()
 						end
 					end
 					if delIdx ~= nil then
-						trem(sv.contextMenuReplacementControls.blackList[delIdx])
+						trem(sv.contextMenuReplacementControls.blackList, delIdx)
 						updateExistingBlackAndWhiteLists(false)
 						sv.contextMenuReplacementControls._wasChanged = true
 					end
