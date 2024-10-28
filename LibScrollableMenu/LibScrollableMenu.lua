@@ -20,11 +20,73 @@ local LCM = LibCustomMenu
 --------------------------------------------------------------------
 --SavedVariables
 --------------------------------------------------------------------
+--Add controls here (or parent controls, or owningWindow controls) which are allowed for ZO_Menu -> LSM mapping.
+-->LSM will be shown and used for them -> LibScrollableMenu does not hook into it
+local whitelistedControlNamesForZO_MenuReplacement = {
+	--Dialogs
+	["ZO_Dialog1"] = true,
+	--Character
+	["ZO_Character"] = true,
+	--Player Inventory
+	["ZO_PlayerInventory"] = true,
+	--CraftBag
+    ["ZO_CraftBag"] = true,
+	--Player bank
+	["ZO_PlayerBank"] = true,
+	--House bank
+	["ZO_HouseBank"] = true,
+	--Guild bank
+	["ZO_GuildBank"] = true,
+	--Companion
+	["ZO_CompanionCharacterWindow_Keyboard_TopLevel"] = true,
+	["ZO_CompanionEquipment_Panel_Keyboard"] = true,
+	["ZO_CompanionSkills_Panel_Keyboard"] = true,
+	--Store
+	["ZO_StoreWindow"] = true,
+	--Guild Store
+	["ZO_TradingHouse"] = true,
+	--Chat Window
+	["ZO_ChatWindow"] = true,
+	--Crafting Tables
+	["ZO_SmithingTopLevel"] = true,
+	["ZO_ProvisionerTopLevel"] = true,
+	["ZO_EnchantingTopLevel"] = true,
+	["ZO_AlchemyTopLevel"] = true,
+	--Universal Deconstruction
+	["ZO_UniversalDeconstructionTopLevel_Keyboard"] = true,
+	--Group
+	["ZO_GroupList"] = true,
+	--Friends
+	["ZO_KeyboardFriendsList"] = true,
+	--Guilds
+	["ZO_GuildList"] = true,
+}
+
+
+--Add controls here (or parent controls, or owningWindow controls) which got blacklisted for ZO_Menu -> LSM mapping.
+-->ZO_Menu will be shown and used normally for them and LibScrollableMenu does not hook into it
+local blacklistedControlsForZO_MenuReplacement = {
+	--Chat editbox
+	--["ZO_ChatWindowTextEntryEditBox"] = true,
+}
+
+--The context menu replacement lookup lists
+lib.contextMenuLookupLists = {}
+lib.contextMenuLookupLists.whiteList = {}
+lib.contextMenuLookupLists.blackList = {}
+
+
 --The default SV variables
 local lsmSVDefaults = {
 	textSearchHistory = {},			--The header'S text search right click entries (10 last used search terms) per comboBox header
 	collapsedHeaderState = {},		--The collapsed state of the header per owner (comboBox, owningWindow or control opening the contextMenu -> Depending on control type e.g. list control with rows, or not)
 	ZO_MenuContextMenuReplacement = false, --Replace all ZO_Menu and LibCustomMenu contextMenus with LSM?
+	contextMenuReplacementControls = {
+		_wasChanged = false,
+		replaceAll = false,
+		whiteList = {},
+		blackList = {},
+	},
 	contextMenuSettings = {
 		["ZO_PlayerInventory"] = {
 			visibleRows = 15,
@@ -49,6 +111,25 @@ local function updateSavedVariable(svOptionName, newValue, subTableName)
 		lib.SV[svOptionName] = newValue
 	end
 	sv = lib.SV
+end
+
+local function prepareSVValues()
+	if sv == nil then return end
+	local replaceContextMenuControlsChanged = sv.contextMenuReplacementControls._wasChanged
+	if not replaceContextMenuControlsChanged then
+		if ZO_IsTableEmpty(sv.contextMenuReplacementControls.blackList) then
+			sv.contextMenuReplacementControls.blackList = {}
+			for controlName, isEnabled in pairs(blacklistedControlsForZO_MenuReplacement) do
+				sv.contextMenuReplacementControls.blackList[#sv.contextMenuReplacementControls.blackList + 1] = controlName
+			end
+		end
+		if ZO_IsTableEmpty(sv.contextMenuReplacementControls.whiteList) then
+			sv.contextMenuReplacementControls.whiteList = {}
+			for controlName, isEnabled in pairs(whitelistedControlNamesForZO_MenuReplacement) do
+				sv.contextMenuReplacementControls.whiteList[#sv.contextMenuReplacementControls.whiteList + 1] = controlName
+			end
+		end
+	end
 end
 
 
@@ -5459,6 +5540,7 @@ local function onAddonLoaded(event, name)
 	--SavedVariables
 	lib.SV = ZO_SavedVars:NewAccountWide(svName, 1, "LSM", lsmSVDefaults)
 	sv = lib.SV
+	prepareSVValues()
 
 	--Create the ZO_ComboBox and the g_contextMenu object (lib.contextMenu) for the LSM contextmenus
 	createContextMenuObject()

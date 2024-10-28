@@ -121,62 +121,13 @@ local listRowsAllowedPatternsForContextMenu = {
 }
 ]]
 
---Add controls here (or parent controls, or owningWindow controls) which are allowed for ZO_Menu -> LSM mapping.
--->LSM will be shown and used for them -> LibScrollableMenu does not hook into it
-local whitelistedControlNamesForZO_MenuReplacement = {
-	--Dialogs
-	["ZO_Dialog1"] = true,
-	--Character
-	["ZO_Character"] = true,
-	--Player Inventory
-	["ZO_PlayerInventory"] = true,
-	--CraftBag
-    ["ZO_CraftBag"] = true,
-	--Player bank
-	["ZO_PlayerBank"] = true,
-	--House bank
-	["ZO_HouseBank"] = true,
-	--Guild bank
-	["ZO_GuildBank"] = true,
-	--Companion
-	["ZO_CompanionCharacterWindow_Keyboard_TopLevel"] = true,
-	["ZO_CompanionEquipment_Panel_Keyboard"] = true,
-	["ZO_CompanionSkills_Panel_Keyboard"] = true,
-	--Store
-	["ZO_StoreWindow"] = true,
-	--Guild Store
-	["ZO_TradingHouse"] = true,
-	--Chat Window
-	["ZO_ChatWindow"] = true,
-	--Crafting Tables
-	["ZO_SmithingTopLevel"] = true,
-	["ZO_ProvisionerTopLevel"] = true,
-	["ZO_EnchantingTopLevel"] = true,
-	["ZO_AlchemyTopLevel"] = true,
-	--Universal Deconstruction
-	["ZO_UniversalDeconstructionTopLevel_Keyboard"] = true,
-	--Group
-	["ZO_GroupList"] = true,
-	--Friends
-	["ZO_KeyboardFriendsList"] = true,
-	--Guilds
-	["ZO_GuildList"] = true,
-}
-
-
---Add controls here (or parent controls, or owningWindow controls) which got blacklisted for ZO_Menu -> LSM mapping.
--->ZO_Menu will be shown and used normally for them and LibScrollableMenu does not hook into it
-local blacklistedControlsForZO_MenuReplacement = {
-	--Chat editbox
-	--["ZO_ChatWindowTextEntryEditBox"] = true,
-}
-
 --The table with the already registered LSM context menu hooks
 -->See API function lib.RegisterZO_MenuContextMenuReplacement below
 local registeredCustomScrollableContextMenus        = {}
 lib.registeredCustomScrollableContextMenus = registeredCustomScrollableContextMenus
 
-
+local contextMenuLookupWhiteList = lib.contextMenuLookupLists.whiteList
+local contextMenuLookupBlackList = lib.contextMenuLookupLists.blackList
 
 ------------------------------------------------------------------------------------------------------------------------
 -- local variables for the ZO_Menu mapping
@@ -241,19 +192,19 @@ end
 local function isAllowedControl(owner)
 	if owner ~= nil then
 		local ownerName = getControlName(owner)
-		if ownerName ~= nil and whitelistedControlNamesForZO_MenuReplacement[ownerName] then
+		if ownerName ~= nil and contextMenuLookupWhiteList[ownerName] then
 			return true, ownerName
 		end
 		local parent = owner.GetParent and owner:GetParent()
 		if parent ~= nil then
 			ownerName = getControlName(parent)
-			if ownerName ~= nil and whitelistedControlNamesForZO_MenuReplacement[ownerName] then
+			if ownerName ~= nil and contextMenuLookupWhiteList[ownerName] then
 				return true, ownerName
 			end
 			local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
 			if owningWindow ~= nil then
 				ownerName = getControlName(owningWindow)
-				if ownerName ~= nil and whitelistedControlNamesForZO_MenuReplacement[ownerName] then
+				if ownerName ~= nil and contextMenuLookupWhiteList[ownerName] then
 					return true, ownerName
 				end
 			end
@@ -269,16 +220,16 @@ end
 --> ZO_Menu will be used normally then
 local function isBlacklistedControl(owner)
 	if owner ~= nil then
-		if blacklistedControlsForZO_MenuReplacement[owner] then
+		if contextMenuLookupBlackList[owner] then
 			return true, getControlName(owner)
 		end
 		local parent = owner.GetParent and owner:GetParent()
 		if parent ~= nil then
-			if blacklistedControlsForZO_MenuReplacement[parent] then
+			if contextMenuLookupBlackList[parent] then
 				return true, getControlName(parent)
 			end
 			local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
-			if owningWindow ~= nil and blacklistedControlsForZO_MenuReplacement[owningWindow] then
+			if owningWindow ~= nil and contextMenuLookupBlackList[owningWindow] then
 				return true, getControlName(owningWindow)
 			end
 		end
@@ -1135,23 +1086,23 @@ end
 -->the openingWindow control of that control!
 function lib.AddControlToZO_MenuContextMenuReplacementBlacklist(controlName)
 	local controlNameType = type(controlName)
-	assert(controlNameType == "string" and blacklistedControlsForZO_MenuReplacement[controlName] == nil, sfor('['..MAJOR..'.AddControlToZO_MenuContextMenuReplacementBlacklist] \'controlName\' missing, wrong type %q, or already added. Name: %q', tos(controlNameType), tos(controlName)))
-	blacklistedControlsForZO_MenuReplacement[controlName] = true
+	assert(controlNameType == "string" and contextMenuLookupBlackList[controlName] == nil, sfor('['..MAJOR..'.AddControlToZO_MenuContextMenuReplacementBlacklist] \'controlName\' missing, wrong type %q, or already added. Name: %q', tos(controlNameType), tos(controlName)))
+	contextMenuLookupBlackList[controlName] = true
 end
 
 --Remove a control from the blacklist that should not be replacing ZO_Menu context menus with LibScrollableMenu context menu.
 -->For these removed controls the LSM context menu will be shown, instead of ZO_Menu
 function lib.RemoveControlFromZO_MenuContextMenuReplacementBlacklist(controlName)
 	local controlNameType = type(controlName)
-	assert(controlNameType == "string" and blacklistedControlsForZO_MenuReplacement[controlName] ~= nil, sfor('['..MAJOR..'.RemoveControlFromZO_MenuContextMenuReplacementBlacklist] \'controlName\' missing, wrong type %q, or was not added yet. Name: %q', tos(controlNameType), tos(controlName)))
-	blacklistedControlsForZO_MenuReplacement[controlName] = nil
+	assert(controlNameType == "string" and contextMenuLookupBlackList[controlName] ~= nil, sfor('['..MAJOR..'.RemoveControlFromZO_MenuContextMenuReplacementBlacklist] \'controlName\' missing, wrong type %q, or was not added yet. Name: %q', tos(controlNameType), tos(controlName)))
+	contextMenuLookupBlackList[controlName] = nil
 end
 
 --Check if the controlName is on the blacklist (to prevent LSM usage for ZO_Menu)
 function lib.IsControlOnZO_MenuContextMenuReplacementBlacklist(controlName)
 	local controlNameType = type(controlName)
 	assert(controlNameType == "string", sfor('['..MAJOR..'.IsControlOnZO_MenuContextMenuReplacementBlacklist] \'controlName\' missing or wrong type %q. Name: %q', tos(controlNameType), tos(controlName)))
-	return blacklistedControlsForZO_MenuReplacement[controlName] ~= nil
+	return contextMenuLookupBlackList[controlName] ~= nil
 end
 
 
@@ -1162,23 +1113,23 @@ end
 -->the openingWindow control of that control!
 function lib.AddControlToZO_MenuContextMenuReplacementWhitelist(controlName)
 	local controlNameType = type(controlName)
-	assert(controlNameType == "string" and whitelistedControlNamesForZO_MenuReplacement[controlName] == nil, sfor('['..MAJOR..'.AddControlToZO_MenuContextMenuReplacementWhitelist] \'controlName\' missing, wrong type %q, or already added. Name: %q', tos(controlNameType), tos(controlName)))
-	whitelistedControlNamesForZO_MenuReplacement[controlName] = true
+	assert(controlNameType == "string" and contextMenuLookupWhiteList[controlName] == nil, sfor('['..MAJOR..'.AddControlToZO_MenuContextMenuReplacementWhitelist] \'controlName\' missing, wrong type %q, or already added. Name: %q', tos(controlNameType), tos(controlName)))
+	contextMenuLookupWhiteList[controlName] = true
 end
 
 --Remove a control from the whitelist/allowed list that should be replacing ZO_Menu context menus with LibScrollableMenu context menu.
 -->For these removed controls the ZO_Menu context menu will be shown, instead of LSM
 function lib.RemoveControlFromZO_MenuContextMenuReplacementWhitelist(controlName)
 	local controlNameType = type(controlName)
-	assert(controlNameType == "string" and whitelistedControlNamesForZO_MenuReplacement[controlName] ~= nil, sfor('['..MAJOR..'.RemoveControlFromZO_MenuContextMenuReplacementWhitelist] \'controlName\' missing, wrong type %q, or was not added yet. Name: %q', tos(controlNameType), tos(controlName)))
-	whitelistedControlNamesForZO_MenuReplacement[controlName] = nil
+	assert(controlNameType == "string" and contextMenuLookupWhiteList[controlName] ~= nil, sfor('['..MAJOR..'.RemoveControlFromZO_MenuContextMenuReplacementWhitelist] \'controlName\' missing, wrong type %q, or was not added yet. Name: %q', tos(controlNameType), tos(controlName)))
+	contextMenuLookupWhiteList[controlName] = nil
 end
 
 --Check if the controlName is on the whitelist (to use LSM instead of ZO_Menu)
 function lib.IsControlOnZO_MenuContextMenuReplacementWhitelist(controlName)
 	local controlNameType = type(controlName)
 	assert(controlNameType == "string", sfor('['..MAJOR..'.IsControlOnZO_MenuContextMenuReplacementWhitelist] \'controlName\' missing or wrong type %q. Name: %q', tos(controlNameType), tos(controlName)))
-	return whitelistedControlNamesForZO_MenuReplacement[controlName] ~= nil
+	return contextMenuLookupWhiteList[controlName] ~= nil
 end
 
 
