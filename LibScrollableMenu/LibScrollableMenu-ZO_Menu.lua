@@ -230,17 +230,22 @@ end
 --> ZO_Menu will be used normally then
 local function isBlacklistedControl(owner)
 	if owner ~= nil then
-		if contextMenuLookupBlackList[owner] then
-			return true, getControlName(owner)
+		local ownerName = getControlName(owner)
+		if ownerName ~= nil and contextMenuLookupBlackList[ownerName] then
+			return true, ownerName
 		end
 		local parent = owner.GetParent and owner:GetParent()
 		if parent ~= nil then
-			if contextMenuLookupBlackList[parent] then
-				return true, getControlName(parent)
+			ownerName = getControlName(parent)
+			if ownerName ~= nil and contextMenuLookupBlackList[ownerName] then
+				return true, ownerName
 			end
 			local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
-			if owningWindow ~= nil and contextMenuLookupBlackList[owningWindow] then
-				return true, getControlName(owningWindow)
+			if owningWindow ~= nil then
+				ownerName = getControlName(owningWindow)
+				if ownerName ~= nil and contextMenuLookupBlackList[ownerName] then
+					return true, ownerName
+				end
 			end
 		end
 	end
