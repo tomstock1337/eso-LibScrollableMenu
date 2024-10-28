@@ -11,7 +11,7 @@ local strings = {
     SI_LSM_LAM_CNTXTMEN_REPLACE = "Replace all ZO_Menu context menus",
     SI_LSM_LAM_CNTXTMEN_REPLACE_TT = "Replace the context menus (ZO_Menu, LibCustomMenu) with LibScrolableMenu's scrollable context menu",
     SI_LSM_LAM_CNTXTMEN_OWNER_NAME = "Owner control name",
-    SI_LSM_LAM_CNTXTMEN_OWNER_NAME_TT = "Enter here the control name of a context menu owner, e.g. ZO_PlayerInventory.\nTo get the control name of the control below the cursor use the chat slash command /lsmmoc, and you will see the current control name, it's parentName and the owning window name in the chat.\nLSM will check for the control name first, then the parent and at the end the owning window name to determine if a control go the LSM context menu enabled (and to determine it's settings like the visible rows)",
+    SI_LSM_LAM_CNTXTMEN_OWNER_NAME_TT = "Enter the control name of a context menu owner here, e.g. ZO_PlayerInventory.\nPress the return key to update the add button's state.\n\nTo get the control name of the control below the cursor use the chat slash command /lsmmoc, and you will see the current control name, it's parentName and the owning window name in the chat.\nLSM will check for the control name first, then the parent and at the end the owning window name to determine if a control go the LSM context menu enabled (and to determine it's settings like the visible rows)",
     SI_LSM_LAM_CNTXTMEN_VIS_ROWS = "Visible rows #",
     SI_LSM_LAM_CNTXTMEN_VIS_ROWS_TT = "Choose the number of visible rows at the contextmenu of the owner's controlName",
     SI_LSM_LAM_CNTXTMEN_VIS_ROWS_SUBMENU = "Visible rows #, submenus",
@@ -31,7 +31,7 @@ local strings = {
     SI_LSM_LAM_CNTXTMEN_BLACKLIST_TT = "Only valid if you enable the setting \'Use LSM for all controls\'.\n\nThis list contains the blacklisted controls which will not show a LibScrollableMenu context menu.\nIf the control/parent control/owning window control is on the list LSM won't be used and default ESO context menu (ZO_Menu, LibCustomMenu) will be used as usually.",
 
     SI_LSM_LAM_CNTXTMEN_LIST_CONTROLNAME = "Control for list",
-    SI_LSM_LAM_CNTXTMEN_LIST_CONTROLNAME_TT = "Enter the controlname for the whitelist or blacklist here",
+    SI_LSM_LAM_CNTXTMEN_LIST_CONTROLNAME_TT = "Enter the control name for the whitelist, or blacklist, here. Press the return key to update the add button's state.",
 
     SI_LSM_LAM_CNTXTMEN_WHITELIST_ADD = "Add to whitelist",
     SI_LSM_LAM_CNTXTMEN_WHITELIST_ADD_TT = "Add the control name to the whitelist",
@@ -41,6 +41,8 @@ local strings = {
     SI_LSM_LAM_CNTXTMEN_WHITELIST_DEL_TT = "Delete the control name from the whitelist",
     SI_LSM_LAM_CNTXTMEN_BLACKLIST_DEL = "Delete from blacklist",
     SI_LSM_LAM_CNTXTMEN_BLACKLIST_DEL_TT = "Delete the control name from the blacklist",
+
+    SI_LSM_MOC_TEMPLATE = "Control names - below the cursor: %s, parent: %s, owning window: %s"
 }
 
 for stringId, stringValue in pairs(strings) do

@@ -5615,6 +5615,10 @@ local function onAddonLoaded(event, name)
 	--------------------------------------------------------------------------------------------------------------------
 	--Slash commands - Context menus
 	--------------------------------------------------------------------------------------------------------------------
+	SLASH_COMMANDS["/lsmmoc"] = function()
+		lib.ShowMOCInfoToChat()
+	end
+
 	--Toggle the replacement of ZO_Menu (including LibCustomMenu) at iventory contextmenus on/off and update the LAM settings menu
 	SLASH_COMMANDS["/lsmcontextmenu"] = function()
 		lib.ContextMenuZO_MenuReplacement(nil, false)

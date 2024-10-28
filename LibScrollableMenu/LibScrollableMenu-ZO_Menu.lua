@@ -187,6 +187,16 @@ local function getControlParentAndOwningWindowNames(owner)
 	return ownerName, ownerParentName, ownerOwningWindowName
 end
 
+local function showMOCInfoToChat()
+	local mocCtrl = moc()
+	if mocCtrl == nil then return end
+	local ownerName, ownerParentName, ownerOwningWindowName = getControlParentAndOwningWindowNames(mocCtrl)
+	if ownerName ~= nil or ownerParentName ~= nil or ownerOwningWindowName ~= nil then
+		d("[" .. MAJOR .."] " .. sfor(GetString(SI_LSM_MOC_TEMPLATE), tos(ownerName), tos(ownerParentName), tos(ownerOwningWindowName)))
+	end
+end
+lib.ShowMOCInfoToChat = showMOCInfoToChat
+
 --Is the control allowed -> Means: Does this control use LSM for ZO_Menu/LCM entries?
 --> LSM will be used normally then
 local function isAllowedControl(owner)
