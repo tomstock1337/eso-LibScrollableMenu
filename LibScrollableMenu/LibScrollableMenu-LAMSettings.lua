@@ -7,6 +7,7 @@ if lib == nil then return end
 
 --local ZOs references
 local tos = tostring
+local trem = table.remove
 
 --Local libray references
 local MAJOR = lib.name
@@ -390,18 +391,21 @@ function lib.BuildLAMSettingsMenu()
             tooltip = GetString(SI_LSM_LAM_CNTXTMEN_WHITELIST_DEL_TT),
             func = function()
 				if selectedContextMenuControlWhitelistEntry ~= nil then
+					local delIdx
 					for idx, controlName in ipairs(sv.contextMenuReplacementControls.whiteList) do
 						if controlName == selectedContextMenuControlWhitelistEntry then
-							sv.contextMenuReplacementControls.whiteList[idx] = nil
+							delIdx = idx
 							break
 						end
 					end
-					updateExistingBlackAndWhiteLists(false)
+					if delIdx ~= nil then
+						trem(sv.contextMenuReplacementControls.whiteList[delIdx])
+						updateExistingBlackAndWhiteLists(false)
+						sv.contextMenuReplacementControls._wasChanged = true
+					end
 					contextMenuListControlName = nil
 					selectedContextMenuControlWhitelistEntry = nil
 					selectedContextMenuControlBlacklistEntry = nil
-
-					sv.contextMenuReplacementControls._wasChanged = true
 				end
 			end,
             disabled = function() return not sv.ZO_MenuContextMenuReplacement or (selectedContextMenuControlWhitelistEntry == nil or selectedContextMenuControlWhitelistEntry == "" or contextMenuLookupWhiteList[selectedContextMenuControlWhitelistEntry] == nil) end,
@@ -413,18 +417,21 @@ function lib.BuildLAMSettingsMenu()
             tooltip = GetString(SI_LSM_LAM_CNTXTMEN_BLACKLIST_DEL_TT),
             func = function()
 				if selectedContextMenuControlBlacklistEntry ~= nil then
+					local delIdx
 					for idx, controlName in ipairs(sv.contextMenuReplacementControls.blackList) do
 						if controlName == selectedContextMenuControlBlacklistEntry then
-							sv.contextMenuReplacementControls.blackList[idx] = nil
+							delIdx = idx
 							break
 						end
 					end
-					updateExistingBlackAndWhiteLists(false)
+					if delIdx ~= nil then
+						trem(sv.contextMenuReplacementControls.blackList[delIdx])
+						updateExistingBlackAndWhiteLists(false)
+						sv.contextMenuReplacementControls._wasChanged = true
+					end
 					contextMenuListControlName = nil
 					selectedContextMenuControlWhitelistEntry = nil
 					selectedContextMenuControlBlacklistEntry = nil
-
-					sv.contextMenuReplacementControls._wasChanged = true
 				end
 			end,
             disabled = function() return not sv.ZO_MenuContextMenuReplacement or (selectedContextMenuControlBlacklistEntry == nil or selectedContextMenuControlBlacklistEntry == "" or contextMenuLookupBlackList[selectedContextMenuControlBlacklistEntry] == nil) end,
