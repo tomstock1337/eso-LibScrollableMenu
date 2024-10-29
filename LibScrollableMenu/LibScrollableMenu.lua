@@ -2150,7 +2150,7 @@ end
 
 Another example using a custom control of your addon to show the tooltip:
 customTooltipFunc = function(control, doShow, data, rowControl, point, offsetX, offsetY, relativePoint)
-	if not inside or data == nil then
+	if not doShow or data == nil then
 		myAddon.myTooltipControl:SetHidden(true)
 	else
 		myAddon.myTooltipControl:ClearAnchors()

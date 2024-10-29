@@ -303,7 +303,7 @@ local function customClearMenu()
 	ZOMenus:SetHidden(true)
 end
 
---Clear all internally used LSM variables of the ZO_Menu item's mapping, preventer variables for SHowMenu and ClearMenu etc.
+--Clear all internally used LSM variables of the ZO_Menu item's mapping, preventer variables for ShowMenu and ClearMenu etc.
 --so that ZO_Menu and LibCustomMenu work normal again
 local function clearInternalZO_MenuToLSMMappingData()
 	if lib.debugLCM_ZO_Menu_Replacement then d("["..MAJOR.."]clearInternalZO_MenuToLSMMappingData") end
@@ -375,6 +375,9 @@ local function getVisibleRowsByOwnerControlSettings(owner)
 end
 
 local function showLSMReplacmentContextMenuForZO_MenuNow(owner)
+	--Backup the last ZO_Menu.owner for other addons
+	ZOMenu.owner = ZOMenu.owner or owner
+
 	--Show the LSM context menu now with the mapped and added ZO_Menu entries, in LSM format.
 	-->ShowCustomScrollableMenu will show all previously added entries
 	local visibleRows, visibleRowsSubmenu, isZOListDialogHidden = getVisibleRowsByOwnerControlSettings(owner)
@@ -552,7 +555,13 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 
 		--Is the tooltip a function, or a string?
 		local tooltipData = ZO_Menu_ItemCtrl.tooltip
-		local tooltipIsFunction = type(tooltipData) == "function"
+		local tooltipIsFunction = (type(tooltipData) == "function" == true and true) or false
+		local customTooltipFunc
+		if tooltipIsFunction == true then
+			customTooltipFunc = function(control, doShow, data, relativeTo, point, offsetX, offsetY, relativePoint)
+				return tooltipData(control, doShow) --LibCustomMenu's tooltip callback function only uses control, isInside
+			end
+		end
 
 		--Is LibCustomMenu loaded?
 		if libCustomMenuIsLoaded == true then
@@ -590,7 +599,7 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 				itemYPad = 				entryData.itemYPad
 				isHeader = 				false
 				tooltip = 				(not tooltipIsFunction and tooltipData) or nil
-				customTooltip = 		(tooltipIsFunction == true and tooltipData) or nil
+				customTooltip = 		(tooltipIsFunction == true and customTooltipFunc) or nil
 				--enabled =				submenuData.enabled Not supported in LibCustomMenu
 
 				hasSubmenu = true
@@ -614,9 +623,12 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 					}
 
 					local tooltipDataSubMenu = submenuEntry.tooltip
-					local tooltipIsFunctionSubMenu = type(tooltipDataSubMenu) == "function"
-					if tooltipIsFunctionSubMenu then
-						submenuEntry.entryData.customTooltip = tooltipDataSubMenu
+					local tooltipIsFunctionSubMenu = (type(tooltipDataSubMenu) == "function" == true and true) or false
+					if tooltipIsFunctionSubMenu == true then
+						local customTooltipFuncSubMenu = function(control, doShow, data, relativeTo, point, offsetX, offsetY, relativePoint)
+							return tooltipDataSubMenu(control, doShow) --LibCustomMenu's tooltip callback function only uses control, isInside
+						end
+						submenuEntry.entryData.customTooltip = customTooltipFuncSubMenu
 					else
 						submenuEntry.entryData.tooltip = tooltipDataSubMenu
 					end
@@ -658,7 +670,7 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 				checked =				(entryData.checked or (isCheckbox == true and isChecked)) or nil
 
 				tooltip = 				(entryData.tooltip or (not tooltipIsFunction and tooltipData)) or nil
-				customTooltip = 		(entryData.customTooltip or (tooltipIsFunction and tooltipData)) or nil
+				customTooltip = 		(entryData.customTooltip or (tooltipIsFunction and customTooltipFunc)) or nil
 
 				--Do we need to get additional data from ZO_Menu.items controls?
 				processVanillaZO_MenuItem = (entryName == nil or callbackFunc == nil and true) or false
@@ -677,8 +689,8 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 			entryName = 	entryName or (ZO_Menu_ItemCtrl.nameLabel and ZO_Menu_ItemCtrl.nameLabel:GetText())
 			callbackFunc = 	callbackFunc or ZO_Menu_ItemCtrl.OnSelect
 			isHeader = 		isHeader or ZO_Menu_ItemCtrl.isHeader
-			tooltip = 		not tooltipIsFunction and tooltipData
-			customTooltip = tooltipIsFunction and tooltipData
+			tooltip = 		tooltip or ((not tooltipIsFunction and tooltipData) or nil)
+			customTooltip = customTooltip or ((tooltipIsFunction == true and customTooltipFunc) or nil)
 			checked = 		isCheckbox == true and isChecked or nil
 			if ZO_Menu_ItemCtrl.enabled ~= nil then
 				enabled = ZO_Menu_ItemCtrl.enabled
@@ -843,7 +855,10 @@ local function addZO_Menu_ShowMenuHook()
 			if lsmEntry == nil then return end
 			if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]AddCustomMenuTooltip-index: " ..tos(index) .. "; entry: " .. tos(lsmEntry.label or lsmEntry.name)) end
 			lsmEntry.tooltip = nil
-			lsmEntry.customTooltip = tooltipFunc
+			lsmEntry.customTooltip = function(control, isInside)
+				--d("-----> [LSM]Hooked tooltip func of ZO_menu")
+				return tooltipFunc(control, isInside)
+			end
 		end)
 
 		--Hook the LibCustomMenu functions
@@ -899,7 +914,10 @@ local function addZO_Menu_ShowMenuHook()
 			lastAddedZO_MenuItemsIndex = ZOMenu.currentIndex - 1
 			local lastAddedLCMEntryName = LCMLastAddedMenuItem ~= nil and LCMLastAddedMenuItem.name
 
-			if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]PostHook AddMenuItem-labelText: " ..tos(labelText) .. "; index: " ..tos(LCMLastAddedMenuItem.index) .."/last: " ..tos(lastAddedZO_MenuItemsIndex) .."; entries: " ..tos(LCMLastAddedMenuItem.entries)) end
+			if lib.debugLCM_ZO_Menu_Replacement then
+				d(">>>>>>>>>>>>>>> [LSM]PostHook AddMenuItem <<<<<<<<<<<<<<<" )
+				d(">labelText: " ..tos(labelText) .. "; index: " ..tos(LCMLastAddedMenuItem.index) .."/last: " ..tos(lastAddedZO_MenuItemsIndex) .."; entries: " ..tos(LCMLastAddedMenuItem.entries))
+			end
 
 			--Was the item added via LibCustomMenu?
 			local entries
@@ -986,9 +1004,15 @@ local function addZO_Menu_ShowMenuHook()
 		ZO_PreHook("ShowMenu", function(owner, initialRefCount, menuType)
 			--Unhide the TLC so the menus of ZO_Menu will show properly in any case
 			ZOMenus:SetHidden(false)
+			--ZOMenu:SetDimensions(0, 0)
 
 			--Should the ZO_Menu not close any opened LSM? e.g. to show the textSearchHistory at the LSM text filter search box
 			if lib.preventLSMClosingZO_Menu == true then
+				if lib.debugLCM_ZO_Menu_Replacement then
+					d("????????????????????????????????")
+					d("<<< ABORT [LSM]ShowMenu - initialRefCount: " ..tos(initialRefCount) .. ", menuType: " ..tos(menuType) .. "; preventLSMClosingZO_Menu: true")
+					d("????????????????????????????????")
+				end
 				lib.preventLSMClosingZO_Menu = nil
 				return
 			end
@@ -1034,6 +1058,11 @@ local function addZO_Menu_ShowMenuHook()
 			--No owner provided? Get the control below the mouse cursor
 			if owner == nil then owner = moc() end
 			suppressOriginalZO_Menu = showMenuOwnerChecks(owner, ZO_MenuData)
+
+			--if suppressOriginalZO_Menu == true then
+				--mouseUpRefCounts is a local in zo_contextmenus.lua so we cannot change it here :(
+				--mouseUpRefCounts[ZO_Menu] = initialRefCount or 2
+			--end
 
 			--Suppress original ZO_Menu building and "Show" LSM entries now (se above via ShowCustomScrollableMenu( ... ) )
 			return suppressOriginalZO_Menu
