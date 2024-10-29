@@ -377,6 +377,7 @@ end
 local function showLSMReplacmentContextMenuForZO_MenuNow(owner)
 	--Backup the last ZO_Menu.owner for other addons
 	ZOMenu.owner = ZOMenu.owner or owner
+	local zoMenuOwnerBackup = ZOMenu.owner
 
 	--Show the LSM context menu now with the mapped and added ZO_Menu entries, in LSM format.
 	-->ShowCustomScrollableMenu will show all previously added entries
@@ -388,6 +389,12 @@ local function showLSMReplacmentContextMenuForZO_MenuNow(owner)
 		visibleRowsDropdown = 	visibleRows,
 		visibleRowsSubmenu = 	visibleRowsSubmenu,
 	})
+
+	--Apply the backuped ZO_Menu.owner again
+	if ZOMenu.owner == nil then
+		if lib.debugLCM_ZO_Menu_Replacement then d("!!!!Restored ZO_Menu.owner to: " ..tos(zoMenuOwnerBackup)) end
+		ZOMenu.owner = zoMenuOwnerBackup
+	end
 end
 
 --Check if the ShowMenu function's owner was determined and validate it against the whitelisted and blacklisted cotnrols/parents/owningWindows
@@ -433,7 +440,12 @@ local function showMenuOwnerChecks(owner, menuDataOfLSM)
 
 		--20241027 Bugfix for Chat menu showing ZO_Menu below the LSM context menu
 		lib.skipLSMClearOnOnClearMenu = true
+		local zoMenuOwnerBackup = ZOMenu.owner
 		ClearMenu()
+		if ZOMenu.owner == nil then
+			if lib.debugLCM_ZO_Menu_Replacement then d("????Restored ZO_Menu.owner to: " ..tos(zoMenuOwnerBackup)) end
+			ZOMenu.owner = zoMenuOwnerBackup
+		end
 
 		resetZO_MenuClearVariables()
 		return false -- run original ZO_Menu's ShowMenu()
