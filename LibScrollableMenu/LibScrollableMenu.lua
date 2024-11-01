@@ -3951,7 +3951,7 @@ function comboBox_base:UpdateItems()
 end
 
 function comboBox_base:UpdateHeight(control)
-d("[LSM]comboBox_base:UpdateHeight - control: " .. getControlName(control))
+--d("[LSM]comboBox_base:UpdateHeight - control: " .. getControlName(control))
 	local maxHeightInTotal = 0
 
 	local spacing = self.m_spacing or 0
