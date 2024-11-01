@@ -3979,7 +3979,7 @@ function comboBox_base:UpdateHeight(control)
 		-- Add spacing to each row then subtract spacing for last row
 		maxHeightByEntries = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 
-d(">[LSM]maxRows: " ..tos(maxRows) .. ", maxHeightByEntries: " ..tos(maxHeightByEntries))
+--d(">[LSM]maxRows: " ..tos(maxRows) .. ", maxHeightByEntries: " ..tos(maxHeightByEntries))
 		--Add the header's height first, then add the rows' calculated needed total height
 		maxHeightInTotal = maxHeightByEntries
 	end
@@ -3997,7 +3997,7 @@ d(">[LSM]maxRows: " ..tos(maxRows) .. ", maxHeightByEntries: " ..tos(maxHeightBy
 	--maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
 	--If the height of the total height is below minHeight then increase it to be at least that high
 	maxHeightInTotal = zo_clamp(maxHeightInTotal, minHeight, screensMaxDropdownHeight)
-d(">[LSM]headerHeight: " ..tos(headerHeight) .. ", maxHeightInTotal: " ..tos(maxHeightInTotal))
+--d(">[LSM]headerHeight: " ..tos(headerHeight) .. ", maxHeightInTotal: " ..tos(maxHeightInTotal))
 
 
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
