@@ -1,8 +1,9 @@
--v- ---------------LSM v2.4 - 2024-10-22---------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.4 - 2024-11-01---------------------------------------------------------------------------- -v-
 -Added support for ZO_Menu and LibCustomMenu at inventory context menus
 -Added LAM settings menu for the ZO_Menu -> LSM context menu replacements, including a possibilty to define the (submenu)rows shown at controlNames (e.g. ZO_PlayerInventory)
 -Added return values index/indices, entryData/entryDataTable to the context menu API functions AddCustomScrollableMenuEntry/Entries etc.
 -Renamed API function lib.SetButtonGroupState to lib.ButtonGroupDefaultContextMenu as the name was missleading. It never changed or set any values directly it only added a contextmenu where you could choose "Select all", "Select none", "Invers"
+-Bug fix: Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
 
 
 
