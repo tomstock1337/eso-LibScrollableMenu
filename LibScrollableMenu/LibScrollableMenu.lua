@@ -434,7 +434,9 @@ lib.defaultComboBoxOptions  = defaultComboBoxOptions
 --The mapping between LibScrollableMenu options key and ZO_ComboBox options key. Used in comboBoxClass:UpdateOptions()
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	--All possible options entries "must" be mapped here (left: options entry / right: ZO_ComboBox relating entry where the value is saved)
-	-->Missing entries (even if names are the same) will relate in functin comboBoxClass:SetOption not respecting the value!
+	-->e.g. options.visibleRowsDropdown -> Will be saved at comboBox.visibleRows (and if a function in table LSMOptionsToZO_ComboBoxOptionsCallbacks
+	-->is defiend below this function will be executed too).
+	-->Missing entries (even if names are the same) will relate in function comboBoxClass:SetOption not respecting the value!
 	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
 	["headerColor"] =			"m_headerFontColor",
 	["normalColor"] = 			"m_normalColor",
@@ -519,33 +521,38 @@ lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCall
 --> where key = e.g. "m_font"
 local submenuClass_exposedVariables = {
 	-- ZO_ComboBox
+	["m_customEntryTemplateInfos"] = false, -- needs to be false to supress pass-through of XML template from main menu -> would break submenu's row setup.
+	["m_height"] = false, -- needs to be false so options.visibleRowsSubmenu is used for the height of the submenu, and not the main menu's height (from options.visibleRowsDropdown)
+	-------------------------------------
 	["m_font"] = true, --
-	["m_height"] = false, -- needs to be separate for visibleRowsSubmenu
 	['m_normalColor'] = true, --
 	['m_highlightColor'] = true, --
 	['m_containerWidth'] = true, --
 	['m_maxNumSelections'] = true, --
 	['m_enableMultiSelect'] = true, --
-	["m_customEntryTemplateInfos"] = false, -- Allowing this to paas-through would break row setup.
 
 	-- ZO_ComboBox_Base
+	["m_sortedItems"] = false, -- needs to be false to provide the possibility to sort submenu items differently compared to main menu
+	["m_selectedItemText"] = false, -- This is handeled by "SelectItem"
+	["m_selectedItemData"] = false, -- This is handeled by "SelectItem"
+	["m_isDropdownVisible"] = false, -- each menu has different dropdowns
+	---------------------------------------
 	["m_name"] = true, -- since the name is acquired by the container name.
 	["m_spacing"] = true, --
 	["m_sortType"] = true, --
 	["m_container"] = true, -- all children use the same container as the comboBox
 	["m_sortOrder"] = true, --
 	["m_sortsItems"] = true, --
-	["m_sortedItems"] = false, -- for obvious reasons
 	["m_openDropdown"] = true, -- control, set to true for submenu to make comboBox_base:IsEnabled( function work
 	["m_selectedColor"] = true, --
 	["m_disabledColor"] = true, --
-	["m_selectedItemText"] = false, -- This is handeled by "SelectItem"
-	["m_selectedItemData"] = false, -- This is handeled by "SelectItem"
-	["m_isDropdownVisible"] = false, -- each menu has different dropdowns
 	["m_preshowDropdownFn"] = true, --
 	["horizontalAlignment"] = true, --
 
 	-- LibScrollableMenu
+	["headerCollapsible"] = false, 		--Header: Currently not available separately for a submenu
+	["headerCollapsed"] = false,		--Header: Currently not available separately for a submenu
+	---------------------------------------
 	['options'] = true,
 	['narrateData'] = true,
 	['m_headerFont'] = true,
@@ -553,12 +560,10 @@ local submenuClass_exposedVariables = {
 	['maxDropdownHeight'] = true,
 	['m_headerFontColor'] = true,
 	['m_highlightTemplate'] = true,
-	['visibleRowsSubmenu'] = true, -- we only need this "visibleRowsSubmenu" for the submenus
+	['visibleRowsSubmenu'] = true, -- we only need this "visibleRowsSubmenu" for the submenus, mainMenu uses visibleRowsDropdown
 	['disableFadeGradient'] = true,
 	['useDefaultHighlightForSubmenuWithCallback'] = true,
 	['highlightContextMenuOpeningControl'] = true,
-	["headerCollapsible"] = false, 		--Header: Currently not available separately for a submenu
-	["headerCollapsed"] = false,		--Header: Currently not available separately for a submenu
 }
 
 -- Pass-through functions:
@@ -659,7 +664,7 @@ local function dLog(debugType, text, ...)
 
 	local debugText = text
 	if ... ~= nil and select(1, {...}) ~= nil then
-		debugText = string.format(text, ...)
+		debugText = sfor(text, ...)
 	end
 	if debugText == nil or debugText == "" then return end
 
@@ -745,7 +750,7 @@ local function highlightControl(self, control)
 	dLog(LSM_LOGTYPE_VERBOSE, "highlightControl - highlightTemplate: " ..tos(highlightTemplate))
 --d("[LSM]highlightControl - highlightTemplate: " ..tos(highlightTemplate))
 
-	control.breadcrumbName = string.format('%s_%s', animationFieldName, self.breadcrumbName)
+	control.breadcrumbName = sfor('%s_%s', animationFieldName, self.breadcrumbName)
 	
 	playAnimationOnControl(control, control.breadcrumbName, highlightTemplate, 0.5)
 
@@ -2150,7 +2155,7 @@ end
 
 Another example using a custom control of your addon to show the tooltip:
 customTooltipFunc = function(control, doShow, data, rowControl, point, offsetX, offsetY, relativePoint)
-	if not inside or data == nil then
+	if not doShow or data == nil then
 		myAddon.myTooltipControl:SetHidden(true)
 	else
 		myAddon.myTooltipControl:ClearAnchors()
@@ -2948,6 +2953,7 @@ end
 
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
+
 	self.owner = comboBox
 
 	local comboBoxObject = self.m_comboBox
@@ -3029,7 +3035,6 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 	end
 
 	dLog(LSM_LOGTYPE_VERBOSE, ">totalDropDownWidth: %s, allItemsHeight: %s, desiredHeight: %s", tos(totalDropDownWidth), tos(allItemsHeight), tos(desiredHeight))
-
 
 	ZO_Scroll_SetUseFadeGradient(scrollControl, not self.owner.disableFadeGradient )
 	control:SetHeight(desiredHeight)
@@ -3946,6 +3951,7 @@ function comboBox_base:UpdateItems()
 end
 
 function comboBox_base:UpdateHeight(control)
+--d("[LSM]comboBox_base:UpdateHeight - control: " .. getControlName(control))
 	local maxHeightInTotal = 0
 
 	local spacing = self.m_spacing or 0
@@ -3973,6 +3979,7 @@ function comboBox_base:UpdateHeight(control)
 		-- Add spacing to each row then subtract spacing for last row
 		maxHeightByEntries = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 
+--d(">[LSM]maxRows: " ..tos(maxRows) .. ", maxHeightByEntries: " ..tos(maxHeightByEntries))
 		--Add the header's height first, then add the rows' calculated needed total height
 		maxHeightInTotal = maxHeightByEntries
 	end
@@ -3990,7 +3997,7 @@ function comboBox_base:UpdateHeight(control)
 	--maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
 	--If the height of the total height is below minHeight then increase it to be at least that high
 	maxHeightInTotal = zo_clamp(maxHeightInTotal, minHeight, screensMaxDropdownHeight)
---d(">headerHeight: " ..tos(headerHeight) .. ", maxHeightInTotal: " ..tos(maxHeightInTotal))
+--d(">[LSM]headerHeight: " ..tos(headerHeight) .. ", maxHeightInTotal: " ..tos(maxHeightInTotal))
 
 
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
@@ -4336,7 +4343,7 @@ function comboBoxClass:GetUniqueName()
 	return self.m_name
 end
 
--- Changed to force updating items and, to set anchor since anchoring was removed from :Show( due to separate anchoring based on comboBox type. (comboBox to self /submenu to row/contextMenu to mouse)
+-- Changed to force updating items and, to set anchor since anchoring was removed from :Show() due to separate anchoring based on comboBox type. (comboBox to self /submenu to row/contextMenu to mouse)
 function comboBoxClass:AddMenuItems()
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:AddMenuItems")
 	self:UpdateItems()
@@ -4445,7 +4452,6 @@ function comboBoxClass:SetOption(LSMOptionsKey)
 	local options = self:GetOptions()
 	local newValue = options and getValueOrCallback(options[LSMOptionsKey], options) --read new value from the options (run function there or get the value)
 	if newValue == nil then
---d(">LSMOptionsKey: " .. tos(LSMOptionsKey) .. " -> Is nil in options")
 		newValue = currentValue
 	end
 	if newValue == nil then return end
@@ -4660,6 +4666,7 @@ function submenuClass:AddMenuItems(parentControl)
 	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:AddMenuItems - parentControl: %s", tos(getControlName(parentControl)))
 	self.openingControl = parentControl
 	self:RefreshSortedItems(parentControl)
+	self:UpdateHeight()
 	self:Show()
 	self.m_dropdownObject:AnchorToControl(parentControl)
 end
@@ -5220,7 +5227,7 @@ function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 		local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
 		if comboBox ~= nil and comboBox.UpdateOptions then
 			comboBox.optionsChanged = options ~= comboBox.options
---d(">SetCustomScrollableMenuOptions - Found UpdateOptions - optionsChanged: " ..tos(comboBox.optionsChanged))
+d(">SetCustomScrollableMenuOptions - Found UpdateOptions - optionsChanged: " ..tos(comboBox.optionsChanged))
 			comboBox:UpdateOptions(options)
 		end
 	else
@@ -5662,6 +5669,7 @@ LibScrollableMenu = lib
 WORKING ON - Current version: 2.4
 -------------------
 	1. Feature: Add support for ZO_Menu, including LibCustomMenu, at the inventory right click context menus
+	2. Bug fix: Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
 
 -------------------
 TODO - To check (future versions)
