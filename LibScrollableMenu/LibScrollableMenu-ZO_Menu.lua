@@ -211,13 +211,11 @@ end
 --> LSM will be used normally then
 local function isAllowedControl(owner)
 	if owner ~= nil then
-		local parentName
+		local parentName, owningWindowName
 		local ownerName = getControlName(owner)
 		if ownerName ~= nil and contextMenuLookupWhiteList[ownerName] then
 			if checkIfControlOnWhiteListExclusionList({ ownerName }) == false then
-				return true, ownerName
-			else
-				return false, ownerName
+				return true, ownerName, nil, nil
 			end
 		end
 		local parent = owner.GetParent and owner:GetParent()
@@ -225,26 +223,23 @@ local function isAllowedControl(owner)
 			parentName = getControlName(parent)
 			if parentName ~= nil and contextMenuLookupWhiteList[parentName] then
 				if checkIfControlOnWhiteListExclusionList({ parentName, ownerName }) == false then
-					return true, parentName
-				else
-					return false, parentName
+					return true, ownerName, parentName, nil
 				end
 			end
 			local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
 			if owningWindow ~= nil then
 				local owningWindowName = getControlName(owningWindow)
 				if owningWindowName ~= nil and contextMenuLookupWhiteList[owningWindowName] then
-				if checkIfControlOnWhiteListExclusionList({ owningWindowName, parentName, ownerName }) == false then
-					return true, owningWindowName
-				else
-					return false, owningWindowName
+					if checkIfControlOnWhiteListExclusionList({ owningWindowName, parentName, ownerName }) == false then
+						return true, ownerName, parentName, owningWindowName
+					end
 				end
 			end
 		end
-		return false, ownerName
+		return false, ownerName, parentName, owningWindowName
 	else
 		--No owner found -> Okay to be used with LSM (e.g. chat stuff)
-		return true, nil
+		return true, nil, nil, nil
 	end
 end
 
@@ -441,7 +436,7 @@ local function showMenuOwnerChecks(owner, menuDataOfLSM)
 	else
 		--Check WhiteListed controls
 		--Is the control allowed to exchange ZO_Menu? e.g. inventory context menu
-		local isAllowed, ownerName = isAllowedControl(owner)
+		local isAllowed, ownerName, parentName, owningWindowName = isAllowedControl(owner)
 		if isAllowed == false then
 			if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: Menu owner " .. tos(ownerName) .. " is not allowed for LSM usage") end
 			resetZO_MenuClearVariables()
