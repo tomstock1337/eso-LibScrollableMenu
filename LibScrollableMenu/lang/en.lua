@@ -41,6 +41,13 @@ local strings = {
     SI_LSM_LAM_CNTXTMEN_WHITELIST_DEL_TT = "Delete the control name from the whitelist",
     SI_LSM_LAM_CNTXTMEN_BLACKLIST_DEL = "Delete from blacklist",
     SI_LSM_LAM_CNTXTMEN_BLACKLIST_DEL_TT = "Delete the control name from the blacklist",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL = "Whitelist Exclusion",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL_TT = "Whitelist's controls which are excluded. Controls on this list will be shown as normal ZO_Menu (e.g. an owningWindow ZO_PlayerInventory is on the WhiteList but you want that 1 button ZO_PlayerInventoryFilterButton1 to use ZO_Menu instead).",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL_ADD = "Add to WL excl.",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL_ADD_TT = "Add the control name to the whitelist exclusion",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL_DEL = "Delete from WL excl.",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL_DEL_TT = "Delete the control name from the whitelist exclusion",
+
 
     SI_LSM_MOC_TEMPLATE = "Control names - below the cursor: %s, parent: %s, owning window: %s"
 }

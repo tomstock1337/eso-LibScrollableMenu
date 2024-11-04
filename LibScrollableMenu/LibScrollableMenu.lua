@@ -73,6 +73,7 @@ local blacklistedControlsForZO_MenuReplacement = {
 --The context menu replacement lookup lists
 lib.contextMenuLookupLists = {}
 lib.contextMenuLookupLists.whiteList = {}
+lib.contextMenuLookupLists.whiteListExclusionList = {}
 lib.contextMenuLookupLists.blackList = {}
 
 
@@ -85,6 +86,7 @@ local lsmSVDefaults = {
 		_wasChanged = false,
 		replaceAll = false,
 		whiteList = {},
+		whiteListExclusion = {},
 		blackList = {},
 	},
 	contextMenuSettings = {
@@ -5645,7 +5647,7 @@ local function onAddonLoaded(event, name)
 	end
 	SLASH_COMMANDS["/lsmdebugcontextmenu"] = function()
 		lib.debugLCM_ZO_Menu_Replacement = not lib.debugLCM_ZO_Menu_Replacement
-		d("["..MAJOR.."]Debugging ZO_Menu context menus for whitelisted controls: " .. tos(lib.debugLCM_ZO_Menu_Replacement))
+		d("["..MAJOR.."]Debugging ZO_Menu -> LSM replace context menus: " .. tos(lib.debugLCM_ZO_Menu_Replacement))
 	end
 end
 EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)

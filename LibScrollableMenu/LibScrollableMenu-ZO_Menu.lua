@@ -127,6 +127,7 @@ local registeredCustomScrollableContextMenus        = {}
 lib.registeredCustomScrollableContextMenus = registeredCustomScrollableContextMenus
 
 local contextMenuLookupWhiteList = lib.contextMenuLookupLists.whiteList
+local contextMenuLookupWhiteListExclusionList = lib.contextMenuLookupLists.whiteListExclusionList
 local contextMenuLookupBlackList = lib.contextMenuLookupLists.blackList
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -197,25 +198,46 @@ local function showMOCInfoToChat()
 end
 lib.ShowMOCInfoToChat = showMOCInfoToChat
 
+local function checkIfControlOnWhiteListExclusionList(controlNames)
+	if controlNames ~= nil then
+		for _, controlName in ipairs(controlNames) do
+			if contextMenuLookupWhiteListExclusionList[controlName] then return true end
+		end
+	end
+	return false
+end
+
 --Is the control allowed -> Means: Does this control use LSM for ZO_Menu/LCM entries?
 --> LSM will be used normally then
 local function isAllowedControl(owner)
 	if owner ~= nil then
+		local parentName
 		local ownerName = getControlName(owner)
 		if ownerName ~= nil and contextMenuLookupWhiteList[ownerName] then
-			return true, ownerName
+			if checkIfControlOnWhiteListExclusionList({ ownerName }) == false then
+				return true, ownerName
+			else
+				return false, ownerName
+			end
 		end
 		local parent = owner.GetParent and owner:GetParent()
 		if parent ~= nil then
-			ownerName = getControlName(parent)
-			if ownerName ~= nil and contextMenuLookupWhiteList[ownerName] then
-				return true, ownerName
+			parentName = getControlName(parent)
+			if parentName ~= nil and contextMenuLookupWhiteList[parentName] then
+				if checkIfControlOnWhiteListExclusionList({ parentName, ownerName }) == false then
+					return true, parentName
+				else
+					return false, parentName
+				end
 			end
 			local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
 			if owningWindow ~= nil then
-				ownerName = getControlName(owningWindow)
-				if ownerName ~= nil and contextMenuLookupWhiteList[ownerName] then
-					return true, ownerName
+				local owningWindowName = getControlName(owningWindow)
+				if owningWindowName ~= nil and contextMenuLookupWhiteList[owningWindowName] then
+				if checkIfControlOnWhiteListExclusionList({ owningWindowName, parentName, ownerName }) == false then
+					return true, owningWindowName
+				else
+					return false, owningWindowName
 				end
 			end
 		end
