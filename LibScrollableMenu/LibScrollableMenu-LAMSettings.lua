@@ -54,9 +54,9 @@ local contextMenuLookupBlackList = lib.contextMenuLookupLists.blackList
 
 local existingWhiteList, existingWhiteListExclusion, existingBlackList
 local function buildControlListsNew()
-	contextMenuLookupWhiteList = {}
-	contextMenuLookupWhiteListExclusionList = {}
-	contextMenuLookupBlackList = {}
+	lib.contextMenuLookupLists.whiteList = {}
+	lib.contextMenuLookupLists.whiteListExclusionList = {}
+	lib.contextMenuLookupLists.blackList = {}
 
 	local existingWhiteListLoc = {}
 	local existingWhiteListExclusionLoc = {}

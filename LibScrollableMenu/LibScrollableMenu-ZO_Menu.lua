@@ -211,6 +211,9 @@ end
 --> LSM will be used normally then
 local function isAllowedControl(owner)
 	if owner ~= nil then
+		contextMenuLookupWhiteList = lib.contextMenuLookupLists.whiteList
+		contextMenuLookupWhiteListExclusionList = lib.contextMenuLookupLists.whiteListExclusionList
+
 		local parentName, owningWindowName
 		local ownerName = getControlName(owner)
 		if ownerName ~= nil and contextMenuLookupWhiteList[ownerName] then
@@ -247,6 +250,8 @@ end
 --> ZO_Menu will be used normally then
 local function isBlacklistedControl(owner)
 	if owner ~= nil then
+		contextMenuLookupBlackList = lib.contextMenuLookupLists.blackList
+
 		local ownerName = getControlName(owner)
 		if ownerName ~= nil and contextMenuLookupBlackList[ownerName] then
 			return true, ownerName
