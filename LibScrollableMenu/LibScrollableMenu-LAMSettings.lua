@@ -139,6 +139,11 @@ function lib.BuildLAMSettingsMenu()
 			title = GetString(SI_LSM_LAM_HEADER_CNTXTMENU),
 			text = GetString(SI_LSM_LAM_CNTXTMEN_DESC)
 		},
+
+		{
+			type = "divider",
+		},
+
 		{
 			type = "checkbox",
     		name = GetString(SI_LSM_LAM_CNTXTMEN_REPLACE),
@@ -154,6 +159,33 @@ function lib.BuildLAMSettingsMenu()
 		},
 		{
 			type = "checkbox",
+    		name = GetString(SI_LSM_LAM_CNTXTMEN_FIRST_SUB_CALLBACK),
+    		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_FIRST_SUB_CALLBACK_TT),
+			getFunc = function() return sv.contextMenuReplacementControls.submenuAutoSelectFirstEntry end,
+			setFunc = function(checked)
+				sv.contextMenuReplacementControls.submenuAutoSelectFirstEntry = checked
+			end,
+			disabled = function() return not sv.ZO_MenuContextMenuReplacement end,
+			default = false,
+		},
+		{
+			type = "checkbox",
+    		name = GetString(SI_LSM_LAM_CNTXTMEN_FIRST_SUB_IFONLYONE),
+    		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_FIRST_SUB_IFONLYONE_TT),
+			getFunc = function() return sv.contextMenuReplacementControls.submenuAutoSelectFirstEntryIfOnlyOne end,
+			setFunc = function(checked)
+				sv.contextMenuReplacementControls.submenuAutoSelectFirstEntryIfOnlyOne = checked
+			end,
+			disabled = function() return not sv.ZO_MenuContextMenuReplacement or not sv.contextMenuReplacementControls.submenuAutoSelectFirstEntry end,
+			default = false,
+		},
+
+		{
+			type = "divider",
+		},
+
+		{
+			type = "checkbox",
     		name = GetString(SI_LSM_LAM_CNTXTMEN_USE_FOR_ALL),
     		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_USE_FOR_ALL_TT),
 			getFunc = function() return sv.contextMenuReplacementControls.replaceAll end,
@@ -166,6 +198,42 @@ function lib.BuildLAMSettingsMenu()
 			disabled = function() return not sv.ZO_MenuContextMenuReplacement end,
 			default = false,
 		},
+
+
+		{
+            type = "slider",
+    		name = GetString(SI_LSM_LAM_CNTXTMEN_VIS_ROWS_DEF),
+    		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_VIS_ROWS_DEF_TT),
+            getFunc = function()
+				return sv.contextMenuSettings._Defaults.visibleRows
+			end,
+            setFunc = function(newValue)
+				sv.contextMenuSettings._Defaults.visibleRows = newValue
+            end,
+			step = 1,
+			min = 2,
+			max = 30,
+            disabled = function() return not sv.ZO_MenuContextMenuReplacement end,
+			width = "half",
+			default = 20,
+        },
+        {
+            type = "slider",
+    		name = GetString(SI_LSM_LAM_CNTXTMEN_VIS_ROWS_SUBMENU_DEF),
+    		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_VIS_ROWS_SUBMENU_DEF_TT),
+            getFunc = function()
+				return sv.contextMenuSettings._Defaults.visibleRowsSubmenu
+			end,
+            setFunc = function(newValue)
+				sv.contextMenuSettings._Defaults.visibleRowsSubmenu = newValue
+            end,
+			step = 1,
+			min = 5,
+			max = 30,
+            disabled = function() return not sv.ZO_MenuContextMenuReplacement end,
+			width = "half",
+			default = 20,
+        },
 
 		{
 			type = "divider",

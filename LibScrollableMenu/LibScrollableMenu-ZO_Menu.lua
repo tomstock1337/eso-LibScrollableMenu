@@ -231,7 +231,7 @@ local function isAllowedControl(owner)
 			end
 			local owningWindow = owner.GetOwningWindow and owner:GetOwningWindow()
 			if owningWindow ~= nil then
-				local owningWindowName = getControlName(owningWindow)
+				owningWindowName = getControlName(owningWindow)
 				if owningWindowName ~= nil and contextMenuLookupWhiteList[owningWindowName] then
 					if checkIfControlOnWhiteListExclusionList({ owningWindowName, parentName, ownerName }) == false then
 						return true, ownerName, parentName, owningWindowName
@@ -552,6 +552,7 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 	local lsmEntry
 	local ZO_Menu_ItemCtrl = ZO_MenuItemData.item --~= nil and ZO_ShallowTableCopy(ZO_MenuItemData.item)
 	if ZO_Menu_ItemCtrl ~= nil then
+		local SVcontextMenuReplacementControls = sv.contextMenuReplacementControls
 
 		local entryName
 		local callbackFunc
@@ -597,8 +598,14 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 			end
 		end
 
+		--Submenu's 1st entry callback should be clicked if submenu opening entry is clicked? Only if LCM is loaded!
+		local submenuAutoSelectFirstEntry = false
+		local submenuAutoSelectFirstEntryIfOnlyOne = SVcontextMenuReplacementControls.submenuAutoSelectFirstEntryIfOnlyOne
+		local firstEntryCallback
+
 		--Is LibCustomMenu loaded?
 		if libCustomMenuIsLoaded == true then
+			submenuAutoSelectFirstEntry = SVcontextMenuReplacementControls.submenuAutoSelectFirstEntry
 			--LibCustomMenu values in ZO_Menu.items[i].item.entryData or .submenuData:
 			--[[
 			{
@@ -613,20 +620,25 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 			}
 			]]
 			--Normal entry?
+			--> entryData and submenuData were set in function storeZO_MenuItemDataForLSM -> Called from AddMenuItem
 			local entryData = ZO_Menu_ItemCtrl.entryData
 			--Is this an entry opening a submenu?
 			local submenuData = ZO_Menu_ItemCtrl.submenuData
 			local submenuItems = (submenuData ~= nil and submenuData.entries ~= nil and submenuData.entries) or nil
 			if lib.debugLCM_ZO_Menu_Replacement then d(">entryData: " ..tos(entryData) .."; submenuData: " ..tos(submenuData) .."; #entries: " ..tos(submenuItems ~= nil and #submenuItems or 0)) end
 
+			local entryDataFunc = entryData.myfunction
+			local entryDataFuncIsFunc = (type(entryDataFunc) == "function" and true) or false
+
 			-->LCM Submenu
 			if submenuData ~= nil and not ZO_IsTableEmpty(submenuItems) then
+d("[LSM]entryDataFuncIsFunc: " .. tos(entryDataFuncIsFunc) .. ", name: " .. tos(entryData.mytext))
 				if lib.debugLCM_ZO_Menu_Replacement then d(">LCM  found Submenu items: " ..tos(#submenuItems)) end
 				processVanillaZO_MenuItem = false
 
 				entryName = 			entryData.mytext
 				entryType = 			LSM_ENTRY_TYPE_NORMAL
-				callbackFunc = 			entryData.myfunction
+				callbackFunc = 			(entryDataFuncIsFunc == true and entryDataFunc) or nil
 				myfont =				entryData.myfont
 				normalColor = 			entryData.normalColor
 				highlightColor = 		entryData.highlightColor
@@ -639,14 +651,27 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 				hasSubmenu = true
 				--Add non-nested subMenu entries of LibCustomMenu (as LCM only can build 1 level submenus we do not need to nest more depth)
 				submenuEntries = {}
+				local numSubmenuItems = #submenuItems
 				for submenuIdx, submenuEntry in ipairs(submenuItems) do
+					local submenuEntryCallbackFunc = submenuEntry.callback
+					local submenuEntryCallbackFuncIsFunc = (type(submenuEntryCallbackFunc) == "function" and true) or false
+
+					if submenuIdx == 1 and submenuAutoSelectFirstEntry == true and callbackFunc == nil
+						and (not submenuAutoSelectFirstEntryIfOnlyOne or (submenuAutoSelectFirstEntryIfOnlyOne == true and numSubmenuItems == 1)) then
+						if submenuEntryCallbackFuncIsFunc == true then
+d("[LSM]replaced submenu opening callbackFunc with 1st submenu's entry callbackFunc")
+							firstEntryCallback = submenuEntryCallbackFunc
+							callbackFunc = submenuEntryCallbackFunc
+						end
+					end
+
 					submenuEntry.submenuData = nil
 					--Prepapre the needed data table for the recursive call to mapZO_MenuItemToLSMEntry
 					-->Fill in "entryData" table into a DUMMY item
 					submenuEntry.entryData = {
 						mytext = 				submenuEntry.label or submenuEntry.name,
 						itemType =				submenuEntry.itemType,
-						myfunction =			submenuEntry.callback,
+						myfunction =			(submenuEntryCallbackFuncIsFunc == true and submenuEntryCallbackFunc) or nil,
 						myfont =				submenuEntry.myfont,
 						normalColor =			submenuEntry.normalColor,
 						highlightColor =		submenuEntry.highlightColor,
@@ -693,7 +718,7 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 			elseif entryData ~= nil then
 				entryName =				entryData.mytext
 				entryType = 			mapLCMItemtypeToLSMEntryType[entryData.itemType] or LSM_ENTRY_TYPE_NORMAL
-				callbackFunc = 			entryData.myfunction
+				callbackFunc = 			(entryDataFuncIsFunc == true and entryDataFunc) or nil
 				myfont =				entryData.myfont
 				normalColor = 			entryData.normalColor
 				highlightColor = 		entryData.highlightColor
@@ -721,7 +746,12 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 		if processVanillaZO_MenuItem == true then
 			if lib.debugLCM_ZO_Menu_Replacement then d(">LCM process vanilla ZO_Menu item") end
 			entryName = 	entryName or (ZO_Menu_ItemCtrl.nameLabel and ZO_Menu_ItemCtrl.nameLabel:GetText())
-			callbackFunc = 	callbackFunc or ZO_Menu_ItemCtrl.OnSelect
+			callbackFunc = 	callbackFunc
+			--No callbackfunc for an entry which opens a submenu, if there was no callback func defined
+			if callbackFunc == nil and submenuEntries == nil then
+d("[LSM]processVanillaZO_MenuItem: " .. tos(entryName) .. ", callbackFunc = ZO_Menu_ItemCtrl.OnSelect")
+				callbackFunc = ZO_Menu_ItemCtrl.OnSelect
+			end
 			isHeader = 		isHeader or ZO_Menu_ItemCtrl.isHeader
 			tooltip = 		tooltip or ((not tooltipIsFunction and tooltipData) or nil)
 			customTooltip = customTooltip or ((tooltipIsFunction == true and customTooltipFunc) or nil)
@@ -864,7 +894,7 @@ local function addZO_Menu_ShowMenuHook()
 			LCMLastAddedMenuItem = {}
 			if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then clearInternalZO_MenuToLSMMappingData() return false end
 
-			--Add the entry to lib.ZO_MenuData = {} now
+			--Add the entry to lib.ZO_MenuData = {} now -> Will be read in AddMenuItem function
 			LCMLastAddedMenuItem = { index = ZOMenu.currentIndex, name = mytext, callback = myfunction, itemType = itemType }
 			if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]PreHook LCM.AddMenuItem-name: " ..tos(mytext) .. "; itemType: " ..tos(itemType)) end
 		end)
@@ -873,7 +903,7 @@ local function addZO_Menu_ShowMenuHook()
 			LCMLastAddedMenuItem = {}
 			if not isAnyCustomScrollableZO_MenuContextMenuRegistered() then clearInternalZO_MenuToLSMMappingData() return false end
 
-			--Add the entry to lib.ZO_MenuData = {} now
+			--Add the entry to lib.ZO_MenuData = {} now -> Will be read in AddMenuItem function
 			LCMLastAddedMenuItem = { index = ZOMenu.currentIndex, name = mytext, callback = myfunction, itemType = itemType, isSubmenu = true, entries = entries }
 			if lib.debugLCM_ZO_Menu_Replacement then d("[LSM]PreHook LCM.AddSubMenuItem-name: " ..tos(mytext) .. "; entries: " ..tos(entries)) end
 		end)
@@ -955,7 +985,7 @@ local function addZO_Menu_ShowMenuHook()
 
 			--Was the item added via LibCustomMenu?
 			local entries
-			if libCustomMenuIsLoaded == true and lastAddedLCMEntryName ~= nil and LCMLastAddedMenuItem.index ~= nil  then
+			if libCustomMenuIsLoaded == true and lastAddedLCMEntryName ~= nil and LCMLastAddedMenuItem.index ~= nil then
 
 				--Checkbox?
 				if LCMLastAddedMenuItem.itemType == MENU_ADD_OPTION_CHECKBOX then
@@ -980,6 +1010,9 @@ local function addZO_Menu_ShowMenuHook()
 							LCMLastAddedMenuItem.callback == onSelect and LCMLastAddedMenuItem.itemType == itemType then
 						--Get a copy of the submenu entries added
 						entries = ZO_ShallowTableCopy(LCMLastAddedMenuItem.entries)
+						--Change the callback which creates the submenu within LCM usually as we do not need that for LibScrollableMenu!
+						-->If we would leave it as it is it would show the entry of the submenu opening control "green" as if we coudl click it
+						onSelect = nil
 					end
 				end
 

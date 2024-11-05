@@ -85,11 +85,18 @@ local lsmSVDefaults = {
 	contextMenuReplacementControls = {
 		_wasChanged = false,
 		replaceAll = false,
+		submenuAutoSelectFirstEntry = false,
+		submenuAutoSelectFirstEntryIfOnlyOne = false,
 		whiteList = {},
 		whiteListExclusion = {},
 		blackList = {},
 	},
 	contextMenuSettings = {
+		--Defaults for all controls which have not been added to the menuOwner lists explicitly
+		["_Defaults"] = {
+			visibleRows = 20,
+			visibleRowsSubmenu = 20,
+		},
 		["ZO_PlayerInventory"] = {
 			visibleRows = 15,
 			visibleRowsSubmenu = 15,
