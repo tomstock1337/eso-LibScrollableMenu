@@ -30,7 +30,9 @@ local function buildExistingOwnerNamesList()
 	sv = lib.SV
 	if sv and sv.contextMenuSettings ~= nil then
 		for ownerControlName, _ in pairs(sv.contextMenuSettings) do
-			existingOwnerNamesListLoc[#existingOwnerNamesListLoc + 1] = ownerControlName
+			if ownerControlName ~= "_Defaults" then
+				existingOwnerNamesListLoc[#existingOwnerNamesListLoc + 1] = ownerControlName
+			end
 		end
 	end
 	return existingOwnerNamesListLoc
@@ -246,7 +248,7 @@ function lib.BuildLAMSettingsMenu()
             getFunc = function() return contextMenuOwnerControlName end,
             setFunc = function(newValue)
 				contextMenuOwnerControlName = newValue
-				if contextMenuOwnerControlName ~= "" then
+				if contextMenuOwnerControlName ~= "" and contextMenuOwnerControlName ~= "_Defaults" then
 					if _G[contextMenuOwnerControlName] == nil then
 						d("["..MAJOR.."]ERROR - Control " .. tos(contextMenuOwnerControlName) .." does not globally exist!")
 						contextMenuOwnerControlName = nil
@@ -309,7 +311,7 @@ function lib.BuildLAMSettingsMenu()
             name = "Apply visibleRows",
             tooltip = "Change the visible rows and visible rows of the submenu for the entered context menu owner's controlName.",
             func = function()
-				if contextMenuOwnerControlName ~= nil and (newVisibleRowsForControlName ~= nil or newVisibleRowsSubmenuForControlName ~= nil) then
+				if contextMenuOwnerControlName ~= nil and contextMenuOwnerControlName ~= "_Defaults" and (newVisibleRowsForControlName ~= nil or newVisibleRowsSubmenuForControlName ~= nil) then
 					--Add the savedvariables update of sv.contextMenuSettings[contextMenuOwnerControlName]
 					if newVisibleRowsForControlName ~= nil then
 						sv.contextMenuSettings = sv.contextMenuSettings or {}
