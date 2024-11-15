@@ -358,15 +358,20 @@ local function getOwnerControlSavedVars(ownerName, ownerParentName, ownerOwningW
 	local savedDataPerOwnerName
 	local savedContextMenuVisibleRows = sv ~= nil and sv[svTableName]
 	if lib.debugLCM_ZO_Menu_Replacement then d(">getOwnerControlSavedVars - owner: " ..tos(ownerName) .."; ownerParent: " ..tos(ownerParentName) .. "; ownerOwningWindow: " .. tos(ownerOwningWindowName) .. "; svTableName: " .. tos(svTableName)) end
+
+--d("[LSM]!!!!!!! getOwnerControlSavedVars - owner: " ..tos(ownerName) .."; ownerParent: " ..tos(ownerParentName) .. "; ownerOwningWindow: " .. tos(ownerOwningWindowName) .. "; svTableName: " .. tos(svTableName))
 	if savedContextMenuVisibleRows ~= nil then
 		if ownerName ~= nil then
 			savedDataPerOwnerName = savedContextMenuVisibleRows[ownerName]
+--d(">ownerName")
 		end
 		if savedDataPerOwnerName == nil and ownerParentName ~= nil then
 			savedDataPerOwnerName = savedContextMenuVisibleRows[ownerParentName]
+--d(">ownerParentName")
 		end
 		if savedDataPerOwnerName == nil and ownerOwningWindowName ~= nil then
 			savedDataPerOwnerName = savedContextMenuVisibleRows[ownerOwningWindowName]
+--d(">ownerOwningWindowName")
 		end
 
 		if savedDataPerOwnerName ~= nil then
@@ -374,16 +379,20 @@ local function getOwnerControlSavedVars(ownerName, ownerParentName, ownerOwningW
 			visibleRowsSubmenu	= savedDataPerOwnerName["visibleRowsSubmenu"]
 		end
 	end
-
+--d(">visibleRows: " .. tos(visibleRows) .. ", visibleRowsSubmenu: " .. tos(visibleRowsSubmenu))
 	visibleRows = visibleRows or comboBoxDefaults.visibleRows --default value: 10
 	visibleRowsSubmenu = visibleRowsSubmenu or comboBoxDefaults.visibleRowsSubmenu --default value: 10
-
+--d(">>>visibleRowsAfter: " .. tos(visibleRows) .. ", visibleRowsSubmenuAfter: " .. tos(visibleRowsSubmenu))
 	return visibleRows, visibleRowsSubmenu
 end
 
 local function getVisibleRowsByOwnerControlSettings(owner)
 	local isZOListDialogHidden = zoListDialog:IsHidden()
 	if lib.debugLCM_ZO_Menu_Replacement then d(">getVisibleRowsByOwnerControlSettings - owner: " ..tos(owner)) end
+
+--d("!!!!!!!!!!!!!!!!!!!! [LSM]getVisibleRowsByOwnerControlSettings - owner: " ..tos(owner))
+
+
 	--No owner control, then use default values for the context menu
 	if owner == nil then
 		return comboBoxDefaults.visibleRows, comboBoxDefaults.visibleRowsSubmenu, isZOListDialogHidden
