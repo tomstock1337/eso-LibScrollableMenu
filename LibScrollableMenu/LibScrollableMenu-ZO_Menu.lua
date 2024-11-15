@@ -457,10 +457,18 @@ local function showMenuOwnerChecks(owner, menuDataOfLSM)
 	--for idx, lsmEntry in ipairs(lib.ZO_MenuData) do
 	local numItems = #menuDataOfLSM
 	local startIndex = lastUsedItemIndex + 1
+
+d("===========[LSM]ShowMenu startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems) .. ", numZO_Menu.items: " .. tos(#ZOMenu.items))
+--todo 20241112 If FCOItemSaver is enabled and you SHIFT+right click (Where shift could be alt or ctrl key too according to FCOIS settings modifier key chosen!)
+--to remove all marker icons "the first time after reloadui": The LSM context menu shows with "Empty" entry sometimes.
+--This only seems to happen on first time usage of that SHIFT+right click and sometimes it even shows other addon's LibCustomMenu entries (like TTC's "Serch online" and "Price history")
+--entries in these LSM menu then -> So the ClearMenu() call raised from FCOIS hook to the context menu actionSlots does not actually call ClearCustomScrollableMenu() properly.
+--Maybe only fixable in FCOIS itsself?
+
 	if startIndex > numItems then
 		if lib.debugLCM_ZO_Menu_Replacement then d("<ABORT: startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems)) end
 
-		--20241027 Bugfix for Chat menu showing ZO_Menu below the LSM context menu
+		--20241027 Bugfix for Chat menu showing it's ZO_Menu "below" the LSM context menu at the same time
 		lib.skipLSMClearOnOnClearMenu = true
 		local zoMenuOwnerBackup = ZOMenu.owner
 		ClearMenu()
@@ -656,17 +664,27 @@ d("[LSM]entryDataFuncIsFunc: " .. tos(entryDataFuncIsFunc) .. ", name: " .. tos(
 					local submenuEntryCallbackFunc = submenuEntry.callback
 					local submenuEntryCallbackFuncIsFunc = (type(submenuEntryCallbackFunc) == "function" and true) or false
 
-					if submenuIdx == 1 and submenuAutoSelectFirstEntry == true and callbackFunc == nil
-						and (not submenuAutoSelectFirstEntryIfOnlyOne or (submenuAutoSelectFirstEntryIfOnlyOne == true and numSubmenuItems == 1)) then
-						if submenuEntryCallbackFuncIsFunc == true then
-d("[LSM]replaced submenu opening callbackFunc with 1st submenu's entry callbackFunc")
-							firstEntryCallback = submenuEntryCallbackFunc
-							callbackFunc = submenuEntryCallbackFunc
+if submenuEntryCallbackFunc == nil then
+	lib._debugSubmenuEntries = lib._debugSubmenuEntries or {}
+	lib._debugSubmenuEntries[entryName] = {
+		_entryName = entryName,
+		submenuItems = ZO_ShallowTableCopy(submenuItems),
+	}
+end
+
+					if submenuIdx == 1 and submenuAutoSelectFirstEntry == true then
+d("[LSM]submenuEntryCallbackFunc: " .. tos(submenuEntryCallbackFuncIsFunc) .. ", name: " .. tos(submenuEntry.label or submenuEntry.name))
+						if callbackFunc == nil and (not submenuAutoSelectFirstEntryIfOnlyOne or (submenuAutoSelectFirstEntryIfOnlyOne == true and numSubmenuItems == 1)) then
+							if submenuEntryCallbackFuncIsFunc == true then
+d(">replaced submenu opening entry '" .. tos(entryName) .."' callbackFunc with 1st submenu entry's callbackFunc")
+								firstEntryCallback = submenuEntryCallbackFunc
+								callbackFunc = submenuEntryCallbackFunc
+							end
 						end
 					end
 
-					submenuEntry.submenuData = nil
 					--Prepapre the needed data table for the recursive call to mapZO_MenuItemToLSMEntry
+					submenuEntry.submenuData = nil
 					-->Fill in "entryData" table into a DUMMY item
 					submenuEntry.entryData = {
 						mytext = 				submenuEntry.label or submenuEntry.name,
@@ -861,6 +879,7 @@ local function storeZO_MenuItemDataForLSM(index, mytext, myfunction, itemType, m
 			["entries"] = entries,
 		}
 		lastAddedZO_MenuItem.item.entryData = dataToAdd
+d(">lastAddedZO_MenuItem.item.submenuData set for '"..tos(mytext).."', entries: " .. tos(entries))
 		lastAddedZO_MenuItem.item.submenuData = (entries ~= nil and dataToAdd) or nil
 
 		--Map the entry of ZO_Menu to LSM entries now and add it to our internal ZO_MenuData table
@@ -969,7 +988,8 @@ local function addZO_Menu_ShowMenuHook()
 		--Attention: Will be called internally by LibCustomMenu's AddCustom*MenuItem too!
 		--Grab the added data here and transfer it to our internal tables, as mapped LSM entryType, via function storeZO_MenuItemDataForLSM.
 		---Also checks for checkboxes that were added before and prepares their current state update properly as this might happen after the AddMenuItem function was called
-		SecurePostHook("AddMenuItem", function(labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
+		local function LSM_AddMenuItemPostHook(labelText, onSelect, itemType, labelFont, normalColor, highlightColor, itemYPad, horizontalAlignment, isHighlighted, onEnter, onExit, enabled)
+--d("[LSM]AAAAAAAAAAAAAAA - AddMenuItem - labelText: " .. tos(labelText))
 			updateZO_MenuVariables()
 			ZOMenus:SetHidden(false)
 
@@ -1003,16 +1023,27 @@ local function addZO_Menu_ShowMenuHook()
 					end
 				else
 					--Entry last added was a submenu?
-					if LCMLastAddedMenuItem.isSubmenu == true and LCMLastAddedMenuItem.entries ~= nil
-							and ( LCMLastAddedMenuItem.index == lastAddedZO_MenuItemsIndex
-							or ( lastAddedLCMEntryName == labelText or (labelText == string.format("%s |u16:0::|u", lastAddedLCMEntryName)) )
-					) and
-							LCMLastAddedMenuItem.callback == onSelect and LCMLastAddedMenuItem.itemType == itemType then
-						--Get a copy of the submenu entries added
-						entries = ZO_ShallowTableCopy(LCMLastAddedMenuItem.entries)
-						--Change the callback which creates the submenu within LCM usually as we do not need that for LibScrollableMenu!
-						-->If we would leave it as it is it would show the entry of the submenu opening control "green" as if we coudl click it
-						onSelect = nil
+					if LCMLastAddedMenuItem.isSubmenu == true and LCMLastAddedMenuItem.entries ~= nil then
+						if ( LCMLastAddedMenuItem.index == lastAddedZO_MenuItemsIndex
+								or ( lastAddedLCMEntryName == labelText or (labelText == string.format("%s |u16:0::|u", lastAddedLCMEntryName)) )
+						) and LCMLastAddedMenuItem.callback == onSelect and LCMLastAddedMenuItem.itemType == itemType then
+							--Get a copy of the submenu entries added
+							entries = ZO_ShallowTableCopy(LCMLastAddedMenuItem.entries)
+							--Change the callback which creates the submenu within LCM usually as we do not need that for LibScrollableMenu!
+							-->If we would leave it as it is it would show the entry of the submenu opening control "green" as if we coudl click it
+							onSelect = nil
+						else
+d("[LSM]LCM submenuEntry, but current AddMenuItem data does not match LCMLastAddedMenuItem data!")
+lib._debugContextMenuErrors = lib._debugContextMenuErrors or {}
+							local debugLastMenuItemIndex = lastAddedZO_MenuItemsIndex
+lib._debugContextMenuErrors[GetGameTimeMilliseconds()] = {
+	_LCMLastAddedMenuItem = ZO_ShallowTableCopy(LCMLastAddedMenuItem),
+	lastAddedZO_MenuItemsIndex = debugLastMenuItemIndex,
+	labelText = labelText,
+	onSelect = onSelect,
+	itemType = itemType,
+}
+						end
 					end
 				end
 
@@ -1038,15 +1069,17 @@ local function addZO_Menu_ShowMenuHook()
 					enabled,
 					entries,
 					isDivider)
-		end)
+		end
+		SecurePostHook("AddMenuItem", LSM_AddMenuItemPostHook)
 		if lib.debugLCM_ZO_Menu_Replacement then d(">>> PostHooked AddMenuItem") end
 
 
 		--Hook the ZO_Menu's ClearMenu function so we can clear our LSM variables too
-		SecurePostHook("ClearMenu", function()
+		local function LSM_ClearMenuPostHook()
+d("[LSM]CCCCCCCCCCCCCCCCCCC - ClearMenu - preventClearCustomScrollableMenuToClearZO_MenuData: " ..tos(lib.preventClearCustomScrollableMenuToClearZO_MenuData) .. ", skipLSMClearOnOnClearMenu: " .. tos(lib.skipLSMClearOnOnClearMenu))
 			if lib.debugLCM_ZO_Menu_Replacement then
 				d("<<<<<<<<<<<<<<<<<<<<<<<")
-				d("[LSM]ClearMenu - preventClearCustomScrollableMenuToClearZO_MenuData: " ..tos(lib.preventClearCustomScrollableMenuToClearZO_MenuData))
+				d("[LSM]ClearMenu - preventClearCustomScrollableMenuToClearZO_MenuData: " ..tos(lib.preventClearCustomScrollableMenuToClearZO_MenuData) .. ", skipLSMClearOnOnClearMenu: " .. tos(lib.skipLSMClearOnOnClearMenu))
 				d("<<<<<<<<<<<<<<<<<<<<<<<")
 			end
 			ZOMenus:SetHidden(false)
@@ -1056,7 +1089,8 @@ local function addZO_Menu_ShowMenuHook()
 				clearCustomScrollableMenu()
 			end
 			lib.skipLSMClearOnOnClearMenu = false
-		end)
+		end
+		SecurePostHook("ClearMenu", LSM_ClearMenuPostHook)
 		if lib.debugLCM_ZO_Menu_Replacement then d(">>> PostHooked ClearMenu") end
 
 
@@ -1068,12 +1102,13 @@ local function addZO_Menu_ShowMenuHook()
 		--->AddCustomScrollableMenuEntry already
 		--->The currently last added entry index will be stored in lib.ZO_MenuData_CurrentIndex, and we will only add the "new added" (after that index)
 		--->entries of our table lib.ZO_MenuData to the current menu then
-		ZO_PreHook("ShowMenu", function(owner, initialRefCount, menuType)
+		local function LSM_ShowMenuPreHook(owner, initialRefCount, menuType)
+--d("OOOOOOOOOOOOOOOOOOOOOOOOOOO [LSM]LSM_ShowMenuPreHook - preventLSMClosingZO_Menu: " .. tos(lib.preventLSMClosingZO_Menu) .. ", menuType: " .. tos(menuType) .. "; initialRefCount: " .. tos(initialRefCount) .. ", shiftKey: " .. tos(IsShiftKeyDown()))
 			--Unhide the TLC so the menus of ZO_Menu will show properly in any case
 			ZOMenus:SetHidden(false)
 			--ZOMenu:SetDimensions(0, 0)
 
-			--Should the ZO_Menu not close any opened LSM? e.g. to show the textSearchHistory at the LSM text filter search box
+			--Should the ZO_Menu's ClearMenu() call not close any opened LSM? e.g. to show the textSearchHistory per ZO_Menu at the LSM text filter search box context menu
 			if lib.preventLSMClosingZO_Menu == true then
 				if lib.debugLCM_ZO_Menu_Replacement then
 					d("????????????????????????????????")
@@ -1133,7 +1168,8 @@ local function addZO_Menu_ShowMenuHook()
 
 			--Suppress original ZO_Menu building and "Show" LSM entries now (se above via ShowCustomScrollableMenu( ... ) )
 			return suppressOriginalZO_Menu
-		end)
+		end
+		ZO_PreHook("ShowMenu", LSM_ShowMenuPreHook)
 		if lib.debugLCM_ZO_Menu_Replacement then d(">>> PreHooked ShowMenu") end
 
 		ZO_Menu_showMenuHooked = true

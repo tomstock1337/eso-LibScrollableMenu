@@ -3059,6 +3059,10 @@ function dropdownClass:UpdateHeight()
 	end
 end
 
+--Returns the handler naem for OnSho or OnHide for the normal dropdown, submenu and contextMenu
+--> OnMenuShow / OnMenuHide
+--> OnSubmenuShow / OnSubmenuHide
+--> OnContextmenuShow / OnContextmenuHide
 function dropdownClass:GetFormattedNarrateEvent(suffix)
 	local formattedNarrateEvent = ''
 	if self.owner then
@@ -3067,6 +3071,7 @@ function dropdownClass:GetFormattedNarrateEvent(suffix)
 	return formattedNarrateEvent
 end
 
+--Will be executed from XML handlers -> formattedEventName will be build via method GetFormattedNarrateEvent
 function dropdownClass:OnShow(formattedEventName)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnShow")
 --	self.control:BringWindowToTop()
@@ -3081,6 +3086,7 @@ function dropdownClass:OnShow(formattedEventName)
 	end
 end
 
+--Will be executed from XML handlers -> formattedEventName will be build via method GetFormattedNarrateEvent
 function dropdownClass:OnHide(formattedEventName)
 	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnHide")
 	if formattedEventName ~= nil then
@@ -4860,7 +4866,7 @@ end
 
 function contextMenuClass:GetMenuPrefix()
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:GetMenuPrefix: Contextmenu")
-	return 'Contextmenu'
+	return 'ContextMenu'
 end
 
 function contextMenuClass:GetHiddenForReasons(button)
@@ -4910,11 +4916,12 @@ function contextMenuClass:ShowContextMenu(parentControl)
 		end
 	end
 
+d("->->->->->->-> [LSM]ContextMenuClass:ShowContextMenu -> ShowDropdown now!")
 	self:ShowDropdown()
 
---d("[LSM]ContextMenuClass:ShowContextMenu - openingControl changed!")
 	throttledCall(function()
 		if openingControlOld ~= parentControl then
+--d("[LSM]ContextMenuClass:ShowContextMenu - openingControl changed!")
 			if self:IsFilterEnabled() then
 	--d(">>resetting filters now")
 				local dropdown = self.m_dropdown
@@ -5063,7 +5070,7 @@ GetCustomScrollableMenuRowData = getControlData
 --A new context menu should be using ClearCustomScrollableMenu() before it adds the first entries (to hide other contextmenus and clear the new one).
 --After that use either AddCustomScrollableMenuEntry to add single entries, AddCustomScrollableMenuEntries to add a whole entries table/function
 --returning a table, or even directly use AddCustomScrollableMenu and pass in the entrie/function to get entries.
---And after adding all entries, call ShowCustomScrollableContextMenu(parentControl) to show the menu at the parentControl. If no control is provided
+--And after adding all entries, call ShowCustomScrollableMenu(parentControl) to show the menu at the parentControl. If no control is provided
 --moc() (control below mouse cursor) will be used
 -->Attention: ClearCustomScrollableMenu() will clear and hide ALL LSM contextmenus at any time! So we cannot have an LSM context menu to show at another
 --LSM context menu entry (similar to ZO_Menu).
@@ -5318,6 +5325,8 @@ end
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	dLog(LSM_LOGTYPE_DEBUG, "ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+df("_-_-_-_-_-_-_-_-_-_ [LSM]ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+
 	if options then
 		setCustomScrollableMenuOptions(options)
 	end
@@ -5679,6 +5688,7 @@ WORKING ON - Current version: 2.4
 -------------------
 	1. Feature: Add support for ZO_Menu, including LibCustomMenu, at the inventory right click context menus
 	2. Bug fix: Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
+	3. Bug fix: Name of handler for context menu show and hide changed to proper Uppercase OnContextMenu*
 
 -------------------
 TODO - To check (future versions)
