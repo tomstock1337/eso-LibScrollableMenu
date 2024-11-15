@@ -3077,11 +3077,12 @@ function dropdownClass:OnShow(formattedEventName)
 --	self.control:BringWindowToTop()
 
 	if formattedEventName ~= nil then
+		local anchorRight = self.anchorRight and 'Right' or 'Left'
+		local ctrl = self.control
+		lib:FireCallbacks(formattedEventName, ctrl)
+
 		throttledCall(function()
-			local anchorRight = self.anchorRight and 'Right' or 'Left'
-			local ctrl = self.control
 			self:Narrate(formattedEventName, ctrl, nil, nil, anchorRight)
-			lib:FireCallbacks(formattedEventName, ctrl)
 		end, 100, "_DropdownClassOnShow")
 	end
 end
