@@ -466,13 +466,7 @@ local function showMenuOwnerChecks(owner, menuDataOfLSM)
 	local numItems = #menuDataOfLSM
 	local startIndex = lastUsedItemIndex + 1
 
-d("===========[LSM]ShowMenu startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems) .. ", numZO_Menu.items: " .. tos(#ZOMenu.items))
---todo 20241112 If FCOItemSaver is enabled and you SHIFT+right click (Where shift could be alt or ctrl key too according to FCOIS settings modifier key chosen!)
---to remove all marker icons "the first time after reloadui": The LSM context menu shows with "Empty" entry sometimes.
---This only seems to happen on first time usage of that SHIFT+right click and sometimes it even shows other addon's LibCustomMenu entries (like TTC's "Serch online" and "Price history")
---entries in these LSM menu then -> So the ClearMenu() call raised from FCOIS hook to the context menu actionSlots does not actually call ClearCustomScrollableMenu() properly.
---Maybe only fixable in FCOIS itsself?
-
+--d("===========[LSM]ShowMenu startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems) .. ", numZO_Menu.items: " .. tos(#ZOMenu.items))
 	if startIndex > numItems then
 		if debugLCM_ZO_Menu_Replacement then d("<ABORT: startIndex "  ..tos(startIndex).." > numItems: " ..tos(numItems)) end
 
@@ -536,6 +530,20 @@ d("===========[LSM]ShowMenu startIndex "  ..tos(startIndex).." > numItems: " ..t
 	return true --LSM menu was shown
 end
 
+--If the entry is a checkbox: -> LCM checkbox callbackFunc uses ZO_CheckButton_OnClicked -> buttonControl:toggleFunction(checked)
+--so only 1 param "checked" is passed in.
+--But LSM checkbox callbackFunc will use the default signature of comboBox entries: item.callback(comboboxSelf, item.name, item, ...) where ... contains the checked then of a checkbox
+--So we need to map the callback functions parameter signatures
+local function mapCheckBoxCallbackFunc(callbackFunc, entryType)
+	if type(callbackFunc) ~= "function" then return end
+	if entryType ~= LSM_ENTRY_TYPE_CHECKBOX then return callbackFunc end
+	--Create new anonymous function which maps the parameters from LibScrollableMenu -> to LibCustomMenu (as addons use the
+	--old LibCustomMenu callback 1param 'checked' only in their code!)
+	local callbackFuncWithLibCustomMenuCompatibility = function(comboboxSelf, itemName, item, checked)
+		return callbackFunc(checked)
+	end
+	return callbackFuncWithLibCustomMenuCompatibility
+end
 
 
 
@@ -544,23 +552,6 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 --Map the LibCustomMenu and normal ZO_Menu entries data to LibScrollableMenu entries data
 
-
---If the entry is a checkbox: -> LCM checkbox callbackFunc uses ZO_CheckButton_OnClicked -> buttonControl:toggleFunction(checked)
---so only 1 param "checked" is passed there.
---But LSM checkbox callbackFunc later will use the default signature of comboBox entries:
---Ah I see, LibScrollableMenu's click handler always uses the same signature
---item.callback(comboboxSelf, item.name, item, ...) where ... contains the checked then of a checkbox
---So we need to map the callback functions parameter signatures
-local function mapCheckBoxCallbackFunc(callbackFunc, entryType)
-	if callbackFunc == nil then return end
-	if entryType ~= LSM_ENTRY_TYPE_CHECKBOX then return callbackFunc end
-	--Create new anonymouse function which maps the parameters from LibScrollableMenu -> to LibCustomMenu (as addons use the
-	--old LibCustomMenu callback 1param 'checked' only in their code!)
-	local callbackFuncWithLibCustomMenuCompatibility = function(comboboxSelf, itemName, item, checked)
-		return callbackFunc(checked)
-	end
-	return callbackFuncWithLibCustomMenuCompatibility
-end
 
 --======================================================================================================================
 --Function to map the ZO_menu items to LSM entryType context menu items
@@ -592,9 +583,6 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 		if isZO_MenuEntryHavingCheckbox == true then
 			--Get ZO_Menu's checkbox's current checked state
 			isChecked = ZO_CheckButton_IsChecked(ZO_MenuItemData.checkbox)
---if doDebug then
-	d(">isCheckbox - checked: " ..tos(isChecked) .. ", isBuildingSubmenu: " .. tos(isBuildingSubmenu))
---end
 		end
 		local isDivider = false
 		local isHeader = false
@@ -666,7 +654,6 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 			-->LCM Submenu
 --======================================================================================================================
 			if submenuData ~= nil and not ZO_IsTableEmpty(submenuItems) then
-d("[LSM]entryDataFuncIsFunc: " .. tos(entryDataFuncIsFunc) .. ", name: " .. tos(entryData.mytext))
 				if debugLCM_ZO_Menu_Replacement then d(">LCM  found Submenu items: " ..tos(#submenuItems)) end
 				processVanillaZO_MenuItem = false
 
@@ -808,17 +795,11 @@ end
 
 		--Normal ZO_Menu item added via AddMenuItem (without LibCustomMenu, if with LCM but data was missig -> Fill up)
 		if processVanillaZO_MenuItem == true then
-if isCheckbox == true then
-	d("[LSM]processVanillaZO_MenuItem - Checkbox: " .. tos(entryName) .. ", isChecked: " .. tos(isChecked))
-end
-
-
 			if debugLCM_ZO_Menu_Replacement then d(">LCM process vanilla ZO_Menu item") end
 			entryName = 	entryName or (ZO_Menu_ItemCtrl.nameLabel and ZO_Menu_ItemCtrl.nameLabel:GetText())
 			callbackFunc = 	callbackFunc
 			--No callbackfunc for an entry which opens a submenu, if there was no callback func defined
 			if callbackFunc == nil and submenuEntries == nil then
-d(">callbackFunc = ZO_Menu_ItemCtrl.OnSelect")
 				callbackFunc = ZO_Menu_ItemCtrl.OnSelect
 			end
 			isHeader = 		isHeader or ZO_Menu_ItemCtrl.isHeader
@@ -931,7 +912,7 @@ local function storeZO_MenuItemDataForLSM(index, mytext, myfunction, itemType, m
 			["entries"] = entries,
 		}
 		lastAddedZO_MenuItem.item.entryData = dataToAdd
-d(">lastAddedZO_MenuItem.item.submenuData set for '"..tos(mytext).."', entries: " .. tos(entries))
+--d(">lastAddedZO_MenuItem.item.submenuData set for '"..tos(mytext).."', entries: " .. tos(entries))
 		lastAddedZO_MenuItem.item.submenuData = (entries ~= nil and dataToAdd) or nil
 
 		--Map the entry of ZO_Menu to LSM entries now and add it to our internal ZO_MenuData table
@@ -1082,10 +1063,10 @@ local function addZO_Menu_ShowMenuHook()
 							--Get a copy of the submenu entries added
 							entries = ZO_ShallowTableCopy(LCMLastAddedMenuItem.entries)
 							--Change the callback which creates the submenu within LCM usually as we do not need that for LibScrollableMenu!
-							-->If we would leave it as it is it would show the entry of the submenu opening control "green" as if we coudl click it
+							-->If we would leave it as it is it would show the entry of the submenu opening control "green" as if we could click it
 							onSelect = nil
 						else
-d("[LSM]LCM submenuEntry, but current AddMenuItem data does not match LCMLastAddedMenuItem data!")
+d("[LSM]ERROR - LCM submenuEntry, but current AddMenuItem data does not match LCMLastAddedMenuItem data!")
 lib._debugContextMenuErrors = lib._debugContextMenuErrors or {}
 							local debugLastMenuItemIndex = lastAddedZO_MenuItemsIndex
 lib._debugContextMenuErrors[GetGameTimeMilliseconds()] = {
@@ -1128,7 +1109,7 @@ lib._debugContextMenuErrors[GetGameTimeMilliseconds()] = {
 
 		--Hook the ZO_Menu's ClearMenu function so we can clear our LSM variables too
 		local function LSM_ClearMenuPostHook()
-d("[LSM]CCCCCCCCCCCCCCCCCCC - ClearMenu - preventClearCustomScrollableMenuToClearZO_MenuData: " ..tos(lib.preventClearCustomScrollableMenuToClearZO_MenuData) .. ", skipLSMClearOnOnClearMenu: " .. tos(lib.skipLSMClearOnOnClearMenu))
+--d("[LSM]CCCCCCCCCCCCCCCCCCC - ClearMenu - preventClearCustomScrollableMenuToClearZO_MenuData: " ..tos(lib.preventClearCustomScrollableMenuToClearZO_MenuData) .. ", skipLSMClearOnOnClearMenu: " .. tos(lib.skipLSMClearOnOnClearMenu))
 			if debugLCM_ZO_Menu_Replacement then
 				d("<<<<<<<<<<<<<<<<<<<<<<<")
 				d("[LSM]ClearMenu - preventClearCustomScrollableMenuToClearZO_MenuData: " ..tos(lib.preventClearCustomScrollableMenuToClearZO_MenuData) .. ", skipLSMClearOnOnClearMenu: " .. tos(lib.skipLSMClearOnOnClearMenu))
