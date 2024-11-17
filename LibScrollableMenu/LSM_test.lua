@@ -81,7 +81,7 @@ local function test()
 			local name = p_item.label or p_item.name
 			if p_item.customFilterFuncData ~= nil then
 				if p_item.customFilterFuncData.findMe ~= nil then
-			d(">customFilterFunc - findMe: " ..tostring(p_item.customFilterFuncData.findMe))
+			--d(">customFilterFunc - findMe: " ..tostring(p_item.customFilterFuncData.findMe))
 					return zo_strlower(p_item.customFilterFuncData.findMe):find(p_filterString) ~= nil
 				end
 			end

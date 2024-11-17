@@ -14,6 +14,12 @@ local strings = {
     SI_LSM_LAM_CNTXTMEN_OWNER_NAME_TT = "Enter the control name of a context menu owner here, e.g. ZO_PlayerInventory.\nPress the return key to update the add button's state.\n\nTo get the control name of the control below the cursor use the chat slash command /lsmmoc, and you will see the current control name, it's parentName and the owning window name in the chat.\nLSM will check for the control name first, then the parent and at the end the owning window name to determine if a control go the LSM context menu enabled (and to determine it's settings like the visible rows)",
     SI_LSM_LAM_CNTXTMEN_VIS_ROWS = "Visible rows #",
     SI_LSM_LAM_CNTXTMEN_VIS_ROWS_TT = "Choose the number of visible rows at the contextmenu of the owner's controlName",
+
+    SI_LSM_LAM_CNTXTMEN_VIS_ROWS_DEF = "Visible rows #",
+    SI_LSM_LAM_CNTXTMEN_VIS_ROWS_DEF_TT = "Choose the number of visible rows at the contextmenu's.\nWill be used for all contextmenus where no menu owner controlName is specified below.",
+    SI_LSM_LAM_CNTXTMEN_VIS_ROWS_SUBMENU_DEF = "Default visible rows #, submenus",
+    SI_LSM_LAM_CNTXTMEN_VIS_ROWS_SUBMENU_DEF_TT = "Choose the number of visible rows at the contextmenu's submenus.\nWill be used for all submenus where no menu owner controlName is specified below.",
+
     SI_LSM_LAM_CNTXTMEN_VIS_ROWS_SUBMENU = "Visible rows #, submenus",
     SI_LSM_LAM_CNTXTMEN_VIS_ROWS_SUBMENU_TT = "Choose the number of visible rows at the contextmenu's submenus of the owner's controlName",
     SI_LSM_LAM_CNTXTMEN_APPLY_VIS_ROWS = "Apply visibleRows",
@@ -41,6 +47,18 @@ local strings = {
     SI_LSM_LAM_CNTXTMEN_WHITELIST_DEL_TT = "Delete the control name from the whitelist",
     SI_LSM_LAM_CNTXTMEN_BLACKLIST_DEL = "Delete from blacklist",
     SI_LSM_LAM_CNTXTMEN_BLACKLIST_DEL_TT = "Delete the control name from the blacklist",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL = "Whitelist Exclusion",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL_TT = "Whitelist's controls which are excluded. Controls on this list will be shown as normal ZO_Menu (e.g. an owningWindow ZO_PlayerInventory is on the WhiteList but you want that 1 button ZO_PlayerInventoryFilterButton1 to use ZO_Menu instead).",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL_ADD = "Add to WL excl.",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL_ADD_TT = "Add the control name to the whitelist exclusion",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL_DEL = "Delete from WL excl.",
+    SI_LSM_LAM_CNTXTMEN_WHITELISTEXCL_DEL_TT = "Delete the control name from the whitelist exclusion",
+
+    SI_LSM_LAM_CNTXTMEN_FIRST_SUB_CALLBACK = "Select 1st submenu entry on click",
+    SI_LSM_LAM_CNTXTMEN_FIRST_SUB_CALLBACK_TT = "If an entry got a submenu and that entry was added by LibCustomMenu (and not LSM itsself):\nYou can click the entry that opens the submenu and it will automatically select the first submenu's entry that way, so you do not have to open the submenu and select the 1st entry manually.",
+    SI_LSM_LAM_CNTXTMEN_FIRST_SUB_IFONLYONE = "Only if submenu got 1 entry",
+    SI_LSM_LAM_CNTXTMEN_FIRST_SUB_IFONLYONE_TT = "Only select the first submenu's entry if the submenu got just 1 entry.",
+
 
     SI_LSM_MOC_TEMPLATE = "Control names - below the cursor: %s, parent: %s, owning window: %s"
 }
