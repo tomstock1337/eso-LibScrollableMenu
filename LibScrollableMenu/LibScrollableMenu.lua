@@ -4917,7 +4917,7 @@ function contextMenuClass:ShowContextMenu(parentControl)
 		end
 	end
 
-d("->->->->->->-> [LSM]ContextMenuClass:ShowContextMenu -> ShowDropdown now!")
+--d("->->->->->->-> [LSM]ContextMenuClass:ShowContextMenu -> ShowDropdown now!")
 	self:ShowDropdown()
 
 	throttledCall(function()
@@ -5326,7 +5326,7 @@ end
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	dLog(LSM_LOGTYPE_DEBUG, "ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
-df("_-_-_-_-_-_-_-_-_-_ [LSM]ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+--df("_-_-_-_-_-_-_-_-_-_ [LSM]ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
 
 	if options then
 		setCustomScrollableMenuOptions(options)
