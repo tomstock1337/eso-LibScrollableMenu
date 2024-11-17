@@ -915,7 +915,7 @@ local function storeZO_MenuItemDataForLSM(index, mytext, myfunction, itemType, m
 			["entries"] = entries,
 		}
 		lastAddedZO_MenuItem.item.entryData = dataToAdd
-d(">lastAddedZO_MenuItem.item.submenuData set for '"..tos(mytext).."', entries: " .. tos(entries) .. ", myFunction: " .. tos(myfunction))
+--d(">lastAddedZO_MenuItem.item.submenuData set for '"..tos(mytext).."', entries: " .. tos(entries) .. ", myFunction: " .. tos(myfunction))
 		lastAddedZO_MenuItem.item.submenuData = (entries ~= nil and dataToAdd) or nil
 
 		--Map the entry of ZO_Menu to LSM entries now and add it to our internal ZO_MenuData table
