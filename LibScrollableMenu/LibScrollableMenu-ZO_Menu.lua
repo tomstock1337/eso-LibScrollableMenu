@@ -679,6 +679,8 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 				submenuEntries = {}
 				local numSubmenuItems = #submenuItems
 				for submenuIdx, submenuEntry in ipairs(submenuItems) do
+					submenuEntry.itemType = submenuEntry.itemType or MENU_ADD_OPTION_LABEL
+
 					local submenuEntryCallbackFunc = submenuEntry.callback
 					local submenuEntryCallbackFuncIsFunc = (type(submenuEntryCallbackFunc) == "function" and true) or false
 
@@ -699,9 +701,12 @@ end
 
 					--Only on first submenu entry and if it's a normal entry: Check if tit's callback fucntion should be passed on to the submenu's opening control
 					if submenuIdx == 1 and submenuAutoSelectFirstEntry == true then
---d("[LSM]submenuEntryCallbackFunc: " .. tos(submenuEntryCallbackFuncIsFunc) .. ", name: " .. tos(submenuEntry.label or submenuEntry.name) .. ", numEntries: " .. tos(submenuAutoSelectFirstEntryIfOnlyN) .. "/" .. tos(submenuAutoSelectFirstEntryIfOnlyN) .. ", itemType: " ..tos(submenuEntry.itemType) .. ", entries: " ..tos(submenuEntry.entries) .. ", hasSubmenu: " ..tos(submenuEntry.hasSubmenu))
+--lib._debugContextMenuSubmenuItems = lib._debugContextMenuSubmenuItems or {}
+--lib._debugContextMenuSubmenuItems[submenuEntry.label or submenuEntry.name] = ZO_ShallowTableCopy(submenuItems)
+
+--d("[LSM]submenuEntryCallbackFunc: " .. tos(submenuEntryCallbackFuncIsFunc) .. ", name: " .. tos(submenuEntry.label or submenuEntry.name) .. ", numEntries: " .. tos(numSubmenuItems) .. "/" .. tos(submenuAutoSelectFirstEntryIfOnlyN) .. ", itemType: " ..tos(submenuEntry.itemType) .. ", entries: " ..tos(submenuEntry.entries) .. ", hasSubmenu: " ..tos(submenuEntry.hasSubmenu))
 						if (submenuEntry.itemType == MENU_ADD_OPTION_LABEL and (not submenuEntry.hasSubmenu and submenuEntry.entries == nil)) then
-							if callbackFunc == nil and (submenuAutoSelectFirstEntryIfOnlyN == 0 or (submenuAutoSelectFirstEntryIfOnlyN > 0 and numSubmenuItems >= submenuAutoSelectFirstEntryIfOnlyN)) then
+							if callbackFunc == nil and (submenuAutoSelectFirstEntryIfOnlyN == 0 or (submenuAutoSelectFirstEntryIfOnlyN > 0 and submenuAutoSelectFirstEntryIfOnlyN >= numSubmenuItems)) then
 								if submenuEntryCallbackFuncIsFunc == true then
 --d(">replaced submenu opening entry '" .. tos(entryName) .."' callbackFunc with 1st submenu entry's callbackFunc")
 									callbackFunc = submenuEntryCallbackFunc
