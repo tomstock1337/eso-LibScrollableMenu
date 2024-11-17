@@ -5662,10 +5662,6 @@ local function onAddonLoaded(event, name)
 			end
 		end
 	end
-	SLASH_COMMANDS["/lsmdebugcontextmenu"] = function()
-		lib.debugLCM_ZO_Menu_Replacement = not lib.debugLCM_ZO_Menu_Replacement
-		d("["..MAJOR.."]Debugging ZO_Menu -> LSM replace context menus: " .. tos(lib.debugLCM_ZO_Menu_Replacement))
-	end
 end
 EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
 EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
