@@ -171,15 +171,18 @@ function lib.BuildLAMSettingsMenu()
 			default = false,
 		},
 		{
-			type = "checkbox",
+			type = "slider",
     		name = GetString(SI_LSM_LAM_CNTXTMEN_FIRST_SUB_IFONLYONE),
     		tooltip = GetString(SI_LSM_LAM_CNTXTMEN_FIRST_SUB_IFONLYONE_TT),
+			min = 0,
+			max = 50,
+			step = 1,
 			getFunc = function() return sv.contextMenuReplacementControls.submenuAutoSelectFirstEntryIfOnlyOne end,
-			setFunc = function(checked)
-				sv.contextMenuReplacementControls.submenuAutoSelectFirstEntryIfOnlyOne = checked
+			setFunc = function(value)
+				sv.contextMenuReplacementControls.submenuAutoSelectFirstEntryIfOnlyOne = value
 			end,
 			disabled = function() return not sv.ZO_MenuContextMenuReplacement or not sv.contextMenuReplacementControls.submenuAutoSelectFirstEntry end,
-			default = false,
+			default = 0,
 		},
 
 		{
