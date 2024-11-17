@@ -582,6 +582,7 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 		local isCheckbox = ((ZO_Menu_ItemCtrl.itemType == MENU_ADD_OPTION_CHECKBOX or isZO_MenuEntryHavingCheckbox) and true) or false
 		if isZO_MenuEntryHavingCheckbox == true then
 			--Get ZO_Menu's checkbox's current checked state
+--d(">" .. ZO_MenuItemData.item.entryData.mytext .. " got checkbox!")
 			isChecked = ZO_CheckButton_IsChecked(ZO_MenuItemData.checkbox)
 		end
 		local isDivider = false
@@ -620,7 +621,6 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 		--Submenu's 1st entry callback should be clicked if submenu opening entry is clicked? Only if LCM is loaded!
 		local submenuAutoSelectFirstEntry = false
 		local submenuAutoSelectFirstEntryIfOnlyOne = SVcontextMenuReplacementControls.submenuAutoSelectFirstEntryIfOnlyOne
-		local firstEntryCallback
 
 --======================================================================================================================
 --======================================================================================================================
@@ -651,6 +651,7 @@ local function mapZO_MenuItemToLSMEntry(ZO_MenuItemData, menuIndex, isBuildingSu
 			local entryDataFunc = entryData.myfunction
 			local entryDataFuncIsFunc = (type(entryDataFunc) == "function" and true) or false
 
+--d(">entryDataFuncIsFunc: ".. tos(entryDataFuncIsFunc))
 			-->LCM Submenu
 --======================================================================================================================
 			if submenuData ~= nil and not ZO_IsTableEmpty(submenuItems) then
@@ -696,12 +697,12 @@ if submenuEntryCallbackFunc == nil then
 end
 ]]
 
-					if submenuIdx == 1 and submenuAutoSelectFirstEntry == true then
+					--Only on first submenu entry and if it's a normal entry: Check if tit's callback fucntion should be passed on to the submenu's opening control
+					if submenuIdx == 1 and submenuAutoSelectFirstEntry == true and submenuEntry.itemType == LSM_ENTRY_TYPE_NORMAL then
 --d("[LSM]submenuEntryCallbackFunc: " .. tos(submenuEntryCallbackFuncIsFunc) .. ", name: " .. tos(submenuEntry.label or submenuEntry.name))
 						if callbackFunc == nil and (not submenuAutoSelectFirstEntryIfOnlyOne or (submenuAutoSelectFirstEntryIfOnlyOne == true and numSubmenuItems == 1)) then
 							if submenuEntryCallbackFuncIsFunc == true then
 --d(">replaced submenu opening entry '" .. tos(entryName) .."' callbackFunc with 1st submenu entry's callbackFunc")
-								firstEntryCallback = submenuEntryCallbackFunc
 								callbackFunc = submenuEntryCallbackFunc
 							end
 						end
@@ -800,6 +801,7 @@ end
 			callbackFunc = 	callbackFunc
 			--No callbackfunc for an entry which opens a submenu, if there was no callback func defined
 			if callbackFunc == nil and submenuEntries == nil then
+--d(">callbackFunc was nil and no submenu: Setting ZO_Menu_ItemCtrl.OnSelect as callbackFunc")
 				callbackFunc = ZO_Menu_ItemCtrl.OnSelect
 			end
 			isHeader = 		isHeader or ZO_Menu_ItemCtrl.isHeader
@@ -912,7 +914,7 @@ local function storeZO_MenuItemDataForLSM(index, mytext, myfunction, itemType, m
 			["entries"] = entries,
 		}
 		lastAddedZO_MenuItem.item.entryData = dataToAdd
---d(">lastAddedZO_MenuItem.item.submenuData set for '"..tos(mytext).."', entries: " .. tos(entries))
+d(">lastAddedZO_MenuItem.item.submenuData set for '"..tos(mytext).."', entries: " .. tos(entries) .. ", myFunction: " .. tos(myfunction))
 		lastAddedZO_MenuItem.item.submenuData = (entries ~= nil and dataToAdd) or nil
 
 		--Map the entry of ZO_Menu to LSM entries now and add it to our internal ZO_MenuData table
@@ -1065,6 +1067,7 @@ local function addZO_Menu_ShowMenuHook()
 							--Change the callback which creates the submenu within LCM usually as we do not need that for LibScrollableMenu!
 							-->If we would leave it as it is it would show the entry of the submenu opening control "green" as if we could click it
 							onSelect = nil
+--d("[LSM]AddMenuItem - submenuEntry added! index: " .. tos(LCMLastAddedMenuItem.index))
 						else
 d("[LSM]ERROR - LCM submenuEntry, but current AddMenuItem data does not match LCMLastAddedMenuItem data!")
 lib._debugContextMenuErrors = lib._debugContextMenuErrors or {}
@@ -1089,7 +1092,7 @@ lib._debugContextMenuErrors[GetGameTimeMilliseconds()] = {
 			--Store the ZO_Menu/LCM last added entry to our LSM internal table now, with the mapped data to LSM context menu entry format
 			storeZO_MenuItemDataForLSM(lastAddedZO_MenuItemsIndex,
 					labelText,
-					onSelect,
+					onSelect, 				--callbackFunction
 					itemType,
 					labelFont,
 					normalColor,
