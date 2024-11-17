@@ -56,8 +56,8 @@ local strings = {
 
     SI_LSM_LAM_CNTXTMEN_FIRST_SUB_CALLBACK = "Select 1st submenu entry on click",
     SI_LSM_LAM_CNTXTMEN_FIRST_SUB_CALLBACK_TT = "If an entry got a submenu and that entry was added by LibCustomMenu (and not LSM itsself):\nYou can click the entry that opens the submenu and it will automatically select the first submenu's entry that way, so you do not have to open the submenu and select the 1st entry manually.",
-    SI_LSM_LAM_CNTXTMEN_FIRST_SUB_IFONLYONE = "Only if submenu got 1 entry",
-    SI_LSM_LAM_CNTXTMEN_FIRST_SUB_IFONLYONE_TT = "Only select the first submenu's entry if the submenu got just 1 entry.",
+    SI_LSM_LAM_CNTXTMEN_FIRST_SUB_IFONLYONE = "Only if submenu got # entries",
+    SI_LSM_LAM_CNTXTMEN_FIRST_SUB_IFONLYONE_TT = "Only automatically select the first submenu's entry if the submenu got this number of entries (default is 0 = Off/Do not check the #).",
 
 
     SI_LSM_MOC_TEMPLATE = "Control names - below the cursor: %s, parent: %s, owning window: %s"

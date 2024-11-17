@@ -86,7 +86,7 @@ local lsmSVDefaults = {
 		_wasChanged = false,
 		replaceAll = false,
 		submenuAutoSelectFirstEntry = false,
-		submenuAutoSelectFirstEntryIfOnlyOne = false,
+		submenuAutoSelectFirstEntryIfOnlyOne = 0,
 		whiteList = {},
 		whiteListExclusion = {},
 		blackList = {},
@@ -142,6 +142,10 @@ local function prepareSVValues()
 				end
 			end
 		end
+	end
+
+	if type(sv.contextMenuReplacementControls.submenuAutoSelectFirstEntryIfOnlyOne) == "boolean" then
+		sv.contextMenuReplacementControls.submenuAutoSelectFirstEntryIfOnlyOne = 0
 	end
 end
 
