@@ -698,7 +698,8 @@ end
 ]]
 
 					--Only on first submenu entry and if it's a normal entry: Check if tit's callback fucntion should be passed on to the submenu's opening control
-					if submenuIdx == 1 and submenuAutoSelectFirstEntry == true and submenuEntry.itemType == LSM_ENTRY_TYPE_NORMAL then
+					if submenuIdx == 1 and submenuAutoSelectFirstEntry == true
+						and submenuEntry.itemType == LSM_ENTRY_TYPE_NORMAL and not submenuEntry.hasSubmenu and submenuEntry.entries == nil then
 --d("[LSM]submenuEntryCallbackFunc: " .. tos(submenuEntryCallbackFuncIsFunc) .. ", name: " .. tos(submenuEntry.label or submenuEntry.name))
 						if callbackFunc == nil and (not submenuAutoSelectFirstEntryIfOnlyOne or (submenuAutoSelectFirstEntryIfOnlyOne == true and numSubmenuItems == 1)) then
 							if submenuEntryCallbackFuncIsFunc == true then
