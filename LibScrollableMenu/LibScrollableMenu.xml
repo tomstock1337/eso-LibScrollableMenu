@@ -365,10 +365,7 @@
 									/>
 
 									<OnMouseEnter>
-										local owningWindow = self:GetOwningWindow()
-										if owningWindow.object then
-											owningWindow.object:ShowTextTooltip(self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET), owningWindow)
-										end
+										LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET), nil)
 									</OnMouseEnter>
 
 									<OnMouseExit>
@@ -376,11 +373,7 @@
 									</OnMouseExit>
 									
 									<OnClicked>
-										ZO_Tooltips_HideTextTooltip()
-										local owningWindow = self:GetOwningWindow()
-										if owningWindow.object then
-											owningWindow.object:ResetFilters(owningWindow)
-										end
+										LibScrollableMenu.OnXMLControlEventHandler("ResetFilters", self, self:GetOwningWindow())
 									</OnClicked>
 								</Button>
 								
@@ -401,19 +394,13 @@
 									<Controls>
 										<EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
 											<OnTextChanged>
-												ZO_Tooltips_HideTextTooltip()
+												LibScrollableMenu.checkIfZO_MenuReplacementByLSMWasHookedAndPreventClearCustomScrollableMenuCall()
 												ClearMenu()
-												local owningWindow = self:GetOwningWindow()
-												if owningWindow.object then
-													owningWindow.object:SetFilterString(self)
-												end
+												LibScrollableMenu.OnXMLControlEventHandler("SetFilterString", self, self)
 											</OnTextChanged>
 
 											<OnMouseEnter>
-												local owningWindow = self:GetOwningWindow()
-												if owningWindow.object then
-													owningWindow.object:ShowTextTooltip(self, BOTTOM, GetString(SI_LSM_SEARCH_FILTER_TOOLTIP), owningWindow)
-												end
+												LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, GetString(SI_LSM_SEARCH_FILTER_TOOLTIP), nil)
 											</OnMouseEnter>
 
 											<OnMouseExit>
@@ -421,12 +408,7 @@
 											</OnMouseExit>
 
 											<OnMouseUp>
-												ZO_Tooltips_HideTextTooltip()
-												ClearMenu()
-												local owningWindow = self:GetOwningWindow()
-												if owningWindow.object then
-													owningWindow.object:OnFilterEditBoxMouseUp(self, button, upInside)
-												end
+												LibScrollableMenu.OnXMLControlEventHandler("OnFilterEditBoxMouseUp", self, self, button, upInside)
 											</OnMouseUp>
 										</EditBox>
 									</Controls>
@@ -553,10 +535,7 @@
 							/>
 
 							<OnMouseEnter>
-								local owningWindow = self:GetOwningWindow()
-								if owningWindow.object then
-									owningWindow.object:ShowTextTooltip(self, BOTTOM, self:GetTooltipText(), owningWindow)
-								end
+								LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, self:GetTooltipText(), nil)
 							</OnMouseEnter>
 
 							<OnMouseExit>
@@ -579,9 +558,8 @@
 
 							<OnMouseEnter>
 								local owningWindow = self:GetOwningWindow()
-								if owningWindow.object then
-									local toggleButton = owningWindow.toggleButton
-									owningWindow.object:ShowTextTooltip(self, BOTTOM, toggleButton:GetTooltipText(), owningWindow)
+								if owningWindow then
+									LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, owningWindow.toggleButton and owningWindow.toggleButton:GetTooltipText(), owningWindow)
 								end
 							</OnMouseEnter>
 
