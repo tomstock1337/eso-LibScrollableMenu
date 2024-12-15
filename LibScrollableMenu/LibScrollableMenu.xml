@@ -394,7 +394,6 @@
 									<Controls>
 										<EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
 											<OnTextChanged>
-												LibScrollableMenu.checkIfZO_MenuReplacementByLSMWasHookedAndPreventClearCustomScrollableMenuCall()
 												ClearMenu()
 												LibScrollableMenu.OnXMLControlEventHandler("SetFilterString", self, self)
 											</OnTextChanged>
