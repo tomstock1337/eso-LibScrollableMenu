@@ -315,7 +315,7 @@ local comboBoxDefaults = {
 	m_font = 						DEFAULT_FONT,
 	m_normalColor = 				DEFAULT_TEXT_COLOR,
 	m_highlightColor = 				DEFAULT_TEXT_HIGHLIGHT,
-	m_highlightTemplate =			LSM_ROW_HIGHLIGHT_DEFAULT,
+	m_highlightTemplate =			LSM_ROW_HIGHLIGHT_DEFAULT, --ZO_SelectionHighlight
 	m_customEntryTemplateInfos =	nil,
 	m_enableMultiSelect = 			false,
 	m_maxNumSelections = 			nil,
@@ -383,7 +383,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["headerCollapsed"] = 		"headerCollapsed",
 
 	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
-	-->!!!Attention: Add the entries which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below in this table here too!!!
+	-->!!!Attention: Add the entries, which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below, in this table here too!!!
 	['sortType'] = 				"m_sortType",
 	['sortOrder'] = 			"m_sortOrder",
 	['sortEntries'] = 			"m_sortsItems",
@@ -2590,10 +2590,11 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	-->>!!! ZO_ScrollList_EnableHighlight(self.scrollControl, function(control) end) cannot be used here as it does NOT overwrite existing highlightTemplateOrFunction !!!
 	local selfVar = self
 	self.scrollControl.highlightTemplateOrFunction = function(control)
+d("[LSM]highlightTemplateOrFunction - control: " .. tos(getControlName(control)) .. ", owner: " .. tos(selfVar.owner))
 		if selfVar.owner then
 			return selfVar.owner:GetHighlightTemplate(control)
 		end
-		return comboBoxDefaults.m_highlightTemplate --'ZO_SelectionHighlight'
+		return defaultHighlightTemplate --'ZO_SelectionHighlight'
 	end
 end
 
@@ -3609,6 +3610,7 @@ function comboBox_base:AddCustomEntryTemplates(options)
 			end
 		end
 	end
+	--Will be used in comboBox_base:GetHighLightTemplate to get the template data for the rowType
 	self.XMLRowHighlightTemplates = XMLrowHighlightTemplatesToUse
 
 
@@ -3807,7 +3809,7 @@ end
 
 function comboBox_base:UpdateHighlightTemplate(control, isSubMenu)
 	local highlightTemplateData = self:GetHighLightTemplate(control, isSubMenu)
-d("[LSM]UpdateHighlightTemplate - name: " .. tos(getControlName(control)) .. ", entryType: " .. tos(control.typeId) .. "; HLtemplae: " .. tos(highlightTemplateData.template) .. "; color: " .. tos(highlightTemplateData.color))
+d("[LSM]UpdateHighlightTemplate - name: " .. tos(getControlName(control)) .. ", entryType: " .. tos(control.typeId) .. "; HL_Template: " .. tos(highlightTemplateData.template) .. "; color: " .. tos(highlightTemplateData.color))
 
 	if not highlightTemplateData then
 		control.m_data.m_highlightTemplate = nil

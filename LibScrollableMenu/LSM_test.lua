@@ -138,9 +138,31 @@ local function test()
 						comboBox:SetupEntryLabel(control, data, list)
 					end,
 				}
-			}
-
+			},
 			]]
+
+			XMLRowHighlightTemplates = {
+				[lib.LSM_ENTRY_TYPE_NORMAL] = {
+					template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight",
+					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				},
+				[lib.LSM_ENTRY_TYPE_SUBMENU] = {
+					template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight", --Will be replaced with green if submenu entry got callback
+					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				},
+				[lib.LSM_ENTRY_TYPE_CHECKBOX] = {
+					template = lib.LSM_ROW_HIGHLIGHT_BLUE, --"LibScrollableMenu_Highlight_Blue",
+					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				},
+				[lib.LSM_ENTRY_TYPE_BUTTON] = {
+					template = lib.LSM_ROW_HIGHLIGHT_RED, --"LibScrollableMenu_Highlight_Red",
+					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				},
+				[lib.LSM_ENTRY_TYPE_RADIOBUTTON] = {
+					template = lib.LSM_ROW_HIGHLIGHT_WHITE, --"LibScrollableMenu_Highlight_White",
+					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				},
+			},
 		}
 
 		--Try to change the options of the scrollhelper as it gets created
