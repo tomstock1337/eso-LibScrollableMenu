@@ -3534,19 +3534,11 @@ function comboBox_base:AddCustomEntryTemplates(options)
 		end
 	end
 
-	--Update the current object's rowHeight for the different entryTypes
+	--Update the current object's rowHeight (normal entry type)
 	local normalEntryHeight = XMLrowTemplatesToUse[LSM_ENTRY_TYPE_NORMAL].rowHeight
-	--[[ todo: 20240506 Is tis still needed?
-	self.XMLrowHeights = self.XMLrowHeights or {}
-	self.XMLrowHeights[LSM_ENTRY_TYPE_NORMAL] = 			normalEntryHeight
-	self.XMLrowHeights[LSM_ENTRY_TYPE_DIVIDER] = 	XMLrowTemplatesToUse[LSM_ENTRY_TYPE_DIVIDER].rowHeight
-	self.XMLrowHeights[LSM_ENTRY_TYPE_HEADER] = 	XMLrowTemplatesToUse[LSM_ENTRY_TYPE_HEADER].rowHeight
-	]]
-
 	-- We will use this, per-comboBox, to set max rows.
 	self.baseEntryHeight = normalEntryHeight
-
-	dLog(LSM_LOGTYPE_VERBOSE, ">NORMAL_ENTRY_HEIGHT %s, DIVIDER_ENTRY_HEIGHT: %s, HEADER_ENTRY_HEIGHT: %s", tos(normalEntryHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_DIVIDER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_HEADER].rowHeight))
+	dLog(LSM_LOGTYPE_VERBOSE, ">NORMAL_ENTRY_HEIGHT %s, DIVIDER_ENTRY_HEIGHT: %s, HEADER_ENTRY_HEIGHT: %s, CHECKBOX_ENTRY_HEIGHT: %s, BUTTON_ENTRY_HEIGHT: %s, RADIOBUTTON_ENTRY_HEIGHT: %s", tos(normalEntryHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_DIVIDER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_HEADER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_CHECKBOX].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_BUTTON].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_RADIOBUTTON].rowHeight))
 end
 
 function comboBox_base:OnGlobalMouseUp(eventId, button)
