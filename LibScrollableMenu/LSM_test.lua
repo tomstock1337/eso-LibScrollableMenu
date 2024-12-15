@@ -139,7 +139,6 @@ local function test()
 					end,
 				}
 			},
-			]]
 
 			XMLRowHighlightTemplates = {
 				[lib.LSM_ENTRY_TYPE_NORMAL] = {
@@ -159,10 +158,11 @@ local function test()
 					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
 				},
 				[lib.LSM_ENTRY_TYPE_RADIOBUTTON] = {
-					template = lib.LSM_ROW_HIGHLIGHT_WHITE, --"LibScrollableMenu_Highlight_White",
+					template = lib.LSM_ROW_HIGHLIGHT_OPAQUE, --"LibScrollableMenu_Highlight_White",
 					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
 				},
 			},
+			]]
 		}
 
 		--Try to change the options of the scrollhelper as it gets created

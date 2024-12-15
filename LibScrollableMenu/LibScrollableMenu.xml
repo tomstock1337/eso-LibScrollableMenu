@@ -13,7 +13,7 @@
 		<Backdrop name="LibScrollableMenu_Highlight_Green" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00"/>
 		<Backdrop name="LibScrollableMenu_Highlight_Red" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="ff0000" edgeColor="ff0000"/>
 		<Backdrop name="LibScrollableMenu_Highlight_Blue" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="0000ff" edgeColor="0000ff"/>
-		<Backdrop name="LibScrollableMenu_Highlight_White" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="ffffff" edgeColor="ffffff"/>
+		<Backdrop name="LibScrollableMenu_Highlight_Opaque" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="0F0F0F" edgeColor="0F0F0F"/>
 
 		<!-- Divider | no icon no handlers -->
 		<Texture name="LibScrollableMenu_ComboBoxDividerEntry" inherits="ZO_BaseTooltipDivider" virtual="true">
