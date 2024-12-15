@@ -2590,7 +2590,7 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	-->>!!! ZO_ScrollList_EnableHighlight(self.scrollControl, function(control) end) cannot be used here as it does NOT overwrite existing highlightTemplateOrFunction !!!
 	local selfVar = self
 	self.scrollControl.highlightTemplateOrFunction = function(control)
-d("[LSM]highlightTemplateOrFunction - control: " .. tos(getControlName(control)) .. ", owner: " .. tos(selfVar.owner))
+--d("[LSM]highlightTemplateOrFunction - control: " .. tos(getControlName(control)) .. ", owner: " .. tos(selfVar.owner))
 		if selfVar.owner then
 			return selfVar.owner:GetHighlightTemplate(control)
 		end
@@ -3787,15 +3787,6 @@ function comboBox_base:GetHighLightTemplate(control, isSubMenu)
 	if not entryType then return end
 	local highlightTemplateData = self.XMLRowHighlightTemplates[entryType]
 
---todo for debugging 20241215 because somehow the normal row templates get replaced and all text is realy small???
---todo not only the highlight is changed
-	--[[
-	highlightTemplateData = {
-		template = defaultHighlightTemplate,
-		color = defaultHighlightColor,
-	}
-	]]
-
 	if isSubMenu and control.closeOnSelect then
 		local options = self:GetOptions()
 		if options and not options.useDefaultHighlightForSubmenuWithCallback then
@@ -3809,7 +3800,7 @@ end
 
 function comboBox_base:UpdateHighlightTemplate(control, isSubMenu)
 	local highlightTemplateData = self:GetHighLightTemplate(control, isSubMenu)
-d("[LSM]UpdateHighlightTemplate - name: " .. tos(getControlName(control)) .. ", entryType: " .. tos(control.typeId) .. "; HL_Template: " .. tos(highlightTemplateData.template) .. "; color: " .. tos(highlightTemplateData.color))
+--d("[LSM]UpdateHighlightTemplate - name: " .. tos(getControlName(control)) .. ", entryType: " .. tos(control.typeId) .. "; HL_Template: " .. tos(highlightTemplateData.template) .. "; color: " .. tos(highlightTemplateData.color))
 
 	if not highlightTemplateData then
 		control.m_data.m_highlightTemplate = nil
@@ -4209,8 +4200,6 @@ do -- Row setup functions
 		self:SetupEntryLabel(control, data, list)
 		control.isHeader = true
 		control.typeId = LSM_ENTRY_TYPE_HEADER
-
-		--self:UpdateHighlightTemplate(control, nil)
 	end
 
 
