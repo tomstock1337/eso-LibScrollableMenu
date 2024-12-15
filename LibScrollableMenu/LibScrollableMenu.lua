@@ -2974,7 +2974,7 @@ function dropdownClass:OnShow(formattedEventName)
 	if formattedEventName ~= nil then
 		local anchorRight = self.anchorRight and 'Right' or 'Left'
 		local ctrl = self.control
-		lib:FireCallbacks(formattedEventName, ctrl)
+		lib:FireCallbacks(formattedEventName, ctrl, self)
 
 		throttledCall(function()
 			self:Narrate(formattedEventName, ctrl, nil, nil, anchorRight)
@@ -2988,7 +2988,7 @@ function dropdownClass:OnHide(formattedEventName)
 	if formattedEventName ~= nil then
 		local ctrl = self.control
 		self:Narrate(formattedEventName, ctrl)
-		lib:FireCallbacks(formattedEventName, ctrl)
+		lib:FireCallbacks(formattedEventName, ctrl, self)
 	end
 end
 
@@ -5526,7 +5526,7 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-15
 	4. Contextmenu API functions return the index/indices of added entry/entries and boolean values (where applicable)
 	5. Changed XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
 	6. Fixed XMLRowTemplates using a non capital R at some locations
-
+	7. Handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
 
 -------------------
 TODO - To check (future versions)

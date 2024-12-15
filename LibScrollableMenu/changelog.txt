@@ -3,7 +3,9 @@
 -Renamed API function lib.SetButtonGroupState to lib.ButtonGroupDefaultContextMenu as the name was missleading. It never changed or set any values directly it only added a contextmenu where you could choose "Select all", "Select none", "Invers"
 -Bug fix: Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
 -Bug fix: Name of handler for context menu show and hide changed to proper Uppercase OnContextMenu*
+-Bug fix: XMLRowTemplates using a non capital R at some locations
 -Changed XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
+-Handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
 
 
 -v- ---------------LSM v2.32 - 2024-10-19---------------------------------------------------------------------------- -v-
