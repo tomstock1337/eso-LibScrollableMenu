@@ -288,7 +288,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				end,
 				--tooltip         = "Submenu Entry Test 1",
 				--icon 			= nil,
-				m_highlightTemplate = "LibScrollableMenu_Highlight_Red",
+				m_highlightTemplate = lib.LSM_ROW_HIGHLIGHT_RED --"LibScrollableMenu_Highlight_Red",
 			},
 			{
 

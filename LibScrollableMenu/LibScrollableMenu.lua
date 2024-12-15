@@ -232,6 +232,24 @@ local entryTypesForContextMenuWithoutMandatoryCallback = {
 }
 --lib.entryTypesForContextMenuWithoutMandatoryCallback = entryTypesForContextMenuWithoutMandatoryCallback
 
+--Row highlights (on mouse enter)
+local LSM_ROW_HIGHLIGHT_DEFAULT = 	'ZO_SelectionHighlight'
+local LSM_ROW_HIGHLIGHT_GREEN = 	'LibScrollableMenu_Highlight_Green'
+local LSM_ROW_HIGHLIGHT_BLUE = 		'LibScrollableMenu_Highlight_Blue'
+local LSM_ROW_HIGHLIGHT_RED = 		'LibScrollableMenu_Highlight_Red'
+local LSM_ROW_HIGHLIGHT_WHITE = 	'LibScrollableMenu_Highlight_White'
+lib.LSM_ROW_HIGHLIGHT_DEFAULT = 	LSM_ROW_HIGHLIGHT_DEFAULT
+lib.LSM_ROW_HIGHLIGHT_GREEN = 		LSM_ROW_HIGHLIGHT_GREEN
+lib.LSM_ROW_HIGHLIGHT_BLUE = 		LSM_ROW_HIGHLIGHT_BLUE
+lib.LSM_ROW_HIGHLIGHT_RED = 		LSM_ROW_HIGHLIGHT_RED
+lib.LSM_ROW_HIGHLIGHT_WHITE = 		LSM_ROW_HIGHLIGHT_WHITE
+
+--The default row highlight data for an entry having a submenu, where the entry itsself got a callback
+local defaultHighlightTemplateDataEntryHavingSubMenuWithCallback = {
+	template = LSM_ROW_HIGHLIGHT_GREEN, --green row
+	color = DEFAULT_TEXT_HIGHLIGHT,
+}
+
 
 ------------------------------------------------------------------------------------------------------------------------
 --Entries key mapping
@@ -297,7 +315,7 @@ local comboBoxDefaults = {
 	m_font = 						DEFAULT_FONT,
 	m_normalColor = 				DEFAULT_TEXT_COLOR,
 	m_highlightColor = 				DEFAULT_TEXT_HIGHLIGHT,
-	m_highlightTemplate =			'ZO_SelectionHighlight',
+	m_highlightTemplate =			LSM_ROW_HIGHLIGHT_DEFAULT,
 	m_customEntryTemplateInfos =	nil,
 	m_enableMultiSelect = 			false,
 	m_maxNumSelections = 			nil,
@@ -315,6 +333,10 @@ local comboBoxDefaults = {
 }
 lib.comboBoxDefaults = comboBoxDefaults
 
+local defaultHighlightTemplate = comboBoxDefaults.m_highlightTemplate
+local defaultHighlightColor = comboBoxDefaults.m_highlightColor
+
+
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
 local defaultComboBoxOptions  = {
 	["visibleRowsDropdown"] = 		DEFAULT_VISIBLE_ROWS,
@@ -328,6 +350,7 @@ local defaultComboBoxOptions  = {
 	["headerCollapsible"] = 		false,
 	["headerCollapsed"] =			false,
 	--["XMLRowTemplates"] = 		table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
+	--["XMLRowHighlightTemplates"] =table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 }
 lib.defaultComboBoxOptions  = defaultComboBoxOptions
 
@@ -461,6 +484,7 @@ local submenuClass_exposedVariables = {
 	['narrateData'] = true,
 	['m_headerFont'] = true,
 	['XMLRowTemplates'] = true, --TODO: is this being overwritten?
+	['XMLRowHighlightTemplates'] = true, --TODO: is this being overwritten?
 	['maxDropdownHeight'] = true,
 	['m_headerFontColor'] = true,
 	['m_highlightTemplate'] = true,
@@ -1923,6 +1947,7 @@ local function validateEntryType(item)
 	item.entryType = entryType
 end
 
+--After item's setupFunction was executed we need to run some extra functions on each subitem (submenus e.g.)?
 local function runPostItemSetupFunction(comboBox, itemEntry)
 	local postItem_SetupFunc = postItemSetupFunctions[itemEntry.entryType]
 	if postItem_SetupFunc then
@@ -1945,7 +1970,7 @@ end
 local function addItem_Base(self, itemEntry)
 	dLog(LSM_LOGTYPE_VERBOSE, "addItem_Base - itemEntry: " ..tos(itemEntry))
 
-	--Get/build data.label and/or data.name / data.* values (see table )
+	--Get/build data.label and/or data.name / data.* values, and others (see table LSMEntryKeyZO_ComboBoxEntryKey)
 	updateDataValues(itemEntry)
 
 	--Validate the entryType now
@@ -1954,7 +1979,6 @@ local function addItem_Base(self, itemEntry)
 	if not itemEntry.customEntryTemplate then
 		--Set it's XML entry row template
 		setItemEntryCustomTemplate(itemEntry, self.XMLRowTemplates)
-
 		--dLog(LSM_LOGTYPE_DEBUG, ">name: " .. tos(itemEntry.name) .. ", isHeader: " ..tos(itemEntry.isHeader))
 	end
 
@@ -3444,15 +3468,14 @@ local function getTemplateData(entryType, template)
 	return templateDataForEntryType.template, templateDataForEntryType.rowHeight, templateDataForEntryType.setupFunc, templateDataForEntryType.widthPadding
 end
 
-function comboBox_base:AddCustomEntryTemplates(options)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:AddCustomEntryTemplates - options: %s", tos(options))
+local function getDefaultXMLTemplates(selfVar)
 	--The virtual XML templates, with their setup functions for the row controls, for the different row types
 	local defaultXMLTemplates  = {
 		[LSM_ENTRY_TYPE_NORMAL] = {
 			template = 'LibScrollableMenu_ComboBoxEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
-				self:SetupEntryLabel(control, data, list)
+				selfVar:SetupEntryLabel(control, data, list, LSM_ENTRY_TYPE_NORMAL)
 			end,
 		},
 		[LSM_ENTRY_TYPE_SUBMENU] = {
@@ -3460,21 +3483,21 @@ function comboBox_base:AddCustomEntryTemplates(options)
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
-				self:SetupEntrySubmenu(control, data, list)
+				selfVar:SetupEntrySubmenu(control, data, list)
 			end,
 		},
 		[LSM_ENTRY_TYPE_DIVIDER] = {
 			template = 'LibScrollableMenu_ComboBoxDividerEntry',
 			rowHeight = DIVIDER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
-				self:SetupEntryDivider(control, data, list)
+				selfVar:SetupEntryDivider(control, data, list)
 			end,
 		},
 		[LSM_ENTRY_TYPE_HEADER] = {
 			template = 'LibScrollableMenu_ComboBoxHeaderEntry',
 			rowHeight = HEADER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
-				self:SetupEntryHeader(control, data, list)
+				selfVar:SetupEntryHeader(control, data, list)
 			end,
 		},
 		[LSM_ENTRY_TYPE_CHECKBOX] = {
@@ -3482,7 +3505,7 @@ function comboBox_base:AddCustomEntryTemplates(options)
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
-				self:SetupEntryCheckbox(control, data, list)
+				selfVar:SetupEntryCheckbox(control, data, list)
 			end,
 		},
 		[LSM_ENTRY_TYPE_BUTTON] = {
@@ -3490,7 +3513,7 @@ function comboBox_base:AddCustomEntryTemplates(options)
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
-				self:SetupEntryButton(control, data, list)
+				selfVar:SetupEntryButton(control, data, list)
 			end,
 		},
 		[LSM_ENTRY_TYPE_RADIOBUTTON] = {
@@ -3498,11 +3521,50 @@ function comboBox_base:AddCustomEntryTemplates(options)
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
-				self:SetupEntryRadioButton(control, data, list)
+				selfVar:SetupEntryRadioButton(control, data, list)
 			end,
 		},
 	}
-	lib.DefaultXMLTemplates = defaultXMLTemplates
+
+	--The virtual XML highlight templates (mouse moved above an antry), for the different row types
+	local defaultXMLHighlightTemplates = {
+		[LSM_ENTRY_TYPE_NORMAL] = {
+			template = defaultHighlightTemplate,
+			color = defaultHighlightColor,
+		},
+		[LSM_ENTRY_TYPE_SUBMENU] = {
+			template = defaultHighlightTemplate,
+			color = defaultHighlightColor,
+		},
+		[LSM_ENTRY_TYPE_DIVIDER] = {
+			template = defaultHighlightTemplate,
+			color = defaultHighlightColor,
+		},
+		[LSM_ENTRY_TYPE_HEADER] = {
+			template = defaultHighlightTemplate,
+			color = defaultHighlightColor,
+		},
+		[LSM_ENTRY_TYPE_CHECKBOX] = {
+			template = defaultHighlightTemplate,
+			color = defaultHighlightColor,
+		},
+		[LSM_ENTRY_TYPE_BUTTON] = {
+			template = defaultHighlightTemplate,
+			color = defaultHighlightColor,
+		},
+		[LSM_ENTRY_TYPE_RADIOBUTTON] = {
+			template = defaultHighlightTemplate,
+			color = defaultHighlightColor,
+		},
+	}
+	return defaultXMLTemplates, defaultXMLHighlightTemplates
+end
+
+--Called from comboBoxClass:UpdateOptions
+function comboBox_base:AddCustomEntryTemplates(options)
+	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:AddCustomEntryTemplates - options: %s", tos(options))
+
+	local defaultXMLTemplates, defaultXMLHighlightTemplates = getDefaultXMLTemplates(self)
 
 	--Were any options and options.XMLRowTemplates passed in?
 	local optionTemplates = options and getValueOrCallback(options.XMLRowTemplates, options)
@@ -3520,6 +3582,35 @@ function comboBox_base:AddCustomEntryTemplates(options)
 		end
 	end
 	self.XMLRowTemplates = XMLrowTemplatesToUse
+
+
+	--Custom highlight XML templates from options:
+	--Was "one" highlight template (or color) provided, then use this for all row's entryTypes
+	local customHighlightTemplateForAllEntryTypes = options and getValueOrCallback(options.highlightTemplate, options)
+	local customHighlightColorForAllEntryTypes = options and getValueOrCallback(options.highlightColor, options)
+	--Were any options and options.XMLRowHighlightTemplates passed in?
+	local optionHighlightTemplates = options and getValueOrCallback(options.XMLRowHighlightTemplates, options)
+
+	--Copy the default XML templates to a new table (protect original one against changes!)
+	local XMLrowHighlightTemplatesToUse = ZO_ShallowTableCopy(defaultXMLHighlightTemplates)
+	--Check if all XML row highlight templates are passed in, and update missing ones with default values
+	--or set the template/color that should be used for all of the entryTypes
+	if optionHighlightTemplates or customHighlightTemplateForAllEntryTypes or customHighlightColorForAllEntryTypes then
+--d("[LSM]options.XMLRowHighlightTemplates found!")
+		for entryType, _ in pairs(defaultXMLHighlightTemplates) do
+			if customHighlightTemplateForAllEntryTypes ~= nil then
+				XMLrowHighlightTemplatesToUse[entryType].template = customHighlightTemplateForAllEntryTypes
+			elseif optionHighlightTemplates and optionHighlightTemplates[entryType] then
+				--ZOs function overwrites exising table entries!
+				zo_mixin(XMLrowHighlightTemplatesToUse[entryType], optionHighlightTemplates[entryType])
+			end
+			if customHighlightColorForAllEntryTypes ~= nil then
+				XMLrowHighlightTemplatesToUse[entryType].color = customHighlightColorForAllEntryTypes
+			end
+		end
+	end
+	self.XMLRowHighlightTemplates = XMLrowHighlightTemplatesToUse
+
 
 	--Set the row templates to use to the current object
 	--[[ for debugging
@@ -3592,15 +3683,7 @@ function comboBox_base:GetDropdownObject(comboBoxContainer, depth)
 	return dropdownClass:New(self, comboBoxContainer, depth)
 end
 
---[[
-function comboBox_base:GetHighlightTemplate(control)
-	local controlData = getControlData(control)
-	return (controlData ~= nil and controlData.m_highlightTemplate) or
-			(control.m_data ~= nil and control.m_data.m_highlightTemplate)
-			or self.m_highlightTemplate
-end
-]]
-
+--Get the highlight XML template for the entry
 function comboBox_base:GetHighlightTemplate(control)
 --	local animationFieldName = 'HighlightAnimation'
 	local highlightTemplate = (control.m_data ~= nil and control.m_data.m_highlightTemplate) or self.m_highlightTemplate
@@ -3695,11 +3778,43 @@ function comboBox_base:HiddenForReasons(button)
 	return hiddenForReasons(owningWindow, mocCtrl, comboBox, mocEntry)
 end
 
-function comboBox_base:UpdateHighlightTemplate(control, highlightTemplate)
-	if not highlightTemplate then
+--Get the current row's highlight template based on the options
+function comboBox_base:GetHighLightTemplate(control, isSubMenu)
+	--Get the highlight template based on the entryType
+	local entryType = control.typeId
+	if not entryType then return end
+	local highlightTemplateData = self.XMLRowHighlightTemplates[entryType]
+
+--todo for debugging 20241215 because somehow the normal row templates get replaced and all text is realy small???
+--todo not only the highlight is changed
+	--[[
+	highlightTemplateData = {
+		template = defaultHighlightTemplate,
+		color = defaultHighlightColor,
+	}
+	]]
+
+	if isSubMenu and control.closeOnSelect then
+		local options = self:GetOptions()
+		if options and not options.useDefaultHighlightForSubmenuWithCallback then
+			--Color the highlight light row green if the submenu has a callback (entry opening a submenu can be clicked to select it)
+			--but keep the color of the text as defined in options (self.XMLRowHighlightTemplates[entryType].color)
+			highlightTemplateData.template = defaultHighlightTemplateDataEntryHavingSubMenuWithCallback.template
+		end
+	end
+	return highlightTemplateData
+end
+
+function comboBox_base:UpdateHighlightTemplate(control, isSubMenu)
+	local highlightTemplateData = self:GetHighLightTemplate(control, isSubMenu)
+d("[LSM]UpdateHighlightTemplate - name: " .. tos(getControlName(control)) .. ", entryType: " .. tos(control.typeId) .. "; HLtemplae: " .. tos(highlightTemplateData.template) .. "; color: " .. tos(highlightTemplateData.color))
+
+	if not highlightTemplateData then
 		control.m_data.m_highlightTemplate = nil
+		control.m_data.m_highlightColor = nil
 	elseif not control.m_data.m_highlightTemplate then
-		control.m_data.m_highlightTemplate = highlightTemplate
+		control.m_data.m_highlightTemplate = highlightTemplateData.template --or defaultHighlightTemplate
+		control.m_data.m_highlightColor = highlightTemplateData.color --or defaultHighlightColor
 	end
 end
 
@@ -4063,12 +4178,16 @@ do -- Row setup functions
 		self:SetupEntryBase(control, data, list)
 	end
 
-	function comboBox_base:SetupEntryLabel(control, data, list)
+	function comboBox_base:SetupEntryLabel(control, data, list, realEntryType)
 		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryLabel - control: %s, list: %s,", tos(getControlName(control)), tos(list))
 		control.typeId = LSM_ENTRY_TYPE_NORMAL
 		addIcon(control, data, list)
 		addLabel(control, data, list)
 		self:SetupEntryLabelBase(control, data, list)
+
+		if realEntryType == LSM_ENTRY_TYPE_NORMAL then
+			self:UpdateHighlightTemplate(control, nil)
+		end
 	end
 
 	function comboBox_base:SetupEntrySubmenu(control, data, list)
@@ -4079,20 +4198,7 @@ do -- Row setup functions
 
 --d("[LSM]submenu setup: - name: " .. tos(getValueOrCallback(data.label or data.name, data)) ..", closeOnSelect: " ..tos(control.closeOnSelect) .. "; m_highlightTemplate: " ..tos(data.m_highlightTemplate) )
 
-		--Color the highlight light green if the submenu has a callback (entry opening a submenu can be clicked to select it)
-		local options = self:GetOptions()
-		local useDefaultHighlightForSubmenuWithCallback = (options ~= nil and options.useDefaultHighlightForSubmenuWithCallback) or false
-		
-		local highlightTemplate
-		
-		if not useDefaultHighlightForSubmenuWithCallback then
-		--	if control.closeOnSelect and not data.m_highlightTemplate then
-			if control.closeOnSelect then
-				highlightTemplate = 'LibScrollableMenu_Highlight_Green'
-			end
-		end
-		
-		self:UpdateHighlightTemplate(control, highlightTemplate)
+		self:UpdateHighlightTemplate(control, true)
 	end
 	
 	function comboBox_base:SetupEntryHeader(control, data, list)
@@ -4101,6 +4207,8 @@ do -- Row setup functions
 		self:SetupEntryLabel(control, data, list)
 		control.isHeader = true
 		control.typeId = LSM_ENTRY_TYPE_HEADER
+
+		--self:UpdateHighlightTemplate(control, nil)
 	end
 
 
@@ -4125,6 +4233,8 @@ do -- Row setup functions
 		self:SetupEntryLabel(control, data, list)
 		control.isRadioButton = true
 		control.typeId = LSM_ENTRY_TYPE_RADIOBUTTON
+
+		self:UpdateHighlightTemplate(control, nil)
 
 		local radioButton, radioButtonGroup = addButton(self, control, data, toggleFunction)
 		if radioButtonGroup then
@@ -4158,6 +4268,8 @@ do -- Row setup functions
 		control.isCheckbox = true
 		control.typeId = LSM_ENTRY_TYPE_CHECKBOX
 
+		self:UpdateHighlightTemplate(control, nil)
+
 		local checkbox = addButton(self, control, data, toggleFunction)
 		ZO_CheckButton_SetCheckState(checkbox, getValueOrCallback(data.checked, data))
 	end
@@ -4188,6 +4300,8 @@ do -- Row setup functions
 		if data.buttonTemplate then
 			ApplyTemplateToControl(control, data.buttonTemplate)
 		end
+
+		self:UpdateHighlightTemplate(control, nil)
 	end
 end
 
@@ -4904,6 +5018,16 @@ end
 --			[lib.scrollListRowTypes.LSM_ENTRY_TYPE_SUBMENU] = 	{ template = "XMLVirtualTemplateRow_ForSubmenuEntryId", ... },
 --			...
 --		}
+--		table XMLRowHighlightTemplates:optional	Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
+--												"template" String = XMLVirtualTemplateNameForHighlightOfTheRow (on mouse enter). Default is comboBoxDefaults.m_highlightTemplate,
+--												"color" ZO_ColorDef = the color for the highlight. Default is Default is comboBoxDefaults.m_highlightColor (light blue),
+--												-->See local table "defaultXMLHighlightTemplates" in LibScrollableMenu
+--												-->Attention: If you do not specify all template attributes, the non-specified will be mixedIn from defaultXMLHighlightTemplates[entryType_ID] again!
+--		{
+--			[lib.scrollListRowTypes.LSM_ENTRY_TYPE_NORMAL] =	{ template = "XMLVirtualTemplateRowHighlight_ForEntryId", color = ZO_ColorDef:New("FFFFFF"), ... }
+--			[lib.scrollListRowTypes.LSM_ENTRY_TYPE_SUBMENU] = 	{ template = "XMLVirtualTemplateRowHighlight_ForSubmenuEntryId", color = ZO_ColorDef:New("FFFFFF"), ...  },
+--			...
+--		}
 --->  === Narration: UI screen reader, with accessibility mode enabled only ============================================
 --		table	narrate:optional				Table or function returning a table with key = narration event and value = function called for that narration event.
 --												Each functions signature/parameters is shown below!
@@ -5527,6 +5651,7 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-15
 	5. Changed XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
 	6. Fixed XMLRowTemplates using a non capital R at some locations
 	7. Handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
+	8. Added options.XMLRowHighlightTemplates for row highlight XML virtual templates and colors (on mouse enter) per entryType
 
 -------------------
 TODO - To check (future versions)
