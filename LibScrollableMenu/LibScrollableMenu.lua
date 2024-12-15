@@ -421,7 +421,7 @@ lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCall
 --Submenu key mapping
 
 -- Pass-through variables:
---If submenuClass_exposedVariables[key] == true: if submenu[key] is nil, returns submenu.m_comboBox[key]
+--If submenuClass_exposedVariables[key] == true: if submenu[key] is nil, returns submenu.m_comboBox[key] (means it takes the value from the owning LSM dropdown for the submenu then)
 --> where key = e.g. "m_font"
 local submenuClass_exposedVariables = {
 	-- ZO_ComboBox
@@ -460,7 +460,7 @@ local submenuClass_exposedVariables = {
 	['options'] = true,
 	['narrateData'] = true,
 	['m_headerFont'] = true,
-	['XMLrowTemplates'] = true, --TODO: is this being overwritten?
+	['XMLRowTemplates'] = true, --TODO: is this being overwritten?
 	['maxDropdownHeight'] = true,
 	['m_headerFontColor'] = true,
 	['m_highlightTemplate'] = true,
@@ -3519,10 +3519,10 @@ function comboBox_base:AddCustomEntryTemplates(options)
 			end
 		end
 	end
+	self.XMLRowTemplates = XMLrowTemplatesToUse
 
 	--Set the row templates to use to the current object
 	--[[ for debugging
-		self.XMLrowTemplates = XMLrowTemplatesToUse
 		lib._debugXMLrowTemplates = lib._debugXMLrowTemplates or {}
 		lib._debugXMLrowTemplates[self] = self
 	]]
@@ -4473,7 +4473,7 @@ function comboBoxClass:UpdateOptions(options, onInit)
 		self.updatedOptions = nil
 	end
 
-	-- this will add custom and default templates to self.XMLrowTemplates the same way dataTypes were created before.
+	-- this will add custom and default templates to self.XMLRowTemplates the same way dataTypes were created before.
 	self:AddCustomEntryTemplates(options)
 end
 
@@ -5533,6 +5533,7 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-15
 	3. Renamed API function lib.SetButtonGroupState to lib.ButtonGroupDefaultContextMenu as the name was missleading. It never changed or set any values directly it only added a contextmenu where you could choose "Select all", "Select none", "Invers"
 	4. Contextmenu API functions return the index/indices of added entry/entries and boolean values (where applicable)
 	5. Changed XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
+	6. Fixed XMLRowTemplates using a non capital R at some locations
 
 
 -------------------
