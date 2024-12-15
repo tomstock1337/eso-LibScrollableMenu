@@ -1953,7 +1953,7 @@ local function addItem_Base(self, itemEntry)
 
 	if not itemEntry.customEntryTemplate then
 		--Set it's XML entry row template
-		setItemEntryCustomTemplate(itemEntry, self.XMLrowTemplates)
+		setItemEntryCustomTemplate(itemEntry, self.XMLRowTemplates)
 
 		--dLog(LSM_LOGTYPE_DEBUG, ">name: " .. tos(itemEntry.name) .. ", isHeader: " ..tos(itemEntry.isHeader))
 	end
