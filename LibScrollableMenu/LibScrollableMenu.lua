@@ -1591,11 +1591,6 @@ local function getComboBox(control, owningMenu)
 	end
 end
 
-local function fireOnDropownMenuAddedCallback(selfVar, options)
-d("[LSM]FireCallbacks - OnDropdownMenuAdded - current visibleRows: " ..tostring(options.visibleRowsDropdown))
-	lib:FireCallbacks('OnDropdownMenuAdded', selfVar, options)
-	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(selfVar.m_container)), tos(options))
-end
 
 ------------------------------------------------------------------------------------------------------------------------
 --Local context menu helper functions
@@ -4620,7 +4615,8 @@ function comboBoxClass:UpdateMetatable(parent, comboBoxContainer, options)
 	ApplyTemplateToControl(comboBoxContainer, 'LibScrollableMenu_ComboBox_Behavior')
 
 	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table
-	fireOnDropownMenuAddedCallback(self, options)
+	lib:FireCallbacks('OnDropdownMenuAdded', self, options)
+	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(self.m_container)), tos(options))
 
 	self:Initialize(parent, comboBoxContainer, options, 1, true)
 end
@@ -4894,6 +4890,8 @@ end
 function contextMenuClass:ShowContextMenu(parentControl)
 	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ShowContextMenu - parentControl: %s", tos(getControlName(parentControl)))
 
+d("[LSM]contextMenuClass:ShowContextMenu")
+
 	local openingControlOld = self.openingControl
 	self.openingControl = parentControl
 
@@ -4943,8 +4941,9 @@ function contextMenuClass:SetContextMenuOptions(options)
 	end
 	]]
 
-	-- self.optionsData is only a temporary table used check for change and to send to UpdateOptions.
+	-- self.optionsData is only a temporary table used to check for changes and to send to UpdateOptions.
 	self.optionsChanged = self.optionsData ~= options
+d("[LSM]contextMenuClass:SetContextMenuOptions - optionsChanged: " .. tos(self.optionsChanged))
 	self.optionsData = options
 end
 
@@ -5251,20 +5250,23 @@ function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 
 	dLog(LSM_LOGTYPE_DEBUG, "SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
 
+
+df("[LSM]SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
+
 	--Use specified comboBoxContainer's dropdown to update the options to
 	if comboBoxContainer ~= nil then
 		local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
 		if comboBox ~= nil and comboBox.UpdateOptions then
 			comboBox.optionsChanged = options ~= comboBox.options
---d(">SetCustomScrollableMenuOptions - Found UpdateOptions - optionsChanged: " ..tos(comboBox.optionsChanged))
+d(">SetCustomScrollableMenuOptions - Found UpdateOptions - optionsChanged: " ..tos(comboBox.optionsChanged))
 			comboBox:UpdateOptions(options)
 		end
 	else
+d(">SetContextMenuOptions")
 		--Update options to default contextMenu
 		g_contextMenu:SetContextMenuOptions(options)
 	end
 end
-
 local setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
 
 --Hide the custom scrollable context menu and clear it's entries, clear internal variables, mouse clicks etc.
@@ -5338,12 +5340,13 @@ end
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	dLog(LSM_LOGTYPE_DEBUG, "ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
---df("_-_-_-_-_-_-_-_-_-_ [LSM]ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+df("_-_-_-_-_-_-_-_-_-_ [LSM]ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
 
 	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table -> Here: For the contextMenu
-	fireOnDropownMenuAddedCallback(g_contextMenu, options)
-
+	lib:FireCallbacks('OnDropdownMenuAdded', g_contextMenu, options)
+	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: ContextMenu - OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(g_contextMenu.m_container)), tos(options))
 	if options then
+d(">calling SetCustomScrollableMenuOptions")
 		setCustomScrollableMenuOptions(options)
 	end
 
