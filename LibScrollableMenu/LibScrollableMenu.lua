@@ -1591,6 +1591,11 @@ local function getComboBox(control, owningMenu)
 	end
 end
 
+local function fireOnDropownMenuAddedCallback(selfVar, options)
+d("[LSM]FireCallbacks - OnDropdownMenuAdded - current visibleRows: " ..tostring(options.visibleRowsDropdown))
+	lib:FireCallbacks('OnDropdownMenuAdded', selfVar, options)
+	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(selfVar.m_container)), tos(options))
+end
 
 ------------------------------------------------------------------------------------------------------------------------
 --Local context menu helper functions
@@ -4609,12 +4614,14 @@ end
 function comboBoxClass:UpdateMetatable(parent, comboBoxContainer, options)
 	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateMetatable - parent: %s, comboBoxContainer: %s, options: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(options))
 
+--d("comboBoxClass:UpdateMetatable")
+
 	setmetatable(self, comboBoxClass)
 	ApplyTemplateToControl(comboBoxContainer, 'LibScrollableMenu_ComboBox_Behavior')
 
---d("[LSM]FireCallbacks - OnDropdownMenuAdded - current visibleRows: " ..tostring(options.visibleRowsDropdown))
-	lib:FireCallbacks('OnDropdownMenuAdded', self, options)
-	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(self.m_container)), tos(options))
+	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table
+	fireOnDropownMenuAddedCallback(self, options)
+
 	self:Initialize(parent, comboBoxContainer, options, 1, true)
 end
 
@@ -5056,7 +5063,7 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, opti
 	assert(comboBox and comboBox.IsInstanceOf and comboBox:IsInstanceOf(ZO_ComboBox), MAJOR .. ' | The comboBoxContainer you supplied must be a valid ZO_ComboBox container. "comboBoxContainer.m_comboBox:IsInstanceOf(ZO_ComboBox)"')
 
 	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableComboBoxDropdownMenu - parent: %s, comboBoxContainer: %s, options: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(options))
-	comboBoxClass.UpdateMetatable(comboBox, parent, comboBoxContainer, options)
+	comboBoxClass.UpdateMetatable(comboBox, parent, comboBoxContainer, options) --Calls comboboxCLass:Initialize
 
 	return comboBox.m_dropdownObject
 end
@@ -5332,6 +5339,9 @@ end
 function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	dLog(LSM_LOGTYPE_DEBUG, "ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
 --df("_-_-_-_-_-_-_-_-_-_ [LSM]ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+
+	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table -> Here: For the contextMenu
+	fireOnDropownMenuAddedCallback(g_contextMenu, options)
 
 	if options then
 		setCustomScrollableMenuOptions(options)
@@ -5643,7 +5653,7 @@ LibScrollableMenu = lib
 
 --[[
 -------------------
-WORKING ON - Current version: 2.33 - Updated 2024-12-15
+WORKING ON - Current version: 2.33 - Updated 2024-12-16
 -------------------
 	1. Bug fix: Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
 	2. Bug fix: Name of handler for context menu show and hide changed to proper Uppercase OnContextMenu*
@@ -5653,6 +5663,7 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-15
 	6. Fixed XMLRowTemplates using a non capital R at some locations
 	7. Handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
 	8. Added options.XMLRowHighlightTemplates for row highlight XML virtual templates and colors (on mouse enter) per entryType
+	9. Bug fix: Fire the OnDropdownMenuAdded callback for the contextMenu too
 
 -------------------
 TODO - To check (future versions)
