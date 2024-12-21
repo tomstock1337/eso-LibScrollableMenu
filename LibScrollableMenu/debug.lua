@@ -250,7 +250,7 @@ local function loadLogger()
 		lib.Debug.logger = logger
 	end
 end
-lib.LoadLogger = loadLogger
+libDebug.LoadLogger = loadLogger
 
 
 --Early try to load libs and to create logger (done again in EVENT_ADD_ON_LOADED)
@@ -303,4 +303,4 @@ local function dlog(debugType, textId, ...)
 		end
 	end
 end
-lib.DebugLog = dlog
+libDebug.DebugLog = dlog

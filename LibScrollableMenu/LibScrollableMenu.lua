@@ -13,14 +13,55 @@ lib.version = "2.33"
 
 if not lib then return end
 
---For debugging and logging
+--------------------------------------------------------------------
+-- Locals
+--------------------------------------------------------------------
+--ZOs local speed-up/reference variables
+local EM = EVENT_MANAGER
+local SNM = SCREEN_NARRATION_MANAGER
+local tos = tostring
+local sfor = string.format
+local zostrlow = zo_strlower
+local tins = table.insert
+local trem = table.remove
+
+
+--------------------------------------------------------------------
+-- For debugging and logging
+--------------------------------------------------------------------
 --Logging and debugging
 lib.Debug = {}
 lib.Debug.doDebug = false
 lib.Debug.doVerboseDebug = false
 local libDebug = lib.Debug
 
+local function initDebugLogging()
+	if not lib.Debug then return false end
+	libDebug = lib.Debug
+	if not libDebug.LoadLogger then return false end
+	libDebug.LoadLogger()
+	return true
+end
 local dlog --= libDebug.DebugLog, updated at EVENT_ADDON_LOADED
+
+local function debugLoggingToggle(debugType)
+	if not initDebugLogging() then return end
+
+	if debugType == "debug" then
+		lib.Debug.doDebug = not lib.Debug.doDebug
+		libDebug = lib.Debug
+		if libDebug.logger then libDebug.logger:SetEnabled(libDebug.doDebug) end
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 176, tos(libDebug.doDebug and "ON" or "OFF")) end
+
+	elseif debugType == "debugVerbose" then
+		lib.Debug.doVerboseDebug = not lib.Debug.doVerboseDebug
+		libDebug = lib.Debug
+		if libDebug.logger and libDebug.logger.verbose then
+			libDebug.logger.verbose:SetEnabled(libDebug.doVerboseDebug)
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 177, tos(libDebug.doVerboseDebug and "ON" or "OFF"), tos(libDebug.doDebug and "ON" or "OFF")) end
+		end
+	end
+end
 
 
 --------------------------------------------------------------------
@@ -68,18 +109,6 @@ end
 --------------------------------------------------------------------
 -- Libraries
 --------------------------------------------------------------------
-
---------------------------------------------------------------------
--- Locals
---------------------------------------------------------------------
---ZOs local speed-up/reference variables
-local EM = EVENT_MANAGER
-local SNM = SCREEN_NARRATION_MANAGER
-local tos = tostring
-local sfor = string.format
-local zostrlow = zo_strlower
-local tins = table.insert
-local trem = table.remove
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -5552,20 +5581,10 @@ local function onAddonLoaded(event, name)
 	--Slash commands
 	--------------------------------------------------------------------------------------------------------------------
 	SLASH_COMMANDS["/lsmdebug"] = function()
-		libDebug.LoadLogger()
-		libDebug = lib.Debug
-		libDebug.doDebug = not libDebug.doDebug
-		if libDebug.logger then libDebug.logger:SetEnabled(libDebug.doDebug) end
-		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 176, tos(libDebug.doDebug and "ON" or "OFF")) end
+		debugLoggingToggle("debug")
 	end
 	SLASH_COMMANDS["/lsmdebugverbose"] = function()
-		libDebug.LoadLogger()
-		libDebug = lib.Debug
-		lib.doVerboseDebug = not lib.doVerboseDebug
-		if libDebug.logger and libDebug.logger.verbose then
-			libDebug.logger.verbose:SetEnabled(lib.doVerboseDebug)
-			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 177, tos(lib.doVerboseDebug and "ON" or "OFF"), tos(libDebug.doDebug and "ON" or "OFF")) end
-		end
+		debugLoggingToggle("debugVerbose")
 	end
 end
 EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
