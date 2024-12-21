@@ -17,6 +17,7 @@ lang/en.lua
 lang/$(language).lua
 
 LibScrollableMenu.lua
+debug.lua
 LibScrollableMenu.xml
 
 ## Uncomment this to test the combobox with different menu entryTypes and submenus

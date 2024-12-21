@@ -13,6 +13,16 @@ lib.version = "2.33"
 
 if not lib then return end
 
+--For debugging and logging
+--Logging and debugging
+lib.Debug = {}
+lib.Debug.doDebug = false
+lib.Debug.doVerboseDebug = false
+local libDebug = lib.Debug
+
+local dlog --= libDebug.DebugLog, updated at EVENT_ADDON_LOADED
+
+
 --------------------------------------------------------------------
 --SavedVariables
 --------------------------------------------------------------------
@@ -22,6 +32,7 @@ local lsmSVDefaults = {
 	collapsedHeaderState = {},
 }
 local svName = "LibScrollableMenu_SavedVars"
+lib.SVName = svName
 lib.SV = {} --will be init properly at the onAddonLoaded function
 local sv = lib.SV
 
@@ -57,7 +68,6 @@ end
 --------------------------------------------------------------------
 -- Libraries
 --------------------------------------------------------------------
-local LDL = LibDebugLogger
 
 --------------------------------------------------------------------
 -- Locals
@@ -90,25 +100,6 @@ local zo_comboBoxDropdown_onMouseExitEntry = ZO_ComboBoxDropdown_Keyboard.OnMous
 local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseEnterEntry
 
 local suppressNextOnGlobalMouseUp
-
-------------------------------------------------------------------------------------------------------------------------
---Logging
-lib.doDebug = false
-lib.doVerboseDebug = false
-local logger
-local debugPrefix = "[" .. MAJOR .. "]"
-local LSM_LOGTYPE_DEBUG = 1
-local LSM_LOGTYPE_VERBOSE = 2
-local LSM_LOGTYPE_DEBUG_CALLBACK = 3
-local LSM_LOGTYPE_INFO = 10
-local LSM_LOGTYPE_ERROR = 99
-local loggerTypeToName = {
-	[LSM_LOGTYPE_DEBUG] = " -DEBUG- ",
-	[LSM_LOGTYPE_VERBOSE] = " -VERBOSE- ",
-	[LSM_LOGTYPE_DEBUG_CALLBACK] = "-CALLBACK- ",
-	[LSM_LOGTYPE_INFO] = " -INFO- ",
-	[LSM_LOGTYPE_ERROR] = " -ERROR- ",
-}
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -563,73 +554,6 @@ local entryTypeToOriginalSelectedSound = {
 
 
 --------------------------------------------------------------------
--- Debug logging
---------------------------------------------------------------------
-
-local function loadLogger()
-	--LibDebugLogger
-	LDL = LDL or LibDebugLogger
-	if not lib.logger and LDL then
-		logger = LDL(MAJOR)
-		logger:SetEnabled(true)
-		logger:Debug("Library loaded")
-		logger.verbose = logger:Create("Verbose")
-		logger.verbose:SetEnabled(false)
-
-		logger.callbacksFired = logger:Create("Callbacks")
-
-		lib.logger = logger
-	end
-end
---Early try to load libs and to create logger (done again in EVENT_ADD_ON_LOADED)
-loadLogger()
-
---Debug log function
-local function dLog(debugType, text, ...)
-	if not lib.doDebug then return end
-
-	debugType = debugType or LSM_LOGTYPE_DEBUG
-
-	local debugText = text
-	if ... ~= nil and select(1, {...}) ~= nil then
-		debugText = sfor(text, ...)
-	end
-	if debugText == nil or debugText == "" then return end
-
-	--LibDebugLogger
-	if LDL then
-		if debugType == LSM_LOGTYPE_DEBUG_CALLBACK then
-			logger.callbacksFired:Debug(debugText)
-
-		elseif debugType == LSM_LOGTYPE_DEBUG then
-			logger:Debug(debugText)
-
-		elseif debugType == LSM_LOGTYPE_VERBOSE then
-			if lib.doVerboseDebug then
-				local loggerVerbose = logger.verbose
-				if loggerVerbose and loggerVerbose.isEnabled == true then
-					loggerVerbose:Verbose(debugText)
-				end
-			end
-
-		elseif debugType == LSM_LOGTYPE_INFO then
-			logger:Info(debugText)
-
-		elseif debugType == LSM_LOGTYPE_ERROR then
-			logger:Error(debugText)
-		end
-
-	--Normal debugging via chat d() messages
-	else
-		--No verbose debuglos in normal chat!
-		if debugType ~= LSM_LOGTYPE_VERBOSE then
-			local debugTypePrefix = loggerTypeToName[debugType] or ""
-			d(debugPrefix .. debugTypePrefix .. debugText)
-		end
-	end
-end
-
---------------------------------------------------------------------
 -- Breadcrumb animation highlight
 --------------------------------------------------------------------
 
@@ -675,7 +599,7 @@ local function highlightControl(self, control)
 	end
 	
 	local highlightTemplate, animationFieldName = self:GetHighlightTemplate(control)
-	dLog(LSM_LOGTYPE_VERBOSE, "highlightControl - highlightTemplate: " ..tos(highlightTemplate))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 1, tos(highlightTemplate)) end
 --d("[LSM]highlightControl - highlightTemplate: " ..tos(highlightTemplate))
 
 	control.breadcrumbName = sfor('%s_%s', animationFieldName, self.breadcrumbName)
@@ -692,12 +616,12 @@ end
 local function getDropdownTemplate(enabled, baseTemplate, alternate, default)
 	baseTemplate = MAJOR .. baseTemplate
 	local templateName = sfor('%s%s', baseTemplate, (enabled and alternate or default))
-	dLog(LSM_LOGTYPE_VERBOSE, "getDropdownTemplate - templateName: " ..tos(templateName))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 2, tos(templateName)) end
 	return templateName
 end
 
 local function getScrollContentsTemplate(barHidden)
-	dLog(LSM_LOGTYPE_VERBOSE, "getScrollContentsTemplate - barHidden: " ..tos(barHidden))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 3, tos(barHidden)) end
 	return getDropdownTemplate(barHidden, '_ScrollContents', '_BarHidden', '_BarShown')
 end
 
@@ -984,11 +908,11 @@ local function throttledCall(callback, delay, throttledCallNameSuffix)
 	throttledCallDelaySuffixCounter = throttledCallDelaySuffixCounter + 1
 	throttledCallNameSuffix = throttledCallNameSuffix or tos(throttledCallDelaySuffixCounter)
 	local throttledCallDelayTotalName = throttledCallDelayName .. throttledCallNameSuffix
-	dLog(LSM_LOGTYPE_VERBOSE, "REGISTERING throttledCall - callback: %s, delay: %s, name: %s", tos(callback), tos(delay), tos(throttledCallDelayTotalName))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 4, tos(callback), tos(delay), tos(throttledCallDelayTotalName)) end
 	EM:UnregisterForUpdate(throttledCallDelayTotalName)
 	EM:RegisterForUpdate(throttledCallDelayTotalName, delay, function()
 		EM:UnregisterForUpdate(throttledCallDelayTotalName)
-		dLog(LSM_LOGTYPE_VERBOSE, "DELAYED throttledCall -> CALLING callback now: %s, name: %s", tos(callback), tos(throttledCallDelayTotalName))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 5, tos(callback), tos(throttledCallDelayTotalName)) end
 		callback()
 	end)
 end
@@ -997,7 +921,7 @@ lib.ThrottledCall = throttledCall
 --Run function arg to get the return value (passing in ... as optional params to that function),
 --or directly use non-function return value arg
 function getValueOrCallback(arg, ...)
-	dLog(LSM_LOGTYPE_VERBOSE, "getValueOrCallback - arg: " ..tos(arg))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 6, tos(arg)) end
 	if type(arg) == "function" then
 		return arg(...)
 	else
@@ -1137,16 +1061,16 @@ local function hideContextMenu()
 end
 
 local function clearTimeout()
-	dLog(LSM_LOGTYPE_VERBOSE, "ClearTimeout")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 7) end
 	EM:UnregisterForUpdate(dropdownCallLaterHandle)
 end
 
 local function setTimeout(callback)
-	dLog(LSM_LOGTYPE_VERBOSE, "setTimeout")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 8) end
 	clearTimeout()
 	--Delay the dropdown close callback so we can move the mouse above a new dropdown control and keep that opened e.g.
 	EM:RegisterForUpdate(dropdownCallLaterHandle, SUBMENU_SHOW_TIMEOUT, function()
-		dLog(LSM_LOGTYPE_VERBOSE, "setTimeout -> delayed by: " ..tos(SUBMENU_SHOW_TIMEOUT))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 9, tos(SUBMENU_SHOW_TIMEOUT)) end
 		clearTimeout()
 		if callback then callback() end
 	end)
@@ -1155,7 +1079,7 @@ end
 --Mix in table entries in other table and skip existing entries. Optionally run a callback function on each entry
 --e.g. getValueOrCallback(...)
 local function mixinTableAndSkipExisting(targetData, sourceData, callbackFunc, ...)
-	dLog(LSM_LOGTYPE_VERBOSE, "mixinTableAndSkipExisting - callbackFunc: %s", tos(callbackFunc))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 10, tos(callbackFunc)) end
 	for i = 1, select("#", sourceData) do
 		local source = select(i, sourceData)
 		for k,v in pairs(source) do
@@ -1169,7 +1093,7 @@ end
 
 --The default callback for the recursiveOverEntries function
 local function defaultRecursiveCallback()
-	dLog(LSM_LOGTYPE_VERBOSE, "defaultRecursiveCallback")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 11) end
 	return false
 end
 
@@ -1199,7 +1123,7 @@ end
 --Add subtable data._LSM and the next level subTable subTB
 --and store a callbackFunction or a value at data._LSM[subTB][key]
 local function addEntryLSM(data, subTB, key, valueOrCallbackFunc)
-	dLog(LSM_LOGTYPE_VERBOSE, "addEntryLSM - data: %s, subTB: %s, key: %q, valueOrCallbackFunc: %s", tos(data), tos(subTB), tos(key), tos(valueOrCallbackFunc))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 12, tos(data), tos(subTB), tos(key), tos(valueOrCallbackFunc)) end
 	if data == nil or subTB == nil or key == nil then return end
 	local _lsm = data._LSM or {}
 	_lsm[subTB] = _lsm[subTB] or {} --create e.g. _LSM["funcData"]
@@ -1212,7 +1136,7 @@ end
 local function updateDataByFunctions(data)
 	data = getDataSource(data)
 
-	dLog(LSM_LOGTYPE_VERBOSE, "updateDataByFunctions - data: %s", tos(data))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 13, tos(data)) end
 	--If subTable _LSM  (of row's data) contains funcData subTable: This contains the original functions passed in for
 	--example "label" or "name" (instead of passing in strings). Loop the functions and execute those now for each found
 	local lsmData = data._LSM or NIL_CHECK_TABLE
@@ -1253,7 +1177,7 @@ local function updateDataValues(data, onlyTheseEntries)
 		if goOn then
 			local dataValue = data[key] --e.g. data["name"] -> either it's value or it's function
 			if type(dataValue) == 'function' then
-				dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - saving callback func. for key: %s", tos(key))
+				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 14, tos(key)) end
 
 				--local originalFuncOfDataKey = dataValue
 
@@ -1264,7 +1188,7 @@ local function updateDataValues(data, onlyTheseEntries)
 					if value == nil and l_nilToTrue == true then
 						value = l_nilToTrue
 					end
-					dLog(LSM_LOGTYPE_VERBOSE, "Run func. data._LSM.funcData[%q] - value: %s", tos(key), tos(value))
+					if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 15, tos(key), tos(value)) end
 
 					--Update the current data[key] with the determiend current value
 					p_data[key] = value
@@ -1272,7 +1196,7 @@ local function updateDataValues(data, onlyTheseEntries)
 				--defaultValue is true and data[*] is nil
 			elseif l_nilToTrue == true and dataValue == nil then
 				--e.g. data["enabled"] = true to always enable the row if nothing passed in explicitly
-				dLog(LSM_LOGTYPE_VERBOSE, "updateDataValues - key: %s, setting nilToTrue: %s", tos(key), tos(l_nilToTrue))
+				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 16, tos(key), tos(l_nilToTrue)) end
 				data[key] = l_nilToTrue
 			end
 		end
@@ -1284,7 +1208,7 @@ end
 
 --Check if an entry got the isNew set
 local function getIsNew(_entry)
-	dLog(LSM_LOGTYPE_VERBOSE, "getIsNew")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 17) end
 	return getValueOrCallback(_entry.isNew, _entry) or false
 end
 
@@ -1301,7 +1225,7 @@ end
 local function verifyLabelString(data)
 	--Check for data.* keys to run any function and update data[key] with actual values
 	updateDataByFunctions(data)
-	dLog(LSM_LOGTYPE_VERBOSE, "verifyLabelString - data.name: %s", tos(data.name))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 18, tos(data.name)) end
 	--Require the name to be a string
 	return type(data.name) == 'string'
 end
@@ -1328,13 +1252,13 @@ local function recursiveOverEntries(entry, callback, updateSubmenuValues)
 			end
 		end
 	end
-	dLog(LSM_LOGTYPE_VERBOSE, "recursiveOverEntries - #submenu: %s, result: %s", tos(#submenu), tos(result))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 19, tos(#submenu), tos(result)) end
 	return result
 end
 
 --(Un)Silence the OnClicked sound of a selected dropdown entry
 local function silenceEntryClickedSound(doSilence, entryType)
-	dLog(LSM_LOGTYPE_VERBOSE, "silenceComboBoxClickedSound - doSilence: " .. tos(doSilence) .. "; entryType: " ..tos(entryType))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 20, tos(doSilence), tos(entryType)) end
 	local soundNameForSilence = entryTypeToSilenceSoundName[entryType]
 	if soundNameForSilence == nil then return end
 	if doSilence == true then
@@ -1347,14 +1271,14 @@ end
 
 --Get the options of the scrollable dropdownObject
 local function getOptionsForDropdown(dropdown)
-	dLog(LSM_LOGTYPE_VERBOSE, "getOptionsForDropdown")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 21) end
 	return dropdown.owner.options or {}
 end
 
 --Check if a sound should be played if a dropdown entry was selected
 local function playSelectedSoundCheck(dropdown, entryType)
 	entryType = entryType or LSM_ENTRY_TYPE_NORMAL
-	dLog(LSM_LOGTYPE_VERBOSE, "playSelectedSoundCheck - entryType: %s", tos(entryType))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 22, tos(entryType)) end
 
 	silenceEntryClickedSound(false, entryType)
 
@@ -1382,7 +1306,7 @@ end
 --Recursivley map the entries of a submenu and add them to the mapTable
 --used for the callback "NewStatusUpdated" to provide the mapTable with the entries
 local function doMapEntries(entryTable, mapTable, entryTableType)
-	dLog(LSM_LOGTYPE_VERBOSE, "doMapEntries")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 23) end
 	if entryTableType == nil then
 		-- If getValueOrCallback returns nil then return {}
 		entryTable = getValueOrCallback(entryTable) or {}
@@ -1402,7 +1326,7 @@ end
 -- This function will create a map of all entries recursively. Useful when there are submenu entries
 -- and you want to use them for comparing in the callbacks, NewStatusUpdated, CheckboxUpdated, RadioButtonUpdated
 local function mapEntries(entryTable, mapTable, blank)
-	dLog(LSM_LOGTYPE_VERBOSE, "mapEntries")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 24) end
 
 	if blank ~= nil then
 		entryTable = mapTable
@@ -1467,7 +1391,7 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 
 		if isNewValue == true then
 			multiIconCtrl:AddIcon(iconNewIcon, nil, iconNarrationNewValue)
-			dLog(LSM_LOGTYPE_VERBOSE, "updateIcon - Adding \'new icon\'")
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 25) end
 			--d("[LSM]updateIcon - Adding \'new icon\'")
 		end
 		if iconValue ~= nil then
@@ -1497,7 +1421,7 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 			--Icon's narration
 			local iconNarration = (iconDataGotMoreParams and getValueOrCallback(singleIconDataOrTab.iconNarration, data)) or nil
 			multiIconCtrl:AddIcon(iconValue, iconTint, iconNarration)
-			dLog(LSM_LOGTYPE_VERBOSE, "updateIcon - iconIdx %s, visible: %s, texture: %s, tint: %s, width: %s, height: %s, narration: %s", tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration))
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 26, tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration)) end
 		end
 
 		return true, iconWidth, iconHeight
@@ -1516,7 +1440,7 @@ local function updateIcons(control, data)
 	local iconHeight = parentHeight
 
 	local iconData = getValueOrCallback(data.icon, data)
-	dLog(LSM_LOGTYPE_VERBOSE, "updateIcons - numIcons %s", tos(iconData ~= nil and #iconData or 0))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 27, tos(iconData ~= nil and #iconData or 0)) end
 
 	local anyIconWasAdded = false
 	local iconDataType = iconData ~= nil and type(iconData) or nil
@@ -1653,7 +1577,7 @@ end
 
 -- >> data, dataEntry
 local function getControlData(control)
-	dLog(LSM_LOGTYPE_VERBOSE, "getControlData - name: " ..tos(getControlName(control)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 28, tos(getControlName(control))) end
 	local data = control.m_sortedItems or control.m_data
 
 	return getDataSource(data)
@@ -1820,7 +1744,7 @@ end
 --Returns boolean true if that was the case -> Prevent selection of entries or changes of radioButtons/checkboxes
 --while a context menu was opened and one directly clicks on that other entry
 local function checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, buttonId)
-	dLog(LSM_LOGTYPE_VERBOSE, "checkIfContextMenuOpenedButOtherControlWasClicked - cbox == ctxtMenu? " .. tos(comboBox == g_contextMenu) .. "; cntxt dropdownVis? " .. tos(g_contextMenu:IsDropdownVisible()))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 29, tos(comboBox == g_contextMenu), tos(g_contextMenu:IsDropdownVisible())) end
 	if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
 --d("!!!!ContextMenu - check if OPENED!!!!! comboBox: " ..tos(comboBox))
 		if comboBox ~= nil then
@@ -1856,7 +1780,7 @@ end
 -->Done within preUpdateSubItems func now
 --[[
 local function areAnyEntriesNew(entry)
-	dLog(LSM_LOGTYPE_VERBOSE, "areAnyEntriesNew")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 30) end
 	return recursiveOverEntries(entry, getIsNew, true)
 end
 ]]
@@ -1865,7 +1789,7 @@ end
 -- This works up from the mouse-over entry's submenu up to the dropdown,
 -- as long as it does not run into a submenu still having a new entry.
 local function updateSubmenuNewStatus(control)
-	dLog(LSM_LOGTYPE_VERBOSE, "updateSubmenuNewStatus")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 31) end
 	-- reverse parse
 	local isNew = false
 	
@@ -1893,14 +1817,14 @@ end
 
 --Remove the new status of a dropdown entry
 local function clearNewStatus(control, data)
-	dLog(LSM_LOGTYPE_VERBOSE, "clearNewStatus")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 32) end
 	if data.isNew then
 		-- Only directly change status on non-submenu entries. The are effected by child entries
 		if data.entries == nil then
 			data.isNew = false
 			
 			lib:FireCallbacks('NewStatusUpdated', control, data)
-			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: NewStatusUpdated - control: " ..tos(getControlName(control)))
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 33, tos(getControlName(control))) end
 
 			control.m_dropdownObject:Refresh(data)
 			
@@ -1958,7 +1882,7 @@ end
 --Set the custom XML virtual template for a dropdown entry
 local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	local entryType = item.entryType
-	dLog(LSM_LOGTYPE_VERBOSE, "setItemEntryCustomTemplate - name: %q, entryType: %s", tos(item.label or item.name), tos(entryType))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 34, tos(item.label or item.name), tos(entryType)) end
 
 	if entryType then
 		local customEntryTemplate = customEntryTemplates[entryType].template
@@ -1968,7 +1892,7 @@ end
 
 -- We can add any row-type post checks and update dataEntry with static values.
 local function addItem_Base(self, itemEntry)
-	dLog(LSM_LOGTYPE_VERBOSE, "addItem_Base - itemEntry: " ..tos(itemEntry))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 35, tos(itemEntry)) end
 
 	--Get/build data.label and/or data.name / data.* values, and others (see table LSMEntryKeyZO_ComboBoxEntryKey)
 	updateDataValues(itemEntry)
@@ -1979,7 +1903,6 @@ local function addItem_Base(self, itemEntry)
 	if not itemEntry.customEntryTemplate then
 		--Set it's XML entry row template
 		setItemEntryCustomTemplate(itemEntry, self.XMLRowTemplates)
-		--dLog(LSM_LOGTYPE_DEBUG, ">name: " .. tos(itemEntry.name) .. ", isHeader: " ..tos(itemEntry.isHeader))
 	end
 
 	--Run a post setup function to update mandatory data or change visuals, for the entryType
@@ -1992,14 +1915,14 @@ end
 --------------------------------------------------------------------
 
 local function resetCustomTooltipFuncVars()
-	dLog(LSM_LOGTYPE_VERBOSE, "resetCustomTooltipFuncVars")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 36) end
 	lib.lastCustomTooltipFunction = nil
 	lib.onHideCustomTooltipFunc = nil
 end
 
 --Hide the tooltip of a dropdown entry
 local function hideTooltip(control)
-	dLog(LSM_LOGTYPE_VERBOSE, "hideTooltip - custom onHide func: " ..tos(lib.onHideCustomTooltipFunc))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 37, tos(lib.onHideCustomTooltipFunc)) end
 	if lib.onHideCustomTooltipFunc then
 		lib.onHideCustomTooltipFunc()
 	else
@@ -2010,7 +1933,7 @@ end
 
 local function getTooltipAnchor(self, control, tooltipText, hasSubmenu)
 	local relativeTo = control
-	dLog(LSM_LOGTYPE_VERBOSE, "getTooltipAnchor - control: %s, tooltipText: %s, hasSubmenu: %s", tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 38, tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu)) end
 
 	local submenu = self:GetSubmenu()
 	if hasSubmenu then
@@ -2101,7 +2024,7 @@ local function showTooltip(self, control, data, hasSubmenu)
 	local customTooltipFunc = data.customTooltip
 	if type(customTooltipFunc) ~= "function" then customTooltipFunc = nil end
 
-	dLog(LSM_LOGTYPE_VERBOSE, "showTooltip - control: %s, tooltipText: %s, hasSubmenu: %s, customTooltipFunc: %s", tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu), tos(customTooltipFunc))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 39, tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu), tos(customTooltipFunc)) end
 
 	--To prevent empty tooltips from opening.
 	if tooltipText == nil and customTooltipFunc == nil then return end
@@ -2132,17 +2055,17 @@ end
 
 local function isAccessibilitySettingEnabled(settingId)
 	local isSettingEnabled = GetSetting_Bool(SETTING_TYPE_ACCESSIBILITY, settingId)
-	dLog(LSM_LOGTYPE_VERBOSE, "isAccessibilitySettingEnabled - settingId: %s, isSettingEnabled: %s", tos(settingId), tos(isSettingEnabled))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 40, tos(settingId), tos(isSettingEnabled)) end
 	return isSettingEnabled
 end
 
 local function isAccessibilityModeEnabled()
-	dLog(LSM_LOGTYPE_VERBOSE, "isAccessibilityModeEnabled")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 41) end
 	return isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_ACCESSIBILITY_MODE)
 end
 
 local function isAccessibilityUIReaderEnabled()
-	dLog(LSM_LOGTYPE_VERBOSE, "isAccessibilityUIReaderEnabled")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 42) end
 	return isAccessibilityModeEnabled() and isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_SCREEN_NARRATION)
 end
 
@@ -2157,7 +2080,7 @@ end
 local function addNewUINarrationText(newText, stopCurrent)
 	if isAccessibilityUIReaderEnabled() == false then return end
 	stopCurrent = stopCurrent or false
-	dLog(LSM_LOGTYPE_VERBOSE, "addNewUINarrationText - newText: %s, stopCurrent: %s", tos(newText), tos(stopCurrent))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 43, tos(newText), tos(stopCurrent)) end
 --d( "["..MAJOR.."]AddNewChatNarrationText-stopCurrent: " ..tostring(stopCurrent) ..", text: " ..tostring(newText))
 	--Stop the current UI narration before adding a new?
 	if stopCurrent == true then
@@ -2211,13 +2134,13 @@ end
 -->Only the last entry will be narrated then, where the mouse stops
 local function onUpdateDoNarrate(uniqueId, delay, callbackFunc)
 	local updaterName = UINarrationUpdaterName ..tos(uniqueId)
-	dLog(LSM_LOGTYPE_VERBOSE, "onUpdateDoNarrate - updName: %s, delay: %s", tos(updaterName), tos(delay))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 44, tos(updaterName), tos(delay)) end
 
 	EM:UnregisterForUpdate(updaterName)
 	if isAccessibilityUIReaderEnabled() == false or callbackFunc == nil then return end
 	delay = delay or 1000
 	EM:RegisterForUpdate(updaterName, delay, function()
-		dLog(LSM_LOGTYPE_VERBOSE, "onUpdateDoNarrate - Delayed call: updName: %s", tos(updaterName))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 45, tos(updaterName)) end
 		if isAccessibilityUIReaderEnabled() == false then EM:UnregisterForUpdate(updaterName) return end
 		callbackFunc()
 		EM:UnregisterForUpdate(updaterName)
@@ -2226,17 +2149,17 @@ end
 
 --Own narration functions, if ever needed -> Currently the addons pass in their narration functions
 local function onMouseEnterOrExitNarrate(narrateText, stopCurrent)
-	dLog(LSM_LOGTYPE_VERBOSE, "onMouseEnterOrExitNarrate - narrateText: %s, stopCurrent: %s", tos(narrateText), tos(stopCurrent))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 46, tos(narrateText), tos(stopCurrent)) end
 	onUpdateDoNarrate("OnMouseEnterExit", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
 end
 
 local function onSelectedNarrate(narrateText, stopCurrent)
-	dLog(LSM_LOGTYPE_VERBOSE, "onSelectedNarrate - narrateText: %s, stopCurrent: %s", tos(narrateText), tos(stopCurrent))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 47, tos(narrateText), tos(stopCurrent)) end
 	onUpdateDoNarrate("OnEntryOrButtonSelected", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
 end
 
 local function onMouseMenuOpenOrCloseNarrate(narrateText, stopCurrent)
-	dLog(LSM_LOGTYPE_VERBOSE, "onMouseMenuOpenOrCloseNarrate - narrateText: %s, stopCurrent: %s", tos(narrateText), tos(stopCurrent))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 48, tos(narrateText), tos(stopCurrent)) end
 	onUpdateDoNarrate("OnMenuOpenOrClose", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
 end
 --Lookup table for ScrollableHelper:Narrate() function -> If a string will be returned as 1st return parameter (and optionally a boolean as 2nd, for stopCurrent)
@@ -2262,20 +2185,20 @@ local narrationEventToLibraryNarrateFunction = {
 
 local function onMouseEnter(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
-	dLog(LSM_LOGTYPE_VERBOSE, "onMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 49, tos(getControlName(control)), tos(hasSubmenu)) end
 	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseEnter', control, data)
-	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnMouseEnter - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 50, tos(getControlName(control)), tos(hasSubmenu)) end
 
 	return dropdown
 end
 
 local function onMouseExit(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
-	dLog(LSM_LOGTYPE_VERBOSE, "onMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 51, tos(getControlName(control)), tos(hasSubmenu)) end
 	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseExit', control, data)
-	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: EntryOnMouseExit - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(hasSubmenu))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 52, tos(getControlName(control)), tos(hasSubmenu)) end
 
 	return dropdown
 end
@@ -2404,7 +2327,7 @@ local handlerFunctions  = {
 }
 
 local function runHandler(handlerTable, control, ...)
-	dLog(LSM_LOGTYPE_VERBOSE, "runHandler - control: %s, handlerTable: %s, typeId: %s", tos(getControlName(control)), tos(handlerTable), tos(control.typeId))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 53, tos(getControlName(control)), tos(handlerTable), tos(control.typeId)) end
 	local handler = handlerTable[control.typeId]
 	if handler then
 		return handler(control, ...)
@@ -2481,7 +2404,7 @@ end
 -- Dropdown entry functions
 --------------------------------------------------------------------
 local function createScrollableComboBoxEntry(self, item, index, entryType)
-	dLog(LSM_LOGTYPE_VERBOSE, "createScrollableComboBoxEntry - index: %s, entryType: %s,", tos(index), tos(entryType))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 54, tos(index), tos(entryType)) end
 	local entryData = ZO_EntryData:New(item)
 	entryData.m_index = index
 	entryData.m_owner = self.owner
@@ -2560,7 +2483,7 @@ local dropdownClass = ZO_ComboBoxDropdown_Keyboard:Subclass()
 
 -- dropdownClass:New(To simplify locating the beginning of the class
 function dropdownClass:Initialize(parent, comboBoxContainer, depth)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 55, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
 	--df("[LSM]dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
 	local dropdownControl = CreateControlFromVirtual(comboBoxContainer:GetName(), GuiRoot, "LibScrollableMenu_Dropdown_Template", depth)
 	ZO_ComboBoxDropdown_Keyboard.Initialize(self, dropdownControl)
@@ -2608,13 +2531,13 @@ end
 
 --Narration
 function dropdownClass:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Narrate - eventName: %s, ctrl: %s, hasSubmenu: %s, anchorPoint: %s", tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 56, tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint)) end
 	self.owner:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint) -->comboBox_base:Narrate(...)
 end
 
 
 function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AddCustomEntryTemplate - entryTemplate: %s, entryHeight: %s, setupFunction: %s, widthPadding: %s", tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 57, tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding)) end
 	if not self.customEntryTemplateInfos then
 		self.customEntryTemplateInfos = {}
 	end
@@ -2664,7 +2587,7 @@ function dropdownClass:AnchorToControl(parentControl)
 	end
 
 	local relativeTo = parentControl
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AnchorToControl - point: %s, relativeTo: %s, relativePoint: %s offsetX: %s, offsetY: %s", tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(offsetX), tos(offsetY))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 58, tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(offsetX), tos(offsetY)) end
 
 	self.control:ClearAnchors()
 	self.control:SetAnchor(point, relativeTo, relativePoint, offsetX, offsetY)
@@ -2674,7 +2597,7 @@ end
 
 function dropdownClass:AnchorToComboBox(comboBox)
 	local parentControl = comboBox:GetContainer()
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AnchorToComboBox - comboBox container: %s", tos(getControlName(parentControl)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 59, tos(getControlName(parentControl))) end
 	self.control:ClearAnchors()
 	self.control:SetAnchor(TOPLEFT, parentControl, BOTTOMLEFT)
 end
@@ -2720,7 +2643,7 @@ function dropdownClass:AnchorToMouse()
 			relativePoint = TOPLEFT
 		end
 	end
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:AnchorToMouse - point: %s, relativeTo: %s, relativePoint: %s offsetX: %s, offsetY: %s", tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(x), tos(y))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 60, tos(point), tos(getControlName(relativeTo)), tos(relativePoint), tos(x), tos(y)) end
 	if point and relativePoint then
 		menuToAnchor:SetAnchor(point, relativeTo, relativePoint, x, y)
 	end
@@ -2730,14 +2653,14 @@ function dropdownClass:GetSubmenu()
 	if self.owner then
 		self.m_submenu = self.owner.m_submenu
 	end
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:GetSubmenu - submenu: " ..tos(self.m_submenu))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 61, tos(self.m_submenu)) end
 
 	return self.m_submenu
 end
 
 function dropdownClass:IsDropdownVisible()
 	-- inherited ZO_ComboBoxDropdown_Keyboard:IsHidden
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsDropdownVisible: " ..tos(not self:IsHidden()))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 62, tos(not self:IsHidden())) end
 	return not self:IsHidden()
 end
 
@@ -2745,30 +2668,30 @@ function dropdownClass:IsEnteringSubmenu()
 	local submenu = self:GetSubmenu()
 	if submenu then
 		if submenu:IsDropdownVisible() and submenu:IsMouseOverControl() then
-			dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsEnteringSubmenu -> Yes")
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 63) end
 			return true
 		end
 	end
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsEnteringSubmenu -> No")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 64) end
 	return false
 end
 
 function dropdownClass:IsItemSelected(item)
 	if self.owner and self.owner.IsItemSelected then
-		dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsItemSelected -> " ..tos(self.owner:IsItemSelected(item)))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 65, tos(self.owner:IsItemSelected(item))) end
 		return self.owner:IsItemSelected(item)
 	end
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsItemSelected -> No")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 66) end
 	return false
 end
 
 function dropdownClass:IsMouseOverOpeningControl()
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:IsMouseOverOpeningControl -> No")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 67) end
 	return false
 end
 
 function dropdownClass:OnMouseEnterEntry(control)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnMouseEnterEntry - control: " .. tos(getControlName(control)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 68, tos(getControlName(control))) end
 	-- Added here for when mouse is moved from away from dropdowns over a row, it will know to close specific children
 	self:OnMouseExitTimeout(control)
 
@@ -2791,7 +2714,7 @@ function dropdownClass:OnMouseEnterEntry(control)
 end
 
 function dropdownClass:OnMouseExitEntry(control)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnMouseExitEntry - control: " .. tos(getControlName(control)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 69, tos(getControlName(control))) end
 
 	hideTooltip(control)
 	local data = getControlData(control)
@@ -2808,14 +2731,14 @@ function dropdownClass:OnMouseExitEntry(control)
 end
 
 function dropdownClass:OnMouseExitTimeout(control)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnMouseExitTimeout - control: " .. tos(getControlName(control)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 70, tos(getControlName(control))) end
 	setTimeout(function()
 		self.owner:HideOnMouseExit(moc())
 	end)
 end
 
 function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntryMouseUp - control: %s, button: %s, upInside: %s", tos(getControlName(control)), tos(button), tos(upInside))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 71, tos(getControlName(control)), tos(button), tos(upInside)) end
 --d(debugPrefix .. "OnEntryMouseUp - button: " ..tos(button) .. ", upInside: " .. tos(upInside) .. ", ignoreHandler: " ..tos(ignoreHandler))
 
 	--20240816 Suppress the next global mouseup event raised from a comboBox's dropdown (e.g. if a submenu entry outside of a context menu was clicked
@@ -2845,7 +2768,7 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler)
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 				local rightClickCallback = data.contextMenuCallback or data.rightClickCallback
 				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
-					dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnEntryMouseUp - contextMenuCallback!")
+					if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 72) end
 					rightClickCallback(comboBox, control, data)
 				end
 			end
@@ -2865,7 +2788,7 @@ end
 ]]
 
 function dropdownClass:SelectItemByIndex(index, ignoreCallback)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:SelectItemByIndex - index: %s, ignoreCallback: %s,", tos(index), tos(ignoreCallback))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 73, tos(index), tos(ignoreCallback)) end
 	if self.owner then
 		playSelectedSoundCheck(self, nil)
 		return self.owner:SelectItemByIndex(index, ignoreCallback)
@@ -2873,7 +2796,7 @@ function dropdownClass:SelectItemByIndex(index, ignoreCallback)
 end
 
 function dropdownClass:RunItemCallback(item, ignoreCallback)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:RunItemCallback - item: %s, ignoreCallback: %s,", tos(item), tos(ignoreCallback))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 74, tos(item), tos(ignoreCallback)) end
 	if self.owner then
 		playSelectedSoundCheck(self, item.entryType)
 		return self.owner:RunItemCallback(item, ignoreCallback)
@@ -2881,7 +2804,7 @@ function dropdownClass:RunItemCallback(item, ignoreCallback)
 end
 
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s", tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 75, tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing)) end
 
 	self.owner = comboBox
 
@@ -2963,7 +2886,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 		control:SetWidth(minWidth)
 	end
 
-	dLog(LSM_LOGTYPE_VERBOSE, ">totalDropDownWidth: %s, allItemsHeight: %s, desiredHeight: %s", tos(totalDropDownWidth), tos(allItemsHeight), tos(desiredHeight))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 76, tos(totalDropDownWidth), tos(allItemsHeight), tos(desiredHeight)) end
 
 	ZO_Scroll_SetUseFadeGradient(scrollControl, not self.owner.disableFadeGradient )
 	control:SetHeight(desiredHeight)
@@ -2973,7 +2896,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 end
 
 function dropdownClass:UpdateHeight()
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:UpdateHeight")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 77) end
 	if self.owner then
 		self.owner:UpdateHeight(self.control)
 	end
@@ -2993,7 +2916,7 @@ end
 
 --Will be executed from XML handlers -> formattedEventName will be build via method GetFormattedNarrateEvent
 function dropdownClass:OnShow(formattedEventName)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnShow")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 78) end
 --	self.control:BringWindowToTop()
 
 	if formattedEventName ~= nil then
@@ -3009,7 +2932,7 @@ end
 
 --Will be executed from XML handlers -> formattedEventName will be build via method GetFormattedNarrateEvent
 function dropdownClass:OnHide(formattedEventName)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:OnHide")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 79) end
 	if formattedEventName ~= nil then
 		local ctrl = self.control
 		self:Narrate(formattedEventName, ctrl)
@@ -3018,7 +2941,7 @@ function dropdownClass:OnHide(formattedEventName)
 end
 
 function dropdownClass:ShowSubmenu(control)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:ShowSubmenu - control: " ..tos(getControlName(control)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 80, tos(getControlName(control))) end
 	if self.owner then
 		-- Must clear now. Otherwise, moving onto a submenu will close it from exiting previous row.
 		clearTimeout()
@@ -3027,20 +2950,20 @@ function dropdownClass:ShowSubmenu(control)
 end
 
 function dropdownClass:ShowTooltip(control, data)
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:ShowTooltip - control: %s, hasSubmenu: %s", tos(getControlName(control)), tos(data.hasSubmenu))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 81, tos(getControlName(control)), tos(data.hasSubmenu)) end
 	showTooltip(self, control, data, data.hasSubmenu)
 end
 
 function dropdownClass:HideDropdown()
 --d("dropdownClass:HideDropdown()")
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:HideDropdown")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 82) end
 	if self.owner then
 		self.owner:HideDropdown()
 	end
 end
 
 function dropdownClass:HideSubmenu()
-	dLog(LSM_LOGTYPE_VERBOSE, "dropdownClass:HideSubmenu")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 83) end
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 		self.m_submenu:HideDropdown()
 	end
@@ -3416,7 +3339,7 @@ local comboBox_base = ZO_ComboBox:Subclass()
 local submenuClass = comboBox_base:Subclass()
 
 function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 84, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
 	self.m_sortedItems = {}
 	self.m_unsortedItems = {}
 	self.m_container = comboBoxContainer
@@ -3431,7 +3354,7 @@ end
 -- Common functions
 -- Adds the customEntryTemplate to all items added
 function comboBox_base:AddItem(itemEntry, updateOptions, templates)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:AddItem - itemEntry: %s, updateOptions: %s, templates: %s", tos(updateOptions), tos(self.baseEntryHeight), tos(templates))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 85, tos(updateOptions), tos(self.baseEntryHeight), tos(templates)) end
 	addItem_Base(self, itemEntry)
 	zo_comboBox_base_addItem(self, itemEntry, updateOptions)
 	tins(self.m_unsortedItems, itemEntry)
@@ -3439,7 +3362,7 @@ end
 
 -- Adds widthPadding as a valid parameter
 function comboBox_base:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:AddCustomEntryTemplate - entryTemplate: %s, entryHeight: %s, setupFunction: %s, widthPadding: %s", tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 86, tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding)) end
 	if not self.m_customEntryTemplateInfos then
 		self.m_customEntryTemplateInfos = {}
 	end
@@ -3464,7 +3387,7 @@ end
 
 -- >> template, height, setupFunction
 local function getTemplateData(entryType, template)
-	dLog(LSM_LOGTYPE_VERBOSE, "getTemplateData - entryType: %s, template: %s", tos(entryType), tos(template))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 87, tos(entryType), tos(template)) end
 	local templateDataForEntryType = template[entryType]
 	return templateDataForEntryType.template, templateDataForEntryType.rowHeight, templateDataForEntryType.setupFunc, templateDataForEntryType.widthPadding
 end
@@ -3564,7 +3487,7 @@ end
 
 --Called from comboBoxClass:UpdateOptions
 function comboBox_base:AddCustomEntryTemplates(options)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:AddCustomEntryTemplates - options: %s", tos(options))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 88, tos(options)) end
 
 	local defaultXMLTemplates, defaultXMLHighlightTemplates = getDefaultXMLTemplates(self)
 
@@ -3633,11 +3556,11 @@ function comboBox_base:AddCustomEntryTemplates(options)
 	local normalEntryHeight = XMLrowTemplatesToUse[LSM_ENTRY_TYPE_NORMAL].rowHeight
 	-- We will use this, per-comboBox, to set max rows.
 	self.baseEntryHeight = normalEntryHeight
-	dLog(LSM_LOGTYPE_VERBOSE, ">NORMAL_ENTRY_HEIGHT %s, DIVIDER_ENTRY_HEIGHT: %s, HEADER_ENTRY_HEIGHT: %s, CHECKBOX_ENTRY_HEIGHT: %s, BUTTON_ENTRY_HEIGHT: %s, RADIOBUTTON_ENTRY_HEIGHT: %s", tos(normalEntryHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_DIVIDER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_HEADER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_CHECKBOX].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_BUTTON].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_RADIOBUTTON].rowHeight))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 89, tos(normalEntryHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_DIVIDER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_HEADER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_CHECKBOX].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_BUTTON].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_RADIOBUTTON].rowHeight)) end
 end
 
 function comboBox_base:OnGlobalMouseUp(eventId, button)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(suppressNextOnGlobalMouseUp)) end
 --d("comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
 	if suppressNextOnGlobalMouseUp then
 		suppressNextOnGlobalMouseUp = nil
@@ -3669,7 +3592,7 @@ end
 function comboBox_base:GetBaseHeight(control)
 	-- We need to include the header height to allItemsHeight, or the scroll hight will include the header height.
 	-- Filtering will result in a shorter list with scrollbars that extend byond it.
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetBaseHeight - control: %s, gotHeader: %s, height: %s", tos(getControlName(control)), tos(control.header ~= nil), tos(control.header ~= nil and control.header:GetHeight() or 0))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 91, tos(getControlName(control)), tos(control.header ~= nil), tos(control.header ~= nil and control.header:GetHeight() or 0)) end
 	if control.header then
 		return control.header:GetHeight()--  + ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y
 	end
@@ -3677,12 +3600,12 @@ function comboBox_base:GetBaseHeight(control)
 end
 
 function comboBox_base:GetMaxDropdownHeight()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetMaxDropdownHeight - maxDropdownHeight: %s", tos(self.maxHeight))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 92, tos(self.maxHeight)) end
 	return self.maxHeight
 end
 
 function comboBox_base:GetDropdownObject(comboBoxContainer, depth)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetDropdownObject - comboBoxContainer: %s, depth: %s", tos(getControlName(comboBoxContainer)), tos(depth))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 93, tos(getControlName(comboBoxContainer)), tos(depth)) end
 	self.m_nextFree = depth + 1
 	return dropdownClass:New(self, comboBoxContainer, depth)
 end
@@ -3696,14 +3619,14 @@ end
 
 -- Create the m_dropdownObject on initialize.
 function comboBox_base:GetOptions()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetOptions")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 94) end
 	return self.options or {}
 end
 
 -- Get or create submenu
 
 function comboBox_base:GetSubmenu()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetSubmenu")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 95) end
 	if not self.m_submenu then
 		self.m_submenu = submenuClass:New(self, self.m_container, self:GetOptions(), self.m_nextFree)
 	end
@@ -3712,7 +3635,7 @@ end
 
 function comboBox_base:HiddenForReasons(button)
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:HiddenForReasons - button: " .. tos(button))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 96, tos(button)) end
 --d("comboBox_base:HiddenForReasons - button: " .. tos(button))
 
 	--[[
@@ -3817,7 +3740,7 @@ end
 -- Changed to hide tooltip and, if available, it's submenu
 -- We hide the tooltip here so it is hidden if the dropdown is hidden OnGlobalMouseUp
 function comboBox_base:HideDropdown()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:HideDropdown")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 97) end
 	-- Recursive through all open submenus and close them starting from last.
 
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
@@ -3839,13 +3762,13 @@ end
 -- These are part of the m_dropdownObject but, since we now use them from the comboBox,
 -- they are added here to reference the ones in the m_dropdownObject.
 function comboBox_base:IsMouseOverControl()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:IsMouseOverControl: " .. tos(self.m_dropdownObject:IsMouseOverControl()))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 98, tos(self.m_dropdownObject:IsMouseOverControl())) end
 	return self.m_dropdownObject:IsMouseOverControl()
 end
 
 --Narrate (screen UI reader): Read out text based on the narration event fired
 function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:Narrate - eventName: %s, ctrl: %s, hasSubmenu: %s, anchorPoint: %s ", tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 99, tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint)) end
 	local narrateData = self.narrateData
 	if eventName == nil or isAccessibilityUIReaderEnabled() == false or narrateData == nil then return end
 	local narrateCallbackFuncForEvent = narrateData[eventName]
@@ -3872,7 +3795,7 @@ function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	--Pass in the callback params to the narrateFunction
 	local narrateText, stopCurrent = narrateCallbackFuncForEvent(unpack(callbackParams))
 
-	dLog(LSM_LOGTYPE_VERBOSE, ">narrateText: %s, stopCurrent: %s", tos(narrateText), tos(stopCurrent))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 100, tos(narrateText), tos(stopCurrent)) end
 	--Didn't the addon take care of the narration itsself? So this library here should narrate the text returned
 	if type(narrateText) == "string" then
 		local narrateFuncOfLibrary = narrationEventToLibraryNarrateFunction[eventName]
@@ -3889,7 +3812,7 @@ if comboBox_base.IsEnabled == nil then
 end
 
 function comboBox_base:RefreshSortedItems(parentControl)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:RefreshSortedItems - parentControl: %s", tos(getControlName(parentControl)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 101, tos(getControlName(parentControl))) end
 	ZO_ClearNumericallyIndexedTable(self.m_sortedItems)
 
 	local entries = self:GetEntries()
@@ -3914,7 +3837,7 @@ function comboBox_base:RefreshSortedItems(parentControl)
 end
 
 function comboBox_base:RunItemCallback(item, ignoreCallback, ...)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:FireEntrtCallback")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 102) end
 
 	if item.callback and not ignoreCallback then
 		return item.callback(self, item.name, item, ...)
@@ -3923,12 +3846,12 @@ function comboBox_base:RunItemCallback(item, ignoreCallback, ...)
 end
 
 function comboBox_base:SetOptions(options)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetOptions")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 103) end
 	self.options = options
 end
 
 function comboBox_base:SetupEntryBase(control, data, list)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryBase - control: " .. tos(getControlName(control)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 104, tos(getControlName(control))) end
 	self.m_dropdownObject:SetupEntryBase(control, data, list)
 
 	control.callback = data.callback
@@ -3946,7 +3869,7 @@ end
 -- used for onMouseEnter[submenu] and onMouseUp[contextMenu]
 function comboBox_base:ShowDropdownOnMouseAction(parentControl)
 	--d( debugPrefix .. 'comboBox_base:ShowDropdownOnMouseAction')
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:ShowDropdownOnMouseAction - parentControl: %s " .. tos(getControlName(parentControl)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 105, tos(getControlName(parentControl))) end
 	if self:IsDropdownVisible() then
 		-- If submenu was currently opened, close it so it can reset.
 		self:HideDropdown()
@@ -3965,7 +3888,7 @@ function comboBox_base:ShowDropdownOnMouseAction(parentControl)
 end
 
 function comboBox_base:ShowSubmenu(parentControl)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:ShowSubmenu - parentControl: %s " .. tos(getControlName(parentControl)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 106, tos(getControlName(parentControl))) end
 	-- We don't want a submenu to open under the context menu or it's submenus.
 	--TODO: see if this acts negatively in contextmenu submenus
 	hideContextMenu()
@@ -4044,7 +3967,7 @@ function comboBox_base:UpdateHeight(control)
 --d(">[LSM]headerHeight: " ..tos(headerHeight) .. ", maxHeightInTotal: " ..tos(maxHeightInTotal))
 
 
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:UpdateHeight - control: %q, maxHeight: %s, maxDropdownHeight: %s, maxHeightByEntries: %s, baseEntryHeight: %s, maxRows: %s, spacing: %s, headerHeight: %s", tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 107, tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight)) end
 
 	--This will set self.m_height for later usage in self:Show() -> as the dropdown is shown
 	self:SetHeight(maxHeightInTotal)
@@ -4057,7 +3980,7 @@ end
 
 do -- Row setup functions
 	local function applyEntryFont(control, font, color, horizontalAlignment)
-		dLog(LSM_LOGTYPE_VERBOSE, "applyEntryFont - control: %s, font: %s, color: %s, horizontalAlignment: %s", tos(getControlName(control)), tos(font), tos(color), tos(horizontalAlignment))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 108, tos(getControlName(control)), tos(font), tos(color), tos(horizontalAlignment)) end
 		if font then
 			control.m_label:SetFont(font)
 		end
@@ -4072,7 +3995,7 @@ do -- Row setup functions
 	end
 
 	local function addIcon(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "addIcon - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 109, tos(getControlName(control)), tos(list)) end
 		control.m_iconContainer = control.m_iconContainer or control:GetNamedChild("IconContainer")
 		local iconContainer = control.m_iconContainer
 		control.m_icon = control.m_icon or iconContainer:GetNamedChild("Icon")
@@ -4080,18 +4003,18 @@ do -- Row setup functions
 	end
 
 	local function addArrow(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "addArrow - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 110, tos(getControlName(control)), tos(list)) end
 		control.m_arrow = control:GetNamedChild("Arrow")
 		data.hasSubmenu = true
 	end
 
 	local function addDivider(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "addDivider - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 111, tos(getControlName(control)), tos(list)) end
 		control.m_divider = control:GetNamedChild("Divider")
 	end
 
 	local function addLabel(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "addLabel - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 112, tos(getControlName(control)), tos(list)) end
 		control.m_label = control.m_label or control:GetNamedChild("Label")
 
 		control.m_label:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
@@ -4152,7 +4075,7 @@ do -- Row setup functions
 	end
 
 	function comboBox_base:SetupEntryDivider(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryDivider - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 113, tos(getControlName(control)), tos(list)) end
 		control.typeId = LSM_ENTRY_TYPE_DIVIDER
 		addDivider(control, data, list)
 		self:SetupEntryBase(control, data, list)
@@ -4160,7 +4083,7 @@ do -- Row setup functions
 	end
 
 	function comboBox_base:SetupEntryLabelBase(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryLabelBase - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 114, tos(getControlName(control)), tos(list)) end
 		local font = getValueOrCallback(data.font, data)
 		font = font or self:GetDropdownFont()
 
@@ -4175,7 +4098,7 @@ do -- Row setup functions
 	end
 
 	function comboBox_base:SetupEntryLabel(control, data, list, realEntryType)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryLabel - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 115, tos(getControlName(control)), tos(list)) end
 		control.typeId = LSM_ENTRY_TYPE_NORMAL
 		addIcon(control, data, list)
 		addLabel(control, data, list)
@@ -4187,7 +4110,7 @@ do -- Row setup functions
 	end
 
 	function comboBox_base:SetupEntrySubmenu(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntrySubmenu - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 116, tos(getControlName(control)), tos(list)) end
 		self:SetupEntryLabel(control, data, list)
 		addArrow(control, data, list)
 		control.typeId = LSM_ENTRY_TYPE_SUBMENU
@@ -4198,7 +4121,7 @@ do -- Row setup functions
 	end
 	
 	function comboBox_base:SetupEntryHeader(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryHeader - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 117, tos(getControlName(control)), tos(list)) end
 		addDivider(control, data, list)
 		self:SetupEntryLabel(control, data, list)
 		control.isHeader = true
@@ -4207,7 +4130,7 @@ do -- Row setup functions
 
 
 	function comboBox_base:SetupEntryRadioButton(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 118, tos(getControlName(control)), tos(list)) end
 
 		local selfVar = self
 		local function toggleFunction(button, checked)
@@ -4216,12 +4139,12 @@ do -- Row setup functions
 			rowData.checked = checked
 
 			if checked then
-				dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryRadioButton - calling radiobutton callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
+				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 119, tos(getControlName(control)), tos(checked), tos(list)) end
 				selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 
 				selfVar:Narrate("OnRadioButtonUpdated", button, data, nil)
 				lib:FireCallbacks('RadioButtonUpdated', control, data, checked)
-				dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: RadioButtonUpdated - control: %q, checked: %s", tos(getControlName(button)), tos(checked))
+				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 120, tos(getControlName(button)), tos(checked)) end
 			end
 		end
 		self:SetupEntryLabel(control, data, list)
@@ -4241,7 +4164,7 @@ do -- Row setup functions
 	end
 
 	function comboBox_base:SetupEntryCheckbox(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 121, tos(getControlName(control)), tos(list)) end
 
 		local selfVar = self
 		local function toggleFunction(checkbox, checked)
@@ -4249,13 +4172,13 @@ do -- Row setup functions
 
 			checkedData.checked = checked
 
-			dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryCheckbox - calling checkbox callback, control: %s, checked: %s, list: %s,", tos(getControlName(control)), tos(checked), tos(list))
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 122, tos(getControlName(control)), tos(checked), tos(list)) end
 			--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
 			selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 
 			selfVar:Narrate("OnCheckboxUpdated", checkbox, data, nil)
 			lib:FireCallbacks('CheckboxUpdated', control, data, checked)
-			dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: CheckboxUpdated - control: %q, checked: %s", tos(getControlName(checkbox)), tos(checked))
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 123, tos(getControlName(checkbox)), tos(checked)) end
 		end
 
 		self:SetupEntryLabel(control, data, list)
@@ -4269,7 +4192,7 @@ do -- Row setup functions
 	end
 
 	function comboBox_base:SetupEntryButton(control, data, list)
-		dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:SetupEntryButton - control: %s, list: %s,", tos(getControlName(control)), tos(list))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 124, tos(getControlName(control)), tos(list)) end
 
 		-- The row it's self is treated as a button, no child button
 		control.isButton = true
@@ -4322,7 +4245,7 @@ end
 -- Blank
 function comboBox_base:GetMaxRows()
 	-- Overwrite at subclasses
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBox_base:GetMaxRows")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 125) end
 end
 
 function comboBox_base:IsFilterEnabled()
@@ -4359,7 +4282,7 @@ local comboBoxClass = comboBox_base:Subclass()
 
 -- comboBoxClass:New(To simplify locating the beginning of the class
 function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth, initExistingComboBox)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 126, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
 	comboBoxContainer.m_comboBox = self
 
 	self:SetDefaults()
@@ -4386,7 +4309,7 @@ end
 
 -- Changed to force updating items and, to set anchor since anchoring was removed from :Show() due to separate anchoring based on comboBox type. (comboBox to self /submenu to row/contextMenu to mouse)
 function comboBoxClass:AddMenuItems()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:AddMenuItems")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 127) end
 	self:UpdateItems()
 	self.m_dropdownObject:AnchorToComboBox(self)
 	self:Show()
@@ -4394,17 +4317,17 @@ end
 
 -- [New functions]
 function comboBoxClass:GetMaxRows()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:GetMaxRows: " .. tos(self.visibleRows or DEFAULT_VISIBLE_ROWS))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 128, tos(self.visibleRows or DEFAULT_VISIBLE_ROWS)) end
 	return self.visibleRows or DEFAULT_VISIBLE_ROWS
 end
 
 function comboBoxClass:GetMenuPrefix()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:GetMenuPrefix: Menu")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 129) end
 	return 'Menu'
 end
 
 function comboBoxClass:GetHiddenForReasons(button)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:GetHiddenForReasons - button: " ..tos(button))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 130, tos(button)) end
 --d("111111111111111 comboBoxClass:GetHiddenForReasons - button: " ..tos(button))
 	local selfVar = self
 	return function(owningWindow, mocCtrl, comboBox, entry) return checkIfHiddenForReasons(selfVar, button, false, owningWindow, mocCtrl, comboBox, entry) end
@@ -4412,7 +4335,7 @@ end
 
 
 function comboBoxClass:HideDropdown()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:HideDropdown")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 131) end
 --d(debugPrefix .. "comboBoxClass:HideDropdown")
 	-- Recursive through all open submenus and close them starting from last.
 	hideContextMenu()
@@ -4420,14 +4343,14 @@ function comboBoxClass:HideDropdown()
 end
 
 function comboBoxClass:HideOnMouseEnter()
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:HideOnMouseEnter")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 132) end
 	if self.m_submenu and not self.m_submenu:IsMouseOverControl() and not self:IsMouseOverControl() then
 		self.m_submenu:HideDropdown()
 	end
 end
 
 function comboBoxClass:HideOnMouseExit(mocCtrl)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:HideOnMouseExit")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 133) end
 	if self.m_submenu and self.m_submenu:ShouldHideDropdown() then
 --d(">submenu found, but mouse not over it! HideDropdown")
 		self.m_submenu:HideDropdown()
@@ -4471,7 +4394,7 @@ end
 -->If called later from e.g. UpdateOptions function where options passed in are nil or empty: Reset all to LSM default values
 --->In all cases the function comboBoxClass:UpdateOptions should update the options needed!
 function comboBoxClass:ResetToDefaults(initExistingComboBox)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:ResetToDefaults")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 134) end
 	local defaults = ZO_DeepTableCopy(comboBoxDefaults)
 	zo_mixin(defaults, self.defaults)
 
@@ -4486,7 +4409,7 @@ function comboBoxClass:SetOption(LSMOptionsKey)
 	--Old code: Updating comboBox[key] with the newValue
 	--Get current value
 	local currentZO_ComboBoxValueKey = LSMOptionsKeyToZO_ComboBoxOptionsKey[LSMOptionsKey]
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:SetOption . key: %s, ZO_ComboBox[key]: %s", tos(LSMOptionsKey), tos(currentZO_ComboBoxValueKey))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 135, tos(LSMOptionsKey), tos(currentZO_ComboBoxValueKey)) end
 	if currentZO_ComboBoxValueKey == nil then return end
 	local currentValue = self[currentZO_ComboBoxValueKey]
 
@@ -4515,7 +4438,7 @@ function comboBoxClass:UpdateOptions(options, onInit)
 	onInit = onInit or false
 	local optionsChanged = self.optionsChanged
 
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateOptions - options: %s, onInit: %s, optionsChanged: %s", tos(options), tos(onInit), tos(optionsChanged))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 136, tos(options), tos(onInit), tos(optionsChanged)) end
 
 --d("[LSM]comboBoxClass:UpdateOptions - options: " ..tos(options) .. ", onInit: " .. tos(onInit))
 
@@ -4607,7 +4530,7 @@ end
 -- We need to integrate a supplied ZO_ComboBox with the lib's functionality.
 -- We do this by replacing the metatable with comboBoxClass.
 function comboBoxClass:UpdateMetatable(parent, comboBoxContainer, options)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateMetatable - parent: %s, comboBoxContainer: %s, options: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(options))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 137, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(options)) end
 
 --d("comboBoxClass:UpdateMetatable")
 
@@ -4616,7 +4539,7 @@ function comboBoxClass:UpdateMetatable(parent, comboBoxContainer, options)
 
 	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table
 	lib:FireCallbacks('OnDropdownMenuAdded', self, options)
-	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(self.m_container)), tos(options))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 138, tos(getControlName(self.m_container)), tos(options)) end
 
 	self:Initialize(parent, comboBoxContainer, options, 1, true)
 end
@@ -4642,7 +4565,7 @@ end
 
 --Toggle function called as the collapsible header is clicked
 function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
-	dLog(LSM_LOGTYPE_VERBOSE, "comboBoxClass:UpdateDropdownHeader - options: %s, toggleButton: %s", tos(self.options), tos(toggleButtonCtrl))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 139, tos(self.options), tos(toggleButtonCtrl)) end
 	local headerControl, dropdownControl = getHeaderControl(self)
 	if headerControl == nil then return end
 
@@ -4701,7 +4624,7 @@ end
 
 -- submenuClass:New(To simplify locating the beginning of the class
 function submenuClass:Initialize(parent, comboBoxContainer, options, depth)
-	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 140, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
 	self.m_comboBox = comboBoxContainer.m_comboBox
 	self.isSubmenu = true
 	self.m_parentMenu = parent
@@ -4711,12 +4634,12 @@ function submenuClass:Initialize(parent, comboBoxContainer, options, depth)
 end
 
 function submenuClass:UpdateOptions(options, onInit)
-	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:UpdateOptions - options: %s, onInit: %s", tos(options), tos(onInit))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 141, tos(options), tos(onInit)) end
 	self:AddCustomEntryTemplates(self:GetOptions())
 end
 
 function submenuClass:AddMenuItems(parentControl)
-	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:AddMenuItems - parentControl: %s", tos(getControlName(parentControl)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 142, tos(getControlName(parentControl))) end
 	self.openingControl = parentControl
 	self:RefreshSortedItems(parentControl)
 	self:UpdateHeight()
@@ -4732,12 +4655,12 @@ function submenuClass:GetEntries()
 end
 
 function submenuClass:GetMaxRows()
-	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:GetMaxRows: " .. tos(self.visibleRowsSubmenu or DEFAULT_VISIBLE_ROWS))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 143, tos(self.visibleRowsSubmenu or DEFAULT_VISIBLE_ROWS)) end
 	return self.visibleRowsSubmenu or DEFAULT_VISIBLE_ROWS
 end
 
 function submenuClass:GetMenuPrefix()
-	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:GetMenuPrefix: SubMenu")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 144) end
 	return 'SubMenu'
 end
 
@@ -4748,14 +4671,14 @@ function submenuClass:ShowDropdownInternal()
 end
 
 function submenuClass:HideDropdownInternal()
-	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:HideDropdownInternal")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 145) end
 
 	if self.m_dropdownObject:IsOwnedByComboBox(self) then
 		self.m_dropdownObject:SetHidden(true)
 	end
 	self:SetVisible(false)
 	if self.onHideDropdownCallback then
-		dLog(LSM_LOGTYPE_VERBOSE, ">submenuClass:HideDropdownInternal - onHideDropdownCallback called")
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 146) end
 		self.onHideDropdownCallback()
 	end
 
@@ -4771,7 +4694,7 @@ end
 function submenuClass:HideOnMouseExit(mocCtrl)
 	-- Only begin hiding if we stopped over a dropdown.
 	mocCtrl = mocCtrl or moc()
-	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:HideOnMouseExit - mocCtrl: %s", tos(getControlName(mocCtrl)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 147, tos(getControlName(mocCtrl))) end
 	if mocCtrl.m_dropdownObject then
 		if comboBoxClass.HideOnMouseExit(self) then
 			-- Close all open submenus beyond this point
@@ -4793,7 +4716,7 @@ function submenuClass:IsMouseOverOpeningControl()
 end
 
 function submenuClass:GetHiddenForReasons(button)
-	dLog(LSM_LOGTYPE_VERBOSE, "submenuClass:GetHiddenForReasons - button: " ..tos(button))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 148, tos(button)) end
 --d("222222222222222 submenuClass:GetHiddenForReasons - button: " ..tos(button))
 	local selfVar = self
 	return function(owningWindow, mocCtrl, comboBox, entry) return checkIfHiddenForReasons(selfVar, button, false, owningWindow, mocCtrl, comboBox, entry, true) end
@@ -4808,7 +4731,7 @@ local contextMenuClass = comboBoxClass:Subclass()
 -- LibScrollableMenu.contextMenu
 -- contextMenuClass:New(To simplify locating the beginning of the class
 function contextMenuClass:Initialize(comboBoxContainer)
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:Initialize - comboBoxContainer: %s", tos(getControlName(comboBoxContainer)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 149, tos(getControlName(comboBoxContainer))) end
 	self:SetDefaults()
 	comboBoxClass.Initialize(self, nil, comboBoxContainer, nil, 1)
 	self.data = {}
@@ -4829,7 +4752,7 @@ end
 
 -- Renamed from AddItem since AddItem can be the same as base. This function is only to pre-set data for updating on show,
 function contextMenuClass:AddContextMenuItem(itemEntry, updateOptions)
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:AddContextMenuItem - itemEntry: %s, updateOptions: %s", tos(itemEntry), tos(updateOptions))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 150, tos(itemEntry), tos(updateOptions)) end
 	local indexAdded = tins(self.data, itemEntry)
 	indexAdded = indexAdded or #self.data
 	return indexAdded
@@ -4837,7 +4760,7 @@ function contextMenuClass:AddContextMenuItem(itemEntry, updateOptions)
 end
 
 function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:AddMenuItems")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 151) end
 	self:RefreshSortedItems()
 	self:Show()
 	self.m_dropdownObject:AnchorToMouse()
@@ -4845,7 +4768,7 @@ end
 
 function contextMenuClass:ClearItems()
 	--d( debugPrefix .. 'contextMenuClass:ClearItems()')
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ClearItems")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 152) end
 	self:SetContextMenuOptions(nil)
 	self:ResetToDefaults()
 
@@ -4863,32 +4786,32 @@ function contextMenuClass:GetEntries()
 end
 
 function contextMenuClass:GetMenuPrefix()
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:GetMenuPrefix: Contextmenu")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 153) end
 	return 'ContextMenu'
 end
 
 function contextMenuClass:GetHiddenForReasons(button)
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:GetHiddenForReasons - button: " ..tos(button))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 154, tos(button)) end
 --d("3333333333333333 contextMenuClass:GetHiddenForReasons - button: " ..tos(button))
 	local selfVar = self
 	return function(owningWindow, mocCtrl, comboBox, entry) return checkIfHiddenForReasons(selfVar, button, true, owningWindow, mocCtrl, comboBox, entry) end
 end
 
 function contextMenuClass:HideDropdown()
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:HideDropdown")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 155) end
 	-- Recursive through all open submenus and close them starting from last.
 
 	return comboBox_base.HideDropdown(self)
 end
 
 function contextMenuClass:ShowSubmenu(parentControl)
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ShowSubmenu - parentControl: %s", tos(getControlName(parentControl)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 156, tos(getControlName(parentControl))) end
 	local submenu = self:GetSubmenu()
 	submenu:ShowDropdownOnMouseAction(parentControl)
 end
 
 function contextMenuClass:ShowContextMenu(parentControl)
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:ShowContextMenu - parentControl: %s", tos(getControlName(parentControl)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 157, tos(getControlName(parentControl))) end
 
 d("[LSM]contextMenuClass:ShowContextMenu")
 
@@ -4933,7 +4856,7 @@ d("[LSM]contextMenuClass:ShowContextMenu")
 end
 
 function contextMenuClass:SetContextMenuOptions(options)
-	dLog(LSM_LOGTYPE_VERBOSE, "contextMenuClass:SetContextMenuOptions - options: %s", tos(options))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 158, tos(options)) end
 
 	--[[ --todo 20240506 Still needed? If enabled again it would overwrite the context menu options with defaults (which should be okay?)
 	if ZO_IsTableEmpty(options) then
@@ -4962,11 +4885,11 @@ end
 lib.persistentMenus = false -- controls if submenus are closed shortly after the mouse exists them
 							-- 2024-03-10 Currently not used anywhere!!!
 function lib.GetPersistentMenus()
-	dLog(LSM_LOGTYPE_DEBUG, "GetPersistentMenus: %s", tos(lib.persistentMenus))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 159, tos(lib.persistentMenus)) end
 	return lib.persistentMenus
 end
 function lib.SetPersistentMenus(persistent)
-	dLog(LSM_LOGTYPE_DEBUG, "SetPersistentMenus - persistent: %s", tos(persistent))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 160, tos(persistent)) end
 	lib.persistentMenus = persistent
 end
 
@@ -5061,7 +4984,7 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, opti
 	local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
 	assert(comboBox and comboBox.IsInstanceOf and comboBox:IsInstanceOf(ZO_ComboBox), MAJOR .. ' | The comboBoxContainer you supplied must be a valid ZO_ComboBox container. "comboBoxContainer.m_comboBox:IsInstanceOf(ZO_ComboBox)"')
 
-	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableComboBoxDropdownMenu - parent: %s, comboBoxContainer: %s, options: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(options))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 161, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(options)) end
 	comboBoxClass.UpdateMetatable(comboBox, parent, comboBoxContainer, options) --Calls comboboxCLass:Initialize
 
 	return comboBox.m_dropdownObject
@@ -5194,7 +5117,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	end
 
 
-	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuEntry - text: %s, callback: %s, entryType: %s, entries: %s", tos(text), tos(callback), tos(entryType), tos(entries))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 162, tos(text), tos(callback), tos(entryType), tos(entries)) end
 
 	--Add the line of the context menu to the internal tables. Will be read as the ZO_ComboBox's dropdown opens and calls
 	--:AddMenuItems() -> Added to internal scroll list then
@@ -5209,7 +5132,7 @@ local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableSubMenuEntry(text, entries)
-	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableSubMenuEntry - text: %s, entries: %s", tos(text), tos(entries))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 163, tos(text), tos(entries)) end
 	return addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_SUBMENU, entries, nil)
 end
 
@@ -5217,7 +5140,7 @@ end
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuDivider()
-	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuDivider")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 164) end
 	return addCustomScrollableMenuEntry(libDivider, nil, LSM_ENTRY_TYPE_DIVIDER, nil, nil)
 end
 
@@ -5225,7 +5148,7 @@ end
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuHeader(text, additionalData)
-	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuHeader-text: %s", tos(text))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 165, tos(text)) end
 	return addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_HEADER, nil, additionalData)
 end
 
@@ -5233,7 +5156,7 @@ end
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuCheckbox(text, callback, checked, additionalData)
-	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuCheckbox-text: %s, checked: %s", tos(text), tos(checked))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 166, tos(text), tos(checked)) end
 	if checked ~= nil then
 		additionalData = additionalData or {}
 		additionalData.checked = checked
@@ -5248,7 +5171,7 @@ function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 	--local optionsTableType = type(options)
 	--assert(optionsTableType == 'table' , sfor('['..MAJOR..':SetCustomScrollableMenuOptions] table expected, got %q = %s', "options", tos(optionsTableType)))
 
-	dLog(LSM_LOGTYPE_DEBUG, "SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 167, tos(getControlName(comboBoxContainer)), tos(options)) end
 
 
 df("[LSM]SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
@@ -5271,7 +5194,7 @@ local setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
 
 --Hide the custom scrollable context menu and clear it's entries, clear internal variables, mouse clicks etc.
 function ClearCustomScrollableMenu()
-	dLog(LSM_LOGTYPE_DEBUG, "ClearCustomScrollableMenu")
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 168) end
 	hideContextMenu()
 
 	setCustomScrollableMenuOptions(defaultComboBoxOptions, nil)
@@ -5283,7 +5206,7 @@ local clearCustomScrollableMenu = ClearCustomScrollableMenu
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 ---> returns boolean allWereAdded, nilable:table indicesOfNewAddedEntries, nilable:table newEntriesData
 function AddCustomScrollableMenuEntries(contextMenuEntries)
-	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenuEntries - contextMenuEntries: %s", tos(contextMenuEntries))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 169, tos(contextMenuEntries)) end
 
 	local indicesAdded = nil
 	local newAddedEntriesData = nil
@@ -5319,7 +5242,7 @@ local addCustomScrollableMenuEntries = AddCustomScrollableMenuEntries
 --You can add more entries later, prior to showing, via AddCustomScrollableMenuEntry / AddCustomScrollableMenuEntries functions too
 ---> returns boolean allWereAdded, nilable:table indicesOfNewAddedEntries, nilable:table newEntriesData
 function AddCustomScrollableMenu(entries, options)
-	dLog(LSM_LOGTYPE_DEBUG, "AddCustomScrollableMenu - entries: %s, options: %s", tos(entries), tos(options))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 170, tos(entries), tos(options)) end
 	--Clear the existing LSM context menu entries
 	clearCustomScrollableMenu()
 
@@ -5339,12 +5262,12 @@ end
 --If controlToAnchorTo is nil it will be anchored to the current control's position below the mouse, like ZO_Menu does
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function ShowCustomScrollableMenu(controlToAnchorTo, options)
-	dLog(LSM_LOGTYPE_DEBUG, "ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 171, tos(getControlName(controlToAnchorTo)), tos(options)) end
 df("_-_-_-_-_-_-_-_-_-_ [LSM]ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
 
 	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table -> Here: For the contextMenu
 	lib:FireCallbacks('OnDropdownMenuAdded', g_contextMenu, options)
-	dLog(LSM_LOGTYPE_DEBUG_CALLBACK, "FireCallbacks: ContextMenu - OnDropdownMenuAdded - control: %s, options: %s", tos(getControlName(g_contextMenu.m_container)), tos(options))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 172, tos(getControlName(g_contextMenu.m_container)), tos(options)) end
 	if options then
 d(">calling SetCustomScrollableMenuOptions")
 		setCustomScrollableMenuOptions(options)
@@ -5459,11 +5382,11 @@ local function buttonGroupDefaultContextMenu(comboBox, control, data)
 			name = GetString(SI_LSM_CNTXT_CHECK_ALL), --Check All
 			--entryType = LSM_ENTRY_TYPE_BUTTON,
 			entryType = LSM_ENTRY_TYPE_NORMAL,
-			additionalData = {
+			--additionalData = {
 				--horizontalAlignment = TEXT_ALIGN_CENTER,
 				--selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
 				-- ignoreCallback = true -- Just a thought
-			},
+			--},
 			callback = function()
 				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 				if buttonGroupOfEntryType == nil then return end
@@ -5473,10 +5396,10 @@ local function buttonGroupDefaultContextMenu(comboBox, control, data)
 		{
 			name = GetString(SI_LSM_CNTXT_CHECK_NONE),-- Check none
 			entryType = LSM_ENTRY_TYPE_NORMAL,
-			additionalData = {
+			--additionalData = {
 				--horizontalAlignment = TEXT_ALIGN_CENTER,
 				--selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
-			},
+			--},
 			callback = function()
 				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 				if buttonGroupOfEntryType == nil then return end
@@ -5495,6 +5418,7 @@ local function buttonGroupDefaultContextMenu(comboBox, control, data)
 	}
 	clearCustomScrollableMenu()
 	addCustomScrollableMenuEntries(buttonGroupSetAll)
+d("[LSM]>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> buttonGroupDefaultContextMenu")
 	ShowCustomScrollableMenu()
 end
 lib.SetButtonGroupState = buttonGroupDefaultContextMenu --Only for compatibilitxy (if any other addon was using 'SetButtonGroupState' already)
@@ -5531,7 +5455,7 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 				local data = getControlData(parent)
 				local rightClickCallback = data.contextMenuCallback or data.rightClickCallback
 				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(owner) then
-					dLog(LSM_LOGTYPE_VERBOSE, "m_button OnMouseUp!")
+					if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 173) end
 					rightClickCallback(owner, parent, data)
 				end
 			end
@@ -5575,8 +5499,12 @@ end
 local function onAddonLoaded(event, name)
 	if name:find("^ZO_") then return end
 	EM:UnregisterForEvent(MAJOR, EVENT_ADD_ON_LOADED)
-	loadLogger()
-	dLog(LSM_LOGTYPE_DEBUG, "~~~~~ onAddonLoaded ~~~~~")
+
+	--Debug logging
+	libDebug.LoadLogger()
+	libDebug = lib.Debug
+	dlog = libDebug.DebugLog
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 174) end
 
 	--SavedVariables
 	lib.SV = ZO_SavedVars:NewAccountWide(svName, 1, "LSM", lsmSVDefaults)
@@ -5603,7 +5531,7 @@ local function onAddonLoaded(event, name)
 
 	--ZO_Menu - ShowMenu hook: Hide LSM if a ZO_Menu menu opens
 	ZO_PreHook("ShowMenu", function(owner, initialRefCount, menuType)
-		dLog(LSM_LOGTYPE_VERBOSE, "ZO_Menu -> ShowMenu. Items#: " ..tos(#ZO_Menu.items) .. ", menuType: " ..tos(menuType))
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 175, tos(#ZO_Menu.items), tos(menuType)) end
 		--Do not close on other menu types (only default menu type supported)
 		if menuType ~= nil and menuType ~= MENU_TYPE_DEFAULT then return end
 
@@ -5624,17 +5552,19 @@ local function onAddonLoaded(event, name)
 	--Slash commands
 	--------------------------------------------------------------------------------------------------------------------
 	SLASH_COMMANDS["/lsmdebug"] = function()
-		loadLogger()
-		lib.doDebug = not lib.doDebug
-		if logger then logger:SetEnabled(lib.doDebug) end
-		dLog(LSM_LOGTYPE_DEBUG, "Debugging turned %s", tos(lib.doDebug and "ON" or "OFF"))
+		libDebug.LoadLogger()
+		libDebug = lib.Debug
+		libDebug.doDebug = not libDebug.doDebug
+		if libDebug.logger then libDebug.logger:SetEnabled(libDebug.doDebug) end
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 176, tos(libDebug.doDebug and "ON" or "OFF")) end
 	end
 	SLASH_COMMANDS["/lsmdebugverbose"] = function()
-		loadLogger()
+		libDebug.LoadLogger()
+		libDebug = lib.Debug
 		lib.doVerboseDebug = not lib.doVerboseDebug
-		if logger and logger.verbose then
-			logger.verbose:SetEnabled(lib.doVerboseDebug)
-			dLog(LSM_LOGTYPE_DEBUG, "Verbose debugging turned %s / Debugging: %s", tos(lib.doVerboseDebug and "ON" or "OFF"), tos(lib.doDebug and "ON" or "OFF"))
+		if libDebug.logger and libDebug.logger.verbose then
+			libDebug.logger.verbose:SetEnabled(lib.doVerboseDebug)
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 177, tos(lib.doVerboseDebug and "ON" or "OFF"), tos(libDebug.doDebug and "ON" or "OFF")) end
 		end
 	end
 end
@@ -5667,6 +5597,8 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-16
 	7. Handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
 	8. Added options.XMLRowHighlightTemplates for row highlight XML virtual templates and colors (on mouse enter) per entryType
 	9. Bug fix: Fire the OnDropdownMenuAdded callback for the contextMenu too
+	10. Changed: Moved debug messages to a table and use the index of the message instead of sending the whole text on each debug message, plus orevent calling debug messages if debugging is disbled
+	11. Bug: todo 20241221 Default context menu "'buttonGroupDefaultContextMenu'" for checkboxes (Select all, Select none, Invert) dioes not apply the custom row highlight data on first open
 
 -------------------
 TODO - To check (future versions)
