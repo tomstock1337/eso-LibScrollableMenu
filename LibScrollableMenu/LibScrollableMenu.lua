@@ -35,6 +35,10 @@ lib.Debug.doDebug = false
 lib.Debug.doVerboseDebug = false
 local libDebug = lib.Debug
 
+local debugPrefix = "[" .. MAJOR .. "]"
+libDebug.prefix = debugPrefix
+
+
 local function initDebugLogging()
 	if not lib.Debug then return false end
 	libDebug = lib.Debug
@@ -196,13 +200,13 @@ local libDivider = lib.DIVIDER
 
 --Make them accessible for the DropdownObject:New options table -> options.XMLRowTemplates
 lib.scrollListRowTypes = {
-	["LSM_ENTRY_TYPE_NORMAL"] =		LSM_ENTRY_TYPE_NORMAL,
-	["LSM_ENTRY_TYPE_DIVIDER"] = 	LSM_ENTRY_TYPE_DIVIDER,
-	["LSM_ENTRY_TYPE_HEADER"] = 	LSM_ENTRY_TYPE_HEADER,
-	["LSM_ENTRY_TYPE_SUBMENU"] = 	LSM_ENTRY_TYPE_SUBMENU,
-	["LSM_ENTRY_TYPE_CHECKBOX"] =	LSM_ENTRY_TYPE_CHECKBOX,
-	["LSM_ENTRY_TYPE_BUTTON"] =		LSM_ENTRY_TYPE_BUTTON,
-	["LSM_ENTRY_TYPE_RADIOBUTTON"] = LSM_ENTRY_TYPE_RADIOBUTTON,
+	["LSM_ENTRY_TYPE_NORMAL"] =			LSM_ENTRY_TYPE_NORMAL,
+	["LSM_ENTRY_TYPE_DIVIDER"] = 		LSM_ENTRY_TYPE_DIVIDER,
+	["LSM_ENTRY_TYPE_HEADER"] = 		LSM_ENTRY_TYPE_HEADER,
+	["LSM_ENTRY_TYPE_SUBMENU"] = 		LSM_ENTRY_TYPE_SUBMENU,
+	["LSM_ENTRY_TYPE_CHECKBOX"] =		LSM_ENTRY_TYPE_CHECKBOX,
+	["LSM_ENTRY_TYPE_BUTTON"] =			LSM_ENTRY_TYPE_BUTTON,
+	["LSM_ENTRY_TYPE_RADIOBUTTON"] = 	LSM_ENTRY_TYPE_RADIOBUTTON,
 }
 local scrollListRowTypes = lib.scrollListRowTypes
 
@@ -210,7 +214,7 @@ local scrollListRowTypes = lib.scrollListRowTypes
 for key, value in pairs(scrollListRowTypes) do
 	--Create the lib.LSM_ENTRY_TYPE* variables
 	lib[key] = value
-	--Create the LSM_ENTRY_TYPE_NORMAL globals
+	--Create the LSM_ENTRY_TYPE*L globals
 	_G[key] = value
 end
 
@@ -222,52 +226,73 @@ local entryTypeToButtonChildName = {
 
 --Used in API RunCustomScrollableMenuItemsCallback and comboBox_base:AddCustomEntryTemplates to validate passed in entryTypes
 local libraryAllowedEntryTypes = {
-	[LSM_ENTRY_TYPE_NORMAL] = 	true,
-	[LSM_ENTRY_TYPE_DIVIDER] = 	true,
-	[LSM_ENTRY_TYPE_HEADER] = 	true,
-	[LSM_ENTRY_TYPE_SUBMENU] =	true,
-	[LSM_ENTRY_TYPE_CHECKBOX] =	true,
-	[LSM_ENTRY_TYPE_BUTTON] =	true,
+	[LSM_ENTRY_TYPE_NORMAL] = 		true,
+	[LSM_ENTRY_TYPE_DIVIDER] = 		true,
+	[LSM_ENTRY_TYPE_HEADER] = 		true,
+	[LSM_ENTRY_TYPE_SUBMENU] =		true,
+	[LSM_ENTRY_TYPE_CHECKBOX] =		true,
+	[LSM_ENTRY_TYPE_BUTTON] =		true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] =	true,
 }
---lib.allowedEntryTypes = libraryAllowedEntryTypes
+lib.AllowedEntryTypes = libraryAllowedEntryTypes
 
 --Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be allowed for the contextMenus
 local allowedEntryTypesForContextMenu = {
-	[LSM_ENTRY_TYPE_NORMAL] = 	true,
-	[LSM_ENTRY_TYPE_DIVIDER] = 	true,
-	[LSM_ENTRY_TYPE_HEADER] = 	true,
-	[LSM_ENTRY_TYPE_SUBMENU] =	true,
-	[LSM_ENTRY_TYPE_CHECKBOX] = true,
-	[LSM_ENTRY_TYPE_BUTTON] = true,
-	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
+	[LSM_ENTRY_TYPE_NORMAL] = 		true,
+	[LSM_ENTRY_TYPE_DIVIDER] = 		true,
+	[LSM_ENTRY_TYPE_HEADER] = 		true,
+	[LSM_ENTRY_TYPE_SUBMENU] =		true,
+	[LSM_ENTRY_TYPE_CHECKBOX] = 	true,
+	[LSM_ENTRY_TYPE_BUTTON] = 		true,
+	[LSM_ENTRY_TYPE_RADIOBUTTON] = 	true,
 }
---lib.allowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
+lib.AllowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
 
 --Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be used without a callback function
+--provided (else the assert raises an error)
 local entryTypesForContextMenuWithoutMandatoryCallback = {
-	[LSM_ENTRY_TYPE_DIVIDER] = 	true,
-	[LSM_ENTRY_TYPE_HEADER] = 	true,
-	[LSM_ENTRY_TYPE_SUBMENU] =	true,
+	[LSM_ENTRY_TYPE_DIVIDER] = 		true,
+	[LSM_ENTRY_TYPE_HEADER] = 		true,
+	[LSM_ENTRY_TYPE_SUBMENU] =		true,
 }
---lib.entryTypesForContextMenuWithoutMandatoryCallback = entryTypesForContextMenuWithoutMandatoryCallback
 
+--Table additionalData's key (e.g. isDivider) to the LSM entry type mapping
+local additionalDataKeyToLSMEntryType = {
+	["isDivider"] = 	LSM_ENTRY_TYPE_DIVIDER,
+	["isHeader"] = 		LSM_ENTRY_TYPE_HEADER,
+	["isCheckbox"] =	LSM_ENTRY_TYPE_CHECKBOX,
+	["isButton"] = 		LSM_ENTRY_TYPE_BUTTON,
+	["isRadioButton"] = LSM_ENTRY_TYPE_RADIOBUTTON,
+}
+
+
+------------------------------------------------------------------------------------------------------------------------
 --Row highlights (on mouse enter)
 local LSM_ROW_HIGHLIGHT_DEFAULT = 	'ZO_SelectionHighlight'
 local LSM_ROW_HIGHLIGHT_GREEN = 	'LibScrollableMenu_Highlight_Green'
 local LSM_ROW_HIGHLIGHT_BLUE = 		'LibScrollableMenu_Highlight_Blue'
 local LSM_ROW_HIGHLIGHT_RED = 		'LibScrollableMenu_Highlight_Red'
 local LSM_ROW_HIGHLIGHT_OPAQUE = 	'LibScrollableMenu_Highlight_Opaque'
-lib.LSM_ROW_HIGHLIGHT_DEFAULT = 	LSM_ROW_HIGHLIGHT_DEFAULT
-lib.LSM_ROW_HIGHLIGHT_GREEN = 		LSM_ROW_HIGHLIGHT_GREEN
-lib.LSM_ROW_HIGHLIGHT_BLUE = 		LSM_ROW_HIGHLIGHT_BLUE
-lib.LSM_ROW_HIGHLIGHT_RED = 		LSM_ROW_HIGHLIGHT_RED
-lib.LSM_ROW_HIGHLIGHT_OPAQUE = 		LSM_ROW_HIGHLIGHT_OPAQUE
+lib.scrollListRowHighlights = {
+	["LSM_ROW_HIGHLIGHT_DEFAULT"] =		LSM_ROW_HIGHLIGHT_DEFAULT,
+	["LSM_ROW_HIGHLIGHT_GREEN"] = 		LSM_ROW_HIGHLIGHT_GREEN,
+	["LSM_ROW_HIGHLIGHT_BLUE"] = 		LSM_ROW_HIGHLIGHT_BLUE,
+	["LSM_ROW_HIGHLIGHT_RED"] = 		LSM_ROW_HIGHLIGHT_RED,
+	["LSM_ROW_HIGHLIGHT_OPAQUE"] =		LSM_ROW_HIGHLIGHT_OPAQUE,
+}
+local scrollListRowHighlights = lib.scrollListRowHighlights
+--The custom scrollable context menu row highlight types > Globals
+for key, value in pairs(scrollListRowHighlights) do
+	--Create the lib.LSM_ROW_HIGHLIGHT* variables
+	lib[key] = value
+	--Create the LSM_ROW_HIGHLIGHT* globals
+	_G[key] = value
+end
 
 --The default row highlight data for an entry having a submenu, where the entry itsself got a callback
 local defaultHighlightTemplateDataEntryHavingSubMenuWithCallback = {
-	template = LSM_ROW_HIGHLIGHT_GREEN, --green row
-	color = DEFAULT_TEXT_HIGHLIGHT,
+	template = 	LSM_ROW_HIGHLIGHT_GREEN, --green row
+	color = 	DEFAULT_TEXT_HIGHLIGHT,
 }
 
 
@@ -288,31 +313,23 @@ local LSMEntryKeyZO_ComboBoxEntryKey = {
 }
 
 ------------------------------------------------------------------------------------------------------------------------
---Table additionalData's key (e.g. isDivider) to the LSM entry type mapping
-local additionalDataKeyToLSMEntryType = {
-	["isCheckbox"] =	LSM_ENTRY_TYPE_CHECKBOX,
-	["isDivider"] = 	LSM_ENTRY_TYPE_DIVIDER,
-	["isHeader"] = 		LSM_ENTRY_TYPE_HEADER,
-	["isButton"] = 		LSM_ENTRY_TYPE_BUTTON,
-	["isRadioButton"] = LSM_ENTRY_TYPE_RADIOBUTTON,
-}
-
-
-------------------------------------------------------------------------------------------------------------------------
 --Entries which can use a function and need to be updated via function updateDataValues
-
 --Table contains [string key] = defaultValue boolean for the row/entry's data table
 --> If key inside the row's data table (e.g. data["name"]) is a function:
---> This function will be added to row's data._LSM.funcData subtables and executed upon showing the LSM dropdown.
---> If the functions return value is nil it will use the value of this table below, if it is true (false oothers will be ignored)
+--> This function will be added to row's data._LSM.funcData subtables (see function updateDataValues) and executed upon
+--> showing the LSM dropdown.
+--> If the functions return value is nil it will use the value of this table below, if it is true (false/others will be ignored)
 local nilToTrue = true
 local nilIgnore = false
 local possibleEntryDataWithFunction = {
+	--Ignored entryDatas: Returning nil by default
 	["name"] = 		nilIgnore,
 	["label"] = 	nilIgnore,
 	["checked"] = 	nilIgnore,
-	["enabled"] = 	nilToTrue,
 	["font"] = 		nilIgnore,
+
+	--entryData returning true by default
+	["enabled"] = 	nilToTrue,
 }
 
 
@@ -323,6 +340,7 @@ local possibleEntryDataWithFunction = {
 --dropdown helper classes
 local comboBoxDefaults = {
 	--From ZO_ComboBox
+	---member data with m_
 	m_selectedItemData = 			nil,
 	m_selectedColor =				{ GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED) },
 	m_disabledColor = 				DEFAULT_TEXT_DISABLED_COLOR,
@@ -340,12 +358,17 @@ local comboBoxDefaults = {
 	m_enableMultiSelect = 			false,
 	m_maxNumSelections = 			nil,
 	m_height = 						DEFAULT_HEIGHT,
-	horizontalAlignment = 			TEXT_ALIGN_LEFT,
-	itemYPad = 						0, --LibScrollableMenu support
 
-	--LibScrollableMenu internal (e.g. .options)
+	--non member data
+	horizontalAlignment = 			TEXT_ALIGN_LEFT,
+
+	--LibCustomMenu support
+	itemYPad = 						0,
+
+	--LibScrollableMenu internal (e.g. options)
 	disableFadeGradient = 			false,
-	m_headerFontColor = 			HEADER_TEXT_COLOR,
+	headerFont =					DEFAULT_FONT,
+	headerColor = 					HEADER_TEXT_COLOR,
 	visibleRows = 					DEFAULT_VISIBLE_ROWS,
 	visibleRowsSubmenu = 			DEFAULT_VISIBLE_ROWS,
 	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
@@ -359,16 +382,16 @@ local defaultHighlightColor = comboBoxDefaults.m_highlightColor
 
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
 local defaultComboBoxOptions  = {
+	["disableFadeGradient"] = 		false,
+	["font"] = 						DEFAULT_FONT,
+	["headerCollapsed"] =			false,
+	["headerCollapsible"] = 		false,
+	["highlightContextMenuOpeningControl"] = false,
+	["sortEntries"] = 				DEFAULT_SORTS_ENTRIES,
+	["spacing"] = 					DEFAULT_SPACING,
+	["useDefaultHighlightForSubmenuWithCallback"] = false,
 	["visibleRowsDropdown"] = 		DEFAULT_VISIBLE_ROWS,
 	["visibleRowsSubmenu"] = 		DEFAULT_VISIBLE_ROWS,
-	["sortEntries"] = 				DEFAULT_SORTS_ENTRIES,
-	["font"] = 						DEFAULT_FONT,
-	["spacing"] = 					DEFAULT_SPACING,
-	["disableFadeGradient"] = 		false,
-	["useDefaultHighlightForSubmenuWithCallback"] = false,
-	["highlightContextMenuOpeningControl"] = false,
-	["headerCollapsible"] = 		false,
-	["headerCollapsed"] =			false,
 	--["XMLRowTemplates"] = 		table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 	--["XMLRowHighlightTemplates"] =table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 }
@@ -378,38 +401,40 @@ lib.defaultComboBoxOptions  = defaultComboBoxOptions
 ------------------------------------------------------------------------------------------------------------------------
 --Options key mapping
 
---The mapping between LibScrollableMenu options key and ZO_ComboBox options key. Used in comboBoxClass:UpdateOptions()
+--The mapping between LibScrollableMenu options key and ZO_ComboBox's key. Used in comboBoxClass:UpdateOptions()
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	--All possible options entries "must" be mapped here (left: options entry / right: ZO_ComboBox relating entry where the value is saved)
 	-->e.g. options.visibleRowsDropdown -> Will be saved at comboBox.visibleRows (and if a function in table LSMOptionsToZO_ComboBoxOptionsCallbacks
 	-->is defiend below this function will be executed too).
 	-->Missing entries (even if names are the same) will relate in function comboBoxClass:SetOption not respecting the value!
 	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
-	["headerColor"] =			"m_headerFontColor",
-	["normalColor"] = 			"m_normalColor",
 	["disabledColor"] =			"m_disabledColor",
-	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
-	["titleText"] = 			"titleText",
-	["titleFont"] = 			"titleFont",
-	["subtitleText"] = 			"subtitleText",
-	["subtitleFont"] = 			"subtitleFont",
-	["titleTextAlignment"] =	"titleTextAlignment",
 	["enableFilter"] =			"enableFilter",
-	["narrate"] = 				"narrateData",
-	["maxDropdownHeight"] =		"maxHeight",
-	["useDefaultHighlightForSubmenuWithCallback"] = "useDefaultHighlightForSubmenuWithCallback",
-	["highlightContextMenuOpeningControl"] = "highlightContextMenuOpeningControl",
 	["headerCollapsible"] = 	"headerCollapsible",
 	["headerCollapsed"] = 		"headerCollapsed",
+	["headerColor"] =			"headerColor",
+	["headerFont"] =			"headerFont",
+	["highlightContextMenuOpeningControl"] = "highlightContextMenuOpeningControl",
+	["narrate"] = 				"narrateData",
+	["normalColor"] = 			"m_normalColor",
+	["subtitleText"] = 			"subtitleText",
+	["subtitleFont"] = 			"subtitleFont",
+	["titleFont"] = 			"titleFont",
+	["titleText"] = 			"titleText",
+	["titleTextAlignment"] =	"titleTextAlignment",
+	["useDefaultHighlightForSubmenuWithCallback"] = "useDefaultHighlightForSubmenuWithCallback",
+	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
 
 	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
-	-->!!!Attention: Add the entries, which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below, in this table here too!!!
-	['sortType'] = 				"m_sortType",
-	['sortOrder'] = 			"m_sortOrder",
-	['sortEntries'] = 			"m_sortsItems",
-	['spacing'] = 				"m_spacing",
+	-->!!!Attention: You must add those entries, which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks",
+	-->to this table LSMOptionsKeyToZO_ComboBoxOptionsKey here too!!!
 	['font'] = 					"m_font",
+	['maxDropdownHeight'] =		"maxHeight",
 	["preshowDropdownFn"] = 	"m_preshowDropdownFn",
+	['sortEntries'] = 			"m_sortsItems",
+	['sortOrder'] = 			"m_sortOrder",
+	['sortType'] = 				"m_sortType",
+	['spacing'] = 				"m_spacing",
 	["visibleRowsDropdown"] =	"visibleRows",
 }
 lib.LSMOptionsKeyToZO_ComboBoxOptionsKey = LSMOptionsKeyToZO_ComboBoxOptionsKey
@@ -417,14 +442,22 @@ lib.LSMOptionsKeyToZO_ComboBoxOptionsKey = LSMOptionsKeyToZO_ComboBoxOptionsKey
 --The callback functions for the mapped LSM option -> ZO_ComboBox options (where any provided/needed)
 local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	--These callback functions will apply the options directly
-	['sortType'] = function(comboBoxObject, sortType)
-		local options = comboBoxObject.options
-		local updatedOptions = comboBoxObject.updatedOptions
-		if updatedOptions.sortOrder then return end
+	--If self. (= comboBoxObject) updatedOptions table is provided it might contain already processed
+	--"updated" options of the current loop at self:UpdateOptions(optionsTable)
+	-->You can use these table entries to get the most up2date values of the currently processed options
 
-		local sortOrder = getValueOrCallback(options.sortOrder, options)
-		if sortOrder == nil then sortOrder = comboBoxObject.m_sortOrder end
-		comboBoxObject:SetSortOrder(sortType , sortOrder )
+	['font'] = function(comboBoxObject, font)
+		comboBoxObject:SetFont(font) --sets comboBoxObject.m_font
+	end,
+	["maxDropdownHeight"] = function(comboBoxObject, maxDropdownHeight)
+		comboBoxObject.maxHeight = maxDropdownHeight
+		comboBoxObject:UpdateHeight(comboBoxObject.m_dropdown)
+	end,
+	["preshowDropdownFn"] = function(comboBoxObject, preshowDropdownCallbackFunc)
+		comboBoxObject:SetPreshowDropdownCallback(preshowDropdownCallbackFunc) --sets m_preshowDropdownFn
+	end,
+	["sortEntries"] = function(comboBoxObject, sortEntries)
+		comboBoxObject:SetSortsItems(sortEntries) --sets comboBoxObject.m_sortsItems
 	end,
 	['sortOrder'] = function(comboBoxObject, sortOrder)
 		local options = comboBoxObject.options
@@ -436,24 +469,22 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		local sortType = getValueOrCallback(options.sortType, options) or comboBoxObject.m_sortType
 		comboBoxObject:SetSortOrder(sortType , sortOrder)
 	end,
-	["sortEntries"] = function(comboBoxObject, sortEntries)
-		comboBoxObject:SetSortsItems(sortEntries) --sets comboBoxObject.m_sortsItems
+	['sortType'] = function(comboBoxObject, sortType)
+		local options = comboBoxObject.options
+		--Check if any updatedOptions already exist and if the sortOrder was updated already then sortType does not need
+		--to be updated too (and vice versa)
+		local updatedOptions = comboBoxObject.updatedOptions
+		if updatedOptions.sortOrder then return end
+
+		local sortOrder = getValueOrCallback(options.sortOrder, options)
+		if sortOrder == nil then sortOrder = comboBoxObject.m_sortOrder end
+		comboBoxObject:SetSortOrder(sortType , sortOrder )
 	end,
 	['spacing'] = function(comboBoxObject, spacing)
 		comboBoxObject:SetSpacing(spacing) --sets comboBoxObject.m_spacing
 	end,
-	['font'] = function(comboBoxObject, font)
-		comboBoxObject:SetFont(font) --sets comboBoxObject.m_font
-	end,
-	["preshowDropdownFn"] = function(comboBoxObject, preshowDropdownCallbackFunc)
-		comboBoxObject:SetPreshowDropdownCallback(preshowDropdownCallbackFunc) --sets m_preshowDropdownFn
-	end,
 	["visibleRowsDropdown"] = function(comboBoxObject, visibleRows)
 		comboBoxObject.visibleRows = visibleRows
-		comboBoxObject:UpdateHeight(comboBoxObject.m_dropdown)
-	end,
-	["maxDropdownHeight"] = function(comboBoxObject, maxDropdownHeight)
-		comboBoxObject.maxHeight = maxDropdownHeight
 		comboBoxObject:UpdateHeight(comboBoxObject.m_dropdown)
 	end,
 }
@@ -502,11 +533,11 @@ local submenuClass_exposedVariables = {
 	---------------------------------------
 	['options'] = true,
 	['narrateData'] = true,
-	['m_headerFont'] = true,
 	['XMLRowTemplates'] = true, --TODO: is this being overwritten?
 	['XMLRowHighlightTemplates'] = true, --TODO: is this being overwritten?
 	['maxDropdownHeight'] = true,
-	['m_headerFontColor'] = true,
+	['headerFont'] = true,
+	['headerColor'] = true,
 	['m_highlightTemplate'] = true,
 	['visibleRowsSubmenu'] = true, -- we only need this "visibleRowsSubmenu" for the submenus, mainMenu uses visibleRowsDropdown
 	['disableFadeGradient'] = true,
@@ -1588,8 +1619,8 @@ local postItemSetupFunctions = {
 		itemEntry.isNew = recursiveOverEntries(itemEntry, preUpdateSubItems, nil)
 	end,
 	[LSM_ENTRY_TYPE_HEADER] = function(comboBox, itemEntry)
-		itemEntry.font = itemEntry.font or comboBox.m_headerFont
-		itemEntry.color = itemEntry.color or comboBox.m_headerFontColor
+		itemEntry.font = comboBox.headerFont or itemEntry.font
+		itemEntry.color = comboBox.headerColor or itemEntry.color
 	end,
 	[LSM_ENTRY_TYPE_DIVIDER] = function(comboBox, itemEntry)
 		itemEntry.name = libDivider
@@ -3736,10 +3767,11 @@ end
 
 --Get the current row's highlight template based on the options
 function comboBox_base:GetHighLightTemplate(control, isSubMenu)
+d("[LSM]comboBox_base:GetHighLightTemplate - control: " .. tos(getControlName(control)))
 	--Get the highlight template based on the entryType
 	local entryType = control.typeId
 	if not entryType then return end
-	local highlightTemplateData = ZO_ShallowTableCopy(self.XMLRowHighlightTemplates[entryType]) --loose the reference so we can overwrite values without changign originals
+	local highlightTemplateData = ZO_ShallowTableCopy(self.XMLRowHighlightTemplates[entryType]) --loose the reference so we can overwrite values without changing originals
 
 	if isSubMenu and control.closeOnSelect then
 		local options = self:GetOptions()
@@ -4452,6 +4484,8 @@ function comboBoxClass:SetOption(LSMOptionsKey)
 	if newValue == nil then return end
 
 	--Filling the self.updatedOptions table with values so they can be used in the callback functions (if any is given)
+	--from table LSMOptionsToZO_ComboBoxOptionsCallbacks
+	-->e.g. used for sortOrder and sortType
 	self.updatedOptions[LSMOptionsKey] = newValue
 
 	--Do we need to run a callback function to set the updated value?
@@ -4479,10 +4513,10 @@ function comboBoxClass:UpdateOptions(options, onInit)
 		optionsChanged = false
 	else
 		--self.optionsChanged might have been set by contextMenuClass:SetOptions(options) already. Check that first and keep that boolean state as we
-		--do not use self.options but self.optionsData here:
-		--->Coming from contextMenuClass:ShowContextMenu() -> self.optionsData was set via contextMenuClass:SetOptions(options) before, and will be passed in here
-		--->to UpdateOptions(options) as options parameter. self.optionsChanged will be true if the options changed at the contex menu (compared to old self.optionsData)
-		---->self.optionsData  is then used at OnShow of the context menu. That's why we cannot compare the self.options here!
+		--do not use self.options for the context menus, but self.contextMenuOptions here:
+		--->Coming from contextMenuClass:ShowContextMenu() -> self.contextMenuOptions was set via contextMenuClass:SetOptions(options) before, and will be passed in here
+		--->to UpdateOptions(options) as options parameter. self.optionsChanged will be true if the options changed at the contex menu (compared to old self.contextMenuOptions)
+		---->self.contextMenuOptions is then used at OnShow of the context menu.
 		--
 		--For other "non-context menu" calls: Compare the already stored self.options table to the new passed in options table (both could be nil though)
 		optionsChanged = optionsChanged or options ~= self.options
@@ -4494,6 +4528,7 @@ function comboBoxClass:UpdateOptions(options, onInit)
 	--> Reset to default ZO_ComboBox variables and just call AddCustomEntryTemplates()
 	if (optionsChanged == true or onInit == true) and ZO_IsTableEmpty(options) then
 		optionsChanged = false
+--d(">>resetting options to defaults!")
 		self:ResetToDefaults() -- Reset comboBox internal variables of ZO_ComboBox, e.g. m_font, and LSM defaults like visibleRowsDropdown
 
 	--Did the options change: Yes / OR Are the already stored options at the object nil or empty (should happen if self:UpdateOptions(options) was not called before): Yes
@@ -4513,6 +4548,9 @@ function comboBoxClass:UpdateOptions(options, onInit)
 		self:SetOptions(options)
 
 		--Clear the table with options which got updated. Will be filled in self:SetOption(key) method
+		-->Filling the self.updatedOptions table with values so they can be used in the callback functions (if any is given)
+		-->from table LSMOptionsToZO_ComboBoxOptionsCallbacks, e.g. sortOrder and sortType can check if either was updated already
+		-->via the loop and self:SetOption() calls below
 		self.updatedOptions = {}
 
 		-- Defaults are predefined in defaultComboBoxOptions, but they will be taken from ZO_ComboBox defaults set from table comboBoxDefaults
@@ -4521,12 +4559,15 @@ function comboBoxClass:UpdateOptions(options, onInit)
 		-- was overwriting it here from passed in options table
 
 		-- LibScrollableMenu custom options
-		for key, _ in pairs(options) do
---d(">>setting option key: " ..tos(key))
-			self:SetOption(key)
+		if not ZO_IsTableEmpty(options) then
+			for key, _ in pairs(options) do
+				--d(">>setting option key: " ..tos(key))
+				self:SetOption(key)
+			end
 		end
 
-		--Reset the table with options which got updated
+		--Reset the table with options which got updated (only needed here for the callback functions called from self:SetOption
+		---> See table LSMOptionsToZO_ComboBoxOptionsCallbacks
 		self.updatedOptions = nil
 
 --d("> SetOption and for ... do SetOptions looped ")
@@ -4796,7 +4837,7 @@ function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
 end
 
 function contextMenuClass:ClearItems()
-	--d( debugPrefix .. 'contextMenuClass:ClearItems()')
+d(debugPrefix .. 'contextMenuClass:ClearItems()')
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 152) end
 	self:SetContextMenuOptions(nil)
 	self:ResetToDefaults()
@@ -4842,15 +4883,15 @@ end
 function contextMenuClass:ShowContextMenu(parentControl)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 157, tos(getControlName(parentControl))) end
 
-d("[LSM]contextMenuClass:ShowContextMenu")
-
+--d("[LSM]->->->->-> contextMenuClass:ShowContextMenu")
+	--Cache last opening Control for the comparison with new openingControl and reset of filters etc. below
 	local openingControlOld = self.openingControl
 	self.openingControl = parentControl
 
+	-- To prevent the context menu from overlapping a submenu it is not opened from:
+	-- If the opening control is a dropdown and has a submenu visible, close the submenu.
 	local comboBox = getComboBox(parentControl)
 	if comboBox and comboBox.m_submenu and comboBox.m_submenu:IsDropdownVisible() then
-		-- To prevent the context menu from overlapping a submenu it is not opened from,
-		-- If the opening control is a dropdown and has a submenu visible, close the submenu.
 		comboBox.m_submenu:HideDropdown()
 	end
 
@@ -4858,12 +4899,13 @@ d("[LSM]contextMenuClass:ShowContextMenu")
 		self:HideDropdown()
 	end
 
-	self:UpdateOptions(self.optionsData)
+	self:UpdateOptions(self.contextMenuOptions)
 
 
---d("[LSM]ctxMen-optionsData.highlightContextMenuOpeningControl: " ..tos(self.optionsData.highlightContextMenuOpeningControl))
+--d("[LSM]ctxMen-contextMenuOptions.highlightContextMenuOpeningControl: " ..tos(self.contextMenuOptions.highlightContextMenuOpeningControl))
 	if self.openingControl then
-		if self.optionsData.highlightContextMenuOpeningControl then
+		--Options tell us to highlight the openingControl?
+		if self.contextMenuOptions.highlightContextMenuOpeningControl then
 			highlightControl(self, self.openingControl)
 		end
 	end
@@ -4887,16 +4929,13 @@ end
 function contextMenuClass:SetContextMenuOptions(options)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 158, tos(options)) end
 
-	--[[ --todo 20240506 Still needed? If enabled again it would overwrite the context menu options with defaults (which should be okay?)
-	if ZO_IsTableEmpty(options) then
-		self:ResetToDefaults()
-	end
-	]]
+	-- self.contextMenuOptions is only a temporary table used to check for changes and to send to UpdateOptions
+	-- so we can check here if anything changed within the passed in options paramter (compared to previous options)
+	self.optionsChanged = self.contextMenuOptions ~= options
 
-	-- self.optionsData is only a temporary table used to check for changes and to send to UpdateOptions.
-	self.optionsChanged = self.optionsData ~= options
-d("[LSM]contextMenuClass:SetContextMenuOptions - optionsChanged: " .. tos(self.optionsChanged))
-	self.optionsData = options
+	--d("[LSM]contextMenuClass:SetContextMenuOptions - optionsChanged: " .. tos(self.optionsChanged))
+	--Wil be used in contextMenuClass:ShowContextMenu -> self:UpdateOptions(self.contextMenuOptions)
+	self.contextMenuOptions = options
 end
 
 --Create the local context menu object for the library's context menu API functions
@@ -4941,6 +4980,7 @@ end
 -- 		string font:optional				 	String or function returning a string: font to use for the dropdown entries
 -- 		number spacing:optional,	 			Number or function returning a Number: Spacing between the entries
 --		boolean disableFadeGradient:optional	Boolean or function returning a boolean: for the fading of the top/bottom scrolled rows
+--		string headerFont:optional				String or function returning a string: font to use for the header entries
 --		table headerColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for header entries
 --		table normalColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all normal (enabled) entries
 --		table disabledColor:optional 			table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all disabled entries
@@ -5197,24 +5237,19 @@ end
 --Set the options (visible rows max, etc.) for the scrollable context menu, or any passed in 2nd param comboBoxContainer
 -->See possible options above AddCustomScrollableComboBoxDropdownMenu
 function SetCustomScrollableMenuOptions(options, comboBoxContainer)
-	--local optionsTableType = type(options)
-	--assert(optionsTableType == 'table' , sfor('['..MAJOR..':SetCustomScrollableMenuOptions] table expected, got %q = %s', "options", tos(optionsTableType)))
-
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 167, tos(getControlName(comboBoxContainer)), tos(options)) end
-
-
-df("[LSM]SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
+--df("[LSM]SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
 
 	--Use specified comboBoxContainer's dropdown to update the options to
 	if comboBoxContainer ~= nil then
 		local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
 		if comboBox ~= nil and comboBox.UpdateOptions then
 			comboBox.optionsChanged = options ~= comboBox.options
-d(">SetCustomScrollableMenuOptions - Found UpdateOptions - optionsChanged: " ..tos(comboBox.optionsChanged))
+--d(">comboBox:UpdateOptions -> optionsChanged: " ..tos(comboBox.optionsChanged))
 			comboBox:UpdateOptions(options)
 		end
 	else
-d(">SetContextMenuOptions")
+--d(">g_contextMenu:SetContextMenuOptions")
 		--Update options to default contextMenu
 		g_contextMenu:SetContextMenuOptions(options)
 	end
@@ -5223,6 +5258,7 @@ local setCustomScrollableMenuOptions = SetCustomScrollableMenuOptions
 
 --Hide the custom scrollable context menu and clear it's entries, clear internal variables, mouse clicks etc.
 function ClearCustomScrollableMenu()
+--d("[LSM]<<<<<< ClearCustomScrollableMenu <<<<<<<<<<<<<")
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 168) end
 	hideContextMenu()
 
@@ -5292,13 +5328,18 @@ end
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 171, tos(getControlName(controlToAnchorTo)), tos(options)) end
-df("_-_-_-_-_-_-_-_-_-_ [LSM]ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+	--df("[LSM]_-_-_-_-_ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
 
 	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table -> Here: For the contextMenu
-	lib:FireCallbacks('OnDropdownMenuAdded', g_contextMenu, options)
+	local optionsForCallbackFire = options or {}
+	lib:FireCallbacks('OnDropdownMenuAdded', g_contextMenu, optionsForCallbackFire)
+	if optionsForCallbackFire ~= options then
+		options = optionsForCallbackFire
+	end
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 172, tos(getControlName(g_contextMenu.m_container)), tos(options)) end
-	if options then
-d(">calling SetCustomScrollableMenuOptions")
+
+	if options ~= nil then
+		--d(">calling SetCustomScrollableMenuOptions")
 		setCustomScrollableMenuOptions(options)
 	end
 
@@ -5306,6 +5347,7 @@ d(">calling SetCustomScrollableMenuOptions")
 	g_contextMenu:ShowContextMenu(controlToAnchorTo)
 	return true
 end
+local showCustomScrollableMenu = ShowCustomScrollableMenu
 
 --Run a callback function myAddonCallbackFunc passing in the entries of the opening menu/submneu of a clicked LSM context menu item
 -->Parameters of your function myAddonCallbackFunc must be:
@@ -5445,10 +5487,11 @@ local function buttonGroupDefaultContextMenu(comboBox, control, data)
 			end,
 		},
 	}
+
 	clearCustomScrollableMenu()
 	addCustomScrollableMenuEntries(buttonGroupSetAll)
-d("[LSM]>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> buttonGroupDefaultContextMenu")
-	ShowCustomScrollableMenu()
+--d("[LSM]°°°°°°°°°°°°°°°° showCustomScrollableMenu checkbox context menu")
+	showCustomScrollableMenu(nil, nil)
 end
 lib.SetButtonGroupState = buttonGroupDefaultContextMenu --Only for compatibilitxy (if any other addon was using 'SetButtonGroupState' already)
 lib.ButtonGroupDefaultContextMenu = buttonGroupDefaultContextMenu
@@ -5464,7 +5507,11 @@ lib.ButtonGroupDefaultContextMenu = buttonGroupDefaultContextMenu
 -- XML handler functions
 ------------------------------------------------------------------------------------------------------------------------
 --XML OnClick handler for checkbox and radiobuttons
-function lib.ButtonOnInitialize(control, isRadioButton)
+function lib.XMLButtonOnInitialize(control, entryType)
+	--Which XML button control's handler was used, checkbox or radiobutton?
+	local isCheckbox = entryType == LSM_ENTRY_TYPE_CHECKBOX
+	local isRadioButton = not isCheckbox and entryType == LSM_ENTRY_TYPE_RADIOBUTTON
+
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
 --d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
 		if upInside then
@@ -5475,7 +5522,6 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 
 				local onClickedHandler = control:GetHandler('OnClicked')
 				if onClickedHandler then
---d("[LSM]RB: OnClickedHandler: " ..tos(onClickedHandler))
 					onClickedHandler(control, buttonId)
 				end
 
@@ -5494,27 +5540,16 @@ function lib.ButtonOnInitialize(control, isRadioButton)
 	if not isRadioButton then
 		local originalClicked = control:GetHandler('OnClicked')
 		control:SetHandler('OnClicked', function(p_control, buttonId, ignoreCallback, skipHiddenForReasonsCheck, ...)
-			local parent = p_control:GetParent()
-			local comboBox = parent.m_owner
 			skipHiddenForReasonsCheck = skipHiddenForReasonsCheck or false
-
 			if not skipHiddenForReasonsCheck then
+				local parent = p_control:GetParent()
+				local comboBox = parent.m_owner
 				if checkIfContextMenuOpenedButOtherControlWasClicked(p_control, comboBox, buttonId) == true then return end
 			end
 
-			--local dropdown = control:GetOwningWindow().m_dropdownObject
-			--playSelectedSoundCheck(dropdown, LSM_ENTRY_TYPE_CHECKBOX)
-			--if p_control.checked ~= nil then
-				--cBox contextmenu: Enable all/Disable all get's here
---d(">1 ZO_CheckButton_SetCheckState - checked: " ..tos(p_control.checked))
-				--ZO_CheckButton_SetCheckState(p_control, p_control.checked)
-			--else
-				--cBox contextmenu: Invert get's here
-				if originalClicked then
---d(">2 originalClicked")
-					originalClicked(p_control, buttonId, ignoreCallback, ...)
-				end
-			--end
+			if originalClicked then
+				originalClicked(p_control, buttonId, ignoreCallback, ...)
+			end
 			p_control.checked = nil
 		end)
 	end
@@ -5609,15 +5644,16 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-16
 -------------------
 	1. Bug fix: Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
 	2. Bug fix: Name of handler for context menu show and hide changed to proper Uppercase OnContextMenu*
-	3. Renamed API function lib.SetButtonGroupState to lib.ButtonGroupDefaultContextMenu as the name was missleading. It never changed or set any values directly it only added a contextmenu where you could choose "Select all", "Select none", "Invers"
-	4. Contextmenu API functions return the index/indices of added entry/entries and boolean values (where applicable)
-	5. Changed XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
+	3. Renamed: API function lib.SetButtonGroupState to lib.ButtonGroupDefaultContextMenu as the name was missleading. It never changed or set any values directly it only added a contextmenu where you could choose "Select all", "Select none", "Invers"
+	4. Changed: Contextmenu API functions return the index/indices of added entry/entries and boolean values (where applicable)
+	5. Changed: XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
 	6. Fixed XMLRowTemplates using a non capital R at some locations
-	7. Handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
-	8. Added options.XMLRowHighlightTemplates for row highlight XML virtual templates and colors (on mouse enter) per entryType
+	7. Changed: Handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
+	8. Added: options.XMLRowHighlightTemplates for row highlight XML virtual templates and colors (on mouse enter) per entryType
 	9. Bug fix: Fire the OnDropdownMenuAdded callback for the contextMenu too
 	10. Changed: Moved debug messages to a table and use the index of the message instead of sending the whole text on each debug message, plus orevent calling debug messages if debugging is disbled
-	11. Bug: todo 20241221 Default context menu "'buttonGroupDefaultContextMenu'" for checkboxes (Select all, Select none, Invert) dioes not apply the custom row highlight data on first open
+	11. Renamed: self.optionsData at contextMenus was properly renamed to self.contextMenuOptions
+	12. Bug fix: options.headerFont and headerColor work now
 
 -------------------
 TODO - To check (future versions)

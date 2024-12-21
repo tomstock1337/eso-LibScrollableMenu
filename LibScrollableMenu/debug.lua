@@ -21,7 +21,7 @@ local sfor = string.format
 local libDebug = lib.Debug
 
 local logger
-local debugPrefix = "[" .. MAJOR .. "]"
+local debugPrefix = lib.Debug.prefix
 
 --DebugLog types
 local LSM_LOGTYPE_DEBUG = 1

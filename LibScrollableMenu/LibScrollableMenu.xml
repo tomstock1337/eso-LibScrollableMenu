@@ -138,7 +138,7 @@
 				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton" level="3">
 					<OnInitialized>
 						<!-- We propogate the row OnMouseUp to the button's OnClicked so clicking the row simulates clicking the button -->
-						LibScrollableMenu.ButtonOnInitialize(self)
+						LibScrollableMenu.XMLButtonOnInitialize(self, LSM_ENTRY_TYPE_CHECKBOX)
 					</OnInitialized>
 
 					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
@@ -173,7 +173,7 @@
 				<Button name="$(parent)RadioButton" inherits="ZO_RadioButton" level="3">
 					<OnInitialized>
 						<!-- We propogate the row OnMouseUp to the button's OnClicked so clicking the row simulates clicking the button -->
-						LibScrollableMenu.ButtonOnInitialize(self, true)
+						LibScrollableMenu.XMLButtonOnInitialize(self, LSM_ENTRY_TYPE_RADIOBUTTON)
 					</OnInitialized>
 
 					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">

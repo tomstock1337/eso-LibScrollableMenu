@@ -97,6 +97,9 @@ local function test()
 			visibleRowsSubmenu = 10,
 			maxDropdownHeight = 450,
 
+			headerFont = "ZoFontHeader3",
+			headerColor = CUSTOM_DISABLED_TEXT_COLOR,
+
 			--useDefaultHighlightForSubmenuWithCallback = true,
 
 			--sortEntries=function() return false end,
