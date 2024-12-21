@@ -80,8 +80,6 @@
 			<OnMouseUp>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
-						--d("[LSM]dropdown.OnEntryMouseUp - button: " ..tostring(button) .. ", upInside: " .. tostring(upInside))
-						--LibScrollableMenu._debug = { self = self, button = button, upInside = upInside }
 					dropdown:OnEntryMouseUp(self, button, upInside)
 				end
 			</OnMouseUp>

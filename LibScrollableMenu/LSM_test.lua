@@ -1,6 +1,8 @@
 local lib = LibScrollableMenu
 local MAJOR = lib.name
 
+local debugPrefix = lib.Debug.prefix
+
 ------------------------------------------------------------------------------------------------------------------------
 -- For testing - Combobox with all kind of entry types (test offsets, etc.)
 ------------------------------------------------------------------------------------------------------------------------
@@ -171,7 +173,7 @@ local function test()
 		--Try to change the options of the scrollhelper as it gets created
 		--[[
 		lib:RegisterCallback('OnDropdownMenuAdded', function(comboBox, optionsPassedIn)
---d("[LSM]TEST - Callback fired: OnDropdownMenuAdded - current visibleRows: " ..tostring(optionsPassedIn.visibleRowsDropdown))
+--d(debugPrefix .. "TEST - Callback fired: OnDropdownMenuAdded - current visibleRows: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 			optionsPassedIn.visibleRowsDropdown = 5 -- Overwrite the visible rows at the dropdown
 --d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 		end)
@@ -293,7 +295,7 @@ local function test()
 
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
-d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+d(debugPrefix .. "Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
 							for k, v in ipairs(entriesFound) do
 								local name = v.label or v.name
 								d(">name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
@@ -330,7 +332,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
-d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
 							for k, v in ipairs(entriesFound) do
 								local name = v.label or v.name
 								d(">[Same menu]name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
@@ -701,7 +703,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 
 						local function myAddonCallbackFunc(p_comboBox, p_item, entriesFound, ...) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
-							d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+							d(debugPrefix .. "Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
 							for k, v in ipairs(entriesFound) do
 								local name = v.label or v.name
 								d(">name of checkbox: " .. tostring(name).. ", checked: " .. tostring(v.checked))
@@ -1121,7 +1123,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 		--DOES NOT WORK
 		ZO_PlayerInventoryTabsActive:SetMouseEnabled(true)
 		ZO_PlayerInventoryTabsActive:SetHandler("OnMouseUp", function(ctrl, button, upInside)
-			d("[LSM]ZO_PlayerInventoryTabsActive - OnMouseUp")
+			d(debugPrefix .. "ZO_PlayerInventoryTabsActive - OnMouseUp")
 			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
 				ClearCustomScrollableMenu()
 
@@ -1163,7 +1165,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 
 		--DOES WORK
 		ZO_PreHookHandler(ZO_PlayerInventoryMenuBarButton1, "OnMouseUp", function(ctrl, button, upInside)
-			d("[LSM]ZO_PlayerInventoryMenuBarButton1 - OnMouseUp")
+			d(debugPrefix .. "ZO_PlayerInventoryMenuBarButton1 - OnMouseUp")
 			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
 				ClearCustomScrollableMenu()
 
@@ -1215,7 +1217,7 @@ local function test2()
 		else
 			optionsVisibleRowsCurrent = 10
 		end
-d("[LSM]Test2 - Updating options- toggling visibleRows to: " ..tostring(optionsVisibleRowsCurrent) .. ", disableFadeGradient to: " ..tostring(optionsDisableFadeGradient))
+d(debugPrefix .. "Test2 - Updating options- toggling visibleRows to: " ..tostring(optionsVisibleRowsCurrent) .. ", disableFadeGradient to: " ..tostring(optionsDisableFadeGradient))
 
 		if optionsDisableFadeGradient then
 			optionsDisableFadeGradient = false
