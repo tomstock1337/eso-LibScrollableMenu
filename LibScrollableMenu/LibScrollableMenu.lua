@@ -34,8 +34,8 @@ lib.Debug = {}
 lib.Debug.doDebug = false
 lib.Debug.doVerboseDebug = false
 
-lib.Debug.prefix = debugPrefix
 local debugPrefix = "[" .. MAJOR .. "]"
+lib.Debug.prefix = debugPrefix
 
 local libDebug = lib.Debug
 
@@ -134,6 +134,7 @@ local zo_comboBoxDropdown_onMouseExitEntry = ZO_ComboBoxDropdown_Keyboard.OnMous
 local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseEnterEntry
 
 local suppressNextOnGlobalMouseUp
+local buttonGroupDefaultContextMenu
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -1983,11 +1984,12 @@ end
 
 --Hide the tooltip of a dropdown entry
 local function hideTooltip(control)
+--d(debugPrefix .. "hideTooltip - name: " .. tos(getControlName(control)))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 37, tos(lib.onHideCustomTooltipFunc)) end
 	if lib.onHideCustomTooltipFunc then
 		lib.onHideCustomTooltipFunc()
 	else
-		ClearTooltip(InformationTooltip)
+		ZO_Tooltips_HideTextTooltip()
 	end
 	resetCustomTooltipFuncVars()
 end
@@ -2247,8 +2249,8 @@ local narrationEventToLibraryNarrateFunction = {
 local function onMouseEnter(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 49, tos(getControlName(control)), tos(hasSubmenu)) end
-	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseEnter', control, data)
+	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 50, tos(getControlName(control)), tos(hasSubmenu)) end
 
 	return dropdown
@@ -2257,8 +2259,8 @@ end
 local function onMouseExit(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 51, tos(getControlName(control)), tos(hasSubmenu)) end
-	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
 	lib:FireCallbacks('EntryOnMouseExit', control, data)
+	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 52, tos(getControlName(control)), tos(hasSubmenu)) end
 
 	return dropdown
@@ -2267,8 +2269,8 @@ end
 local function onMouseUp(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
 
-	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
 	lib:FireCallbacks('OnEntrySelected', control, data)
+	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
 
 	hideTooltip(control)
 	return dropdown
@@ -2357,7 +2359,6 @@ local handlerFunctions  = {
 	-- return true to "select" entry
 	['onMouseUp'] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data, button, upInside)
---d('onMouseUp [LSM_ENTRY_TYPE_NORMAL]')
 			onMouseUp(control, data, no_submenu)
 			return true
 		end,
@@ -2372,15 +2373,17 @@ local handlerFunctions  = {
 			return control.closeOnSelect --if submenu entry has data.callback then select the entry
 		end,
 		[LSM_ENTRY_TYPE_CHECKBOX] = function(control, data, button, upInside)
+--d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_CHECKBOX]')
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
 		[LSM_ENTRY_TYPE_BUTTON] = function(control, data, button, upInside)
+--d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_BUTTON]')
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
 		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(control, data, button, upInside)
---d( debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_RADIOBUTTON]')
+--d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_RADIOBUTTON]')
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
@@ -2752,6 +2755,7 @@ function dropdownClass:IsMouseOverOpeningControl()
 end
 
 function dropdownClass:OnMouseEnterEntry(control)
+--d(debugPrefix .. "dropdownClass:OnMouseEnterEntry - name: " .. tos(getControlName(control)))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 68, tos(getControlName(control))) end
 	-- Added here for when mouse is moved from away from dropdowns over a row, it will know to close specific children
 	self:OnMouseExitTimeout(control)
@@ -2763,6 +2767,7 @@ function dropdownClass:OnMouseEnterEntry(control)
 		end
 
 		if data.tooltip or data.customTooltip then
+--d(">calling self:ShowTooltip ")
 			self:ShowTooltip(control, data)
 		end
 	end
@@ -2996,8 +3001,8 @@ function dropdownClass:OnHide(formattedEventName)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 79) end
 	if formattedEventName ~= nil then
 		local ctrl = self.control
-		self:Narrate(formattedEventName, ctrl)
 		lib:FireCallbacks(formattedEventName, ctrl, self)
+		self:Narrate(formattedEventName, ctrl)
 	end
 end
 
@@ -3335,6 +3340,7 @@ function buttonGroupClass:HandleClick(control, buttonId, ignoreCallback)
 
 		if self.onSelectionChangedCallback and not ignoreCallback then
 			self:onSelectionChangedCallback(control, previousControl)
+			hideTooltip(control)
 		end
 	end
 
@@ -3768,7 +3774,7 @@ end
 
 --Get the current row's highlight template based on the options
 function comboBox_base:GetHighLightTemplate(control, isSubMenu)
-d(debugPrefix .. "comboBox_base:GetHighLightTemplate - control: " .. tos(getControlName(control)))
+--d(debugPrefix .. "comboBox_base:GetHighLightTemplate - control: " .. tos(getControlName(control)))
 	--Get the highlight template based on the entryType
 	local entryType = control.typeId
 	if not entryType then return end
@@ -4129,10 +4135,9 @@ do -- Row setup functions
 			--	buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
 
 			if entryType == LSM_ENTRY_TYPE_CHECKBOX and data.rightClickCallback == nil and data.contextMenuCallback == nil then
-				data.rightClickCallback = lib.SetButtonGroupState
+				data.rightClickCallback = buttonGroupDefaultContextMenu
 			end
 		end
-
 		return buttonControl, buttonGroup
 	end
 
@@ -4204,8 +4209,8 @@ do -- Row setup functions
 				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 119, tos(getControlName(control)), tos(checked), tos(list)) end
 				selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 
-				selfVar:Narrate("OnRadioButtonUpdated", button, data, nil)
 				lib:FireCallbacks('RadioButtonUpdated', control, data, checked)
+				selfVar:Narrate("OnRadioButtonUpdated", button, data, nil)
 				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 120, tos(getControlName(button)), tos(checked)) end
 			end
 		end
@@ -4238,9 +4243,11 @@ do -- Row setup functions
 			--Changing the params similar to the normal entry's itemSelectionHelper signature: function(comboBox, itemName, item, checked, data)
 			selfVar:RunItemCallback(data, data.ignoreCallback, checked)
 
-			selfVar:Narrate("OnCheckboxUpdated", checkbox, data, nil)
 			lib:FireCallbacks('CheckboxUpdated', control, data, checked)
+			selfVar:Narrate("OnCheckboxUpdated", checkbox, data, nil)
 			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 123, tos(getControlName(checkbox)), tos(checked)) end
+
+			hideTooltip(control)
 		end
 
 		self:SetupEntryLabel(control, data, list)
@@ -5439,7 +5446,7 @@ end
 
 
 -- API to show a context menu at a buttonGrouop where you can set all buttons in a group based on Select all, Unselect All, Invert all.
-local function buttonGroupDefaultContextMenu(comboBox, control, data)
+function buttonGroupDefaultContextMenu(comboBox, control, data)
 	local buttonGroup = comboBox.m_buttonGroup
 	if buttonGroup == nil then return end
 	local groupIndex = getValueOrCallback(data.buttonGroup, data)
@@ -5655,6 +5662,7 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-16
 	10. Changed: Moved debug messages to a table and use the index of the message instead of sending the whole text on each debug message, plus orevent calling debug messages if debugging is disbled
 	11. Renamed: self.optionsData at contextMenus was properly renamed to self.contextMenuOptions
 	12. Bug fix: options.headerFont and headerColor work now
+	13. Bug fix: Hide the tooltip as checkbox is toggled, or radioButton is changed
 
 -------------------
 TODO - To check (future versions)

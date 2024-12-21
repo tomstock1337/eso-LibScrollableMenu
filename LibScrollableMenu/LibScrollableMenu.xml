@@ -95,7 +95,7 @@
 			</OnInitialized>
 
 			<Controls>
-				<Label name="$(parent)Label" verticalAlignment="CENTER" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
+				<Label name="$(parent)Label" verticalAlignment="CENTER" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="0" />
 					<Anchor point="BOTTOMRIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" offsetY="-5"  />
 				</Label>

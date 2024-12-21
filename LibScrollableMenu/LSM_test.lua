@@ -99,8 +99,9 @@ local function test()
 			visibleRowsSubmenu = 10,
 			maxDropdownHeight = 450,
 
-			headerFont = "ZoFontHeader3",
-			headerColor = CUSTOM_DISABLED_TEXT_COLOR,
+			--Big yellow headers!
+			--headerFont = "ZoFontHeader3",
+			--headerColor = CUSTOM_DISABLED_TEXT_COLOR,
 
 			--useDefaultHighlightForSubmenuWithCallback = true,
 
@@ -593,7 +594,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
 				label			= "Radiobutton group 1-1",
 				name            = "Radiobutton group 1-1",
-				tooltip         = "Button button button...",
+				tooltip         = "Radiobutton tooltip 1",
 				checked 		= true,
 				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked Radiobutton group 1-1 with the name: " .. tostring(itemName))
@@ -605,7 +606,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
 				label			= "Radiobutton group 1-2",
 				name            = "Radiobutton group 1-2",
-				tooltip         = "Button button button...",
+				tooltip         = "Radiobutton tooltip 2",
 				checked 		= false,
 				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked Radiobutton group 1-2 with the name: " .. tostring(itemName))
@@ -617,7 +618,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
 				label			= "Radiobutton group 2-3",
 				name            = "Radiobutton group 2-3",
-				tooltip         = "Button button button...",
+				tooltip         = "Radiobutton tooltip 3",
 				checked 		= true,
 				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked Radiobutton group 2-3 with the name: " .. tostring(itemName))
@@ -628,7 +629,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
 				label			= "Radiobutton group 2-4",
 				name            = "Radiobutton group 2-4",
-				tooltip         = "Button button button...",
+				tooltip         = "Radiobutton tooltip 4",
 				checked 		= false,
 				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked Radiobutton group 2-4 with the name: " .. tostring(itemName))

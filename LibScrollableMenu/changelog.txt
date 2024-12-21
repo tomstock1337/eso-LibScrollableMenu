@@ -4,6 +4,7 @@
 -Bug fix: XMLRowTemplates using a non capital R at some locations
 -Bug fix: Fire the OnDropdownMenuAdded callback for the contextMenu too
 -Bug fix: options.headerFont and headerColor work now
+-Bug fix: Hide the tooltip as checkbox is toggled, or radioButton is changed
 -Changed: XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
 -Changed: handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
 -Changed: Moved debug messages to a table and use the index of the message instead of sending the whole text on each debug message, plus orevent calling debug messages if debugging is disbled
