@@ -3006,6 +3006,22 @@ function dropdownClass:OnHide(formattedEventName)
 	end
 end
 
+--Called from XML "LibScrollableMenu_Dropdown_Behavior"
+function dropdownClass:XMLHandler(selfVar, handlerName)
+	if selfVar == nil or handlerName == nil then return end
+
+	if handlerName == "OnEffectivelyHidden" then
+		self:HideDropdown()
+	elseif handlerName == "OnMouseEnter" then
+		self:OnMouseExitTimeout(selfVar)
+
+	elseif handlerName == "OnShow" then
+		self:OnShow(self:GetFormattedNarrateEvent('Show'))
+	elseif handlerName == "OnHide" then
+		self:OnHide(self:GetFormattedNarrateEvent('Hide'))
+	end
+end
+
 function dropdownClass:ShowSubmenu(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 80, tos(getControlName(control))) end
 	if self.owner then
@@ -5251,6 +5267,9 @@ function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 	--Use specified comboBoxContainer's dropdown to update the options to
 	if comboBoxContainer ~= nil then
 		local comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
+		if comboBox == nil and comboBoxContainer.m_dropdownObject ~= nil then
+			comboBox = ZO_ComboBox_ObjectFromContainer(comboBoxContainer.m_dropdownObject)
+		end
 		if comboBox ~= nil and comboBox.UpdateOptions then
 			comboBox.optionsChanged = options ~= comboBox.options
 --d(">comboBox:UpdateOptions -> optionsChanged: " ..tos(comboBox.optionsChanged))

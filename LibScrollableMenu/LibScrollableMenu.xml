@@ -237,27 +237,31 @@
 		<TopLevelControl name="LibScrollableMenu_Dropdown_Behavior" virtual="true">
 			<OnEffectivelyHidden name="HideDropDown" >
 				<!-- Handler set normally in ZO_ComboBox:Initialize -->
-				if self.object then
-					self.object:HideDropdown()
+				local dropdownObject = self.object
+				if dropdownObject then
+					dropdownObject:XMLHandler(self, "OnEffectivelyHidden")
 				end
 			</OnEffectivelyHidden>
 	
 			<OnMouseEnter name="CloseCheck">
 				-- Do we need to close any submenus on dropdown enter?
-				if self.object then
-					self.object:OnMouseExitTimeout(self)
+				local dropdownObject = self.object
+				if dropdownObject then
+					dropdownObject:XMLHandler(self, "OnMouseEnter")
 				end
 			</OnMouseEnter>
 			
 			<OnShow name="Narrate">
-				if self.object then
-					self.object:OnShow(self.object:GetFormattedNarrateEvent('Show'))
+				local dropdownObject = self.object
+				if dropdownObject then
+					dropdownObject:XMLHandler(self, "OnShow") --calls dropdownObject:GetFormattedNarrateEvent
 				end
 			</OnShow>
 			
 			<OnHide name="Narrate">
-				if self.object then
-					self.object:OnHide(self.object:GetFormattedNarrateEvent('Hide'))
+				local dropdownObject = self.object
+				if dropdownObject then
+					dropdownObject:XMLHandler(self, "OnHide") --calls dropdownObject:GetFormattedNarrateEvent
 				end
 			</OnHide>
 		</TopLevelControl>
