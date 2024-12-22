@@ -1,9 +1,24 @@
+-v- ---------------LSM v2.33 - 2024-12-21---------------------------------------------------------------------------- -v-
+-Bug fix: Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
+-Bug fix: Name of handler for context menu show and hide changed to proper Uppercase OnContextMenu*
+-Bug fix: XMLRowTemplates using a non capital R at some locations
+-Bug fix: Fire the OnDropdownMenuAdded callback for the contextMenu too
+-Bug fix: options.headerFont and headerColor work now
+-Bug fix: Hide the tooltip as checkbox is toggled, or radioButton is changed
+-Changed: XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
+-Changed: handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
+-Changed: Moved debug messages to a table and use the index of the message instead of sending the whole text on each debug message, plus orevent calling debug messages if debugging is disbled
+-Added: options.XMLRowHighlightTemplates for row highlight XML virtual templates and colors (on mouse enter) per entryType
+-Added: return values index/indices, entryData/entryDataTable to the context menu API functions AddCustomScrollableMenuEntry/Entries etc.
+-Renamed: API function lib.SetButtonGroupState to lib.ButtonGroupDefaultContextMenu as the name was missleading. It never changed or set any values directly it only added a contextmenu where you could choose "Select all", "Select none", "Invers"
+-Renamed: self.optionsData at contextMenus was properly renamed to self.contextMenuOptions
+
+
 -v- ---------------LSM v2.32 - 2024-10-19---------------------------------------------------------------------------- -v-
 -[Additions]-
 -Added attribute ".doNotFilter boolean" to all entryTypes. If true then do not hide those controls if a search/filter is used
   -> e.g. used for a button "Apply changes" at a submenu to apply checkboxes checked/unchecked state now even if search filter was hiding non-matching checkboxes
 -Changed collapsible header to expand if you click the whole header, and not only the small v^ button
-
 
 -v- ---------------LSM v2.31 - 2024-08-25---------------------------------------------------------------------------- -v-
 -[Fixes]-

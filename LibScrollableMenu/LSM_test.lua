@@ -1,6 +1,8 @@
 local lib = LibScrollableMenu
 local MAJOR = lib.name
 
+local debugPrefix = lib.Debug.prefix
+
 ------------------------------------------------------------------------------------------------------------------------
 -- For testing - Combobox with all kind of entry types (test offsets, etc.)
 ------------------------------------------------------------------------------------------------------------------------
@@ -97,6 +99,10 @@ local function test()
 			visibleRowsSubmenu = 10,
 			maxDropdownHeight = 450,
 
+			--Big yellow headers!
+			--headerFont = "ZoFontHeader3",
+			--headerColor = CUSTOM_DISABLED_TEXT_COLOR,
+
 			--useDefaultHighlightForSubmenuWithCallback = true,
 
 			--sortEntries=function() return false end,
@@ -138,15 +144,37 @@ local function test()
 						comboBox:SetupEntryLabel(control, data, list)
 					end,
 				}
-			}
+			},
 
+			XMLRowHighlightTemplates = {
+				[lib.LSM_ENTRY_TYPE_NORMAL] = {
+					template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight",
+					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				},
+				[lib.LSM_ENTRY_TYPE_SUBMENU] = {
+					template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight", --Will be replaced with green if submenu entry got callback
+					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				},
+				[lib.LSM_ENTRY_TYPE_CHECKBOX] = {
+					template = lib.LSM_ROW_HIGHLIGHT_BLUE, --"LibScrollableMenu_Highlight_Blue",
+					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				},
+				[lib.LSM_ENTRY_TYPE_BUTTON] = {
+					template = lib.LSM_ROW_HIGHLIGHT_RED, --"LibScrollableMenu_Highlight_Red",
+					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				},
+				[lib.LSM_ENTRY_TYPE_RADIOBUTTON] = {
+					template = lib.LSM_ROW_HIGHLIGHT_OPAQUE, --"LibScrollableMenu_Highlight_White",
+					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				},
+			},
 			]]
 		}
 
 		--Try to change the options of the scrollhelper as it gets created
 		--[[
 		lib:RegisterCallback('OnDropdownMenuAdded', function(comboBox, optionsPassedIn)
---d("[LSM]TEST - Callback fired: OnDropdownMenuAdded - current visibleRows: " ..tostring(optionsPassedIn.visibleRowsDropdown))
+--d(debugPrefix .. "TEST - Callback fired: OnDropdownMenuAdded - current visibleRows: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 			optionsPassedIn.visibleRowsDropdown = 5 -- Overwrite the visible rows at the dropdown
 --d("<visibleRows after: " ..tostring(optionsPassedIn.visibleRowsDropdown))
 		end)
@@ -268,7 +296,7 @@ local function test()
 
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
-d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+d(debugPrefix .. "Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
 							for k, v in ipairs(entriesFound) do
 								local name = v.label or v.name
 								d(">name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
@@ -288,7 +316,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 				end,
 				--tooltip         = "Submenu Entry Test 1",
 				--icon 			= nil,
-				m_highlightTemplate = "LibScrollableMenu_Highlight_Red",
+				m_highlightTemplate = lib.LSM_ROW_HIGHLIGHT_RED --"LibScrollableMenu_Highlight_Red",
 			},
 			{
 
@@ -305,7 +333,7 @@ d("[LSM]Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMe
 
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
-d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
 							for k, v in ipairs(entriesFound) do
 								local name = v.label or v.name
 								d(">[Same menu]name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
@@ -566,7 +594,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
 				label			= "Radiobutton group 1-1",
 				name            = "Radiobutton group 1-1",
-				tooltip         = "Button button button...",
+				tooltip         = "Radiobutton tooltip 1",
 				checked 		= true,
 				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked Radiobutton group 1-1 with the name: " .. tostring(itemName))
@@ -578,7 +606,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
 				label			= "Radiobutton group 1-2",
 				name            = "Radiobutton group 1-2",
-				tooltip         = "Button button button...",
+				tooltip         = "Radiobutton tooltip 2",
 				checked 		= false,
 				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked Radiobutton group 1-2 with the name: " .. tostring(itemName))
@@ -590,7 +618,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
 				label			= "Radiobutton group 2-3",
 				name            = "Radiobutton group 2-3",
-				tooltip         = "Button button button...",
+				tooltip         = "Radiobutton tooltip 3",
 				checked 		= true,
 				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked Radiobutton group 2-3 with the name: " .. tostring(itemName))
@@ -601,7 +629,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
 				label			= "Radiobutton group 2-4",
 				name            = "Radiobutton group 2-4",
-				tooltip         = "Button button button...",
+				tooltip         = "Radiobutton tooltip 4",
 				checked 		= false,
 				callback 		= function(comboBox, itemName, item, checked)
 					d("I clicked Radiobutton group 2-4 with the name: " .. tostring(itemName))
@@ -676,7 +704,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 
 						local function myAddonCallbackFunc(p_comboBox, p_item, entriesFound, ...) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
-							d("[LSM]Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+							d(debugPrefix .. "Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
 							for k, v in ipairs(entriesFound) do
 								local name = v.label or v.name
 								d(">name of checkbox: " .. tostring(name).. ", checked: " .. tostring(v.checked))
@@ -1096,7 +1124,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 		--DOES NOT WORK
 		ZO_PlayerInventoryTabsActive:SetMouseEnabled(true)
 		ZO_PlayerInventoryTabsActive:SetHandler("OnMouseUp", function(ctrl, button, upInside)
-			d("[LSM]ZO_PlayerInventoryTabsActive - OnMouseUp")
+			d(debugPrefix .. "ZO_PlayerInventoryTabsActive - OnMouseUp")
 			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
 				ClearCustomScrollableMenu()
 
@@ -1138,7 +1166,7 @@ d("[LSM]Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollab
 
 		--DOES WORK
 		ZO_PreHookHandler(ZO_PlayerInventoryMenuBarButton1, "OnMouseUp", function(ctrl, button, upInside)
-			d("[LSM]ZO_PlayerInventoryMenuBarButton1 - OnMouseUp")
+			d(debugPrefix .. "ZO_PlayerInventoryMenuBarButton1 - OnMouseUp")
 			if upInside and button == MOUSE_BUTTON_INDEX_RIGHT then
 				ClearCustomScrollableMenu()
 
@@ -1190,7 +1218,7 @@ local function test2()
 		else
 			optionsVisibleRowsCurrent = 10
 		end
-d("[LSM]Test2 - Updating options- toggling visibleRows to: " ..tostring(optionsVisibleRowsCurrent) .. ", disableFadeGradient to: " ..tostring(optionsDisableFadeGradient))
+d(debugPrefix .. "Test2 - Updating options- toggling visibleRows to: " ..tostring(optionsVisibleRowsCurrent) .. ", disableFadeGradient to: " ..tostring(optionsDisableFadeGradient))
 
 		if optionsDisableFadeGradient then
 			optionsDisableFadeGradient = false

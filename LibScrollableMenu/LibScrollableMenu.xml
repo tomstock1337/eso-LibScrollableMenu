@@ -13,7 +13,7 @@
 		<Backdrop name="LibScrollableMenu_Highlight_Green" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="00ff00" edgeColor="00ff00"/>
 		<Backdrop name="LibScrollableMenu_Highlight_Red" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="ff0000" edgeColor="ff0000"/>
 		<Backdrop name="LibScrollableMenu_Highlight_Blue" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="0000ff" edgeColor="0000ff"/>
-		<Backdrop name="LibScrollableMenu_Highlight_White" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="ffffff" edgeColor="ffffff"/>
+		<Backdrop name="LibScrollableMenu_Highlight_Opaque" inherits="ZO_SelectionHighlight" virtual="true" blendMode="ADD" centerColor="0F0F0F" edgeColor="0F0F0F"/>
 
 		<!-- Divider | no icon no handlers -->
 		<Texture name="LibScrollableMenu_ComboBoxDividerEntry" inherits="ZO_BaseTooltipDivider" virtual="true">
@@ -80,8 +80,6 @@
 			<OnMouseUp>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
-						--d("[LSM]dropdown.OnEntryMouseUp - button: " ..tostring(button) .. ", upInside: " .. tostring(upInside))
-						--LibScrollableMenu._debug = { self = self, button = button, upInside = upInside }
 					dropdown:OnEntryMouseUp(self, button, upInside)
 				end
 			</OnMouseUp>
@@ -97,7 +95,7 @@
 			</OnInitialized>
 
 			<Controls>
-				<Label name="$(parent)Label" verticalAlignment="CENTER" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_CONTEXT_HIGHLIGHT" maxLineCount="1">
+				<Label name="$(parent)Label" verticalAlignment="CENTER" font="ZoFontWinH5" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="0" />
 					<Anchor point="BOTTOMRIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" offsetY="-5"  />
 				</Label>
@@ -138,7 +136,7 @@
 				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton" level="3">
 					<OnInitialized>
 						<!-- We propogate the row OnMouseUp to the button's OnClicked so clicking the row simulates clicking the button -->
-						LibScrollableMenu.ButtonOnInitialize(self)
+						LibScrollableMenu.XMLButtonOnInitialize(self, LSM_ENTRY_TYPE_CHECKBOX)
 					</OnInitialized>
 
 					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
@@ -173,7 +171,7 @@
 				<Button name="$(parent)RadioButton" inherits="ZO_RadioButton" level="3">
 					<OnInitialized>
 						<!-- We propogate the row OnMouseUp to the button's OnClicked so clicking the row simulates clicking the button -->
-						LibScrollableMenu.ButtonOnInitialize(self, true)
+						LibScrollableMenu.XMLButtonOnInitialize(self, LSM_ENTRY_TYPE_RADIOBUTTON)
 					</OnInitialized>
 
 					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
@@ -239,27 +237,31 @@
 		<TopLevelControl name="LibScrollableMenu_Dropdown_Behavior" virtual="true">
 			<OnEffectivelyHidden name="HideDropDown" >
 				<!-- Handler set normally in ZO_ComboBox:Initialize -->
-				if self.object then
-					self.object:HideDropdown()
+				local dropdownObject = self.object
+				if dropdownObject then
+					dropdownObject:XMLHandler(self, "OnEffectivelyHidden")
 				end
 			</OnEffectivelyHidden>
 	
 			<OnMouseEnter name="CloseCheck">
 				-- Do we need to close any submenus on dropdown enter?
-				if self.object then
-					self.object:OnMouseExitTimeout(self)
+				local dropdownObject = self.object
+				if dropdownObject then
+					dropdownObject:XMLHandler(self, "OnMouseEnter")
 				end
 			</OnMouseEnter>
 			
 			<OnShow name="Narrate">
-				if self.object then
-					self.object:OnShow(self.object:GetFormattedNarrateEvent('Show'))
+				local dropdownObject = self.object
+				if dropdownObject then
+					dropdownObject:XMLHandler(self, "OnShow") --calls dropdownObject:GetFormattedNarrateEvent
 				end
 			</OnShow>
 			
 			<OnHide name="Narrate">
-				if self.object then
-					self.object:OnHide(self.object:GetFormattedNarrateEvent('Hide'))
+				local dropdownObject = self.object
+				if dropdownObject then
+					dropdownObject:XMLHandler(self, "OnHide") --calls dropdownObject:GetFormattedNarrateEvent
 				end
 			</OnHide>
 		</TopLevelControl>
@@ -365,10 +367,7 @@
 									/>
 
 									<OnMouseEnter>
-										local owningWindow = self:GetOwningWindow()
-										if owningWindow.object then
-											owningWindow.object:ShowTextTooltip(self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET), owningWindow)
-										end
+										LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET), nil)
 									</OnMouseEnter>
 
 									<OnMouseExit>
@@ -376,11 +375,7 @@
 									</OnMouseExit>
 									
 									<OnClicked>
-										ZO_Tooltips_HideTextTooltip()
-										local owningWindow = self:GetOwningWindow()
-										if owningWindow.object then
-											owningWindow.object:ResetFilters(owningWindow)
-										end
+										LibScrollableMenu.OnXMLControlEventHandler("ResetFilters", self, self:GetOwningWindow())
 									</OnClicked>
 								</Button>
 								
@@ -401,19 +396,12 @@
 									<Controls>
 										<EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
 											<OnTextChanged>
-												ZO_Tooltips_HideTextTooltip()
 												ClearMenu()
-												local owningWindow = self:GetOwningWindow()
-												if owningWindow.object then
-													owningWindow.object:SetFilterString(self)
-												end
+												LibScrollableMenu.OnXMLControlEventHandler("SetFilterString", self, self)
 											</OnTextChanged>
 
 											<OnMouseEnter>
-												local owningWindow = self:GetOwningWindow()
-												if owningWindow.object then
-													owningWindow.object:ShowTextTooltip(self, BOTTOM, GetString(SI_LSM_SEARCH_FILTER_TOOLTIP), owningWindow)
-												end
+												LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, GetString(SI_LSM_SEARCH_FILTER_TOOLTIP), nil)
 											</OnMouseEnter>
 
 											<OnMouseExit>
@@ -421,12 +409,7 @@
 											</OnMouseExit>
 
 											<OnMouseUp>
-												ZO_Tooltips_HideTextTooltip()
-												ClearMenu()
-												local owningWindow = self:GetOwningWindow()
-												if owningWindow.object then
-													owningWindow.object:OnFilterEditBoxMouseUp(self, button, upInside)
-												end
+												LibScrollableMenu.OnXMLControlEventHandler("OnFilterEditBoxMouseUp", self, self, button, upInside)
 											</OnMouseUp>
 										</EditBox>
 									</Controls>
@@ -553,10 +536,7 @@
 							/>
 
 							<OnMouseEnter>
-								local owningWindow = self:GetOwningWindow()
-								if owningWindow.object then
-									owningWindow.object:ShowTextTooltip(self, BOTTOM, self:GetTooltipText(), owningWindow)
-								end
+								LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, self:GetTooltipText(), nil)
 							</OnMouseEnter>
 
 							<OnMouseExit>
@@ -579,9 +559,8 @@
 
 							<OnMouseEnter>
 								local owningWindow = self:GetOwningWindow()
-								if owningWindow.object then
-									local toggleButton = owningWindow.toggleButton
-									owningWindow.object:ShowTextTooltip(self, BOTTOM, toggleButton:GetTooltipText(), owningWindow)
+								if owningWindow then
+									LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, owningWindow.toggleButton and owningWindow.toggleButton:GetTooltipText(), owningWindow)
 								end
 							</OnMouseEnter>
 
