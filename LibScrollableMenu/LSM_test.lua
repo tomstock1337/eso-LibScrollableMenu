@@ -145,14 +145,17 @@ local function test()
 					end,
 				}
 			},
-
+			]]
+			--highlightContextMenuOpeningControl = true,
 			XMLRowHighlightTemplates = {
 				[lib.LSM_ENTRY_TYPE_NORMAL] = {
 					template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight",
 					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+					templateContextMenuOpeningControl = lib.LSM_ROW_HIGHLIGHT_BLUE,
 				},
 				[lib.LSM_ENTRY_TYPE_SUBMENU] = {
 					template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight", --Will be replaced with green if submenu entry got callback
+					templateWithCallback = lib.LSM_ROW_HIGHLIGHT_BLUE,
 					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
 				},
 				[lib.LSM_ENTRY_TYPE_CHECKBOX] = {
@@ -168,7 +171,6 @@ local function test()
 					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
 				},
 			},
-			]]
 		}
 
 		--Try to change the options of the scrollhelper as it gets created
@@ -297,7 +299,7 @@ local function test()
 						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
 d(debugPrefix .. "Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
-							for k, v in ipairs(entriesFound) do
+							for _, v in ipairs(entriesFound) do
 								local name = v.label or v.name
 								d(">name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
 							end
@@ -310,13 +312,12 @@ d(debugPrefix .. "Context menu submenu - Custom menu Normal entry 1->RunCustomSc
 
 					AddCustomScrollableMenuEntry("Context Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
 
-					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, enableFilter = true,
-						highlightContextMenuOpeningControl = true,
-					})
+					ShowCustomScrollableMenu(nil, { narrate = narrateOptions, enableFilter = true })
 				end,
 				--tooltip         = "Submenu Entry Test 1",
 				--icon 			= nil,
-				m_highlightTemplate = lib.LSM_ROW_HIGHLIGHT_RED --"LibScrollableMenu_Highlight_Red",
+				highlightContextMenuOpeningControl = true,
+				m_highlightTemplate = lib.LSM_ROW_HIGHLIGHT_RED --"LibScrollableMenu_Highlight_Red", -> Should be transfered into data._LSM.OriginalData.data subtable so it can be always found again even if other XMLRowHighlightTemplates were provided via the options
 			},
 			{
 
@@ -772,7 +773,8 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				end,
 				--entries         = submenuEntries,
 				--tooltip         =
-				entryType = lib.LSM_ENTRY_TYPE_CHECKBOX
+				entryType = lib.LSM_ENTRY_TYPE_CHECKBOX,
+				rightClickCallback = function() d("Test context menu")  end
 			},
 			{
 				label = "test",
@@ -879,7 +881,31 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 								checked = function() return testSV.cboxContextmenu2 end
 							})
 
-					ShowCustomScrollableMenu(self)
+					ShowCustomScrollableMenu(nil, {
+						XMLRowHighlightTemplates = {
+							[lib.LSM_ENTRY_TYPE_NORMAL] = {
+								template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight",
+								color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+							},
+							[lib.LSM_ENTRY_TYPE_SUBMENU] = {
+								template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight", --Will be replaced with green if submenu entry got callback
+								templateWithCallback = lib.LSM_ROW_HIGHLIGHT_BLUE,
+								color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+							},
+							[lib.LSM_ENTRY_TYPE_CHECKBOX] = {
+								template = lib.LSM_ROW_HIGHLIGHT_BLUE, --"LibScrollableMenu_Highlight_Blue",
+								color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+							},
+							[lib.LSM_ENTRY_TYPE_BUTTON] = {
+								template = lib.LSM_ROW_HIGHLIGHT_RED, --"LibScrollableMenu_Highlight_Red",
+								color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+							},
+							[lib.LSM_ENTRY_TYPE_RADIOBUTTON] = {
+								template = lib.LSM_ROW_HIGHLIGHT_OPAQUE, --"LibScrollableMenu_Highlight_White",
+								color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+							},
+						},
+					})
 				end,
 				isNew			= true,
 				--entries         = submenuEntries,
