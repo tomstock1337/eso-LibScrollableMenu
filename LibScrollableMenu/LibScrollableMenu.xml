@@ -80,7 +80,7 @@
 			<OnMouseUp>
 				local dropdown = self.m_dropdownObject
 				if dropdown then
-					dropdown:OnEntryMouseUp(self, button, upInside)
+					dropdown:OnEntryMouseUp(self, button, upInside, false, ctrl, alt, shift)
 				end
 			</OnMouseUp>
 		</Control>
@@ -409,7 +409,7 @@
 											</OnMouseExit>
 
 											<OnMouseUp>
-												LibScrollableMenu.OnXMLControlEventHandler("OnFilterEditBoxMouseUp", self, self, button, upInside)
+												LibScrollableMenu.OnXMLControlEventHandler("OnFilterEditBoxMouseUp", self, self, button, upInside, ctrl, alt, shift)
 											</OnMouseUp>
 										</EditBox>
 									</Controls>

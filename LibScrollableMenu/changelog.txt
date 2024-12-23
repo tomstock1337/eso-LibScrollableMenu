@@ -1,9 +1,9 @@
--v- ---------------LSM v2.33 - 2024-12-21---------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.33 - 2024-12-23---------------------------------------------------------------------------- -v-
 -Bug fix: Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
 -Bug fix: Name of handler for context menu show and hide changed to proper Uppercase OnContextMenu*
 -Bug fix: XMLRowTemplates using a non capital R at some locations
 -Bug fix: Fire the OnDropdownMenuAdded callback for the contextMenu too
--Bug fix: options.headerFont and headerColor work now
+-Bug fix: options.headerFont and headerColor work now and do not use m_headerFont etc. anymore to pass in the options
 -Bug fix: Hide the tooltip as checkbox is toggled, or radioButton is changed
 -Changed: XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
 -Changed: handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
