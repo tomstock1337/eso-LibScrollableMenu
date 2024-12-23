@@ -146,7 +146,7 @@ local function test()
 				}
 			},
 			]]
-			--highlightContextMenuOpeningControl = true,
+			highlightContextMenuOpeningControl = true,
 			XMLRowHighlightTemplates = {
 				[lib.LSM_ENTRY_TYPE_NORMAL] = {
 					template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight",
@@ -161,6 +161,7 @@ local function test()
 				[lib.LSM_ENTRY_TYPE_CHECKBOX] = {
 					template = lib.LSM_ROW_HIGHLIGHT_BLUE, --"LibScrollableMenu_Highlight_Blue",
 					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+					templateContextMenuOpeningControl = lib.LSM_ROW_HIGHLIGHT_RED,
 				},
 				[lib.LSM_ENTRY_TYPE_BUTTON] = {
 					template = lib.LSM_ROW_HIGHLIGHT_RED, --"LibScrollableMenu_Highlight_Red",

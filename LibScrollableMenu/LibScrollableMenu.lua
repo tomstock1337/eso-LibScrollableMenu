@@ -3859,12 +3859,12 @@ end
 function comboBox_base:GetHighlightTemplateData(control, m_data, isSubMenu, isContextMenu)
 	local entryType = control.typeId
 
-	--[[
-	local doDebug = control:GetName() == "LibScrollableMenuTestDropdown1Scroll3Row3"
+--[[
+	local doDebug = control:GetName() == "LibScrollableMenuTestDropdown1Scroll11Row1"
 	if doDebug then
 		d(debugPrefix .. "comboBox_base:GetHighlightTemplateData - control: " .. tos(getControlName(control)))
 	end
-	]]
+]]
 	--Get the highlight template based on the entryType
 	if entryType == nil then return	end
 
@@ -3873,7 +3873,7 @@ function comboBox_base:GetHighlightTemplateData(control, m_data, isSubMenu, isCo
 	local highlightTemplateData = ((self.XMLRowHighlightTemplates[entryType] ~= nil and ZO_ShallowTableCopy(self.XMLRowHighlightTemplates[entryType])) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(defaultHighlightTemplateData) --loose the reference so we can overwrite values below, without changing originals
 	highlightTemplateData.overwriteHighlightTemplate = highlightTemplateData.overwriteHighlightTemplate or false
 
-	--[[
+--[[
 	if doDebug then
 LSM_Debug = {
 	highlightTemplateData = highlightTemplateData,
@@ -3885,8 +3885,7 @@ LSM_Debug = {
 
 		d(">entryType: " .. tos(entryType) .. "; template: " ..tos(self.XMLRowHighlightTemplates[entryType].template) .."; CntxMenOpenTemplate: " .. tos(self.XMLRowHighlightTemplates[entryType].templateContextMenuOpeningControl) .. "; appliedHighlightTemplate: " .. tos(appliedHighlightTemplateCopy.template) .. "; defTemplate: " .. tos(defaultHighlightTemplateData.template))
 	end
-	]]
-
+]]
 	local options = self:GetOptions()
 	local data = getControlData(control)
 
@@ -3896,7 +3895,11 @@ LSM_Debug = {
 		local origData = data[LSM_DATA_SUBTABLE] and data[LSM_DATA_SUBTABLE][LSM_DATA_SUBTABLE_ORIGINAL_DATA] and data[LSM_DATA_SUBTABLE][LSM_DATA_SUBTABLE_ORIGINAL_DATA].data
 		if origData then
 			if origData.m_highlightTemplate or origData.m_highlightColor then
---d(">Original data highlightTemplate was found")
+--[[
+if doDebug then
+d(">Original data highlightTemplate was found")
+end
+]]
 				local origHighlightTemplateData = {}
 				origHighlightTemplateData.template = 	origData.m_highlightTemplate
 				origHighlightTemplateData.color = 		origData.m_highlightColor or defaultHighlightColor
@@ -3923,12 +3926,12 @@ LSM_Debug = {
 			local isOwnedByContextMenuComboBox = g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox)
 
 			if gotRightCLickCallback and not isOwnedByContextMenuComboBox then
-				--[[
-				if doDebug then
-					d("[GetHighlightTemplateData]cntxtMenu: " .. tos(isContextMenuAndHighlightContextMenuOpeningControl) ..", dataRightClick: " .. tos(gotRightCLickCallback) .. "; isOwnedByCntxtMenuCBox: " ..tos(isOwnedByContextMenuComboBox))
-					d(">template: " ..tos(highlightTemplateData.template) .."; CntxMenOpenTemplate: " .. tos(highlightTemplateData.templateContextMenuOpeningControl) .. "; appliedHighlightTemplate: " .. tos(appliedHighlightTemplateCopy) .. "; defTemplate: " .. tos(defaultHighlightTemplateDataEntryContextMenuOpeningControl.template))
-				end
-				]]
+--[[
+if doDebug then
+	d("[GetHighlightTemplateData]cntxtMenu: " .. tos(isContextMenuAndHighlightContextMenuOpeningControl) ..", dataRightClick: " .. tos(gotRightCLickCallback) .. "; isOwnedByCntxtMenuCBox: " ..tos(isOwnedByContextMenuComboBox))
+	d(">template: " ..tos(highlightTemplateData.template) .."; CntxMenOpenTemplate: " .. tos(highlightTemplateData.templateContextMenuOpeningControl) .. "; appliedHighlightTemplate: " .. tos(appliedHighlightTemplateCopy) .. "; defTemplate: " .. tos(defaultHighlightTemplateDataEntryContextMenuOpeningControl.template))
+end
+]]
 
 				--highlightContextMenuOpeningControl support -> highlightTemplateData.templateContextMenuOpeningControl
 				highlightTemplateData.template = ((highlightTemplateData.templateContextMenuOpeningControl ~= nil and highlightTemplateData.templateContextMenuOpeningControl) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(defaultHighlightTemplateDataEntryContextMenuOpeningControl).template
@@ -3942,24 +3945,23 @@ end
 --Write the highlight template to the control.m_data.m_highlightTemplate (ZO_ComboBox default variable for that), based
 --on the XMLRowHighlightTemplates passed in via the options (or using default values)
 function comboBox_base:UpdateHighlightTemplate(control, data, isSubMenu, isContextMenu)
-	--[[
-	local doDebug = control:GetName() == "LibScrollableMenuTestDropdown1Scroll3Row3"
+--[[
+	local doDebug = control:GetName() == "LibScrollableMenuTestDropdown1Scroll11Row1"
 	if doDebug then
-LSM_DebugData = ZO_ShallowTableCopy(data)
 		d("+++++++++++++++++++++++++++++++++++++++++++++")
 		d(debugPrefix .. "UpdateHighlightTemplate - name: " .. tos(getControlName(control)) .. ", entryType: " .. tos(control.typeId) .. ", isContextMenu: " .. tos(isContextMenu))
 	end
-	]]
+]]
 
 	isContextMenu = isContextMenu or self.isContextMenu
 	local highlightTemplateData = self:GetHighlightTemplateData(control, data, isSubMenu, isContextMenu)
 	local highlightTemplate = (highlightTemplateData ~= nil and highlightTemplateData.template) or nil
 
-	--[[
+--[[
 	if doDebug then
 		d(">HL_Template: " .. tos(highlightTemplate) .. "; color: " .. tos(highlightTemplateData.color) .. ", overwrite: " .. tos(highlightTemplateData.overwriteHighlightTemplate))
 	end
-	]]
+]]
 
 	if control.m_data then
 		if highlightTemplateData == nil then
@@ -3969,12 +3971,12 @@ LSM_DebugData = ZO_ShallowTableCopy(data)
 			control.m_data.m_highlightTemplate = highlightTemplate
 			control.m_data.m_highlightColor = highlightTemplateData.color
 
-	--[[
+--[[
 			if doDebug then
 				d(">>highlight template was applied to m_data.m_highlightTemplate")
 				d("----------------------------------------------")
 			end
-	]]
+]]
 		end
 	end
 end
