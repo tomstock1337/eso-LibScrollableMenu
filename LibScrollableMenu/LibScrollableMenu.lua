@@ -639,6 +639,25 @@ local entryTypeToOriginalSelectedSound = {
 
 
 --------------------------------------------------------------------
+-- Data source determination
+--------------------------------------------------------------------
+function getDataSource(data)
+	if data and data.dataSource then
+		return data:GetDataSource()
+	end
+	return data or NIL_CHECK_TABLE
+end
+
+-- >> data, dataEntry
+local function getControlData(control)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 28, tos(getControlName(control))) end
+	local data = control.m_sortedItems or control.m_data
+
+	return getDataSource(data)
+end
+
+
+--------------------------------------------------------------------
 -- Breadcrumb animation highlight
 --------------------------------------------------------------------
 local defaultAnimationFieldName = 'HighlightAnimation' --ZO_ComboBox default highkight animation control child
@@ -671,15 +690,20 @@ local function playAnimationOnControl(control, animationFieldName, controlTempla
 	end
 end
 
-local function removeAnimationOnControl(control, animationFieldName)
+local function removeAnimationOnControl(control, animationFieldName, flag)
+	if control == nil or animationFieldName == nil then return end
 	local animationControl = control[animationFieldName]
 	if animationControl and animationControl.PlayBackward then
+if flag then
+	d(">animation play backward")
+end
 		animationControl:PlayBackward()
 	end
 	control.breadcrumbName = nil
 end
 
-local function unhighlightControl(self)
+
+local function unhighlightHighlightedControl(self)
 	local highlightControl = self.highlightedControl
 	if highlightControl then
 		removeAnimationOnControl(highlightControl, highlightControl.breadcrumbName)
@@ -687,9 +711,25 @@ local function unhighlightControl(self)
 	end
 end
 
+--todo 20241224 need to call this function upon scrolling in scroll lists -> Setup function of the entryTypes,
+--todo so for e.g. scroll list row7, the reused scroll list row1 does not provide the old highlight control and color
+local function unhighlightControl(self, control, data)
+d(debugPrefix .. "unhighlightControl: " .. tos(getControlName(control)) .. "; breadcrumbNameCtrl: " ..tos(control.breadcrumbName) .. "; breadcrumbNameSelf: " ..tos(self.breadcrumbName))
+	if control then
+		removeAnimationOnControl(control, control.breadcrumbName or self.breadcrumbName or "", true)
+
+		data = data or getControlData(control)
+		if data ~= nil and data.m_highlightTemplate ~= nil then
+d(">highlightTemplate: " ..tos(data.m_highlightTemplate))
+			data.m_highlightTemplate = nil
+		end
+	end
+end
+
 local function highlightControl(self, control, isSubMenu, highlightContextMenuOpeningControl)
+d(debugPrefix .. "highlightControl: " .. tos(getControlName(control)))
 	if self.highlightedControl then
-		unhighlightControl(self)
+		unhighlightHighlightedControl(self)
 	end
 
 	--Get the highlight template from control.m_data.m_highlightTemplate
@@ -1666,21 +1706,6 @@ local postItemSetupFunctions = {
 	end,
 }
 
-
-function getDataSource(data)
-	if data and data.dataSource then
-		return data:GetDataSource()
-	end
-	return data or NIL_CHECK_TABLE
-end
-
--- >> data, dataEntry
-local function getControlData(control)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 28, tos(getControlName(control))) end
-	local data = control.m_sortedItems or control.m_data
-
-	return getDataSource(data)
-end
 
 --20240727 Prevent selection of entries if a context menu was opened and a left click was done "outside of the context menu"
 --Param isContextMenu will be true if coming from contextMenuClass:GetHiddenForReasons function or it will change to true if
@@ -2825,6 +2850,9 @@ function dropdownClass:OnMouseExitEntry(control)
 	if data.enabled and not runHandler(handlerFunctions['onMouseExit'], control, data) then
 		zo_comboBoxDropdown_onMouseExitEntry(self, control)
 	end
+
+	--todo 20241224 Unhighlight the actual highlight control (play animation backwards) and remove the m_highlightTemplate
+	unhighlightControl(self, control, data)
 
 	--[[
 	if not lib.GetPersistentMenus() then
@@ -3995,7 +4023,7 @@ function comboBox_base:HideDropdown()
 --	lib.openMenu = nil
 
 	if self.highlightedControl then
-		unhighlightControl(self)
+		unhighlightHighlightedControl(self)
 	end
 
 	-- Close self
@@ -4103,6 +4131,11 @@ function comboBox_base:SetupEntryBase(control, data, list)
 	control.closeOnSelect = (control.selectable and type(data.callback) == 'function') or false
 
     control:SetMouseEnabled(data.enabled ~= false)
+
+	--Update the highlight control of the entry upon scrolling -> Remove old highlight control so reused pool controls
+	--do not show old highlight colors and styles
+	--todo 20241224
+	--unhighlightControl(self, control)
 end
 
 function comboBox_base:Show()
@@ -4956,7 +4989,7 @@ function submenuClass:HideDropdownInternal()
 	end
 
 	if self.highlightedControl then
-		unhighlightControl(self)
+		unhighlightHighlightedControl(self)
 	end
 end
 
@@ -5875,6 +5908,10 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-16
 -Added: 	return values index/indices, entryData/entryDataTable to the context menu API functions AddCustomScrollableMenuEntry/Entries etc.
 -Renamed: 	API function lib.SetButtonGroupState to lib.ButtonGroupDefaultContextMenu as the name was missleading. It never changed or set any values directly it only added a contextmenu where you could choose "Select all", "Select none", "Invers"
 -Renamed: 	self.optionsData at contextMenus was properly renamed to self.contextMenuOptions
+
+
+TODO Bug: Submenu Entry Test 7 and 7 apply the same data.m_highlihtTemplate (as we scroll down) as the first and 2nd row of the submenu used. Setupcallback is not resetting them upon scrolling
+--tood    because the row control is the same as the 1st "LibScrollableMenuTestDropdown2Scroll3Row1" > Needs to update ScrollHighlightAnimation control upon scrolling! See function unhighlightControl
 
 
 -------------------
