@@ -5931,7 +5931,7 @@ LibScrollableMenu = lib
 
 --[[
 -------------------
-WORKING ON - Current version: 2.33 - Updated 2024-12-16
+WORKING ON - Current version: 2.33 - Updated 2024-12-28
 -------------------
 -Bug fix: 	Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
 -Bug fix: 	Name of handler for context menu show and hide changed to proper Uppercase OnContextMenu*
@@ -5939,6 +5939,7 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-16
 -Bug fix: 	Fire the OnDropdownMenuAdded callback for the contextMenu too
 -Bug fix: 	options.headerFont and headerColor work now and do not use m_headerFont etc. anymore to pass in the options
 -Bug fix: 	Hide the tooltip as checkbox is toggled, or radioButton is changed
+-Bug fix: 	Pool controls did not reapply the proper highlight upon scrolling and re-usage of the controls
 -Changed: 	XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
 -Changed: 	handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
 -Changed: 	Moved debug messages to a table and use the index of the message instead of sending the whole text on each debug message, plus orevent calling debug messages if debugging is disbled
@@ -5948,8 +5949,6 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-16
 -Renamed: 	self.optionsData at contextMenus was properly renamed to self.contextMenuOptions
 
 
-TODO Bug: Submenu Entry Test 7 and 7 apply the same data.m_highlihtTemplate (as we scroll down) as the first and 2nd row of the submenu used. Setupcallback is not resetting them upon scrolling
---todo    because the row control is the same as the 1st "LibScrollableMenuTestDropdown2Scroll3Row1" > Needs to update ScrollHighlightAnimation control upon scrolling! See function unhighlightControl
 
 
 -------------------
