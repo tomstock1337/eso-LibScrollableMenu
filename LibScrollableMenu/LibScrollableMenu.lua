@@ -17,8 +17,8 @@ if not lib then return end
 -- Locals
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
-local AM = ANIMATION_MANAGER
-local EM = EVENT_MANAGER
+local AM = GetAnimationManager() --ANIMATION_MANAGER
+local EM = GetEventManager() --EVENT_MANAGER
 local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
 local sfor = string.format
@@ -181,6 +181,12 @@ local throttledCallDelay = 10
 
 --local "global" variables
 local NIL_CHECK_TABLE = {}
+
+--Highlight and animation
+local defaultHighlightTemplate 	-- See below at comboBoxDefaults
+local defaultHighlightColor 	-- See below at comboBoxDefaults
+local defaultHighLightAnimationFieldName = 'LSM_HighlightAnimation'
+local subAndContextMenuHighlightAnimationBreadcrumbsPattern = '%s_%s'
 
 --local "global" functions
 local getValueOrCallback
@@ -401,8 +407,9 @@ local comboBoxDefaults = {
 }
 lib.comboBoxDefaults = comboBoxDefaults
 
-local defaultHighlightTemplate = comboBoxDefaults.m_highlightTemplate
-local defaultHighlightColor = comboBoxDefaults.m_highlightColor
+--Set the default highlight values
+defaultHighlightTemplate = comboBoxDefaults.m_highlightTemplate
+defaultHighlightColor = comboBoxDefaults.m_highlightColor
 
 
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
@@ -639,68 +646,144 @@ local entryTypeToOriginalSelectedSound = {
 
 
 --------------------------------------------------------------------
+-- Data source determination
+--------------------------------------------------------------------
+function getDataSource(data)
+	if data and data.dataSource then
+		return data:GetDataSource()
+	end
+	return data or NIL_CHECK_TABLE
+end
+
+-- >> data, dataEntry
+local function getControlData(control)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 28, tos(getControlName(control))) end
+	local data = control.m_sortedItems or control.m_data
+
+	return getDataSource(data)
+end
+
+
+--------------------------------------------------------------------
 -- Breadcrumb animation highlight
 --------------------------------------------------------------------
-local defaultAnimationFieldName = 'HighlightAnimation' --ZO_ComboBox default highkight animation control child
-local breadcrumbsPattern = '%s_%s'
+--Did the virtual XML template for the highlight row change at the control? Reset the highlight control then so it will
+--be build new with the new XML template, and same name -> Via ESOUI scrolltemplates.lua, PlayAnimationOnControl function
+local function LSM_CheckIfAnimationControlNeedsXMLTemplateChange(control, controlTemplate)
+	local retVar = false
+	if control and controlTemplate then
+		local rowHighlightData = control.LSM_rowHighlightData --was set to the control via self.highlightCallback(control, true) function at the scrollList!
+		local highlightControlXMLTemplate = (rowHighlightData ~= nil and rowHighlightData.highlightXMLTemplate) or nil
+		--Highlight control exists already and the XML template changed (e.g. scrolling an existing ScrollList row)
+		if highlightControlXMLTemplate ~= nil and highlightControlXMLTemplate ~= controlTemplate then
+			--Reset the animation timeline control and the highlight control
+			local animationFieldName = rowHighlightData.animationFieldName
+			if animationFieldName and control[animationFieldName] ~= nil then
+				control[animationFieldName] = nil
 
-local function playAnimationOnControl(control, animationFieldName, controlTemplate, overrideEndAlpha)
-	if control and animationFieldName and controlTemplate then
-		local animationControl = control[animationFieldName]
+				local highlightControlName = rowHighlightData.highlightControlName
+				if highlightControlName ~= nil then
+					if _G[highlightControlName] ~= nil then
+						_G[highlightControlName] = nil
+					end
+				end
+			end
+			retVar = true
+		end
+	end
 
-		if not animationControl then
-			local highlightControl = CreateControlFromVirtual("$(parent)Scroll", control, controlTemplate, animationFieldName)
-			if highlightControl == nil then return end
+	--Reset the table at the control
+	control.LSM_rowHighlightData = nil
+	return retVar
+end
 
-			local width = highlightControl:GetWidth()
-			highlightControl:SetFadeGradient(1, (width / 3) , 0, width)
+--Similar function to /esoui/libraries/zo_templates/scrolltempaltes.lua, function PlayAnimationOnControl used for ZO_ScrollList
+-->But here only for the contextmenu and submenu opening controls!
+--Each other entryType: See call of "zo_comboBoxDropdown_onMouseEnterEntry" function and it's information about scrollCtrl.highlightTemplateOrFunction etc.
+local function SubOrContextMenu_PlayAnimationOnControl(control, controlTemplate, animationFieldName, animateInstantly, overrideEndAlpha)
+    if control and controlTemplate and animationFieldName then
+		local animationCtrl = control[animationFieldName]
+        if not animationCtrl then
+            local highlight = CreateControlFromVirtual("$(parent)Scroll", control, controlTemplate, animationFieldName)
+            animationCtrl = AM:CreateTimelineFromVirtual("ShowOnMouseOverLabelAnimation", highlight)
+
+			local width = highlight:GetWidth()
+			highlight:SetFadeGradient(1, (width / 3) , 0, width)
 			--SetFadeGradient(gradientIndex, normalX, normalY, gradientLength)
 
-			animationControl = AM:CreateTimelineFromVirtual("ShowOnMouseOverLabelAnimation", highlightControl)
-			control[animationFieldName] = animationControl
-			--		control.highlightControl = highlightControl
-		end
 
-		if animationControl and animationControl.PlayForward then
-			if overrideEndAlpha and animationControl.GetAnimation then
-				local animation1 = animationControl:GetAnimation(1)
-				if animation1 then animation1:SetAlphaValues(0, overrideEndAlpha) end
+            if overrideEndAlpha then
+                animationCtrl:GetAnimation(1):SetAlphaValues(0, overrideEndAlpha)
+            end
+
+			control[animationFieldName] = animationCtrl
+        end
+
+		if animateInstantly then
+			animationCtrl:PlayInstantlyToEnd()
+		else
+			animationCtrl:PlayForward()
+		end
+    end
+end
+
+local function removeAnimationOnControl(control, animationFieldName, animateInstantly)
+	if control ~= nil then
+		if animationFieldName ~= nil then
+			local animationControl = control[animationFieldName]
+			if animationControl then
+				if animateInstantly then
+					animationControl:PlayInstantlyToStart()
+				else
+					animationControl:PlayBackward()
+				end
 			end
-			animationControl:PlayForward()
+		end
+		control.breadcrumbName = nil
+	end
+end
+
+
+local function unhighlightControl(selfVar, instantly, control, resetHighlightTemplate)
+	local highlightControl = selfVar.highlightedControl
+	if highlightControl then
+		removeAnimationOnControl(highlightControl, highlightControl.breadcrumbName, instantly)
+	end
+	selfVar.highlightedControl = nil
+
+	if control ~= nil and resetHighlightTemplate == true then
+		if control.m_highlightTemplate then
+			control.m_highlightTemplate = nil
+		end
+
+		local data = getControlData(control)
+		if data then
+			if data.m_highlightTemplate then
+				data.m_highlightTemplate = nil
+			end
 		end
 	end
 end
 
-local function removeAnimationOnControl(control, animationFieldName)
-	local animationControl = control[animationFieldName]
-	if animationControl and animationControl.PlayBackward then
-		animationControl:PlayBackward()
-	end
-	control.breadcrumbName = nil
-end
-
-local function unhighlightControl(self)
-	local highlightControl = self.highlightedControl
-	if highlightControl then
-		removeAnimationOnControl(highlightControl, highlightControl.breadcrumbName)
-		self.highlightedControl = nil
-	end
-end
-
-local function highlightControl(self, control, isSubMenu, highlightContextMenuOpeningControl)
-	if self.highlightedControl then
-		unhighlightControl(self)
+--Should only be called from submenu or contextmenu's OnMouseEnter
+-->Normal menus use the scrolltemplates.lua function HighlightControl via normal ZO_ScrolList. See function "highlightTemplateOrFunction"
+local function SubOrContextMenu_highlightControl(selfVar, control)
+	--d(debugPrefix .. "SubOrContextMenu_highlightControl: " .. tos(getControlName(control)))
+	if selfVar.highlightedControl then
+		unhighlightControl(selfVar, false, nil, nil)
 	end
 
-	--Get the highlight template from control.m_data.m_highlightTemplate
-	local highlightTemplate = self:GetHighlightTemplate(control)
+	--local isContextMenu = selfVar.isContextMenu or false
+
+	--Get the highlight template from control.m_data.m_highlightTemplate of the submenu opening, or contextmenu opening control
+	local highlightTemplate = selfVar:GetHighlightTemplate(control)
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 1, tos(highlightTemplate)) end
-	if type(highlightTemplate) ~= "string" then return end
+	if type(highlightTemplate) ~= "string" then return defaultHighlightTemplate end
 
-	control.breadcrumbName = sfor(breadcrumbsPattern, defaultAnimationFieldName, tos(self.breadcrumbName))
-	playAnimationOnControl(control, control.breadcrumbName, highlightTemplate, 0.5)
-	self.highlightedControl = control
+	--Use the breadcrumbName as animationFieldName (e.g. LSM_HighlightAnimation_SubmenuBreadcrumb or LSM_HighlightAnimation_ContextMenuBreadcrumb)
+	control.breadcrumbName = sfor(subAndContextMenuHighlightAnimationBreadcrumbsPattern, defaultHighLightAnimationFieldName, tos(selfVar.breadcrumbName))
+	return SubOrContextMenu_PlayAnimationOnControl(control, highlightTemplate, control.breadcrumbName, false, 0.5)
 end
 
 --------------------------------------------------------------------
@@ -1667,21 +1750,6 @@ local postItemSetupFunctions = {
 }
 
 
-function getDataSource(data)
-	if data and data.dataSource then
-		return data:GetDataSource()
-	end
-	return data or NIL_CHECK_TABLE
-end
-
--- >> data, dataEntry
-local function getControlData(control)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 28, tos(getControlName(control))) end
-	local data = control.m_sortedItems or control.m_data
-
-	return getDataSource(data)
-end
-
 --20240727 Prevent selection of entries if a context menu was opened and a left click was done "outside of the context menu"
 --Param isContextMenu will be true if coming from contextMenuClass:GetHiddenForReasons function or it will change to true if
 --any contextMenu is curently shown as this function runs
@@ -1973,7 +2041,7 @@ end
 --After item's setupFunction was executed we need to run some extra functions on each subitem (submenus e.g.)?
 local function runPostItemSetupFunction(comboBox, itemEntry)
 	local postItem_SetupFunc = postItemSetupFunctions[itemEntry.entryType]
-	if postItem_SetupFunc then
+	if postItem_SetupFunc ~= nil then
 		postItem_SetupFunc(comboBox, itemEntry)
 	end
 end
@@ -2555,7 +2623,7 @@ local function addEntryToScrollList(self, item, dataList, index, allItemsHeight,
 end
 
 --Reset function which is called for the scrollList entryType pool's rowControls as they get hidden/scrolled out of sight
-local function poolControlReset(control)
+local function poolControlReset(selfVar, control)
     control:SetHidden(true)
 
 	if control.isSubmenu then
@@ -2569,7 +2637,6 @@ local function poolControlReset(control)
 		local buttonGroup = button.m_buttonGroup
 		if buttonGroup ~= nil then
 			--local buttonGroupIndex = button.m_buttonGroupIndex
---d(debugPrefix .. "poolControlReset - buttonGroup[" .. tos(buttonGroupIndex) ..", countLeft: " .. tos(NonContiguousCount(buttonGroup.m_buttons)))
 			buttonGroup:Remove(button)
 		end
 	end
@@ -2607,19 +2674,69 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	end
 	self.scroll = self.scrollControl.contents
 
-	-- highlightTemplate, animationFieldName = self.highlightTemplateOrFunction(control)
+	local selfVar = self
 
+	--------------------------------------------------------------------------------------------------------------------
+	-- highlightTemplate, animationFieldName = self.highlightTemplateOrFunction(control)
+	-->Function highlightTemplateOrFunctions will be called from local function RefreshHighlights() in function ZO_ScrollList_EnableHighlight
 	--Enable different hightlight templates at the ZO_SortFilterList scrolLList entries -> OnMouseEnter
 	-->entries opening a submenu, having a callback function, show with a different template (color e.g.)
 	-->>!!! ZO_ScrollList_EnableHighlight(self.scrollControl, function(control) end) cannot be used here as it does NOT overwrite existing highlightTemplateOrFunction !!!
-	local selfVar = self
-	self.scrollControl.highlightTemplateOrFunction = function(control)
---d(debugPrefix .. "highlightTemplateOrFunction - control: " .. tos(getControlName(control)) .. ", owner: " .. tos(selfVar.owner))
-		if selfVar.owner then
-			return selfVar.owner:GetHighlightTemplate(control)
+	--[[
+		local function HighlightControl(self, control)
+			local highlightTemplate, animationFieldName
+			if type(self.highlightTemplateOrFunction) == "function" then
+				-->!!! This will be the place where the code below is called !!!
+				highlightTemplate, animationFieldName = self.highlightTemplateOrFunction(control)
+			else
+				highlightTemplate = self.highlightTemplateOrFunction
+			end
+			control.highlightAnimationFieldName = animationFieldName or "HighlightAnimation"
+			PlayAnimationOnControl(control, highlightTemplate, control.highlightAnimationFieldName, DONT_ANIMATE_INSTANTLY, self.overrideHighlightEndAlpha)
+
+			self.highlightedControl = control
+
+			if self.highlightCallback then
+				self.highlightCallback(control, true)
+			end
 		end
-		return defaultHighlightTemplate --'ZO_SelectionHighlight'
+	]]
+	-->!!! This will be the place where the function HighlightControl above calls the highlightTemplateOrFunction function !!!
+	scrollCtrl.highlightTemplateOrFunction = function(control)
+		if selfVar.owner then
+			--return selfVar.owner:GetHighlightTemplate(control)
+			local XMLVirtualHighlightTemplateOfRow = selfVar.owner:GetHighlightTemplate(control)
+			--Check if the XML virtual template name changed and invalidate the _G highlight and animation control then (set = nil)
+			LSM_CheckIfAnimationControlNeedsXMLTemplateChange(control, XMLVirtualHighlightTemplateOfRow)
+
+			-->function PlayAnimationOnControl will set control[defaultHighLightAnimationFieldName] = animationControl then
+			--->Also see function scrollCtrl.highlightCallback below
+			return XMLVirtualHighlightTemplateOfRow, defaultHighLightAnimationFieldName --"LSM_HighlightAnimation"
+		end
+		return defaultHighlightTemplate, defaultHighLightAnimationFieldName --"ZO_SelectionHighlight", "LSM_HighlightAnimation"
 	end
+
+	--------------------------------------------------------------------------------------------------------------------
+	--Set the table control.rowHighlightData so we can use it to compare the last used XML virtual template for the
+	--highlight control, at this control, with the current one.
+	-->Will be set here and read in function scrollCtrl.highlightTemplateOrFunction above -> LSM_CheckIfAnimationControlNeedsXMLTemplateChange
+	scrollCtrl.highlightCallback = function(control, isHighlighting)
+		if control ~= nil and isHighlighting == true then
+			if selfVar.owner then
+				local animationFieldName = control.highlightAnimationFieldName
+				if animationFieldName ~= nil then
+					control.LSM_rowHighlightData = {
+						highlightControlName =	control:GetName() .. "Scroll" .. animationFieldName,
+						animationFieldName = 	animationFieldName,
+						highlightXMLTemplate = 	selfVar.owner:GetHighlightTemplate(control)
+					}
+				end
+			else
+				control.LSM_rowHighlightData = nil
+			end
+		end
+	end
+	--------------------------------------------------------------------------------------------------------------------
 end
 
 function dropdownClass:AddItems(items)
@@ -2657,9 +2774,10 @@ function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupF
 
 	self.customEntryTemplateInfos[entryTemplate] = customEntryInfo
 
+	local selfVar = self
 	local entryHeightWithSpacing = entryHeight + self.spacing
-	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId, entryTemplate, entryHeightWithSpacing, setupFunction, poolControlReset)
-	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId + 1, entryTemplate, entryHeight, setupFunction, poolControlReset)
+	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId, entryTemplate, entryHeightWithSpacing, setupFunction, function(...) poolControlReset(selfVar, ...) end)
+	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId + 1, entryTemplate, entryHeight, setupFunction, function(...) poolControlReset(selfVar, ...) end)
 
 	self.nextScrollTypeId = self.nextScrollTypeId + 2
 end
@@ -2800,6 +2918,9 @@ function dropdownClass:OnMouseEnterEntry(control)
 	local data = getControlData(control)
 	if data.enabled == true then
 		if not runHandler(handlerFunctions['onMouseEnter'], control, data) then
+			--Each entryType uses the default scrolltemplates.lua, function PlayAnimationOnControl via the zo_comboBoxDropdown_onMouseEnterEntry function call
+			--to get/create the highlight control and assign the virtual XML tempalte to it, and to set the highlight animation on the control.
+			--> See function dropdownClass:Initialize -> function scrollCtrl.highlightTemplateOrFunction and function scrollCtrl.highlightCallback
 			zo_comboBoxDropdown_onMouseEnterEntry(self, control)
 		end
 
@@ -3581,7 +3702,7 @@ local function getDefaultXMLTemplates(selfVar)
 		},
 		[LSM_ENTRY_TYPE_SUBMENU] = {
 			template = defaultHighlightTemplate,
-			templateWithCallback = LSM_ROW_HIGHLIGHT_GREEN, -- template for the entry where a submenu is opened but you can click the entry to call a callback too
+			templateSubMenuWithCallback = LSM_ROW_HIGHLIGHT_GREEN, -- template for the entry where a submenu is opened but you can click the entry to call a callback too
 			color = defaultHighlightColor,
 		},
 		[LSM_ENTRY_TYPE_DIVIDER] = {
@@ -3660,7 +3781,7 @@ function comboBox_base:AddCustomEntryTemplates(options, isContextMenu)
 			if optionHighlightTemplates and optionHighlightTemplates[entryType] then
 	--[[
 	if isContextMenu then
-		d(">entryType: " .. tos(entryType) ..", customHighlightXML: " .. tos(optionHighlightTemplates[entryType].template) .. "; templateWithCallback: " .. tos(optionHighlightTemplates[entryType].templateWithCallback) .. "; templateContextMenuOpeningControl: " .. tos(optionHighlightTemplates[entryType].templateContextMenuOpeningControl))
+		d(">entryType: " .. tos(entryType) ..", customHighlightXML: " .. tos(optionHighlightTemplates[entryType].template) .. "; templateSubMenuWithCallback: " .. tos(optionHighlightTemplates[entryType].templateSubMenuWithCallback) .. "; templateContextMenuOpeningControl: " .. tos(optionHighlightTemplates[entryType].templateContextMenuOpeningControl))
 	end
 	]]
 				--ZOs function overwrites exising table entries!
@@ -3854,17 +3975,11 @@ end
 
 
 --Get the current row's highlight template based on the options, and differ between normal entry type's highlights,
--- entry type opening a submenu and having it's own callback (templateWithCallback) highlights, contextMenu opening
+-- entry type opening a submenu and having it's own callback (templateSubMenuWithCallback) highlights, contextMenu opening
 -- control (templateContextMenuOpeningControl) highlights
 function comboBox_base:GetHighlightTemplateData(control, m_data, isSubMenu, isContextMenu)
 	local entryType = control.typeId
 
---[[
-	local doDebug = control:GetName() == "LibScrollableMenuTestDropdown1Scroll11Row1"
-	if doDebug then
-		d(debugPrefix .. "comboBox_base:GetHighlightTemplateData - control: " .. tos(getControlName(control)))
-	end
-]]
 	--Get the highlight template based on the entryType
 	if entryType == nil then return	end
 
@@ -3873,19 +3988,6 @@ function comboBox_base:GetHighlightTemplateData(control, m_data, isSubMenu, isCo
 	local highlightTemplateData = ((self.XMLRowHighlightTemplates[entryType] ~= nil and ZO_ShallowTableCopy(self.XMLRowHighlightTemplates[entryType])) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(defaultHighlightTemplateData) --loose the reference so we can overwrite values below, without changing originals
 	highlightTemplateData.overwriteHighlightTemplate = highlightTemplateData.overwriteHighlightTemplate or false
 
---[[
-	if doDebug then
-LSM_Debug = {
-	highlightTemplateData = highlightTemplateData,
-	highlightTemplateDataCopy = ZO_ShallowTableCopy(highlightTemplateData),
-	XMLRowHighlightTemplatesEntryType = ZO_ShallowTableCopy(self.XMLRowHighlightTemplates[entryType]),
-	appliedHighlightTemplate = appliedHighlightTemplate,
-	defaultHighlightTemplateData = defaultHighlightTemplateData
-}
-
-		d(">entryType: " .. tos(entryType) .. "; template: " ..tos(self.XMLRowHighlightTemplates[entryType].template) .."; CntxMenOpenTemplate: " .. tos(self.XMLRowHighlightTemplates[entryType].templateContextMenuOpeningControl) .. "; appliedHighlightTemplate: " .. tos(appliedHighlightTemplateCopy.template) .. "; defTemplate: " .. tos(defaultHighlightTemplateData.template))
-	end
-]]
 	local options = self:GetOptions()
 	local data = getControlData(control)
 
@@ -3895,11 +3997,6 @@ LSM_Debug = {
 		local origData = data[LSM_DATA_SUBTABLE] and data[LSM_DATA_SUBTABLE][LSM_DATA_SUBTABLE_ORIGINAL_DATA] and data[LSM_DATA_SUBTABLE][LSM_DATA_SUBTABLE_ORIGINAL_DATA].data
 		if origData then
 			if origData.m_highlightTemplate or origData.m_highlightColor then
---[[
-if doDebug then
-d(">Original data highlightTemplate was found")
-end
-]]
 				local origHighlightTemplateData = {}
 				origHighlightTemplateData.template = 	origData.m_highlightTemplate
 				origHighlightTemplateData.color = 		origData.m_highlightColor or defaultHighlightColor
@@ -3915,8 +4012,8 @@ end
 		if options and not options.useDefaultHighlightForSubmenuWithCallback then
 			--Color the highlight light row green if the submenu has a callback (entry opening a submenu can be clicked to select it)
 			--but keep the color of the text as defined in options (self.XMLRowHighlightTemplates[entryType].color)
-			--Was a custom template provided in "templateWithCallback" for that case, then use it. Else use default template (green)
-			highlightTemplateData.template = ((highlightTemplateData.templateWithCallback ~= nil and highlightTemplateData.templateWithCallback) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(defaultHighlightTemplateDataEntryHavingSubMenuWithCallback).template
+			--Was a custom template provided in "templateSubMenuWithCallback" for that case, then use it. Else use default template (green)
+			highlightTemplateData.template = ((highlightTemplateData.templateSubMenuWithCallback ~= nil and highlightTemplateData.templateSubMenuWithCallback) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(defaultHighlightTemplateDataEntryHavingSubMenuWithCallback).template
 		end
 	else
 		local isContextMenuAndHighlightContextMenuOpeningControl = (options ~= nil and options.highlightContextMenuOpeningControl == true) or self.highlightContextMenuOpeningControl == true
@@ -3926,12 +4023,6 @@ end
 			local isOwnedByContextMenuComboBox = g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox)
 
 			if gotRightCLickCallback and not isOwnedByContextMenuComboBox then
---[[
-if doDebug then
-	d("[GetHighlightTemplateData]cntxtMenu: " .. tos(isContextMenuAndHighlightContextMenuOpeningControl) ..", dataRightClick: " .. tos(gotRightCLickCallback) .. "; isOwnedByCntxtMenuCBox: " ..tos(isOwnedByContextMenuComboBox))
-	d(">template: " ..tos(highlightTemplateData.template) .."; CntxMenOpenTemplate: " .. tos(highlightTemplateData.templateContextMenuOpeningControl) .. "; appliedHighlightTemplate: " .. tos(appliedHighlightTemplateCopy) .. "; defTemplate: " .. tos(defaultHighlightTemplateDataEntryContextMenuOpeningControl.template))
-end
-]]
 
 				--highlightContextMenuOpeningControl support -> highlightTemplateData.templateContextMenuOpeningControl
 				highlightTemplateData.template = ((highlightTemplateData.templateContextMenuOpeningControl ~= nil and highlightTemplateData.templateContextMenuOpeningControl) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(defaultHighlightTemplateDataEntryContextMenuOpeningControl).template
@@ -3945,23 +4036,10 @@ end
 --Write the highlight template to the control.m_data.m_highlightTemplate (ZO_ComboBox default variable for that), based
 --on the XMLRowHighlightTemplates passed in via the options (or using default values)
 function comboBox_base:UpdateHighlightTemplate(control, data, isSubMenu, isContextMenu)
---[[
-	local doDebug = control:GetName() == "LibScrollableMenuTestDropdown1Scroll11Row1"
-	if doDebug then
-		d("+++++++++++++++++++++++++++++++++++++++++++++")
-		d(debugPrefix .. "UpdateHighlightTemplate - name: " .. tos(getControlName(control)) .. ", entryType: " .. tos(control.typeId) .. ", isContextMenu: " .. tos(isContextMenu))
-	end
-]]
 
 	isContextMenu = isContextMenu or self.isContextMenu
 	local highlightTemplateData = self:GetHighlightTemplateData(control, data, isSubMenu, isContextMenu)
 	local highlightTemplate = (highlightTemplateData ~= nil and highlightTemplateData.template) or nil
-
---[[
-	if doDebug then
-		d(">HL_Template: " .. tos(highlightTemplate) .. "; color: " .. tos(highlightTemplateData.color) .. ", overwrite: " .. tos(highlightTemplateData.overwriteHighlightTemplate))
-	end
-]]
 
 	if control.m_data then
 		if highlightTemplateData == nil then
@@ -3970,13 +4048,6 @@ function comboBox_base:UpdateHighlightTemplate(control, data, isSubMenu, isConte
 		elseif highlightTemplateData.overwriteHighlightTemplate == true or not control.m_data.m_highlightTemplate then
 			control.m_data.m_highlightTemplate = highlightTemplate
 			control.m_data.m_highlightColor = highlightTemplateData.color
-
---[[
-			if doDebug then
-				d(">>highlight template was applied to m_data.m_highlightTemplate")
-				d("----------------------------------------------")
-			end
-]]
 		end
 	end
 end
@@ -3995,7 +4066,7 @@ function comboBox_base:HideDropdown()
 --	lib.openMenu = nil
 
 	if self.highlightedControl then
-		unhighlightControl(self)
+		unhighlightControl(self, false, nil, nil)
 	end
 
 	-- Close self
@@ -4939,7 +5010,7 @@ end
 
 function submenuClass:ShowDropdownInternal()
 	if self.openingControl then
-		highlightControl(self, self.openingControl, true, false) --submenu
+		SubOrContextMenu_highlightControl(self, self.openingControl) --submenu
 	end
 end
 
@@ -4956,7 +5027,7 @@ function submenuClass:HideDropdownInternal()
 	end
 
 	if self.highlightedControl then
-		unhighlightControl(self)
+		unhighlightHighlightedControl(self)
 	end
 end
 
@@ -5091,7 +5162,7 @@ function contextMenuClass:HighlightOpeningControl()
 		--Options tell us to highlight the openingControl?
 		if highlightContextMenuOpeningControl == true then
 			--Apply the highlightOpeningControl XML template to the openingControl and highlight it than via the animation
-			highlightControl(self, openingControl, false, true) --context menu's highlightContextMenuOpeningControl
+			SubOrContextMenu_highlightControl(self, openingControl) --context menu
 		end
 	end
 end
@@ -5236,10 +5307,10 @@ end
 --												"color" ZO_ColorDef = the color for the highlight. Default is Default is comboBoxDefaults.m_highlightColor (light blue),
 --												-->See local table "defaultXMLHighlightTemplates" in LibScrollableMenu
 --												-->Attention: If you do not specify all template attributes, the non-specified will be mixedIn from defaultXMLHighlightTemplates[entryType_ID] again!
---												-->templateWithCallback is used for an entry that got a submenu where clicking that entry also runs teh callback
+--												-->templateSubMenuWithCallback is used for an entry that got a submenu where clicking that entry also runs teh callback
 --												-->templateContextMenuOpeningControl is used for a contexMenu only, where the entry opens a contextMenu (right click)
 --		{
---			[lib.scrollListRowTypes.LSM_ENTRY_TYPE_NORMAL] =	{ template = "XMLVirtualTemplateRowHighlight_ForEntryId", color = ZO_ColorDef:New("FFFFFF"), templateWithCallback = "XMLVirtualTemplateRowHighlight_EntryOpeningASubmenuHavingACallback", templateContextMenuOpeningControl = "XMLVirtualTemplateRowHighlight_ContextMenuOpening_ForEntryId", ... }
+--			[lib.scrollListRowTypes.LSM_ENTRY_TYPE_NORMAL] =	{ template = "XMLVirtualTemplateRowHighlight_ForEntryId", color = ZO_ColorDef:New("FFFFFF"), templateSubMenuWithCallback = "XMLVirtualTemplateRowHighlight_EntryOpeningASubmenuHavingACallback", templateContextMenuOpeningControl = "XMLVirtualTemplateRowHighlight_ContextMenuOpening_ForEntryId", ... }
 --			[lib.scrollListRowTypes.LSM_ENTRY_TYPE_SUBMENU] = 	{ template = "XMLVirtualTemplateRowHighlight_ForSubmenuEntryId", color = ZO_ColorDef:New("FFFFFF"), ...  },
 --			...
 --		}
@@ -5860,7 +5931,7 @@ LibScrollableMenu = lib
 
 --[[
 -------------------
-WORKING ON - Current version: 2.33 - Updated 2024-12-16
+WORKING ON - Current version: 2.33 - Updated 2024-12-28
 -------------------
 -Bug fix: 	Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
 -Bug fix: 	Name of handler for context menu show and hide changed to proper Uppercase OnContextMenu*
@@ -5868,6 +5939,7 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-16
 -Bug fix: 	Fire the OnDropdownMenuAdded callback for the contextMenu too
 -Bug fix: 	options.headerFont and headerColor work now and do not use m_headerFont etc. anymore to pass in the options
 -Bug fix: 	Hide the tooltip as checkbox is toggled, or radioButton is changed
+-Bug fix: 	Pool controls did not reapply the proper highlight upon scrolling and re-usage of the controls
 -Changed: 	XML handlers for the header's text search etc. to call one LSM function to reduce redundant code
 -Changed: 	handlers On(Sub/Context)MenuShow and Hide will provide the dropdownObject as 2nd parameter now (sames as 1st parameter's dropdownControl.m_dropdownObject)
 -Changed: 	Moved debug messages to a table and use the index of the message instead of sending the whole text on each debug message, plus orevent calling debug messages if debugging is disbled
@@ -5875,6 +5947,8 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-16
 -Added: 	return values index/indices, entryData/entryDataTable to the context menu API functions AddCustomScrollableMenuEntry/Entries etc.
 -Renamed: 	API function lib.SetButtonGroupState to lib.ButtonGroupDefaultContextMenu as the name was missleading. It never changed or set any values directly it only added a contextmenu where you could choose "Select all", "Select none", "Invers"
 -Renamed: 	self.optionsData at contextMenus was properly renamed to self.contextMenuOptions
+
+
 
 
 -------------------
