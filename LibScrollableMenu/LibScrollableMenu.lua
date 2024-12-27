@@ -17,8 +17,8 @@ if not lib then return end
 -- Locals
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
-local AM = ANIMATION_MANAGER
-local EM = EVENT_MANAGER
+local AM = GetAnimationManager() --ANIMATION_MANAGER
+local EM = GetEventManager() --EVENT_MANAGER
 local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
 local sfor = string.format
@@ -181,6 +181,12 @@ local throttledCallDelay = 10
 
 --local "global" variables
 local NIL_CHECK_TABLE = {}
+
+--Highlight and animation
+local defaultHighlightTemplate 	-- See below at comboBoxDefaults
+local defaultHighlightColor 	-- See below at comboBoxDefaults
+local defaultHighLightAnimationFieldName = 'LSM_HighlightAnimation'
+local subAndContextMenuHighlightAnimationBreadcrumbsPattern = '%s_%s'
 
 --local "global" functions
 local getValueOrCallback
@@ -401,8 +407,9 @@ local comboBoxDefaults = {
 }
 lib.comboBoxDefaults = comboBoxDefaults
 
-local defaultHighlightTemplate = comboBoxDefaults.m_highlightTemplate
-local defaultHighlightColor = comboBoxDefaults.m_highlightColor
+--Set the default highlight values
+defaultHighlightTemplate = comboBoxDefaults.m_highlightTemplate
+defaultHighlightColor = comboBoxDefaults.m_highlightColor
 
 
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
@@ -660,87 +667,121 @@ end
 --------------------------------------------------------------------
 -- Breadcrumb animation highlight
 --------------------------------------------------------------------
-local defaultAnimationFieldName = 'HighlightAnimation' --ZO_ComboBox default highkight animation control child
-local breadcrumbsPattern = '%s_%s'
+--Did the virtual XML template for the highlight row change at the control? Reset the highlight control then so it will
+--be build new with the new XML template, and same name -> Via ESOUI scrolltemplates.lua, PlayAnimationOnControl function
+local function LSM_CheckIfAnimationControlNeedsXMLTemplateChange(control, controlTemplate)
+	local retVar = false
+	if control and controlTemplate then
+		local rowHighlightData = control.LSM_rowHighlightData --was set to the control via self.highlightCallback(control, true) function at the scrollList!
+		local highlightControlXMLTemplate = (rowHighlightData ~= nil and rowHighlightData.highlightXMLTemplate) or nil
+		--Highlight control exists already and the XML template changed (e.g. scrolling an existing ScrollList row)
+		if highlightControlXMLTemplate ~= nil and highlightControlXMLTemplate ~= controlTemplate then
+			--Reset the animation timeline control and the highlight control
+			local animationFieldName = rowHighlightData.animationFieldName
+			if animationFieldName and control[animationFieldName] ~= nil then
+				control[animationFieldName] = nil
 
-local function playAnimationOnControl(control, animationFieldName, controlTemplate, overrideEndAlpha)
-	if control and animationFieldName and controlTemplate then
-		local animationControl = control[animationFieldName]
+				local highlightControlName = rowHighlightData.highlightControlName
+				if highlightControlName ~= nil then
+					if _G[highlightControlName] ~= nil then
+						_G[highlightControlName] = nil
+					end
+				end
+			end
+			retVar = true
+		end
+	end
 
-		if not animationControl then
-			local highlightControl = CreateControlFromVirtual("$(parent)Scroll", control, controlTemplate, animationFieldName)
-			if highlightControl == nil then return end
+	--Reset the table at the control
+	control.LSM_rowHighlightData = nil
+	return retVar
+end
 
-			local width = highlightControl:GetWidth()
-			highlightControl:SetFadeGradient(1, (width / 3) , 0, width)
+local function SubOrContextMenu_PlayAnimationOnControl(control, controlTemplate, animationFieldName, animateInstantly, overrideEndAlpha)
+    if control and controlTemplate and animationFieldName then
+		local animationCtrl = control[animationFieldName]
+        if not animationCtrl then
+            local highlight = CreateControlFromVirtual("$(parent)Scroll", control, controlTemplate, animationFieldName)
+            animationCtrl = AM:CreateTimelineFromVirtual("ShowOnMouseOverLabelAnimation", highlight)
+
+			local width = highlight:GetWidth()
+			highlight:SetFadeGradient(1, (width / 3) , 0, width)
 			--SetFadeGradient(gradientIndex, normalX, normalY, gradientLength)
 
-			animationControl = AM:CreateTimelineFromVirtual("ShowOnMouseOverLabelAnimation", highlightControl)
-			control[animationFieldName] = animationControl
-			--		control.highlightControl = highlightControl
-		end
 
-		if animationControl and animationControl.PlayForward then
-			if overrideEndAlpha and animationControl.GetAnimation then
-				local animation1 = animationControl:GetAnimation(1)
-				if animation1 then animation1:SetAlphaValues(0, overrideEndAlpha) end
+            if overrideEndAlpha then
+                animationCtrl:GetAnimation(1):SetAlphaValues(0, overrideEndAlpha)
+            end
+
+			control[animationFieldName] = animationCtrl
+        end
+
+		if animateInstantly then
+			animationCtrl:PlayInstantlyToEnd()
+		else
+			animationCtrl:PlayForward()
+		end
+    end
+end
+
+local function removeAnimationOnControl(control, animationFieldName, animateInstantly)
+	if control ~= nil then
+		if animationFieldName ~= nil then
+			local animationControl = control[animationFieldName]
+			if animationControl then
+				if animateInstantly then
+					animationControl:PlayInstantlyToStart()
+				else
+					animationControl:PlayBackward()
+				end
 			end
-			animationControl:PlayForward()
 		end
+		control.breadcrumbName = nil
 	end
 end
 
-local function removeAnimationOnControl(control, animationFieldName, flag)
-	if control == nil or animationFieldName == nil then return end
-	local animationControl = control[animationFieldName]
-	if animationControl and animationControl.PlayBackward then
-if flag then
-	d(">animation play backward")
-end
-		animationControl:PlayBackward()
-	end
-	control.breadcrumbName = nil
-end
 
-
-local function unhighlightHighlightedControl(self)
-	local highlightControl = self.highlightedControl
+local function unhighlightControl(selfVar, instantly, control, resetHighlightTemplate)
+	local highlightControl = selfVar.highlightedControl
 	if highlightControl then
-		removeAnimationOnControl(highlightControl, highlightControl.breadcrumbName)
-		self.highlightedControl = nil
+		removeAnimationOnControl(highlightControl, highlightControl.breadcrumbName, instantly)
 	end
-end
+	selfVar.highlightedControl = nil
 
---todo 20241224 need to call this function upon scrolling in scroll lists -> Setup function of the entryTypes,
---todo so for e.g. scroll list row7, the reused scroll list row1 does not provide the old highlight control and color
-local function unhighlightControl(self, control, data)
-d(debugPrefix .. "unhighlightControl: " .. tos(getControlName(control)) .. "; breadcrumbNameCtrl: " ..tos(control.breadcrumbName) .. "; breadcrumbNameSelf: " ..tos(self.breadcrumbName))
-	if control then
-		removeAnimationOnControl(control, control.breadcrumbName or self.breadcrumbName or "", true)
+	if control ~= nil and resetHighlightTemplate == true then
+		if control.m_highlightTemplate then
+			control.m_highlightTemplate = nil
+		end
 
-		data = data or getControlData(control)
-		if data ~= nil and data.m_highlightTemplate ~= nil then
-d(">highlightTemplate: " ..tos(data.m_highlightTemplate))
-			data.m_highlightTemplate = nil
+		local data = getControlData(control)
+		if data then
+			if data.m_highlightTemplate then
+				data.m_highlightTemplate = nil
+			end
 		end
 	end
 end
 
-local function highlightControl(self, control, isSubMenu, highlightContextMenuOpeningControl)
-d(debugPrefix .. "highlightControl: " .. tos(getControlName(control)))
-	if self.highlightedControl then
-		unhighlightHighlightedControl(self)
-	end
-
-	--Get the highlight template from control.m_data.m_highlightTemplate
-	local highlightTemplate = self:GetHighlightTemplate(control)
+local function SubOrContextMenu_CreateHighlightControlAndAnimationIfNeeded(selfVar, control)
+	--Get the highlight template from control.m_data.m_highlightTemplate of the submenu opening, or contextmenu opening control
+	local highlightTemplate = selfVar:GetHighlightTemplate(control)
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 1, tos(highlightTemplate)) end
 	if type(highlightTemplate) ~= "string" then return end
 
-	control.breadcrumbName = sfor(breadcrumbsPattern, defaultAnimationFieldName, tos(self.breadcrumbName))
-	playAnimationOnControl(control, control.breadcrumbName, highlightTemplate, 0.5)
-	self.highlightedControl = control
+	--Use the breadcrumbName as animationFieldName (e.g. LSM_HighlightAnimation_SubmenuBreadcrumb)
+	control.breadcrumbName = sfor(subAndContextMenuHighlightAnimationBreadcrumbsPattern, defaultHighLightAnimationFieldName, tos(selfVar.breadcrumbName))
+	return SubOrContextMenu_PlayAnimationOnControl(control, highlightTemplate, control.breadcrumbName, false, 0.5)
+end
+
+--Should only be called from submenu or contextmenu's OnMouseEnter
+-->Normal menus use the scrolltemplates.lua function HighlightControl via normal ZO_ScrolList. See function "highlightTemplateOrFunction"
+local function SubOrContextMenu_highlightControl(selfVar, control)
+	--d(debugPrefix .. "SubOrContextMenu_highlightControl: " .. tos(getControlName(control)))
+	if selfVar.highlightedControl then
+		unhighlightControl(selfVar, false, control, false)
+	end
+	return SubOrContextMenu_CreateHighlightControlAndAnimationIfNeeded(selfVar, control)
 end
 
 --------------------------------------------------------------------
@@ -1998,7 +2039,7 @@ end
 --After item's setupFunction was executed we need to run some extra functions on each subitem (submenus e.g.)?
 local function runPostItemSetupFunction(comboBox, itemEntry)
 	local postItem_SetupFunc = postItemSetupFunctions[itemEntry.entryType]
-	if postItem_SetupFunc then
+	if postItem_SetupFunc ~= nil then
 		postItem_SetupFunc(comboBox, itemEntry)
 	end
 end
@@ -2580,7 +2621,11 @@ local function addEntryToScrollList(self, item, dataList, index, allItemsHeight,
 end
 
 --Reset function which is called for the scrollList entryType pool's rowControls as they get hidden/scrolled out of sight
-local function poolControlReset(control)
+local function poolControlReset(selfVar, control)
+	local doDebug = control == LibScrollableMenuTestDropdown2Scroll3Row1 or false
+	if doDebug then
+		d(debugPrefix .. "poolControlReset - control: " .. tos(getControlName(control)))
+	end
     control:SetHidden(true)
 
 	if control.isSubmenu then
@@ -2594,10 +2639,13 @@ local function poolControlReset(control)
 		local buttonGroup = button.m_buttonGroup
 		if buttonGroup ~= nil then
 			--local buttonGroupIndex = button.m_buttonGroupIndex
---d(debugPrefix .. "poolControlReset - buttonGroup[" .. tos(buttonGroupIndex) ..", countLeft: " .. tos(NonContiguousCount(buttonGroup.m_buttons)))
 			buttonGroup:Remove(button)
 		end
 	end
+
+	--todo 20241227 Remove the m_highlightTemplate and hide the HighlightAnimation so next scroll into view does not use
+	--old data the next time the same control is scrolled into view
+	unhighlightControl(selfVar, true, control, true)
 end
 
 
@@ -2632,19 +2680,69 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	end
 	self.scroll = self.scrollControl.contents
 
-	-- highlightTemplate, animationFieldName = self.highlightTemplateOrFunction(control)
+	local selfVar = self
 
+	--------------------------------------------------------------------------------------------------------------------
+	-- highlightTemplate, animationFieldName = self.highlightTemplateOrFunction(control)
+	-->Function highlightTemplateOrFunctions will be called from local function RefreshHighlights() in function ZO_ScrollList_EnableHighlight
 	--Enable different hightlight templates at the ZO_SortFilterList scrolLList entries -> OnMouseEnter
 	-->entries opening a submenu, having a callback function, show with a different template (color e.g.)
 	-->>!!! ZO_ScrollList_EnableHighlight(self.scrollControl, function(control) end) cannot be used here as it does NOT overwrite existing highlightTemplateOrFunction !!!
-	local selfVar = self
-	self.scrollControl.highlightTemplateOrFunction = function(control)
---d(debugPrefix .. "highlightTemplateOrFunction - control: " .. tos(getControlName(control)) .. ", owner: " .. tos(selfVar.owner))
-		if selfVar.owner then
-			return selfVar.owner:GetHighlightTemplate(control)
+	--[[
+		local function HighlightControl(self, control)
+			local highlightTemplate, animationFieldName
+			if type(self.highlightTemplateOrFunction) == "function" then
+				-->!!! This will be the place where the code below is called !!!
+				highlightTemplate, animationFieldName = self.highlightTemplateOrFunction(control)
+			else
+				highlightTemplate = self.highlightTemplateOrFunction
+			end
+			control.highlightAnimationFieldName = animationFieldName or "HighlightAnimation"
+			PlayAnimationOnControl(control, highlightTemplate, control.highlightAnimationFieldName, DONT_ANIMATE_INSTANTLY, self.overrideHighlightEndAlpha)
+
+			self.highlightedControl = control
+
+			if self.highlightCallback then
+				self.highlightCallback(control, true)
+			end
 		end
-		return defaultHighlightTemplate --'ZO_SelectionHighlight'
+	]]
+	-->!!! This will be the place where the function HighlightControl above calls the highlightTemplateOrFunction function !!!
+	scrollCtrl.highlightTemplateOrFunction = function(control)
+		if selfVar.owner then
+			--return selfVar.owner:GetHighlightTemplate(control)
+			local XMLVirtualHighlightTemplateOfRow = selfVar.owner:GetHighlightTemplate(control)
+			--Check if the XML virtual template name changed and invalidate the _G highlight and animation control then (set = nil)
+			LSM_CheckIfAnimationControlNeedsXMLTemplateChange(control, XMLVirtualHighlightTemplateOfRow)
+
+			-->function PlayAnimationOnControl will set control[defaultHighLightAnimationFieldName] = animationControl then
+			--->Also see function scrollCtrl.highlightCallback below
+			return XMLVirtualHighlightTemplateOfRow, defaultHighLightAnimationFieldName --"LSM_HighlightAnimation"
+		end
+		return defaultHighlightTemplate, defaultHighLightAnimationFieldName --"ZO_SelectionHighlight", "LSM_HighlightAnimation"
 	end
+
+	--------------------------------------------------------------------------------------------------------------------
+	--Set the table control.rowHighlightData so we can use it to compare the last used XML virtual template for the
+	--highlight control, at this control, with the current one.
+	-->Will be set here and read in function scrollCtrl.highlightTemplateOrFunction above -> LSM_CheckIfAnimationControlNeedsXMLTemplateChange
+	scrollCtrl.highlightCallback = function(control, isHighlighting)
+		if control ~= nil and isHighlighting == true then
+			if selfVar.owner then
+				local animationFieldName = control.highlightAnimationFieldName
+				if animationFieldName ~= nil then
+					control.LSM_rowHighlightData = {
+						highlightControlName =	control:GetName() .. "Scroll" .. animationFieldName,
+						animationFieldName = 	animationFieldName,
+						highlightXMLTemplate = 	selfVar.owner:GetHighlightTemplate(control)
+					}
+				end
+			else
+				control.LSM_rowHighlightData = nil
+			end
+		end
+	end
+	--------------------------------------------------------------------------------------------------------------------
 end
 
 function dropdownClass:AddItems(items)
@@ -2682,9 +2780,10 @@ function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupF
 
 	self.customEntryTemplateInfos[entryTemplate] = customEntryInfo
 
+	local selfVar = self
 	local entryHeightWithSpacing = entryHeight + self.spacing
-	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId, entryTemplate, entryHeightWithSpacing, setupFunction, poolControlReset)
-	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId + 1, entryTemplate, entryHeight, setupFunction, poolControlReset)
+	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId, entryTemplate, entryHeightWithSpacing, setupFunction, function(...) poolControlReset(selfVar, ...) end)
+	ZO_ScrollList_AddDataType(self.scrollControl, self.nextScrollTypeId + 1, entryTemplate, entryHeight, setupFunction, function(...) poolControlReset(selfVar, ...) end)
 
 	self.nextScrollTypeId = self.nextScrollTypeId + 2
 end
@@ -2850,9 +2949,6 @@ function dropdownClass:OnMouseExitEntry(control)
 	if data.enabled and not runHandler(handlerFunctions['onMouseExit'], control, data) then
 		zo_comboBoxDropdown_onMouseExitEntry(self, control)
 	end
-
-	--todo 20241224 Unhighlight the actual highlight control (play animation backwards) and remove the m_highlightTemplate
-	unhighlightControl(self, control, data)
 
 	--[[
 	if not lib.GetPersistentMenus() then
@@ -4131,11 +4227,6 @@ function comboBox_base:SetupEntryBase(control, data, list)
 	control.closeOnSelect = (control.selectable and type(data.callback) == 'function') or false
 
     control:SetMouseEnabled(data.enabled ~= false)
-
-	--Update the highlight control of the entry upon scrolling -> Remove old highlight control so reused pool controls
-	--do not show old highlight colors and styles
-	--todo 20241224
-	--unhighlightControl(self, control)
 end
 
 function comboBox_base:Show()
@@ -4972,7 +5063,7 @@ end
 
 function submenuClass:ShowDropdownInternal()
 	if self.openingControl then
-		highlightControl(self, self.openingControl, true, false) --submenu
+		SubOrContextMenu_highlightControl(self, self.openingControl) --submenu
 	end
 end
 
@@ -5124,7 +5215,7 @@ function contextMenuClass:HighlightOpeningControl()
 		--Options tell us to highlight the openingControl?
 		if highlightContextMenuOpeningControl == true then
 			--Apply the highlightOpeningControl XML template to the openingControl and highlight it than via the animation
-			highlightControl(self, openingControl, false, true) --context menu's highlightContextMenuOpeningControl
+			SubOrContextMenu_highlightControl(self, openingControl) --context menu
 		end
 	end
 end
@@ -5911,7 +6002,7 @@ WORKING ON - Current version: 2.33 - Updated 2024-12-16
 
 
 TODO Bug: Submenu Entry Test 7 and 7 apply the same data.m_highlihtTemplate (as we scroll down) as the first and 2nd row of the submenu used. Setupcallback is not resetting them upon scrolling
---tood    because the row control is the same as the 1st "LibScrollableMenuTestDropdown2Scroll3Row1" > Needs to update ScrollHighlightAnimation control upon scrolling! See function unhighlightControl
+--todo    because the row control is the same as the 1st "LibScrollableMenuTestDropdown2Scroll3Row1" > Needs to update ScrollHighlightAnimation control upon scrolling! See function unhighlightControl
 
 
 -------------------
