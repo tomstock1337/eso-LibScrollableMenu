@@ -155,13 +155,13 @@ local function test()
 				},
 				[lib.LSM_ENTRY_TYPE_SUBMENU] = {
 					template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight", --Will be replaced with green if submenu entry got callback
-					templateWithCallback = lib.LSM_ROW_HIGHLIGHT_OPAQUE,
+					templateSubMenuWithCallback = lib.LSM_ROW_HIGHLIGHT_OPAQUE,
 					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
 				},
 				[lib.LSM_ENTRY_TYPE_CHECKBOX] = {
-					template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"LibScrollableMenu_Highlight_Blue",
+					template = lib.LSM_ROW_HIGHLIGHT_RED, --"LibScrollableMenu_Highlight_Blue",
 					color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
-					templateContextMenuOpeningControl = lib.LSM_ROW_HIGHLIGHT_BLUE,
+					templateContextMenuOpeningControl = lib.LSM_ROW_HIGHLIGHT_OPAQUE,
 				},
 				[lib.LSM_ENTRY_TYPE_BUTTON] = {
 					template = lib.LSM_ROW_HIGHLIGHT_RED, --"LibScrollableMenu_Highlight_Red",
@@ -890,7 +890,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 							},
 							[lib.LSM_ENTRY_TYPE_SUBMENU] = {
 								template = lib.LSM_ROW_HIGHLIGHT_DEFAULT, --"ZO_SelectionHighlight", --Will be replaced with green if submenu entry got callback
-								templateWithCallback = lib.LSM_ROW_HIGHLIGHT_BLUE,
+								templateSubMenuWithCallback = lib.LSM_ROW_HIGHLIGHT_BLUE,
 								color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
 							},
 							[lib.LSM_ENTRY_TYPE_CHECKBOX] = {
