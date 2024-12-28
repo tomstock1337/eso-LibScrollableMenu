@@ -783,7 +783,8 @@ local function SubOrContextMenu_highlightControl(selfVar, control)
 
 	--Use the breadcrumbName as animationFieldName (e.g. LSM_HighlightAnimation_SubmenuBreadcrumb or LSM_HighlightAnimation_ContextMenuBreadcrumb)
 	control.breadcrumbName = sfor(subAndContextMenuHighlightAnimationBreadcrumbsPattern, defaultHighLightAnimationFieldName, tos(selfVar.breadcrumbName))
-	return SubOrContextMenu_PlayAnimationOnControl(control, highlightTemplate, control.breadcrumbName, false, 0.5)
+	SubOrContextMenu_PlayAnimationOnControl(control, highlightTemplate, control.breadcrumbName, false, 0.5)
+	selfVar.highlightedControl = control
 end
 
 --------------------------------------------------------------------
@@ -3702,6 +3703,7 @@ local function getDefaultXMLTemplates(selfVar)
 		},
 		[LSM_ENTRY_TYPE_SUBMENU] = {
 			template = defaultHighlightTemplate,
+			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
 			templateSubMenuWithCallback = LSM_ROW_HIGHLIGHT_GREEN, -- template for the entry where a submenu is opened but you can click the entry to call a callback too
 			color = defaultHighlightColor,
 		},
@@ -3715,14 +3717,17 @@ local function getDefaultXMLTemplates(selfVar)
 		},
 		[LSM_ENTRY_TYPE_CHECKBOX] = {
 			template = defaultHighlightTemplate,
+			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
 			color = defaultHighlightColor,
 		},
 		[LSM_ENTRY_TYPE_BUTTON] = {
 			template = defaultHighlightTemplate,
+			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
 			color = defaultHighlightColor,
 		},
 		[LSM_ENTRY_TYPE_RADIOBUTTON] = {
 			template = defaultHighlightTemplate,
+			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
 			color = defaultHighlightColor,
 		},
 	}
