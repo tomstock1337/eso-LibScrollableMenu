@@ -2708,6 +2708,14 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 			--return selfVar.owner:GetHighlightTemplate(control)
 			local XMLVirtualHighlightTemplateOfRow = selfVar.owner:GetHighlightTemplate(control)
 			--Check if the XML virtual template name changed and invalidate the _G highlight and animation control then (set = nil)
+			--[[todo 20241228 Idea: Get a highlight control and animation from a ZO_ObjectPool instead of setting the existing highlight control and animation  = nil and
+				creating a new one with the next template
+
+			control.LSM_HighlightAnimation = selfVar.owner:GetHighlightFromPool()
+			--Then return true and the animationFieldName "LSM_HighlightAnimation" so vanilla code function PlayAnimationOnControl will use
+			--control.LSM_HighlightAnimation and play the animation
+			return true, "LSM_HighlightAnimation"
+			]]
 			LSM_CheckIfAnimationControlNeedsXMLTemplateChange(control, XMLVirtualHighlightTemplateOfRow)
 
 			-->function PlayAnimationOnControl will set control[defaultHighLightAnimationFieldName] = animationControl then
