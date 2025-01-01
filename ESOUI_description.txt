@@ -14,15 +14,16 @@ It features:
 [*]Checkbox entry (can be added to a button group, which shows a default context menu to "Select all", "Deselect all", "Invert selection")
 [*]Radio button entries (at least 2 are needed and must be added to a buttonGroup)
 [*]Button entry 
-[*]Scrollable context menu at an entry
+[*]Scrollable context menu (again with nested submenus) at any entry. Checkboxes in a group even got a default context menu to select all/deselect all/invert selection
 [*]MultiIcon at entries (multiple icons, looping through)
 [*]"Is new" state icon (to show a changed/new entry)
-[*]Callbacks fired at menu created (manipulate options), menu open, close, submenu open close, entry mouse enter, entry mouse exit, entry selected, checkbox checked state change, isNew state change
+[*]Callbacks fired at menu created (manipulate options), menu open/close, submenu open/close, contextmenu open/closeentry mouse enter, entry mouse exit, entry selected, checkbox checked state change, isNew state change
 [*]API functions to build, show, hide and help looping entries at context menus
 [*]Narration: Call custom function of addon to narrate or return a string to be narrated via the ESO accessibility mode UI narration feature
 [/LIST]
 Radiobutons, checkboxes and buttons normally keep the dropdown opened if clicked. All other entryTypes (depending on if enabled and selectible) will close the dropdowns.
 
+[img]https://i.imgur.com/qsZq5NU.jpeg[/img]
 
 
 [U][COLOR="DarkOrange"]Important information - Context menus[/COLOR][/U]
@@ -60,11 +61,13 @@ API syntax:
 -- 		string font:optional				 	String or function returning a string: font to use for the dropdown entries
 -- 		number spacing:optional,	 			Number or function returning a Number: Spacing between the entries
 --		boolean disableFadeGradient:optional	Boolean or function returning a boolean: for the fading of the top/bottom scrolled rows
+--		string headerFont:optional				String or function returning a string: font to use for the header entries
 --		table headerColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for header entries
 --		table normalColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all normal (enabled) entries
 --		table disabledColor:optional 			table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all disabled entries
---		boolean highlightContextMenuOpeningControl Boolean or function returning boolean if the openingControl of a context menu should be highlighted. Only works at the contextMenu options!
---												If you set this to true you also need to set data.m_highlightTemplate at the row and provide the XML template name for the highLight, e.g. "LibScrollableMenu_Highlight_Green"
+--		boolean highlightContextMenuOpeningControl Boolean or function returning boolean if the openingControl of a context menu should be highlighted.
+--												If you set this to true you either also need to set data.m_highlightTemplate at the row and provide the XML template name for the highLight, e.g. "LibScrollableMenu_Highlight_Green".
+--												Or (if not at contextMenu options!!!) you can use the templateContextMenuOpeningControl at options.XMLRowHighlightTemplates[lib.scrollListRowTypes.LSM_ENTRY_TYPE_*] = { template = "ZO_SelectionHighlight" , templateContextMenuOpeningControl = "LibScrollableMenu_Highlight_Green" } to specify the XML highlight template for that entryType
 -->  ===Dropdown header/title ==========================================================================================
 --		string titleText:optional				String or function returning a string: Title text to show above the dropdown entries
 --		string titleFont:optional				String or function returning a font string: Title text's font. Default: "ZoFontHeader3"
@@ -94,6 +97,18 @@ API syntax:
 --		{
 --			[lib.scrollListRowTypes.LSM_ENTRY_TYPE_NORMAL] =	{ template = "XMLVirtualTemplateRow_ForEntryId", ... }
 --			[lib.scrollListRowTypes.LSM_ENTRY_TYPE_SUBMENU] = 	{ template = "XMLVirtualTemplateRow_ForSubmenuEntryId", ... },
+--			...
+--		}
+--		table XMLRowHighlightTemplates:optional	Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
+--												"template" String = XMLVirtualTemplateNameForHighlightOfTheRow (on mouse enter). Default is comboBoxDefaults.m_highlightTemplate,
+--												"color" ZO_ColorDef = the color for the highlight. Default is Default is comboBoxDefaults.m_highlightColor (light blue),
+--												-->See local table "defaultXMLHighlightTemplates" in LibScrollableMenu
+--												-->Attention: If you do not specify all template attributes, the non-specified will be mixedIn from defaultXMLHighlightTemplates[entryType_ID] again!
+--												-->templateSubMenuWithCallback is used for an entry that got a submenu where clicking that entry also runs teh callback
+--												-->templateContextMenuOpeningControl is used for a contexMenu only, where the entry opens a contextMenu (right click)
+--		{
+--			[lib.scrollListRowTypes.LSM_ENTRY_TYPE_NORMAL] =	{ template = "XMLVirtualTemplateRowHighlight_ForEntryId", color = ZO_ColorDef:New("FFFFFF"), templateSubMenuWithCallback = "XMLVirtualTemplateRowHighlight_EntryOpeningASubmenuHavingACallback", templateContextMenuOpeningControl = "XMLVirtualTemplateRowHighlight_ContextMenuOpening_ForEntryId", ... }
+--			[lib.scrollListRowTypes.LSM_ENTRY_TYPE_SUBMENU] = 	{ template = "XMLVirtualTemplateRowHighlight_ForSubmenuEntryId", color = ZO_ColorDef:New("FFFFFF"), ...  },
 --			...
 --		}
 --->  === Narration: UI screen reader, with accessibility mode enabled only ============================================
@@ -147,6 +162,7 @@ LSM_ENTRY_TYPE_RADIOBUTTON
 --		isDivider = false, -- optional boolean or function returning a boolean Is this entry a non clickable divider control without any text?
 --		isCheckbox = false, -- optional boolean or function returning a boolean Is this entry a clickable checkbox control with text?
 --		isNew = false, --  optional booelan or function returning a boolean Is this entry a new entry and thus shows the "New" icon?
+--             doNotFilter = false, -- optional boolean or function returning a boolean Is this entry not filtered (always shown) if the header's search filte box is used?
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
 --		contextMenuCallback = function(ctrl) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
 -- }
@@ -248,6 +264,24 @@ function GetCustomScrollableMenuRowData(rowControl)
 function LibScrollableMenu.SetButtonGroupState
 [/code]
 
+
+[B][U]Callbacks fired by the library where you can register via LibScrollableMenu:RegisterForCallback(callbackName, func) to[/U][/B]
+[code]
+-callbackName-          -functionParameters-   -Description-
+'NewStatusUpdated'   control, data                The isNew status updated at an entry 
+'EntryOnMouseEnter'  control, data                The mouse was moved above an entry
+'EntryOnMouseExit'    control, data                The mouse was moved away from an entry
+'OnEntrySelected'       control, data                An entry was selected
+'OnMenuShow'           control, comboBoxObject A normal LSM menu is shown
+'OnMenuHide'             control, comboBoxObject A normal LSM menu is hidden
+'OnSubMenuShow'      control, comboBoxObject A submenu of a LSM menu is shown
+'OnSubMenuHide'         control, comboBoxObject A submenu of a LSM menu is hidden
+'OnContextMenuShow' control, comboBoxObject A context menu of LSM (standalone, or at another LSM [sub]menu) is shown
+'OnContextMenuHide'   control, comboBoxObject A context menu of LSM (standalone, or at another LSM [sub]menu) is hidden
+'RadioButtonUpdated'  control, data, checked    A radiobutton entry's checked state was updated
+'CheckboxUpdated'     control, data, checked    A checkbox entry's checked state was updated
+
+[/code]
 
 
 You can basically search & replace the first few params (text, entryType) of AddCustomMenuItem and AddCustomSubMenuItem with the

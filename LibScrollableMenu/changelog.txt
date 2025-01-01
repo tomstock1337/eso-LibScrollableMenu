@@ -1,4 +1,4 @@
--v- ---------------LSM v2.33 - 2024-12-28---------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.33 - 2025-01-01---------------------------------------------------------------------------- -v-
 -Bug fix: Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
 -Bug fix: Name of handler for context menu show and hide changed to proper Uppercase OnContextMenu*
 -Bug fix: XMLRowTemplates using a non capital R at some locations
