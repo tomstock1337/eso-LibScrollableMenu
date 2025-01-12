@@ -5386,9 +5386,9 @@ GetCustomScrollableMenuRowData = getControlData
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 --
 --Example - Normal entry without submenu
---AddCustomScrollableMenuEntry("Test entry 1", function() d("test entry 1 clicked") end, LibScrollableMenu.LSM_ENTRY_TYPE_NORMAL, nil, nil)
+--AddCustomScrollableMenuEntry("Test entry 1", function(comboBox, itemName, item, selectionChanged, oldItem) d("test entry 1 clicked") end, LibScrollableMenu.LSM_ENTRY_TYPE_NORMAL, nil, nil)
 --Example - Normal entry with submenu
---AddCustomScrollableMenuEntry("Test entry 1", function() d("test entry 1 clicked") end, LibScrollableMenu.LSM_ENTRY_TYPE_NORMAL, {
+--AddCustomScrollableMenuEntry("Test entry 1", function(comboBox, itemName, item, selectionChanged, oldItem) d("test entry 1 clicked") end, LibScrollableMenu.LSM_ENTRY_TYPE_NORMAL, {
 --	[1] = {
 --		label = "Test submenu entry 1", --optional String or function returning a string. If missing: Name will be shown and used for clicked callback value
 --		name = "TestValue1" --String or function returning a string if label is givenm name will be only used for the clicked callback value
@@ -5522,6 +5522,7 @@ function AddCustomScrollableMenuHeader(text, additionalData)
 end
 
 --Adds a checkbox line to the context menu entries
+--callback function signature:  comboBox, itemName, item, checked, data
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuCheckbox(text, callback, checked, additionalData)
