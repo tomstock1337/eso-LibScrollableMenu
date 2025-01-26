@@ -3628,6 +3628,7 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 
 	self:UpdateOptions(options, true)
 	self:SetupDropdownHeader()
+	self:UpdateWidth()
 	self:UpdateHeight()
 end
 
@@ -6047,9 +6048,11 @@ LibScrollableMenu = lib
 -------------------
 WORKING ON - Current version: 2.34 - Updated 2025-01-25
 -------------------
--Support Multiselect properly
--maxDropdownWidth option
--Fix header with searchbox to have a minimum width (to show the search box and button properly)
+1. Fix header with searchbox to have a minimum width (to show the search box and button properly)
+2. maxDropdownWidth option
+--20250126 Working for main menu, but not submenus (contextmenus untested)! Submenus width is kind of 0 or at least no entries show. Search for GetMaxDropdownWidth and/or .m_containerMaxWidth
+
+3. Support Multiselect properly
 
 
 
