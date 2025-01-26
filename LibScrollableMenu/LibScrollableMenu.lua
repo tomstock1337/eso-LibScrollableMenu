@@ -142,9 +142,9 @@ local buttonGroupDefaultContextMenu
 --Menu settings (main and submenu) - default values
 local DEFAULT_VISIBLE_ROWS = 10
 local DEFAULT_SORTS_ENTRIES = false --sort the entries in main- and submenu lists (ZO_ComboBox default is true!)
-local DEFAULT_HEIGHT = 250
-local MIN_WIDTH_WITHOUT_HEADER = 50
-local MIN_WIDTH_WITH_SEARCH_HEADER = 150
+local DEFAULT_HEIGHT                  = 250
+local MIN_WIDTH_WITHOUT_SEARCH_HEADER = 50
+local MIN_WIDTH_WITH_SEARCH_HEADER    = 125
 
 --dropdown settings
 local SUBMENU_SHOW_TIMEOUT = 500 --350 ms before
@@ -406,7 +406,7 @@ local comboBoxDefaults = {
 	visibleRowsSubmenu = 			DEFAULT_VISIBLE_ROWS,
 	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 	headerCollapsed = 				false,
-	containerMinWidth =				MIN_WIDTH_WITHOUT_HEADER,
+	containerMinWidth = MIN_WIDTH_WITHOUT_SEARCH_HEADER,
 }
 lib.comboBoxDefaults = comboBoxDefaults
 
@@ -991,10 +991,13 @@ do
 			headerControl:SetHeight(headerHeight)
 		end
 
-		if not collapsed and isFilterEnabled then
-			if headerControl:GetWidth() < MIN_WIDTH_WITH_SEARCH_HEADER then
-				headerControl:SetDimensionConstraints(MIN_WIDTH_WITH_SEARCH_HEADER, headerHeight)
-			end
+		local headerWidth = headerControl:GetWidth()
+		if isFilterEnabled and headerWidth < MIN_WIDTH_WITH_SEARCH_HEADER then
+			headerControl:SetDimensionConstraints(MIN_WIDTH_WITH_SEARCH_HEADER, headerHeight)
+			headerControl:SetWidth(MIN_WIDTH_WITH_SEARCH_HEADER)
+		elseif not isFilterEnabled and headerWidth < MIN_WIDTH_WITH_SEARCH_HEADER then
+			headerControl:SetDimensionConstraints(MIN_WIDTH_WITHOUT_SEARCH_HEADER, headerHeight)
+			headerControl:SetWidth(MIN_WIDTH_WITHOUT_SEARCH_HEADER)
 		end
 	end
 	
@@ -3915,10 +3918,10 @@ function comboBox_base:GetBaseWidth(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 91, tos(getControlName(control)), tos(control.header ~= nil), tos(control.header ~= nil and control.header:GetWidth() or 0)) end
 	if control and control.header then
 		local minWidth = control.header:GetWidth()
-		if minWidth <= 0 then minWidth = MIN_WIDTH_WITHOUT_HEADER end
+		if minWidth <= 0 then minWidth = MIN_WIDTH_WITHOUT_SEARCH_HEADER end
 		return minWidth
 	end
-	return MIN_WIDTH_WITHOUT_HEADER
+	return MIN_WIDTH_WITHOUT_SEARCH_HEADER
 end
 
 
@@ -4368,7 +4371,7 @@ function comboBox_base:UpdateWidth(control)
 	-->Will be overwritten at Show function IF no maxWidth is set and any entry in the list is wider (text width) than the container width
 	local maxDropdownWidth = self:GetMaxDropdownWidth()
 	local maxWidthInTotal = maxDropdownWidth or self.m_containerWidth
-	if maxWidthInTotal <= 0 then maxWidthInTotal = MIN_WIDTH_WITHOUT_HEADER end
+	if maxWidthInTotal <= 0 then maxWidthInTotal = MIN_WIDTH_WITHOUT_SEARCH_HEADER end
 
 	--Calculate end width
 	local newWidth = maxWidthInTotal
@@ -6042,11 +6045,11 @@ LibScrollableMenu = lib
 -------------------
 WORKING ON - Current version: 2.34 - Updated 2025-01-25
 -------------------
-1. Fix header with searchbox to have a minimum width (to show the search box and button properly)
-2. maxDropdownWidth option
---20250126 Working for main menu, but not submenus (contextmenus untested)! Submenus width is kind of 0 or at least no entries show. Search for GetMaxDropdownWidth and/or .m_containerMinWidth
-
 3. Support Multiselect properly
+
+Added:
+1. Fix header with searchbox to have a minimum width
+2. maxDropdownWidth option
 
 
 
