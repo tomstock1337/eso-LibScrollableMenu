@@ -98,6 +98,7 @@ local function test()
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
 			maxDropdownHeight = 450,
+			maxDropdownWidth = 200,
 
 			--Big yellow headers!
 			--headerFont = "ZoFontHeader3",

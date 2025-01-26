@@ -143,6 +143,7 @@ local buttonGroupDefaultContextMenu
 local DEFAULT_VISIBLE_ROWS = 10
 local DEFAULT_SORTS_ENTRIES = false --sort the entries in main- and submenu lists (ZO_ComboBox default is true!)
 local DEFAULT_HEIGHT = 250
+local MIN_WIDTH_WITH_SEARCH_HEADER = 150
 
 --dropdown settings
 local SUBMENU_SHOW_TIMEOUT = 500 --350 ms before
@@ -462,6 +463,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	-->to this table LSMOptionsKeyToZO_ComboBoxOptionsKey here too!!!
 	['font'] = 					"m_font",
 	['maxDropdownHeight'] =		"maxHeight",
+	['maxDropdownWidth'] =		"maxWidth",
 	["preshowDropdownFn"] = 	"m_preshowDropdownFn",
 	['sortEntries'] = 			"m_sortsItems",
 	['sortOrder'] = 			"m_sortOrder",
@@ -484,6 +486,10 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	["maxDropdownHeight"] = function(comboBoxObject, maxDropdownHeight)
 		comboBoxObject.maxHeight = maxDropdownHeight
 		comboBoxObject:UpdateHeight(comboBoxObject.m_dropdown)
+	end,
+	["maxDropdownWidth"] = function(comboBoxObject, maxDropdownWidth)
+		comboBoxObject.maxWidth = maxDropdownWidth
+		comboBoxObject:UpdateWidth(comboBoxObject.m_dropdown)
 	end,
 	["preshowDropdownFn"] = function(comboBoxObject, preshowDropdownCallbackFunc)
 		comboBoxObject:SetPreshowDropdownCallback(preshowDropdownCallbackFunc) --sets m_preshowDropdownFn
@@ -569,6 +575,7 @@ local submenuClass_exposedVariables = {
 	['highlightContextMenuOpeningControl'] = true,
 	['options'] = true,
 	['maxDropdownHeight'] = true,
+	['maxDropdownWidth'] = true,
 	['m_highlightTemplate'] = true,
 	['narrateData'] = true,
 	['useDefaultHighlightForSubmenuWithCallback'] = true,
@@ -948,7 +955,7 @@ do
 		return false
 	end
 	
-	local function header_updateAnchors(headerControl, refreshResults, collapsed)
+	local function header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled)
 		--local headerHeight = collapsed and 0 or 17
 		local headerHeight = 0
 		local controls = headerControl.controls
@@ -974,12 +981,18 @@ do
 				headerHeight = headerHeight + header_applyAnchorSetToControl(headerControl, anchorSet, controlId, collapsed)
 			end
 		end
-		
+
 		if headerHeight > 0 then
 			if not collapsed then
 				headerHeight = headerHeight + (ROW_OFFSET_Y * 3)
 			end
 			headerControl:SetHeight(headerHeight)
+		end
+
+		if not collapsed and isFilterEnabled then
+			if headerControl:GetWidth() < MIN_WIDTH_WITH_SEARCH_HEADER then
+				headerControl:SetDimensionConstraints(MIN_WIDTH_WITH_SEARCH_HEADER, headerHeight)
+			end
 		end
 	end
 	
@@ -1067,12 +1080,13 @@ do
 		header_setAlignment(controls[SUBTITLE], getValueOrCallback(options.titleTextAlignment, options), TEXT_ALIGN_CENTER)
 
 		-- Others
-		refreshResults[FILTER_CONTAINER] = header_processData(controls[FILTER_CONTAINER], comboBox:IsFilterEnabled(), collapsed)
+		local isFilterEnabled = comboBox:IsFilterEnabled()
+		refreshResults[FILTER_CONTAINER] = header_processData(controls[FILTER_CONTAINER], isFilterEnabled, collapsed)
 		refreshResults[CUSTOM_CONTROL] = header_processControl(controls[CUSTOM_CONTROL], getValueOrCallback(options.customHeaderControl, options), collapsed)
 		refreshResults[TOGGLE_BUTTON] = header_processData(controls[TOGGLE_BUTTON], getValueOrCallback(options.headerCollapsible, options))
 		refreshResults[TOGGLE_BUTTON_CLICK_EXTENSION] = header_processData(controls[TOGGLE_BUTTON_CLICK_EXTENSION], getValueOrCallback(options.headerCollapsible, options))
 
-		header_updateAnchors(headerControl, refreshResults, collapsed)
+		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled)
 	end
 end
 
@@ -3038,8 +3052,8 @@ function dropdownClass:RunItemCallback(item, ignoreCallback)
 	end
 end
 
-function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 75, tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxHeight), tos(spacing)) end
+function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, spacing)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 75, tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxWidth), tos(maxHeight), tos(spacing)) end
 
 	self.owner = comboBox
 
@@ -3114,12 +3128,17 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxHeight, spacing)
 
 	-- Allow the dropdown to automatically widen to fit the widest entry, but
 	-- prevent it from getting any skinnier than the container's initial width
-	local totalDropDownWidth = largestEntryWidth + (ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2) + ZO_SCROLL_BAR_WIDTH
+	local longestEntryTextWidth = largestEntryWidth + (ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2) + ZO_SCROLL_BAR_WIDTH
+	maxWidth = maxWidth or longestEntryTextWidth
+	local totalDropDownWidth = zo_clamp(longestEntryTextWidth, minWidth, maxWidth)
+	--[[
 	if totalDropDownWidth > minWidth then
 		control:SetWidth(totalDropDownWidth)
 	else
 		control:SetWidth(minWidth)
 	end
+	]]
+	control:SetWidth(totalDropDownWidth)
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 76, tos(totalDropDownWidth), tos(allItemsHeight), tos(desiredHeight)) end
 
@@ -3136,6 +3155,14 @@ function dropdownClass:UpdateHeight()
 		self.owner:UpdateHeight(self.control)
 	end
 end
+
+function dropdownClass:UpdateWidth()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 178) end
+	if self.owner then
+		self.owner:UpdateWidth(self.control)
+	end
+end
+
 
 --Returns the handler naem for OnSho or OnHide for the normal dropdown, submenu and contextMenu
 --> OnMenuShow / OnMenuHide
@@ -3595,6 +3622,7 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 	self.m_sortedItems = {}
 	self.m_unsortedItems = {}
 	self.m_container = comboBoxContainer
+	--self.m_containerMaxWidth = nil
 	local dropdownObject = self:GetDropdownObject(comboBoxContainer, depth)
 	self:SetDropdownObject(dropdownObject)
 
@@ -3881,9 +3909,24 @@ function comboBox_base:GetBaseHeight(control)
 	return 0
 end
 
+function comboBox_base:GetBaseWidth(control)
+	-- We need to include the header width
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 91, tos(getControlName(control)), tos(control.header ~= nil), tos(control.header ~= nil and control.header:GetWidth() or 0)) end
+	if control.header then
+		return control.header:GetWidth()
+	end
+	return 0
+end
+
+
 function comboBox_base:GetMaxDropdownHeight()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 92, tos(self.maxHeight)) end
 	return self.maxHeight
+end
+
+function comboBox_base:GetMaxDropdownWidth()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 179, tos(self.maxWidth)) end
+	return self.maxWidth
 end
 
 function comboBox_base:GetDropdownObject(comboBoxContainer, depth)
@@ -4190,7 +4233,7 @@ function comboBox_base:SetupEntryBase(control, data, list)
 end
 
 function comboBox_base:Show()
-	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
+	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_containerMaxWidth, self.m_height, self:GetSpacing())
 	self.m_dropdownObject.control:BringWindowToTop()
 end
 
@@ -4301,9 +4344,62 @@ function comboBox_base:UpdateHeight(control)
 	self:SetHeight(maxHeightInTotal)
 	
 	if self:IsDropdownVisible() then
-	--	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_height, self:GetSpacing())
+	--	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_containerMaxWidth, self.m_height, self:GetSpacing())
 		self:Show()
 	end
+end
+
+function comboBox_base:SetMinMaxWidth(minWidth, maxWidth)
+	self.m_containerWidth = minWidth
+	self.m_containerMaxWidth = maxWidth
+end
+
+function comboBox_base:UpdateWidth(control)
+	--d(debugPrefix .. "comboBox_base:UpdateWidth - control: " .. getControlName(control))
+	local maxWidthInTotal = 0
+
+	--Is the dropdown using a header control? then calculate it's size too
+	local headerWidth = 0
+	if control ~= nil then
+		headerWidth = self:GetBaseWidth(control)
+	end
+
+	local minWidth = headerWidth
+
+	--Calculate the maximum width now:
+	--Maximum width explicitly set by options?
+	local maxDropdownWidth = self:GetMaxDropdownWidth()
+	if maxDropdownWidth ~= nil then
+		maxWidthInTotal = maxDropdownWidth
+	else
+		maxWidthInTotal = self.m_containerWidth
+	end
+
+--d(">[LSM]headerWidth " ..tos(headerWidth) .. ", maxWidthInTotal: " ..tos(maxWidthInTotal) ..", maxDropdownWidth: " .. tos(maxDropdownWidth))
+
+	local newWidth = maxWidthInTotal
+	if maxDropdownWidth ~= nil then
+		newWidth = zo_clamp(maxWidthInTotal, minWidth, maxDropdownWidth)
+	else
+		if minWidth < maxWidthInTotal  then
+			newWidth = zo_clamp(maxWidthInTotal, minWidth, maxWidthInTotal)
+		else
+			newWidth = minWidth
+		end
+	end
+
+	--[181] = "comboBox_base:UpdateWidth - control: %q, maxWidth: %s, maxDropdownWidth: %s, headerWidth: %s",
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 181, tos(getControlName(control)), tos(newWidth), tos(maxWidthInTotal), tos(maxDropdownWidth), tos(headerWidth)) end
+
+	--This will set self.m_containerWidth = width for later usage in self:Show() -> as the dropdown is shown
+	self:SetMinMaxWidth(minWidth, newWidth)
+
+	--[[
+	if self:IsDropdownVisible() then
+	--	self.m_dropdownObject:Show(self, self.m_sortedItems, self.m_containerWidth, self.m_containerMaxWidth, self.m_height, self:GetSpacing())
+		self:Show()
+	end
+	]]
 end
 
 do -- Row setup functions
@@ -4623,6 +4719,7 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth, ini
 	self.m_name = comboBoxContainer:GetName()
 	self.m_openDropdown = comboBoxContainer:GetNamedChild("OpenDropdown")
 	self.m_containerWidth = comboBoxContainer:GetWidth()
+	self.m_containerMaxWidth = nil
 	self.m_selectedItemText = comboBoxContainer:GetNamedChild("SelectedItemText")
 	self.m_multiSelectItemData = {}
 	comboBox_base.Initialize(self, parent, comboBoxContainer, options, depth)
@@ -4943,6 +5040,7 @@ function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
 
 	--d(debugPrefix.."comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(headerCollapsed))
 	refreshDropdownHeader(self, headerControl, self.options, headerCollapsed)
+	self:UpdateWidth(dropdownControl) --> Update self.m_containerWidth properly for self:Show (in self:UpdateHeight) call (including the now updated header's width)
 	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now updated header's height)
 end
 
@@ -4999,6 +5097,7 @@ function submenuClass:AddMenuItems(parentControl)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 142, tos(getControlName(parentControl))) end
 	self.openingControl = parentControl
 	self:RefreshSortedItems(parentControl)
+	self:UpdateWidth()
 	self:UpdateHeight()
 	self:Show()
 	self.m_dropdownObject:AnchorToControl(parentControl)
@@ -5271,6 +5370,7 @@ end
 --		number visibleRowsDropdown:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened dropdown
 --		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
 --		number maxDropdownHeight				Number or function returning number of total dropdown's maximum height
+--		number maxDropdownWidth					Number or function returning number of total dropdown's maximum width
 --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically. !!!Attention: Default is TRUE (sorting is enabled)!!!
 --		table sortType:optional					table or function returning table for the sort type, e.g. ZO_SORT_BY_NAME, ZO_SORT_BY_NAME_NUMERIC
 --		boolean sortOrder:optional				Boolean or function returning boolean for the sort order ZO_SORT_ORDER_UP or ZO_SORT_ORDER_DOWN
@@ -5948,6 +6048,7 @@ LibScrollableMenu = lib
 WORKING ON - Current version: 2.34 - Updated 2025-01-25
 -------------------
 -Support Multiselect properly
+-maxDropdownWidth option
 -Fix header with searchbox to have a minimum width (to show the search box and button properly)
 
 
