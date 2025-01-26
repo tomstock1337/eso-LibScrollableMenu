@@ -3116,6 +3116,17 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	-- using the exact width of the text can leave us with pixel rounding issues
 	-- so just add 5 to make sure we don't truncate at certain screen sizes
 	largestEntryWidth = largestEntryWidth + 5
+	-- Allow the dropdown to automatically widen to fit the widest entry, but
+	-- prevent it from getting any skinnier than the container's initial width
+	local longestEntryTextWidth = largestEntryWidth + (ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2) + ZO_SCROLL_BAR_WIDTH
+
+	--Any options.maxDropdownWidth "fixed width" chosen?
+	local maxDropdownWidth = self.m_comboBox:GetMaxDropdownWidth() --todo 20250126 Do not use comboBox directly here as it will return nil! Why does this return nil for a submenu? It was setup in table submenuClass_exposedVariables to copy from owining menu to the submenu , if missing.
+	--If a maxWidth was set in the options then use that one, else use the auto-size of the longest entry
+	local totalDropDownWidth = (maxDropdownWidth ~= nil and maxDropdownWidth) or (maxDropdownWidth == nil and longestEntryTextWidth) or maxWidth
+	totalDropDownWidth = zo_clamp(totalDropDownWidth, minWidth, totalDropDownWidth)
+
+--d(">[LSM]dropdownClass:Show - minWidth: " .. tos(minWidth) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) ..", maxWidth: " .. tos(maxWidth) .. ", totalDropDownWidth: " .. tos(totalDropDownWidth) .. ", longestEntryTextWidth: " ..tos(longestEntryTextWidth))
 
 	--maxHeight should have been defined before via self:UpdateHeight() -> Settings control:SetHeight() so self.m_height was set
 	local desiredHeight = maxHeight
@@ -3128,25 +3139,10 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	end
 --	ZO_Scroll_SetUseScrollbar(self, false)
 
-	-- Allow the dropdown to automatically widen to fit the widest entry, but
-	-- prevent it from getting any skinnier than the container's initial width
-	local longestEntryTextWidth = largestEntryWidth + (ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2) + ZO_SCROLL_BAR_WIDTH
-	maxWidth = maxWidth or longestEntryTextWidth
-	local totalDropDownWidth = zo_clamp(longestEntryTextWidth, minWidth, maxWidth)
-
-d(">[LSM]dropdownClass:Show - minWidth: " .. tos(minWidth) ..", maxWidth: " .. tos(maxWidth) .. ", totalDropDownWidth: " .. tos(totalDropDownWidth) .. ", longestEntryTextWidth: " ..tos(longestEntryTextWidth))
-	--[[
-	if totalDropDownWidth > minWidth then
-		control:SetWidth(totalDropDownWidth)
-	else
-		control:SetWidth(minWidth)
-	end
-	]]
-	control:SetWidth(totalDropDownWidth)
-
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 76, tos(totalDropDownWidth), tos(allItemsHeight), tos(desiredHeight)) end
 
 	ZO_Scroll_SetUseFadeGradient(scrollControl, not self.owner.disableFadeGradient )
+	control:SetWidth(totalDropDownWidth)
 	control:SetHeight(desiredHeight)
 
 	ZO_ScrollList_SetHeight(scrollControl, desiredHeight)
@@ -3917,7 +3913,9 @@ function comboBox_base:GetBaseWidth(control)
 	-- We need to include the header width
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 91, tos(getControlName(control)), tos(control.header ~= nil), tos(control.header ~= nil and control.header:GetWidth() or 0)) end
 	if control and control.header then
-		return control.header:GetWidth()
+		local minWidth = control.header:GetWidth()
+		if minWidth <= 0 then minWidth = MIN_WIDTH_WITHOUT_HEADER end
+		return minWidth
 	end
 	return MIN_WIDTH_WITHOUT_HEADER
 end
@@ -3925,12 +3923,12 @@ end
 
 function comboBox_base:GetMaxDropdownHeight()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 92, tos(self.maxHeight)) end
-	return self.maxHeight
+	return self.maxHeight --is set via options.maxDropdownHeight -> see table LSMOptionsToZO_ComboBoxOptionsCallbacks
 end
 
 function comboBox_base:GetMaxDropdownWidth()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 179, tos(self.maxWidth)) end
-	return self.maxWidth
+	return self.maxWidth --is set via options.maxDropdownWidth -> see table LSMOptionsToZO_ComboBoxOptionsCallbacks
 end
 
 function comboBox_base:GetDropdownObject(comboBoxContainer, depth)
@@ -4347,6 +4345,8 @@ function comboBox_base:UpdateHeight(control)
 	--This will set self.m_height for later usage in self:Show() -> as the dropdown is shown
 	self:SetHeight(maxHeightInTotal)
 	
+	--Why calling hte Show function here? To apply updated options?
+	-->The show function is called twice then if a new submenu is opened e.g....
 	if self:IsDropdownVisible() then
 	--	self.m_dropdownObject:Show(self, self.m_sortedItems, self.containerMinWidth, self.m_containerWidth, self.m_height, self:GetSpacing())
 		self:Show()
@@ -4367,23 +4367,26 @@ function comboBox_base:UpdateWidth(control)
 	-->Will be overwritten at Show function IF no maxWidth is set and any entry in the list is wider (text width) than the container width
 	local maxDropdownWidth = self:GetMaxDropdownWidth()
 	local maxWidthInTotal = maxDropdownWidth or self.m_containerWidth
+	if maxWidthInTotal <= 0 then maxWidthInTotal = MIN_WIDTH_WITHOUT_HEADER end
 
 	--Calculate end width
 	local newWidth = maxWidthInTotal
+	--Was option.maxDropdownWidth provided?
 	if maxDropdownWidth ~= nil then
 		newWidth = zo_clamp(maxWidthInTotal, minWidth, maxDropdownWidth)
-d(">1, newWidth: " ..tos(newWidth))
+		--d(">1, newWidth: " ..tos(newWidth))
 	else
+		--No options passed in a maxDropdownWidth
 		if minWidth < maxWidthInTotal  then
 			newWidth = zo_clamp(maxWidthInTotal, minWidth, maxWidthInTotal)
-d(">2, newWidth: " ..tos(newWidth))
+			--d(">2, newWidth: " ..tos(newWidth))
 		else
 			newWidth = minWidth
-d(">3, newWidth: " ..tos(newWidth))
+			--d(">3, newWidth: " ..tos(newWidth))
 		end
 	end
 
-	d("[LSM]UpdateWidth - minWidth: " .. tos(minWidth).. ", maxWidthInTotal: " ..tos(maxWidthInTotal) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) .. ", newWidth: " .. tos(newWidth))
+	--d("[LSM]UpdateWidth - minWidth: " .. tos(minWidth).. ", maxWidthInTotal: " ..tos(maxWidthInTotal) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) .. ", newWidth: " .. tos(newWidth))
 
 
 	--[181] = "comboBox_base:UpdateWidth - control: %q, maxWidth: %s, maxDropdownWidth: %s, headerWidth: %s",
@@ -4391,14 +4394,6 @@ d(">3, newWidth: " ..tos(newWidth))
 
 	--This will set self.m_containerWidth = newWidth, and self.containerMinWidth = minWidth, for later usage in self:Show() -> as the dropdown is shown
 	self:SetMinMaxWidth(minWidth, newWidth)
-
-	--[[
-	--Will be called from self:UpdateHeight()!
-	if self:IsDropdownVisible() then
-	--	self.m_dropdownObject:Show(self, self.m_sortedItems, self.containerMinWidth, self.m_containerWidth, self.m_height, self:GetSpacing())
-		self:Show()
-	end
-	]]
 end
 
 do -- Row setup functions
@@ -5098,7 +5093,7 @@ function submenuClass:AddMenuItems(parentControl)
 	self:RefreshSortedItems(parentControl)
 	self:UpdateWidth()
 	self:UpdateHeight()
-	self:Show()
+	--self:Show() --Is called from self:UpdateHeight() already so would be called double here!
 	self.m_dropdownObject:AnchorToControl(parentControl)
 end
 
