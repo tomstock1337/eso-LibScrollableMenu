@@ -98,7 +98,7 @@ local function test()
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
 			maxDropdownHeight = 450,
-			maxDropdownWidth = 400,
+			--maxDropdownWidth = 400, -- todo 20250126 submenu width is kind of 0? Is this the fault of this option?
 
 			--Big yellow headers!
 			--headerFont = "ZoFontHeader3",

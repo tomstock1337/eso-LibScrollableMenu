@@ -232,7 +232,7 @@ local debugLogMessagePatterns = {
 	[178] = "dropdownClass:UpdateWidth",
 	[179] = "comboBox_base:GetMaxDropdownWidth - maxDropdownWidth: %s",
 	[180] = "comboBox_base:GetBaseWidth - control: %s, gotHeader: %s, width: %s",
-	[181] = "comboBox_base:UpdateWidth - control: %q, newWidth: %s, maxWidth: %s, maxDropdownWidth: %s, headerWidth: %s",
+	[181] = "comboBox_base:UpdateWidth - control: %q, newWidth: %s, maxWidth: %s, maxDropdownWidth: %s, minWidth: %s",
 }
 
 
