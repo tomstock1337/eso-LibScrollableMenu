@@ -3122,9 +3122,10 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 
 	--Any options.maxDropdownWidth "fixed width" chosen?
 	local maxDropdownWidth = self.m_comboBox:GetMaxDropdownWidth() --todo 20250126 Do not use comboBox directly here as it will return nil! Why does this return nil for a submenu? It was setup in table submenuClass_exposedVariables to copy from owining menu to the submenu , if missing.
-	--If a maxWidth was set in the options then use that one, else use the auto-size of the longest entry
-	local totalDropDownWidth = (maxDropdownWidth ~= nil and maxDropdownWidth) or (maxDropdownWidth == nil and longestEntryTextWidth) or maxWidth
-	totalDropDownWidth = zo_clamp(totalDropDownWidth, minWidth, totalDropDownWidth)
+	--If a maxWidth was set in the options then use that one, else use the auto-size of the longest entry. If the auto-size of the longest entry is smaller than the maxWidth, then use that instead!
+	local totalDropDownWidth = (maxDropdownWidth ~= nil and maxDropdownWidth < longestEntryTextWidth and maxDropdownWidth) or (maxDropdownWidth == nil and longestEntryTextWidth) or maxWidth
+	--Check if a minWidth is > than totalDropDownWidth
+	local desiredWidth = zo_clamp(totalDropDownWidth, minWidth, totalDropDownWidth)
 
 --d(">[LSM]dropdownClass:Show - minWidth: " .. tos(minWidth) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) ..", maxWidth: " .. tos(maxWidth) .. ", totalDropDownWidth: " .. tos(totalDropDownWidth) .. ", longestEntryTextWidth: " ..tos(longestEntryTextWidth))
 
@@ -3142,7 +3143,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 76, tos(totalDropDownWidth), tos(allItemsHeight), tos(desiredHeight)) end
 
 	ZO_Scroll_SetUseFadeGradient(scrollControl, not self.owner.disableFadeGradient )
-	control:SetWidth(totalDropDownWidth)
+	control:SetWidth(desiredWidth)
 	control:SetHeight(desiredHeight)
 
 	ZO_ScrollList_SetHeight(scrollControl, desiredHeight)
