@@ -2734,7 +2734,7 @@ end
 -- dropdownClass
 --------------------------------------------------------------------
 
-local dropdownClass = ZO_ComboBoxDropdown_Keyboard:Subclass()
+local dropdownClass = ZO_ComboBoxDropdown_Keyboard:Subclass() --vanilla: XML ZO_ComboBoxDropdown_Singleton_Keyboard -> XML ZO_ComboBoxDropdown_Keyboard_Template -> ZO_ComboBoxDropdown_Keyboard.InitializeFromControl(self)
 
 -- dropdownClass:New(To simplify locating the beginning of the class
 function dropdownClass:Initialize(parent, comboBoxContainer, depth)
@@ -3200,7 +3200,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	--Check if a minWidth is > than totalDropDownWidth
 	local desiredWidth = zo_clamp(totalDropDownWidth, minWidth, totalDropDownWidth)
 
-d(">[LSM]dropdownClass:Show - minWidth: " .. tos(minWidth) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) ..", maxWidth: " .. tos(maxWidth) .. ", totalDropDownWidth: " .. tos(totalDropDownWidth) .. ", longestEntryTextWidth: " ..tos(longestEntryTextWidth) ..", desiredWidth: " .. tos(desiredWidth))
+--d(">[LSM]dropdownClass:Show - minWidth: " .. tos(minWidth) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) ..", maxWidth: " .. tos(maxWidth) .. ", totalDropDownWidth: " .. tos(totalDropDownWidth) .. ", longestEntryTextWidth: " ..tos(longestEntryTextWidth) ..", desiredWidth: " .. tos(desiredWidth))
 
 	--maxHeight should have been defined before via self:UpdateHeight() -> Settings control:SetHeight() so self.m_height was set
 	local desiredHeight = maxHeight
@@ -3276,22 +3276,6 @@ function dropdownClass:OnHide(formattedEventName)
 	end
 end
 
---Called from XML "LibScrollableMenu_Dropdown_Behavior"
-function dropdownClass:XMLHandler(selfVar, handlerName)
-	if selfVar == nil or handlerName == nil then return end
-
-	if handlerName == "OnEffectivelyHidden" then
-		self:HideDropdown()
-	elseif handlerName == "OnMouseEnter" then
-		self:OnMouseExitTimeout(selfVar)
-
-	elseif handlerName == "OnShow" then
-		self:OnShow(self:GetFormattedNarrateEvent('Show'))
-	elseif handlerName == "OnHide" then
-		self:OnHide(self:GetFormattedNarrateEvent('Hide'))
-	end
-end
-
 function dropdownClass:ShowSubmenu(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 80, tos(getControlName(control))) end
 	if self.owner then
@@ -3318,6 +3302,22 @@ function dropdownClass:HideSubmenu()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 83) end
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 		self.m_submenu:HideDropdown()
+	end
+end
+
+--Called from XML "LibScrollableMenu_Dropdown_Behavior"
+function dropdownClass:XMLHandler(selfVar, handlerName)
+	if selfVar == nil or handlerName == nil then return end
+
+	if handlerName == "OnEffectivelyHidden" then
+		self:HideDropdown()
+	elseif handlerName == "OnMouseEnter" then
+		self:OnMouseExitTimeout(selfVar)
+
+	elseif handlerName == "OnShow" then
+		self:OnShow(self:GetFormattedNarrateEvent('Show'))
+	elseif handlerName == "OnHide" then
+		self:OnHide(self:GetFormattedNarrateEvent('Hide'))
 	end
 end
 
@@ -6147,12 +6147,7 @@ LibScrollableMenu = lib
 
 2501_3 Bugs:
 a) Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options.noSelectionText properly
-b) Submenus do close upon selection of an entry (maybe due to ZO_ComboBox:SelectItem -> calling dropdownObject:Refresh ?)
-    -- refresh the data that was just selected so the selection highlight properly shows/hides
-    if self.m_dropdownObject:IsOwnedByComboBox(self) then
-        self.m_dropdownObject:Refresh(item)
-    end
-
+b) Submenus do close upon selection of an entry (dropdownObject:Refresh isn't the reason, it only uses ZO_ScrollList_RefreshVisible(row))
 
 	---> It will be called from dropdownClass:OnEntryMouseUp, and then call the ZO_ComboBoxDropdown_Keyboard.OnEntrySelected -> ZO_ComboBox:SetSelected -> ZO_ComboBox:SelectItem -> then:
 	-----> If no multiselection is enabled: ZO_ComboBox_Base.SelectItem -> ZO_ComboBox_Base:ItemSelectedClickHelper(item, ignoreCallback) -> item.callback(comboBox, itemName, item, selectionChanged, oldItem) function
