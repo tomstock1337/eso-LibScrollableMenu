@@ -383,6 +383,7 @@ local comboBoxDefaults = {
 	m_highlightTemplate =			LSM_ROW_HIGHLIGHT_DEFAULT, --ZO_SelectionHighlight
 	m_isDropdownVisible = 			false,
 	m_maxNumSelections = 			nil,
+	m_maxNumSelectionsErrorText =	GetString(SI_COMBO_BOX_MAX_SELECTIONS_REACHED_ALERT),
 	m_normalColor = 				DEFAULT_TEXT_COLOR,
 	m_preshowDropdownFn = 			nil,
 	m_selectedColor =				{ GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED) },
@@ -393,6 +394,7 @@ local comboBoxDefaults = {
 	m_spacing = 					DEFAULT_SPACING,
 	multiSelectionTextFormatter = 	SI_COMBO_BOX_DEFAULT_MULTISELECTION_TEXT_FORMATTER,
 	noSelectionText = 				GetString(SI_COMBO_BOX_DEFAULT_NO_SELECTION_TEXT),
+	onSelectionBlockedCallback =	nil,
 
 	--non member data
 	horizontalAlignment = 			TEXT_ALIGN_LEFT,
@@ -436,8 +438,10 @@ lib.defaultComboBoxOptions  = defaultComboBoxOptions
 
 
 ------------------------------------------------------------------------------------------------------------------------
---Options key mapping
+-- LSM Options -> ZO_ComboBox options
+------------------------------------------------------------------------------------------------------------------------
 
+--Options key mapping
 --The mapping between LibScrollableMenu options key and ZO_ComboBox's key. Used in comboBoxClass:UpdateOptions()
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	--All possible options entries "must" be mapped here (left: options entry / right: ZO_ComboBox relating entry where the value is saved)
@@ -454,6 +458,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["headerFont"] =			"headerFont",
 	["highlightContextMenuOpeningControl"] = "highlightContextMenuOpeningControl",
 	["maxNumSelections"] =		"m_maxNumSelections",
+	["maxNumSelectionsErrorText"] = "m_overrideMaxSelectionsErrorText",
 	["multiSelectionTextFormatter"] = "multiSelectionTextFormatter",
 	["narrate"] = 				"narrateData",
 	["normalColor"] = 			"m_normalColor",
@@ -469,33 +474,64 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
 	-->!!!Attention: You must add those entries, which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks",
 	-->to this table LSMOptionsKeyToZO_ComboBoxOptionsKey here too!!!
-	['font'] = 					"m_font",
-	['maxDropdownHeight'] =		"maxHeight",
-	['maxDropdownWidth'] =		"maxWidth",
+	["font"] = 					"m_font",
+	["maxDropdownHeight"] =		"maxHeight",
+	["maxDropdownWidth"] =		"maxWidth",
 	["preshowDropdownFn"] = 	"m_preshowDropdownFn",
-	['sortEntries'] = 			"m_sortsItems",
-	['sortOrder'] = 			"m_sortOrder",
-	['sortType'] = 				"m_sortType",
-	['spacing'] = 				"m_spacing",
+	["sortEntries"] = 			"m_sortsItems",
+	["sortOrder"] = 			"m_sortOrder",
+	["sortType"] = 				"m_sortType",
+	["spacing"] = 				"m_spacing",
 	["visibleRowsDropdown"] =	"visibleRows",
 }
 lib.LSMOptionsKeyToZO_ComboBoxOptionsKey = LSMOptionsKeyToZO_ComboBoxOptionsKey
 
+
 --The callback functions for the mapped LSM option -> ZO_ComboBox options (where any provided/needed)
 local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	--These callback functions will apply the options directly
-	--If self. (= comboBoxObject) updatedOptions table is provided it might contain already processed
+	--If self. (= comboBoxObject) "updatedOptions" table is provided it might contain already processed
 	--"updated" options of the current loop at self:UpdateOptions(optionsTable)
 	-->You can use these table entries to get the most up2date values of the currently processed options
 
-	['enableMultiSelect'] = function(comboBoxObject, isMultiSelectionEnabled)
-		if isMultiSelectionEnabled then
-			comboBoxObject:EnableMultiSelect(comboBoxObject.multiSelectionTextFormatter, comboBoxObject.noSelectionText) --sets comboBoxObject.m_enableMultiSelect = true
-		else
+	["enableMultiSelect"] = function(comboBoxObject, isMultiSelectionEnabled)
+		--options which should be considered/updated first if comboBoxObject:EnableMultiSelect is called
+		---maxNumSelections
+		---maxNumSelectionsErrorText
+		---noSelectionText
+		---multiSelectionTextFormatter
+		---onSelectionBlockedCallback
+
+	d("[LSM]options.enableMultiSelect = " .. tos(isMultiSelectionEnabled))
+		if isMultiSelectionEnabled == false then
+			--todo 20250127 Clear the multiselect related variables at comboBoxObject? Vanilla code doesn't, but our
+			--objects (submenu e.g.) might need that? Allthoug all functions check for comboBoxObject.m_enableMultiSelect == true,
 			comboBoxObject:DisableMultiSelect() --sets comboBoxObject.m_enableMultiSelect = false
+			return
 		end
+
+		local options = comboBoxObject.options
+		local updatedOptions = comboBoxObject.updatedOptions
+
+		local maxNumSelections = 			updatedOptions.maxNumSelections or getValueOrCallback(options.maxNumSelections) or comboBoxDefaults.m_maxNumSelections
+		if maxNumSelections ~= nil and maxNumSelections < 0 then maxNumSelections = nil	end
+		local maxNumSelectionsErrorText = 	updatedOptions.maxNumSelectionsErrorText or getValueOrCallback(options.maxNumSelectionsErrorText) or comboBoxDefaults.m_maxNumSelectionsErrorText
+		local noSelectionText = 			updatedOptions.noSelectionText or getValueOrCallback(options.noSelectionText) or comboBoxDefaults.noSelectionText
+		local multiSelectionTextFormatter = updatedOptions.multiSelectionTextFormatter or getValueOrCallback(options.multiSelectionTextFormatter) or comboBoxDefaults.multiSelectionTextFormatter
+		local onSelectionBlockedCallback = 	updatedOptions.OnSelectionBlockedCallback or getValueOrCallback(options.OnSelectionBlockedCallback) or comboBoxDefaults.onSelectionBlockedCallback
+
+		updatedOptions.maxNumSelections = maxNumSelections
+		updatedOptions.maxNumSelectionsErrorText = maxNumSelectionsErrorText
+		updatedOptions.noSelectionText = noSelectionText
+		updatedOptions.multiSelectionTextFormatter = multiSelectionTextFormatter
+		updatedOptions.OnSelectionBlockedCallback = onSelectionBlockedCallback
+
+		comboBoxObject:SetMaxSelections(maxNumSelections)
+		comboBoxObject:SetMaxSelectionsErrorText(maxNumSelectionsErrorText)
+		comboBoxObject:SetOnSelectionBlockedCallback(onSelectionBlockedCallback)
+		comboBoxObject:EnableMultiSelect(multiSelectionTextFormatter, noSelectionText) --sets comboBoxObject.m_enableMultiSelect = true
 	end,
-	['font'] = function(comboBoxObject, font)
+	["font"] = function(comboBoxObject, font)
 		comboBoxObject:SetFont(font) --sets comboBoxObject.m_font
 	end,
 	["maxDropdownHeight"] = function(comboBoxObject, maxDropdownHeight)
@@ -506,11 +542,20 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		comboBoxObject.maxWidth = maxDropdownWidth
 		comboBoxObject:UpdateWidth(comboBoxObject.m_dropdown)
 	end,
-	['multiSelectionTextFormatter'] = function(comboBoxObject, multiSelectionTextFormatter)
+	["maxNumSelections"] = function(comboBoxObject, maxNumSelections)
+		comboBoxObject:SetMaxSelections(maxNumSelections)
+	end,
+	["maxNumSelectionsErrorText"] = function(comboBoxObject, maxNumSelectionsErrorText)
+		comboBoxObject:SetMaxSelectionsErrorText(maxNumSelectionsErrorText)
+	end,
+	["multiSelectionTextFormatter"] = function(comboBoxObject, multiSelectionTextFormatter)
 		comboBoxObject:SetMultiSelectionTextFormatter(multiSelectionTextFormatter) --sets comboBoxObject.multiSelectionTextFormatter
 	end,
-	['noSelectionText'] = function(comboBoxObject, noSelectionText)
+	["noSelectionText"] = function(comboBoxObject, noSelectionText)
 		comboBoxObject:SetNoSelectionText(noSelectionText) --sets comboBoxObject.noSelectionText
+	end,
+	["OnSelectionBlockedCallback"] = function(comboBoxObject, OnSelectionBlockedCallbackFunc)
+		comboBoxObject:SetOnSelectionBlockedCallback(OnSelectionBlockedCallbackFunc)
 	end,
 	["preshowDropdownFn"] = function(comboBoxObject, preshowDropdownCallbackFunc)
 		comboBoxObject:SetPreshowDropdownCallback(preshowDropdownCallbackFunc) --sets m_preshowDropdownFn
@@ -518,7 +563,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	["sortEntries"] = function(comboBoxObject, sortEntries)
 		comboBoxObject:SetSortsItems(sortEntries) --sets comboBoxObject.m_sortsItems
 	end,
-	['sortOrder'] = function(comboBoxObject, sortOrder)
+	["sortOrder"] = function(comboBoxObject, sortOrder)
 		local options = comboBoxObject.options
 		local updatedOptions = comboBoxObject.updatedOptions
 		--SortType was updated already during current comboBoxObject:UpdateOptions(options) -> SetOption() loop? No need to
@@ -528,7 +573,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		local sortType = getValueOrCallback(options.sortType, options) or comboBoxObject.m_sortType
 		comboBoxObject:SetSortOrder(sortType , sortOrder)
 	end,
-	['sortType'] = function(comboBoxObject, sortType)
+	["sortType"] = function(comboBoxObject, sortType)
 		local options = comboBoxObject.options
 		--Check if any updatedOptions already exist and if the sortOrder was updated already then sortType does not need
 		--to be updated too (and vice versa)
@@ -539,7 +584,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		if sortOrder == nil then sortOrder = comboBoxObject.m_sortOrder end
 		comboBoxObject:SetSortOrder(sortType , sortOrder )
 	end,
-	['spacing'] = function(comboBoxObject, spacing)
+	["spacing"] = function(comboBoxObject, spacing)
 		comboBoxObject:SetSpacing(spacing) --sets comboBoxObject.m_spacing
 	end,
 	["visibleRowsDropdown"] = function(comboBoxObject, visibleRows)
@@ -561,12 +606,12 @@ local submenuClass_exposedVariables = {
 	["m_customEntryTemplateInfos"] = false, -- needs to be false to supress pass-through of XML template from main menu -> would break submenu's row setup.
 	["m_height"] = false, -- needs to be false so options.visibleRowsSubmenu is used for the height of the submenu, and not the main menu's height (from options.visibleRowsDropdown)
 	-------------------------------------
-	['m_containerWidth'] = true,
-	['m_enableMultiSelect'] = true,
+	["m_containerWidth"] = true,
+	["m_enableMultiSelect"] = true,
 	["m_font"] = true,
-	['m_highlightColor'] = true,
-	['m_maxNumSelections'] = true,
-	['m_normalColor'] = true,
+	["m_highlightColor"] = true,
+	["m_maxNumSelections"] = true,
+	["m_normalColor"] = true,
 
 	-- ZO_ComboBox_Base
 	["m_selectedItemText"] = false, -- This is handeled by "SelectItem"
@@ -590,19 +635,19 @@ local submenuClass_exposedVariables = {
 	["headerCollapsed"] = false,		--Header: Currently not available separately for a submenu
 	["headerCollapsible"] = false, 		--Header: Currently not available separately for a submenu
 	---------------------------------------
-	['disableFadeGradient'] = true,
-	['headerFont'] = true,
-	['headerColor'] = true,
-	['highlightContextMenuOpeningControl'] = true,
-	['options'] = true,
-	['maxDropdownHeight'] = true,
-	['maxDropdownWidth'] = true,
-	['m_highlightTemplate'] = true,
-	['narrateData'] = true,
-	['useDefaultHighlightForSubmenuWithCallback'] = true,
-	['visibleRowsSubmenu'] = true, --we only need this "visibleRowsSubmenu" for the submenus, mainMenu uses visibleRowsDropdown
-	['XMLRowTemplates'] = true, --TODO: is this being overwritten?
-	['XMLRowHighlightTemplates'] = true, --TODO: is this being overwritten?
+	["disableFadeGradient"] = true,
+	["headerFont"] = true,
+	["headerColor"] = true,
+	["highlightContextMenuOpeningControl"] = true,
+	["options"] = true,
+	["maxDropdownHeight"] = true,
+	["maxDropdownWidth"] = true,
+	["m_highlightTemplate"] = true,
+	["narrateData"] = true,
+	["useDefaultHighlightForSubmenuWithCallback"] = true,
+	["visibleRowsSubmenu"] = true, --we only need this "visibleRowsSubmenu" for the submenus, mainMenu uses visibleRowsDropdown
+	["XMLRowTemplates"] = true, --TODO: is this being overwritten?
+	["XMLRowHighlightTemplates"] = true, --TODO: is this being overwritten?
 }
 
 -- Pass-through functions:
@@ -645,7 +690,7 @@ local filterNamesExempts = {
 	[""] = true,
 	[noEntriesSubmenu.name] = true, -- "Empty"
 	--Check via type(name)
-	--['nil'] = true,
+	--["nil"] = true,
 }
 
 
@@ -1464,7 +1509,7 @@ local function recursiveOverEntries(entry, callback)
 	local submenu = (entry.entries ~= nil and getValueOrCallback(entry.entries, entry)) or {}
 
 	--local submenuType = type(submenu)
-	--assert(submenuType == 'table', sfor('['..MAJOR..':recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
+	--assert(submenuType == 'table', sfor('["..MAJOR..':recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
 	if type(submenu) == "table" and #submenu > 0 then
 		for _, subEntry in pairs(submenu) do
 			local subEntryResult = recursiveOverEntries(subEntry, callback)
@@ -1562,7 +1607,7 @@ local function mapEntries(entryTable, mapTable, blank)
 		entryTableType = type(entryTableToMap)
 	end
 
-	assert(entryTableType == 'table' and mapTableType == 'table' , sfor('['..MAJOR..':MapEntries] tables expected, got %q = %s, %q = %s', "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
+	assert(entryTableType == 'table' and mapTableType == 'table' , sfor("["..MAJOR..":MapEntries] tables expected, got %q = %s, %q = %s", "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
 	
 	-- Splitting these up so the above is not done each iteration
 	doMapEntries(entryTableToMap, mapTable, entryTableType)
@@ -1749,7 +1794,7 @@ local function validateContextMenuSubmenuEntries(entries, options, calledByStr)
 		local entriesOfPassedInEntriesFunc = entries(options)
 		--Check if the result is a table
 		entryTableType = type(entriesOfPassedInEntriesFunc)
-		assert(entryTableType == 'table', sfor('['..MAJOR.. calledByStr .. '] table expected, got %q', tos(entryTableType)))
+		assert(entryTableType == 'table', sfor('["..MAJOR.. calledByStr .. "] table expected, got %q', tos(entryTableType)))
 		entries = entriesOfPassedInEntriesFunc
 	end
 	return entries
@@ -2424,7 +2469,7 @@ local has_submenu = true
 local no_submenu = false
 
 local handlerFunctions  = {
-	['onMouseEnter'] = {
+	["onMouseEnter"] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data, ...)
 			onMouseEnter(control, data, no_submenu)
 			clearNewStatus(control, data)
@@ -2459,7 +2504,7 @@ local handlerFunctions  = {
 			return false --not control.closeOnSelect
 		end,
 	},
-	['onMouseExit'] = {
+	["onMouseExit"] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data)
 			onMouseExit(control, data, no_submenu)
 			return not control.closeOnSelect
@@ -2504,7 +2549,7 @@ local handlerFunctions  = {
 	---> to the dropdown via ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp(control, button, upInside, ctrl, alt, shift)
 
 	-- return true to "select" entry via described way (see above), or false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback
-	['onMouseUp'] = {
+	["onMouseUp"] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
 			return true
@@ -2967,7 +3012,7 @@ function dropdownClass:OnMouseEnterEntry(control)
 
 	local data = getControlData(control)
 	if data.enabled == true then
-		if not runHandler(handlerFunctions['onMouseEnter'], control, data) then
+		if not runHandler(handlerFunctions["onMouseEnter"], control, data) then
 			--Each entryType uses the default scrolltemplates.lua, function PlayAnimationOnControl via the zo_comboBoxDropdown_onMouseEnterEntry function call
 			--to get/create the highlight control and assign the virtual XML tempalte to it, and to set the highlight animation on the control.
 			--> See function dropdownClass:Initialize -> function scrollCtrl.highlightTemplateOrFunction and function scrollCtrl.highlightCallback
@@ -2993,7 +3038,7 @@ function dropdownClass:OnMouseExitEntry(control)
 	hideTooltip(control)
 	local data = getControlData(control)
 	self:OnMouseExitTimeout(control)
-	if data.enabled and not runHandler(handlerFunctions['onMouseExit'], control, data) then
+	if data.enabled and not runHandler(handlerFunctions["onMouseExit"], control, data) then
 		zo_comboBoxDropdown_onMouseExitEntry(self, control)
 	end
 
@@ -3036,7 +3081,7 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, 
 				end
 
 				--if not comboBox.m_enableMultiSelect then
-					if not ignoreHandler and runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside, ctrl, alt, shift) then
+					if not ignoreHandler and runHandler(handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
 						self:OnEntrySelected(control)
 					else
 						self:RunItemCallback(data, data.ignoreCallback)
@@ -5407,8 +5452,10 @@ end
 --		boolean sortOrder:optional				Boolean or function returning boolean for the sort order ZO_SORT_ORDER_UP or ZO_SORT_ORDER_DOWN
 --		boolean enableMultiSelect:optional		Boolean or function returning boolean if multiple items in the main-/submenu can be selected at the same time
 --		number maxNumSelections:optional		Number or function returning a number: Maximum number of selectable entries (at the same time)
+--		string maxNumSelectionsErrorText		String or function returning a string: The text showing if maximum number of selectable items was reached. Default: GetString(SI_COMBO_BOX_MAX_SELECTIONS_REACHED_ALERT)
 -- 		string multiSelectionTextFormatter:optional	String SI constant or function returning a string SI constant: The text showing how many items have been selected currently, with the multiselection enabled. Default: SI_COMBO_BOX_DEFAULT_MULTISELECTION_TEXT_FORMATTER
 -- 		string noSelectionText:optional			String or function returning a string: The text showing if no item is selected, with the multiselection enabled. Default: GetString(SI_COMBO_BOX_DEFAULT_NO_SELECTION_TEXT)
+--		function OnSelectionBlockedCallback:optional	function(selectedItem) codeHere end: callback function called as a multi-selection item selection was blocked
 -- 		string font:optional				 	String or function returning a string: font to use for the dropdown entries
 -- 		number spacing:optional,	 			Number or function returning a number: Spacing between the entries
 --		boolean disableFadeGradient:optional	Boolean or function returning a boolean: for the fading of the top/bottom scrolled rows
@@ -5574,14 +5621,14 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	generatedText = generatedText or ((text ~= nil and getValueOrCallback(text, options)) or nil)
 
 	--Text, or label, checks
-	assert(generatedText ~= nil and generatedText ~= "" and generatedEntryType ~= nil, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] text/additionalData.label/additionalData.name: String or function returning a string, got %q; entryType: number LSM_ENTRY_TYPE_* or function returning the entryType expected, got %q', tos(generatedText), tos(generatedEntryType)))
+	assert(generatedText ~= nil and generatedText ~= "" and generatedEntryType ~= nil, sfor("["..MAJOR..":AddCustomScrollableMenuEntry] text/additionalData.label/additionalData.name: String or function returning a string, got %q; entryType: number LSM_ENTRY_TYPE_* or function returning the entryType expected, got %q", tos(generatedText), tos(generatedEntryType)))
 	--EntryType checks: Allowed entryType for context menu?
-	assert(allowedEntryTypesForContextMenu[generatedEntryType] == true, sfor('['..MAJOR..':AddCustomScrollableMenuEntry] entryType %q is not allowed', tos(generatedEntryType)))
+	assert(allowedEntryTypesForContextMenu[generatedEntryType] == true, sfor("["..MAJOR..":AddCustomScrollableMenuEntry] entryType %q is not allowed", tos(generatedEntryType)))
 
 	--If no entry type is used which does need a callback, and no callback was given, and we did not pass in entries for a submenu: error the missing callback
 	if generatedEntryType ~= nil and not entryTypesForContextMenuWithoutMandatoryCallback[generatedEntryType] and entries == nil then
 		local callbackFuncType = type(callback)
-		assert(callbackFuncType == "function", sfor('['..MAJOR..':AddCustomScrollableMenuEntry] Callback function expected for entryType %q, callback\'s type: %s, name: %q', tos(generatedEntryType), tos(callbackFuncType), tos(generatedText)))
+		assert(callbackFuncType == "function", sfor("["..MAJOR..":AddCustomScrollableMenuEntry] Callback function expected for entryType %q, callback\'s type: %s, name: %q", tos(generatedEntryType), tos(callbackFuncType), tos(generatedText)))
 	end
 
 	--Is the text a ---------- divider line, or entryType is divider?
@@ -5821,21 +5868,21 @@ local showCustomScrollableMenu = ShowCustomScrollableMenu
 function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
 	local assertFuncName = "RunCustomScrollableMenuItemsCallback"
 	local addonCallbackFuncType = type(myAddonCallbackFunc)
-	assert(addonCallbackFuncType == "function", sfor('['..MAJOR..':'..assertFuncName..'] myAddonCallbackFunc: function expected, got %q', tos(addonCallbackFuncType)))
+	assert(addonCallbackFuncType == "function", sfor("["..MAJOR..":"..assertFuncName.."] myAddonCallbackFunc: function expected, got %q", tos(addonCallbackFuncType)))
 
 	local options = g_contextMenu:GetOptions()
 
 	local gotFilterEntryTypes = filterEntryTypes ~= nil and true or false
 	local filterEntryTypesTable = (gotFilterEntryTypes == true and getValueOrCallback(filterEntryTypes, options)) or nil
 	local filterEntryTypesTableType = (filterEntryTypesTable ~= nil and type(filterEntryTypesTable)) or nil
-	assert(gotFilterEntryTypes == false or (gotFilterEntryTypes == true and filterEntryTypesTableType == "table"), sfor('['..MAJOR..':'..assertFuncName..'] filterEntryTypes: table or function returning a table expected, got %q', tos(filterEntryTypesTableType)))
+	assert(gotFilterEntryTypes == false or (gotFilterEntryTypes == true and filterEntryTypesTableType == "table"), sfor("["..MAJOR..":"..assertFuncName.."] filterEntryTypes: table or function returning a table expected, got %q", tos(filterEntryTypesTableType)))
 
 	local fromParentMenuValue
 	if fromParentMenu == nil then
 		fromParentMenuValue = false
 	else
 		fromParentMenuValue = getValueOrCallback(fromParentMenu, options)
-		assert(type(fromParentMenuValue) == "boolean", sfor('['..MAJOR..':'..assertFuncName..'] fromParentMenu: boolean expected, got %q', tos(type(fromParentMenu))))
+		assert(type(fromParentMenuValue) == "boolean", sfor("["..MAJOR..":"..assertFuncName.."] fromParentMenu: boolean expected, got %q", tos(type(fromParentMenu))))
 	end
 
 --d(debugPrefix .. ""..assertFuncName.." - filterEntryTypes: " ..tos(gotFilterEntryTypes) .. ", type: " ..tos(filterEntryTypesTableType) ..", fromParentMenu: " ..tos(fromParentMenuValue))
@@ -6080,54 +6127,39 @@ LibScrollableMenu = lib
 
 --[[
 -------------------
-WORKING ON - Current version: 2.34 - Updated 2025-01-25
+WORKING ON - Current version: 2.34 - Updated 2025-01-27
 -------------------
-3. Support Multiselect properly (works at normal main menu)
+#2501_3. Support Multiselect properly (works at normal main menu)
 Bugs:
 --Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options properly
---Submenus do close upon selection of an entry
+--Submenus do close upon selection of an entry (maybe due to ZO_ComboBox:SelectItem -> calling :Refresh ?)
+	---> It will be called from dropdownClass:OnEntryMouseUp, and then call the ZO_ComboBoxDropdown_Keyboard.OnEntrySelected -> ZO_ComboBox:SetSelected -> ZO_ComboBox:SelectItem -> then:
+	-----> If no multiselection is enabled: ZO_ComboBox_Base.SelectItem -> ZO_ComboBox_Base:ItemSelectedClickHelper(item, ignoreCallback) -> item.callback(comboBox, itemName, item, selectionChanged, oldItem) function
+	-----> If multiselection is enabled: ZO_ComboBox:SelectItem contains the code via self:AddItemToSelected etc.
 --Submenus do not show the selected highlight as they open again
 
 
-Added:
-1. Fix header with searchbox to have a minimum width
-2. maxDropdownWidth option
+[Fixed]
+#2501_1. Fix header with searchbox to have a minimum width
 
+[Added]
+#2501_2. Added option "maxDropdownWidth"
+
+[Changed]
 
 
 -------------------
 TODO - To check (future versions)
 -------------------
-
 	1. Make Options update same style like updateDataValues does for entries
 	2. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
 	3. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
 	- fired on handlers dropdown_OnShow dropdown_OnHide
-	4. Make LSM options not  only accept XMLRowTemplates but their highlight templates too
 
 
 -------------------
-UPCOMING FEATURES  - What will be added in the future?
+UPCOMING FEATURES  - What could be added in the future?
 -------------------
 	1. Sort headers for the dropdown (ascending/descending) (maybe: allowing custom sort functions too)
-	2. LibCustomMenu and ZO_Menu support in inventories
-]]
-
---[[
-Placed here as a reminder to inspect how comboBox enabled is being handeled
-not to be confused with itemData.enabled
-
-function ZO_ComboBox_Base:SetEnabled(enabled)
-	self.m_container:SetMouseEnabled(enabled)
-	self.m_openDropdown:SetEnabled(enabled)
-	self.m_selectedItemText:SetColor(self:GetSelectedTextColor(enabled))
-
-	self:HideDropdown()
-end
-
-function ZO_ComboBox_Base:IsEnabled()
-	return self.m_openDropdown:GetState() ~= BSTATE_DISABLED
-end
-
-		item.callback(self, item.name, item, selectionChanged, oldItem)
+	2. LibCustomMenu and ZO_Menu replacement (currently postponed, see code at branch LSM v2.4) due to several problems with ZO_Menu (e.g. zo_callLater used by addons during context menu addition) and chat, and other problems
 ]]
