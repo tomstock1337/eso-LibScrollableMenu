@@ -95,10 +95,15 @@ local function test()
 		-- Options for the main combobox menu
 		--==============================================================================================================
 		local options = {
+			enableMultiSelect = true, --todo 20250127 test
+			maxNumSelections = 2,
+			multiSelectionTextFormatter = 	"<<1[$d item/$d items]>> selected",
+			noSelectionText = 				"No item selected",
+
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
 			maxDropdownHeight = 450,
-			maxDropdownWidth = 20,
+			--maxDropdownWidth = 450,
 
 			--Big yellow headers!
 			--headerFont = "ZoFontHeader3",

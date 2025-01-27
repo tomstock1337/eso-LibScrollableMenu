@@ -391,6 +391,8 @@ local comboBoxDefaults = {
 	m_sortOrder = 					ZO_SORT_ORDER_UP,
 	m_sortType = 					ZO_SORT_BY_NAME,
 	m_spacing = 					DEFAULT_SPACING,
+	multiSelectionTextFormatter = 	SI_COMBO_BOX_DEFAULT_MULTISELECTION_TEXT_FORMATTER,
+	noSelectionText = 				GetString(SI_COMBO_BOX_DEFAULT_NO_SELECTION_TEXT),
 
 	--non member data
 	horizontalAlignment = 			TEXT_ALIGN_LEFT,
@@ -445,20 +447,24 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
 	["disabledColor"] =			"m_disabledColor",
 	["enableFilter"] =			"enableFilter",
+	["enableMultiSelect"] = 	"m_enableMultiSelect",
 	["headerCollapsible"] = 	"headerCollapsible",
 	["headerCollapsed"] = 		"headerCollapsed",
 	["headerColor"] =			"headerColor",
 	["headerFont"] =			"headerFont",
 	["highlightContextMenuOpeningControl"] = "highlightContextMenuOpeningControl",
+	["maxNumSelections"] =		"m_maxNumSelections",
+	["multiSelectionTextFormatter"] = "multiSelectionTextFormatter",
 	["narrate"] = 				"narrateData",
 	["normalColor"] = 			"m_normalColor",
+	["noSelectionText"] = 		"noSelectionText",
 	["subtitleText"] = 			"subtitleText",
 	["subtitleFont"] = 			"subtitleFont",
 	["titleFont"] = 			"titleFont",
 	["titleText"] = 			"titleText",
 	["titleTextAlignment"] =	"titleTextAlignment",
 	["useDefaultHighlightForSubmenuWithCallback"] = "useDefaultHighlightForSubmenuWithCallback",
-	["visibleRowsSubmenu"]=		"visibleRowsSubmenu",
+	["visibleRowsSubmenu"] =	"visibleRowsSubmenu",
 
 	--Entries with callback function -> See table "LSMOptionsToZO_ComboBoxOptionsCallbacks" below
 	-->!!!Attention: You must add those entries, which you add as callback function to table "LSMOptionsToZO_ComboBoxOptionsCallbacks",
@@ -482,6 +488,13 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	--"updated" options of the current loop at self:UpdateOptions(optionsTable)
 	-->You can use these table entries to get the most up2date values of the currently processed options
 
+	['enableMultiSelect'] = function(comboBoxObject, isMultiSelectionEnabled)
+		if isMultiSelectionEnabled then
+			comboBoxObject:EnableMultiSelect(comboBoxObject.multiSelectionTextFormatter, comboBoxObject.noSelectionText) --sets comboBoxObject.m_enableMultiSelect = true
+		else
+			comboBoxObject:DisableMultiSelect() --sets comboBoxObject.m_enableMultiSelect = false
+		end
+	end,
 	['font'] = function(comboBoxObject, font)
 		comboBoxObject:SetFont(font) --sets comboBoxObject.m_font
 	end,
@@ -492,6 +505,12 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	["maxDropdownWidth"] = function(comboBoxObject, maxDropdownWidth)
 		comboBoxObject.maxWidth = maxDropdownWidth
 		comboBoxObject:UpdateWidth(comboBoxObject.m_dropdown)
+	end,
+	['multiSelectionTextFormatter'] = function(comboBoxObject, multiSelectionTextFormatter)
+		comboBoxObject:SetMultiSelectionTextFormatter(multiSelectionTextFormatter) --sets comboBoxObject.multiSelectionTextFormatter
+	end,
+	['noSelectionText'] = function(comboBoxObject, noSelectionText)
+		comboBoxObject:SetNoSelectionText(noSelectionText) --sets comboBoxObject.noSelectionText
 	end,
 	["preshowDropdownFn"] = function(comboBoxObject, preshowDropdownCallbackFunc)
 		comboBoxObject:SetPreshowDropdownCallback(preshowDropdownCallbackFunc) --sets m_preshowDropdownFn
@@ -2474,14 +2493,17 @@ local handlerFunctions  = {
 			return false --not control.closeOnSelect
 		end,
 	},
+
 	--The onMouseUp will be used to select an entry in the menu/submenu/nested submenu/context menu
-	---> It will call the ZO_ComboBoxDropdown_Keyboard.OnEntrySelected and via that ZO_ComboBox_Base:ItemSelectedClickHelper(item, ignoreCallback)
-	---> which will then call the item.callback(comboBox, itemName, item, selectionChanged, oldItem) function
-	---> So the parameters for the LibScrollableMenu entry.callback functions will be the same:  (comboBox, itemName, item, selectionChanged, oldItem)
+	---> It will be called from dropdownClass:OnEntryMouseUp, and then call the ZO_ComboBoxDropdown_Keyboard.OnEntrySelected -> ZO_ComboBox:SetSelected -> ZO_ComboBox:SelectItem -> then:
+	-----> If no multiselection is enabled: ZO_ComboBox_Base.SelectItem -> ZO_ComboBox_Base:ItemSelectedClickHelper(item, ignoreCallback) -> item.callback(comboBox, itemName, item, selectionChanged, oldItem) function
+	-----> If multiselection is enabled: ZO_ComboBox:SelectItem contains the code via self:AddItemToSelected etc.
+
+	---> The parameters for the LibScrollableMenu entry.callback functions will be:  (comboBox, itemName, item, selectionChanged, oldItem) -> The last param oldItem might change to checked for check and radiobuttons!
 	---> The return value true/false controls if the calling function runHandler -> dropdownClass.OnEntryMouseUp(control, button, upInside, ctrl, alt, shift) -> will select the entry
 	---> to the dropdown via ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp(control, button, upInside, ctrl, alt, shift)
 
-	-- return true to "select" entry
+	-- return true to "select" entry via described way (see above), or false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback
 	['onMouseUp'] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
@@ -3012,11 +3034,14 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, 
 					suppressNextOnGlobalMouseUp = true
 					return
 				end
-				if not ignoreHandler and runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside, ctrl, alt, shift) then
-					self:OnEntrySelected(control)
-				else
-					self:RunItemCallback(data, data.ignoreCallback)
-				end
+
+				--if not comboBox.m_enableMultiSelect then
+					if not ignoreHandler and runHandler(handlerFunctions['onMouseUp'], control, data, button, upInside, ctrl, alt, shift) then
+						self:OnEntrySelected(control)
+					else
+						self:RunItemCallback(data, data.ignoreCallback)
+					end
+				--end
 
 			--Show context menu at the entry?
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
@@ -3053,7 +3078,7 @@ function dropdownClass:RunItemCallback(item, ignoreCallback)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 74, tos(item), tos(ignoreCallback)) end
 	if self.owner then
 		playSelectedSoundCheck(self, item.entryType)
-		return self.owner:RunItemCallback(item, ignoreCallback)
+		return self.owner:RunItemCallback(item, ignoreCallback) --callls comboBox_base:RunItemCallback
 	end
 end
 
@@ -3625,6 +3650,12 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 84, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
 	self.m_sortedItems = {}
 	self.m_unsortedItems = {}
+
+	--Multiselection
+    self.m_enableMultiSelect = false
+    self.m_maxNumSelections = nil
+    self.m_multiSelectItemData = {}
+
 	self.m_container = comboBoxContainer
 	local dropdownObject = self:GetDropdownObject(comboBoxContainer, depth)
 	self:SetDropdownObject(dropdownObject)
@@ -4181,12 +4212,14 @@ function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	end
 end
 
---Should exit on PTS already
+--Should exist on PTS already
+--[[
 if comboBox_base.IsEnabled == nil then
 	function comboBox_base:IsEnabled()
 		return self.m_openDropdown:GetState() ~= BSTATE_DISABLED
 	end
 end
+]]
 
 function comboBox_base:RefreshSortedItems(parentControl)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 101, tos(getControlName(parentControl))) end
@@ -5372,8 +5405,12 @@ end
 --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically. !!!Attention: Default is TRUE (sorting is enabled)!!!
 --		table sortType:optional					table or function returning table for the sort type, e.g. ZO_SORT_BY_NAME, ZO_SORT_BY_NAME_NUMERIC
 --		boolean sortOrder:optional				Boolean or function returning boolean for the sort order ZO_SORT_ORDER_UP or ZO_SORT_ORDER_DOWN
+--		boolean enableMultiSelect:optional		Boolean or function returning boolean if multiple items in the main-/submenu can be selected at the same time
+--		number maxNumSelections:optional		Number or function returning a number: Maximum number of selectable entries (at the same time)
+-- 		string multiSelectionTextFormatter:optional	String SI constant or function returning a string SI constant: The text showing how many items have been selected currently, with the multiselection enabled. Default: SI_COMBO_BOX_DEFAULT_MULTISELECTION_TEXT_FORMATTER
+-- 		string noSelectionText:optional			String or function returning a string: The text showing if no item is selected, with the multiselection enabled. Default: GetString(SI_COMBO_BOX_DEFAULT_NO_SELECTION_TEXT)
 -- 		string font:optional				 	String or function returning a string: font to use for the dropdown entries
--- 		number spacing:optional,	 			Number or function returning a Number: Spacing between the entries
+-- 		number spacing:optional,	 			Number or function returning a number: Spacing between the entries
 --		boolean disableFadeGradient:optional	Boolean or function returning a boolean: for the fading of the top/bottom scrolled rows
 --		string headerFont:optional				String or function returning a string: font to use for the header entries
 --		table headerColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for header entries
