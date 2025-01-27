@@ -6082,7 +6082,12 @@ LibScrollableMenu = lib
 -------------------
 WORKING ON - Current version: 2.34 - Updated 2025-01-25
 -------------------
-3. Support Multiselect properly
+3. Support Multiselect properly (works at normal main menu)
+Bugs:
+--Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options properly
+--Submenus do close upon selection of an entry
+--Submenus do not show the selected highlight as they open again
+
 
 Added:
 1. Fix header with searchbox to have a minimum width
