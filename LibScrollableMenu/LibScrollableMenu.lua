@@ -6122,44 +6122,67 @@ LibScrollableMenu = lib
 
 
 ------------------------------------------------------------------------------------------------------------------------
--- Notes: | TODO:
+-- Notes | Changelog | TODO | UPCOMING FEATURES
 ------------------------------------------------------------------------------------------------------------------------
 
 --[[
--------------------
-WORKING ON - Current version: 2.34 - Updated 2025-01-27
--------------------
-#2501_3. Support Multiselect properly (works at normal main menu)
-Bugs:
---Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options properly
---Submenus do close upon selection of an entry (maybe due to ZO_ComboBox:SelectItem -> calling :Refresh ?)
+---------------------------------------------------------------
+	NOTES
+---------------------------------------------------------------
+
+
+
+---------------------------------------------------------------
+	CHANGELOG Current version: 2.34 - Updated 2025-01-27
+---------------------------------------------------------------
+
+[WORKING ON]
+#2501_3. Support Multiselect properly
+-Added options.enableMultiSelect
+-Added options.maxNumSelections
+-Added options.maxNumSelectionsErrorText
+-Added options.multiSelectionTextFormatter
+-Added options.noSelectionText
+-Added options.OnSelectionBlockedCallback
+
+2501_3 Bugs:
+a) Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options.noSelectionText properly
+b) Submenus do close upon selection of an entry (maybe due to ZO_ComboBox:SelectItem -> calling dropdownObject:Refresh ?)
+    -- refresh the data that was just selected so the selection highlight properly shows/hides
+    if self.m_dropdownObject:IsOwnedByComboBox(self) then
+        self.m_dropdownObject:Refresh(item)
+    end
+
+
 	---> It will be called from dropdownClass:OnEntryMouseUp, and then call the ZO_ComboBoxDropdown_Keyboard.OnEntrySelected -> ZO_ComboBox:SetSelected -> ZO_ComboBox:SelectItem -> then:
 	-----> If no multiselection is enabled: ZO_ComboBox_Base.SelectItem -> ZO_ComboBox_Base:ItemSelectedClickHelper(item, ignoreCallback) -> item.callback(comboBox, itemName, item, selectionChanged, oldItem) function
 	-----> If multiselection is enabled: ZO_ComboBox:SelectItem contains the code via self:AddItemToSelected etc.
---Submenus do not show the selected highlight as they open again
+c) Submenus do not show the selected highlight as they open again (maybe related to b)?)
 
 
 [Fixed]
 #2501_1. Fix header with searchbox to have a minimum width
 
 [Added]
-#2501_2. Added option "maxDropdownWidth"
+#2501_2. Added option "maxDropdownWidth": Width of the dropdowns will be maximum this width (minimum width is 50, or 125 if the search editbox header is enabled).
+		 If the longest text of entries is < maxDropdownWidth then the dropdown's width will be the longest text entry width
 
 [Changed]
 
+[Removed]
 
--------------------
+
+---------------------------------------------------------------
 TODO - To check (future versions)
--------------------
+---------------------------------------------------------------
 	1. Make Options update same style like updateDataValues does for entries
 	2. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
 	3. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
 	- fired on handlers dropdown_OnShow dropdown_OnHide
 
-
--------------------
+---------------------------------------------------------------
 UPCOMING FEATURES  - What could be added in the future?
--------------------
+---------------------------------------------------------------
 	1. Sort headers for the dropdown (ascending/descending) (maybe: allowing custom sort functions too)
 	2. LibCustomMenu and ZO_Menu replacement (currently postponed, see code at branch LSM v2.4) due to several problems with ZO_Menu (e.g. zo_callLater used by addons during context menu addition) and chat, and other problems
 ]]
