@@ -502,7 +502,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		---multiSelectionTextFormatter
 		---onSelectionBlockedCallback
 
-	d("[LSM]options.enableMultiSelect = " .. tos(isMultiSelectionEnabled))
+	--d(debugPrefix.."options.enableMultiSelect = " .. tos(isMultiSelectionEnabled))
 		if isMultiSelectionEnabled == false then
 			--todo 20250127 Clear the multiselect related variables at comboBoxObject? Vanilla code doesn't, but our
 			--objects (submenu e.g.) might need that? Allthoug all functions check for comboBoxObject.m_enableMultiSelect == true,
@@ -518,7 +518,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		local maxNumSelectionsErrorText = 	updatedOptions.maxNumSelectionsErrorText or getValueOrCallback(options.maxNumSelectionsErrorText) or comboBoxDefaults.m_maxNumSelectionsErrorText
 		local noSelectionText = 			updatedOptions.noSelectionText or getValueOrCallback(options.noSelectionText) or comboBoxDefaults.noSelectionText
 		local multiSelectionTextFormatter = updatedOptions.multiSelectionTextFormatter or getValueOrCallback(options.multiSelectionTextFormatter) or comboBoxDefaults.multiSelectionTextFormatter
-		local onSelectionBlockedCallback = 	updatedOptions.OnSelectionBlockedCallback or getValueOrCallback(options.OnSelectionBlockedCallback) or comboBoxDefaults.onSelectionBlockedCallback
+		local onSelectionBlockedCallback = 	(updatedOptions.OnSelectionBlockedCallback or options.OnSelectionBlockedCallback) or comboBoxDefaults.onSelectionBlockedCallback
 
 		updatedOptions.maxNumSelections = maxNumSelections
 		updatedOptions.maxNumSelectionsErrorText = maxNumSelectionsErrorText
@@ -611,6 +611,10 @@ local submenuClass_exposedVariables = {
 	["m_font"] = true,
 	["m_highlightColor"] = true,
 	["m_maxNumSelections"] = true,
+	["m_overrideMaxSelectionsErrorText"] = true,
+	["multiSelectionTextFormatter"] = true,
+	["noSelectionText"] = true,
+	["onSelectionBlockedCallback"] = true,
 	["m_normalColor"] = true,
 
 	-- ZO_ComboBox_Base
@@ -1244,7 +1248,7 @@ local function checkTablesKeyAndGetEntryType(dataTable, text)
 end
 
 local function checkEntryType(text, entryType, additionalData, isAddDataTypeTable, options)
---df("[LSM]checkEntryType - text: %s, entryType: %s, additionalData: %s, isAddDataTypeTable: %s", tos(text), tos(entryType), tos(additionalData), tos(isAddDataTypeTable))
+--df(debugPrefix.."checkEntryType - text: %s, entryType: %s, additionalData: %s, isAddDataTypeTable: %s", tos(text), tos(entryType), tos(additionalData), tos(isAddDataTypeTable))
 	if entryType == nil then
 		isAddDataTypeTable = isAddDataTypeTable or false
 		if isAddDataTypeTable == true then
@@ -1305,6 +1309,8 @@ local function checkEntryType(text, entryType, additionalData, isAddDataTypeTabl
 	return entryType
 end
 
+--Called from ZO_Menu's ShowMenu, if preventing the call via lib.preventLSMClosingZO_Menu == true is not enabled
+--and called if the SCENE_MANAGER shows a scene
 local function hideCurrentlyOpenedLSMAndContextMenu()
 	local openMenu = lib.openMenu
 	if openMenu and openMenu:IsDropdownVisible() then
@@ -2469,6 +2475,7 @@ local has_submenu = true
 local no_submenu = false
 
 local handlerFunctions  = {
+	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
 	["onMouseEnter"] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data, ...)
 			onMouseEnter(control, data, no_submenu)
@@ -2504,6 +2511,8 @@ local handlerFunctions  = {
 			return false --not control.closeOnSelect
 		end,
 	},
+
+	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
 	["onMouseExit"] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data)
 			onMouseExit(control, data, no_submenu)
@@ -2548,9 +2557,10 @@ local handlerFunctions  = {
 	---> The return value true/false controls if the calling function runHandler -> dropdownClass.OnEntryMouseUp(control, button, upInside, ctrl, alt, shift) -> will select the entry
 	---> to the dropdown via ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp(control, button, upInside, ctrl, alt, shift)
 
-	-- return true to "select" entry via described way (see above), or false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback
+	-- return true to "select" entry via described way in ZO_ComboBox handler (see above) / return false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback
 	["onMouseUp"] = {
 		[LSM_ENTRY_TYPE_NORMAL] = function(control, data, button, upInside, ctrl, alt, shift)
+--d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_NORMAL]')
 			onMouseUp(control, data, no_submenu)
 			return true
 		end,
@@ -2561,21 +2571,19 @@ local handlerFunctions  = {
 			return false
 		end,
 		[LSM_ENTRY_TYPE_SUBMENU] = function(control, data, button, upInside, ctrl, alt, shift)
+--d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_SUBMENU]')
 			onMouseUp(control, data, has_submenu)
 			return control.closeOnSelect --if submenu entry has data.callback then select the entry
 		end,
 		[LSM_ENTRY_TYPE_CHECKBOX] = function(control, data, button, upInside, ctrl, alt, shift)
---d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_CHECKBOX]')
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
 		[LSM_ENTRY_TYPE_BUTTON] = function(control, data, button, upInside, ctrl, alt, shift)
---d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_BUTTON]')
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
 		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(control, data, button, upInside, ctrl, alt, shift)
---d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_RADIOBUTTON]')
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
@@ -2739,7 +2747,7 @@ local dropdownClass = ZO_ComboBoxDropdown_Keyboard:Subclass() --vanilla: XML ZO_
 -- dropdownClass:New(To simplify locating the beginning of the class
 function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 55, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
-	--df("[LSM]dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+	--df(debugPrefix.."dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
 	local dropdownControl = CreateControlFromVirtual(comboBoxContainer:GetName(), GuiRoot, "LibScrollableMenu_Dropdown_Template", depth)
 	ZO_ComboBoxDropdown_Keyboard.Initialize(self, dropdownControl)
 	dropdownControl.object = self
@@ -2834,6 +2842,9 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	--------------------------------------------------------------------------------------------------------------------
 end
 
+---------------------------------------
+-- Deprecated functions
+---------------------------------------
 function dropdownClass:AddItems(items)
 	error(debugPrefix .. 'scrollHelper:AddItems is obsolete. You must use m_comboBox:AddItems')
 end
@@ -2842,13 +2853,30 @@ function dropdownClass:AddItem(item)
 	error(debugPrefix .. 'scrollHelper:AddItem is obsolete. You must use m_comboBox:AddItem')
 end
 
+
+---------------------------------------
 --Narration
+---------------------------------------
 function dropdownClass:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 56, tos(eventName), tos(getControlName(ctrl)), tos(hasSubmenu), tos(anchorPoint)) end
 	self.owner:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint) -->comboBox_base:Narrate(...)
 end
 
+--Returns the handler naem for OnSho or OnHide for the normal dropdown, submenu and contextMenu
+--> OnMenuShow / OnMenuHide
+--> OnSubmenuShow / OnSubmenuHide
+--> OnContextmenuShow / OnContextmenuHide
+function dropdownClass:GetFormattedNarrateEvent(suffix)
+	local formattedNarrateEvent = ''
+	if self.owner then
+		formattedNarrateEvent = sfor('On%s%s', self.owner:GetMenuPrefix(), suffix)
+	end
+	return formattedNarrateEvent
+end
 
+---------------------------------------
+-- Other dropdownClass functions
+----------------------------------------
 function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 57, tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding)) end
 	if not self.customEntryTemplateInfos then
@@ -3056,39 +3084,61 @@ function dropdownClass:OnMouseExitTimeout(control)
 	end)
 end
 
+--Called from XML virtual template <Control name="ZO_ComboBoxEntry" -> "OnMouseUp" -> ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp
 function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, ctrl, alt, shift)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 71, tos(getControlName(control)), tos(button), tos(upInside)) end
---d(debugPrefix .. "OnEntryMouseUp - button: " ..tos(button) .. ", upInside: " .. tos(upInside) .. ", ignoreHandler: " ..tos(ignoreHandler))
-
 	--20240816 Suppress the next global mouseup event raised from a comboBox's dropdown (e.g. if a submenu entry outside of a context menu was clicked
 	--while a context menu was opened, and the context menu was closed then due to this click, but the global mouse up handler on the sbmenu entry runs
 	--afterwards)
 	suppressNextOnGlobalMouseUp = nil
-
 
 	if upInside then
 		local data = getControlData(control)
 	--	local comboBox = getComboBox(control, true)
 		local comboBox = control.m_owner
 
+--[[
+LSM_Debug = {
+	self = self,
+	control = control,
+	comboBox = comboBox,
+	data = data,
+	multiSelectEnabledComboBox = comboBox.m_enableMultiSelect,
+	multiSelectEnabledDropdownOwner = self.owner.m_enableMultiSelect,
+	isSubmenu = self.isSubmenu or comboBox.isSubmenu
+}
+]]
+
 
 		if data.enabled then
-
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
 					suppressNextOnGlobalMouseUp = true
 					return
 				end
 
-				--if not comboBox.m_enableMultiSelect then
-					if not ignoreHandler and runHandler(handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
-						self:OnEntrySelected(control)
-					else
-						self:RunItemCallback(data, data.ignoreCallback)
+				--Multiselection enabled?
+				--20250129 isMultiSelectionEnabled is false, so that means the main LSM menu's options are passed to the main menu combobox, but the access here to submenu combobox.m_enableMultiSelect
+				--does not respect the metatables setup in submenuClass:New? It does not read it from the parent/main menu!
+				local isSubmenu = comboBox.isSubmenu
+				if isSubmenu then
+					local isMultiSelectionEnabledAtParentMenu = comboBox.m_parentMenu and comboBox.m_parentMenu.m_enableMultiSelect
+					local isMultiSelectionEnabled = comboBox.m_enableMultiSelect
+					-->So this here is a workaround to update the submenu's combobox m_enableMultiSelect from the m_parentMenu
+					if isMultiSelectionEnabledAtParentMenu == true and isMultiSelectionEnabled == false then
+						--d(">multiSelection taken from parentMenu")
+						self.owner.m_enableMultiSelect = true
 					end
-				--end
+				end
+--d(debugPrefix .. "OnEntryMouseUp-multiSelection: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(comboBox.isSubmenu))
 
-			--Show context menu at the entry?
+				if not ignoreHandler and runHandler(handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
+					self:OnEntrySelected(control) --self.owner:SetSelected -> self.SelectItem -> if not multiselect then self:HideDropdown
+				else
+					self:RunItemCallback(data, data.ignoreCallback)
+				end
+
+				--Show context menu at the entry?
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 				local rightClickCallback = data.contextMenuCallback or data.rightClickCallback
 				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
@@ -3123,7 +3173,47 @@ function dropdownClass:RunItemCallback(item, ignoreCallback)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 74, tos(item), tos(ignoreCallback)) end
 	if self.owner then
 		playSelectedSoundCheck(self, item.entryType)
-		return self.owner:RunItemCallback(item, ignoreCallback) --callls comboBox_base:RunItemCallback
+		return self.owner:RunItemCallback(item, ignoreCallback) --calls comboBox_base:RunItemCallback
+	end
+end
+
+function dropdownClass:UpdateHeight()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 77) end
+	if self.owner then
+		self.owner:UpdateHeight(self.control)
+	end
+end
+
+function dropdownClass:UpdateWidth()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 178) end
+	if self.owner then
+		self.owner:UpdateWidth(self.control)
+	end
+end
+
+--Will be executed from XML handlers -> formattedEventName will be build via method GetFormattedNarrateEvent
+function dropdownClass:OnShow(formattedEventName)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 78) end
+--	self.control:BringWindowToTop()
+
+	if formattedEventName ~= nil then
+		local anchorRight = self.anchorRight and 'Right' or 'Left'
+		local ctrl = self.control
+		lib:FireCallbacks(formattedEventName, ctrl, self)
+
+		throttledCall(function()
+			self:Narrate(formattedEventName, ctrl, nil, nil, anchorRight)
+		end, 100, "_DropdownClassOnShow")
+	end
+end
+
+--Will be executed from XML handlers -> formattedEventName will be build via method GetFormattedNarrateEvent
+function dropdownClass:OnHide(formattedEventName)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 79) end
+	if formattedEventName ~= nil then
+		local ctrl = self.control
+		lib:FireCallbacks(formattedEventName, ctrl, self)
+		self:Narrate(formattedEventName, ctrl)
 	end
 end
 
@@ -3194,7 +3284,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	local longestEntryTextWidth = largestEntryWidth + (ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2) + ZO_SCROLL_BAR_WIDTH
 
 	--Any options.maxDropdownWidth "fixed width" chosen?
-	local maxDropdownWidth = self.m_comboBox:GetMaxDropdownWidth() --todo 20250126 Do not use comboBox directly here as it will return nil! Why does this return nil for a submenu? It was setup in table submenuClass_exposedVariables to copy from owining menu to the submenu , if missing.
+	local maxDropdownWidth = comboBoxObject:GetMaxDropdownWidth()
 	--If a maxWidth was set in the options then use that one, else use the auto-size of the longest entry. If the auto-size of the longest entry is smaller than the maxWidth, then use that instead!
 	local totalDropDownWidth = (maxDropdownWidth ~= nil and maxDropdownWidth < longestEntryTextWidth and maxDropdownWidth) or longestEntryTextWidth or maxWidth
 	--Check if a minWidth is > than totalDropDownWidth
@@ -3223,59 +3313,6 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	ZO_ScrollList_Commit(scrollControl)
 end
 
-function dropdownClass:UpdateHeight()
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 77) end
-	if self.owner then
-		self.owner:UpdateHeight(self.control)
-	end
-end
-
-function dropdownClass:UpdateWidth()
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 178) end
-	if self.owner then
-		self.owner:UpdateWidth(self.control)
-	end
-end
-
-
---Returns the handler naem for OnSho or OnHide for the normal dropdown, submenu and contextMenu
---> OnMenuShow / OnMenuHide
---> OnSubmenuShow / OnSubmenuHide
---> OnContextmenuShow / OnContextmenuHide
-function dropdownClass:GetFormattedNarrateEvent(suffix)
-	local formattedNarrateEvent = ''
-	if self.owner then
-		formattedNarrateEvent = sfor('On%s%s', self.owner:GetMenuPrefix(), suffix)
-	end
-	return formattedNarrateEvent
-end
-
---Will be executed from XML handlers -> formattedEventName will be build via method GetFormattedNarrateEvent
-function dropdownClass:OnShow(formattedEventName)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 78) end
---	self.control:BringWindowToTop()
-
-	if formattedEventName ~= nil then
-		local anchorRight = self.anchorRight and 'Right' or 'Left'
-		local ctrl = self.control
-		lib:FireCallbacks(formattedEventName, ctrl, self)
-
-		throttledCall(function()
-			self:Narrate(formattedEventName, ctrl, nil, nil, anchorRight)
-		end, 100, "_DropdownClassOnShow")
-	end
-end
-
---Will be executed from XML handlers -> formattedEventName will be build via method GetFormattedNarrateEvent
-function dropdownClass:OnHide(formattedEventName)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 79) end
-	if formattedEventName ~= nil then
-		local ctrl = self.control
-		lib:FireCallbacks(formattedEventName, ctrl, self)
-		self:Narrate(formattedEventName, ctrl)
-	end
-end
-
 function dropdownClass:ShowSubmenu(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 80, tos(getControlName(control))) end
 	if self.owner then
@@ -3291,20 +3328,27 @@ function dropdownClass:ShowTooltip(control, data)
 end
 
 function dropdownClass:HideDropdown()
---d("dropdownClass:HideDropdown()")
+d("dropdownClass:HideDropdown()")
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 82) end
 	if self.owner then
 		self.owner:HideDropdown()
 	end
 end
 
+--todo 20250127 Never called?
+--[[
 function dropdownClass:HideSubmenu()
+d("dropdownClass:HideSubmenu()")
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 83) end
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 		self.m_submenu:HideDropdown()
 	end
 end
+]]
 
+---------------------------------------
+-- XML handlers
+----------------------------------------
 --Called from XML "LibScrollableMenu_Dropdown_Behavior"
 function dropdownClass:XMLHandler(selfVar, handlerName)
 	if selfVar == nil or handlerName == nil then return end
@@ -3697,8 +3741,10 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 	self.m_unsortedItems = {}
 
 	--Multiselection
-    self.m_enableMultiSelect = false
-    self.m_maxNumSelections = nil
+    ---v- 20250128 do NOT set this default values to false or true, or else the metattable lookup from parent combobox won't work! -v-
+	--self.m_enableMultiSelect = comboBoxDefaults.m_enableMultiSelect
+    --self.m_maxNumSelections = comboBoxDefaults.m_maxNumSelections
+	-- -^-
     self.m_multiSelectItemData = {}
 
 	self.m_container = comboBoxContainer
@@ -3706,6 +3752,15 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 	self:SetDropdownObject(dropdownObject)
 
 	self:UpdateOptions(options, true)
+
+--[[
+LSM_DebugComboBoxBase = {
+	isSubmenu = self.isSubmenu,
+	self = ZO_ShallowTableCopy(self),
+	options = (options ~= nil and ZO_ShallowTableCopy(options)) or nil,
+}
+]]
+
 	self:SetupDropdownHeader()
 	self:UpdateWidth()
 	self:UpdateHeight()
@@ -3949,9 +4004,10 @@ function comboBox_base:AddCustomEntryTemplates(options, isContextMenu)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 89, tos(normalEntryHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_DIVIDER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_HEADER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_CHECKBOX].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_BUTTON].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_RADIOBUTTON].rowHeight)) end
 end
 
+--Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
 function comboBox_base:OnGlobalMouseUp(eventId, button)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(suppressNextOnGlobalMouseUp)) end
---d("comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
+d("comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
 	if suppressNextOnGlobalMouseUp then
 		suppressNextOnGlobalMouseUp = nil
 		return false
@@ -4024,7 +4080,6 @@ function comboBox_base:GetOptions()
 end
 
 -- Get or create submenu
-
 function comboBox_base:GetSubmenu()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 95) end
 	if not self.m_submenu then
@@ -4468,7 +4523,7 @@ function comboBox_base:UpdateWidth(control)
 		end
 	end
 
-	--d("[LSM]UpdateWidth - minWidth: " .. tos(minWidth).. ", maxWidthInTotal: " ..tos(maxWidthInTotal) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) .. ", newWidth: " .. tos(newWidth))
+	--d(debugPrefix.."UpdateWidth - minWidth: " .. tos(minWidth).. ", maxWidthInTotal: " ..tos(maxWidthInTotal) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) .. ", newWidth: " .. tos(newWidth))
 
 
 	--[181] = "comboBox_base:UpdateWidth - control: %q, maxWidth: %s, maxDropdownWidth: %s, headerWidth: %s",
@@ -4954,6 +5009,7 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu)
 	--Called from Initialization of the object -> self:ResetToDefaults() was called in comboBoxClass:Initialize() already
 	-->And self:UpdateOptions() is then called via comboBox_base.Initialize(...), from where we get here
 	if onInit == true then
+--d(">1 onInit")
 		--Do not change any other options, just init. the combobox -> call self:AddCustomEntryTemplates(options) and set
 		--optionsChanged to false (self.options will be nil at that time)
 		optionsChanged = false
@@ -4966,6 +5022,7 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu)
 		--
 		--For other "non-context menu" calls: Compare the already stored self.options table to the new passed in options table (both could be nil though)
 		optionsChanged = optionsChanged or options ~= self.options
+--d(">2 optionsChanged: " .. tos(optionsChanged))
 	end
 
 	--[[
@@ -4982,6 +5039,7 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu)
 			d(">>resetting options to defaults!")
 		end
 	]]
+--d(">3 ResetToDefaults")
 		self:ResetToDefaults() -- Reset comboBox internal variables of ZO_ComboBox, e.g. m_font, and LSM defaults like visibleRowsDropdown
 
 		--Did the options change: Yes / OR Are the already stored options at the object nil or empty (should happen if self:UpdateOptions(options) was not called before): Yes
@@ -4997,6 +5055,8 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu)
 			options = { visibleRowsDropdown = options }
 		end
 
+--d(">4 SetOptions")
+
 		--Set the passed in options to the ZO_ComboBox .options table (for future comparison, see above at optionsChanged = optionsChanged or options ~= self.options)
 		self:SetOptions(options)
 
@@ -5010,6 +5070,8 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu)
 		-- at function self:ResetToDefaults().
 		-- If any variable was set to the ZO_ComboBox already (e.g. self.m_font) it will be used again from that internal variable, if nothing
 		-- was overwriting it here from passed in options table
+
+--d(">5 Loop options")
 
 		-- LibScrollableMenu custom options
 		if not ZO_IsTableEmpty(options) then
@@ -5127,14 +5189,29 @@ end
 
 function submenuClass:New(...)
 	local newObject = setmetatable({},  {
+		--Use variables from the main LSM comboBox, which are missing in the submenu's combobox, for the  submenu's comboBox, e.g. m_containerWidth, m_font etc.
+		-->All variables which are maintained in table submenuClass_exposedVariables with value = boolean true
+		-->Will be checked via metatables each time as the submenu_combobox[key] is triggered -> lookup [key] in main menu LSM combobox
 		__index = function (obj, key)
+			--Is it a variable - Get it from the parent LSM menu
 			if submenuClass_exposedVariables[key] then
 				local value = obj.m_comboBox[key]
-				if value then
+--[[
+LSM_Debug = LSM_Debug or {}
+LSM_Debug.submenuClass_new = LSM_Debug.submenuClass_new or {}
+LSM_Debug.submenuClass_new[obj] = LSM_Debug.submenuClass_new[obj] or {}
+LSM_Debug.submenuClass_new[obj][key] = value
+
+if key == "m_enableMultiSelect" then
+	d(">main->submenu key="..tos(key).." = " .. tos(value))
+end
+]]
+				if value ~= nil then
 					return value
 				end
 			end
 
+			--Is it a function at the submenuClass (or inherited parent classes)?
 			local value = submenuClass[key]
 			if value then
 				if submenuClass_exposedFunctions[key] then
@@ -5166,6 +5243,7 @@ end
 
 function submenuClass:UpdateOptions(options, onInit)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 141, tos(options), tos(onInit)) end
+
 	self:AddCustomEntryTemplates(self:GetOptions())
 end
 
@@ -5721,7 +5799,7 @@ end
 -->See possible options above AddCustomScrollableComboBoxDropdownMenu
 function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 167, tos(getControlName(comboBoxContainer)), tos(options)) end
---df("[LSM]SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
+--df(debugPrefix.."SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
 
 	--Use specified comboBoxContainer's dropdown to update the options to
 	if comboBoxContainer ~= nil then
@@ -5815,7 +5893,7 @@ end
 function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 171, tos(getControlName(controlToAnchorTo)), tos(options)) end
 --d("°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
---df("[LSM]_-_-_-_-_ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+--df(debugPrefix.."_-_-_-_-_ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
 
 	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table -> Here: For the contextMenu
 	local optionsForCallbackFire = options or {}
@@ -6075,7 +6153,7 @@ local function onAddonLoaded(event, name)
 		end
 	end)
 
-	--Register a scene manager callback for the SetInUIMode function so any menu opened/closed closes the context menus of LSM too
+	--Register a scene manager callback for the Show function so any menu opened/closed closes the context menus of LSM too
 	SecurePostHook(SCENE_MANAGER, 'Show', function(self, ...)
 		hideCurrentlyOpenedLSMAndContextMenu()
 	end)
@@ -6146,13 +6224,12 @@ LibScrollableMenu = lib
 -Added options.OnSelectionBlockedCallback
 
 2501_3 Bugs:
-a) Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options.noSelectionText properly
-b) Submenus do close upon selection of an entry (dropdownObject:Refresh isn't the reason, it only uses ZO_ScrollList_RefreshVisible(row))
+a) OPEN - Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options.noSelectionText properly
+b) FIXED - Submenus do close upon selection of an entry
+	--20250129 Reason: m_enableMultiSelect was set = false in submenu initialization and thus the metatable lookup from parent LSM combobox was not used!
+	-------> Also: Workaround implemented into dropdownClass:OnEntryMouseUp: checking self.owner.m_parentMenu.m_enableMultiSelect and using this for the submenu
 
-	---> It will be called from dropdownClass:OnEntryMouseUp, and then call the ZO_ComboBoxDropdown_Keyboard.OnEntrySelected -> ZO_ComboBox:SetSelected -> ZO_ComboBox:SelectItem -> then:
-	-----> If no multiselection is enabled: ZO_ComboBox_Base.SelectItem -> ZO_ComboBox_Base:ItemSelectedClickHelper(item, ignoreCallback) -> item.callback(comboBox, itemName, item, selectionChanged, oldItem) function
-	-----> If multiselection is enabled: ZO_ComboBox:SelectItem contains the code via self:AddItemToSelected etc.
-c) Submenus do not show the selected highlight as they open again (maybe related to b)?)
+c) OPEN - Submenus do not show the selected highlight if multiselection is enabled, and they do not show as they open again (maybe related to b)?)
 
 
 [Fixed]

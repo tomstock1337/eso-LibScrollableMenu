@@ -97,10 +97,10 @@ local function test()
 		local options = {
 			enableMultiSelect = true, --todo 20250127 test
 			maxNumSelections = 2,
-			maxNumSelectionsErrorText =		"[LSM]ERROR - Maximum items selected already",
-			multiSelectionTextFormatter = 	"<<$d>> selected",
+			maxNumSelectionsErrorText =		debugPrefix.."ERROR - Maximum items selected already",
+			multiSelectionTextFormatter = 	"<<1>> selected",
 			noSelectionText = 				"",
-			OnSelectionBlockedCallback = function() d("[LSM]ERROR - Selection of entry was blocked!") end,
+			OnSelectionBlockedCallback = function() d(debugPrefix.."ERROR - Selection of entry was blocked!") end,
 
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
