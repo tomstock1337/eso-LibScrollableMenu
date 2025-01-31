@@ -3133,7 +3133,7 @@ LSM_Debug = {
 --d(debugPrefix .. "OnEntryMouseUp-multiSelection: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(comboBox.isSubmenu))
 
 				if not ignoreHandler and runHandler(handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
-					self:OnEntrySelected(control) --self.owner:SetSelected -> self.SelectItem -> if not multiselect then self:HideDropdown
+					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
 					self:RunItemCallback(data, data.ignoreCallback)
 				end
@@ -3328,11 +3328,40 @@ function dropdownClass:ShowTooltip(control, data)
 end
 
 function dropdownClass:HideDropdown()
-d("dropdownClass:HideDropdown()")
+--d("dropdownClass:HideDropdown()")
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 82) end
 	if self.owner then
 		self.owner:HideDropdown()
 	end
+end
+
+function dropdownClass:Refresh(item)
+d("[LSM]dropdownClass:Refresh - item: " ..tos(item))
+    local entryData = nil
+    if item then
+        local dataList = ZO_ScrollList_GetDataList(self.scrollControl)
+
+LSM_DebugRefresh = {
+	item = item,
+	dataList = ZO_ShallowTableCopy(dataList),
+}
+
+        for i, data in ipairs(dataList) do
+LSM_DebugRefresh.datas = LSM_DebugRefresh.datas or {}
+LSM_DebugRefresh.datas[i] = {
+	data = data,
+	dataSource = data:GetDataSource(),
+	wasItem = data:GetDataSource() == item,
+}
+            if data:GetDataSource() == item then
+d(">found item")
+                entryData = data
+                break
+            end
+        end
+    end
+
+    ZO_ScrollList_RefreshVisible(self.scrollControl, entryData)
 end
 
 --todo 20250127 Never called?
@@ -4007,7 +4036,7 @@ end
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
 function comboBox_base:OnGlobalMouseUp(eventId, button)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(suppressNextOnGlobalMouseUp)) end
-d("comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
+--d("comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
 	if suppressNextOnGlobalMouseUp then
 		suppressNextOnGlobalMouseUp = nil
 		return false
@@ -6230,7 +6259,9 @@ b) FIXED - Submenus do close upon selection of an entry
 	-------> Also: Workaround implemented into dropdownClass:OnEntryMouseUp: checking self.owner.m_parentMenu.m_enableMultiSelect and using this for the submenu
 
 c) OPEN - Submenus do not show the selected highlight if multiselection is enabled, and they do not show as they open again (maybe related to b)?)
-
+	-> Reason:   onMouseUp -> self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem -> ZO_ComboBoxDropdown_Keyboard:Refresh(item) ->
+	-> if data:GetDataSource() == item is not true for the submenu!!! Seems that self.m_dropdownObject:Refresh(item) leads to local dataList = ZO_ScrollList_GetDataList(self.scrollControl)
+	-> but self.scrollControl is always the mainMenu scrollControl then, and not the one of the submenu?
 
 [Fixed]
 #2501_1. Fix header with searchbox to have a minimum width
