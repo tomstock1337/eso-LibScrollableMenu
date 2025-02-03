@@ -659,6 +659,7 @@ local submenuClass_exposedVariables = {
 --If submenuClass_exposedFunctions[variable] == true: if submenuClass[key] is not nil, returns submenuClass[key](submenu.m_comboBox, ...)
 local submenuClass_exposedFunctions = {
 	["SelectItem"] = true, -- (item, ignoreCallback)
+	["IsItemSelected"] = true,
 }
 
 
@@ -2796,7 +2797,7 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	]]
 	-->!!! This will be the place where the function HighlightControl above calls the highlightTemplateOrFunction function !!!
 	scrollCtrl.highlightTemplateOrFunction = function(control)
-d(debugPrefix .. "scrollCtrl.highlightTemplateOrFunction - " .. tos(getControlName(control)))
+--d(debugPrefix .. "scrollCtrl.highlightTemplateOrFunction - " .. tos(getControlName(control)))
 		if selfVar.owner then
 			--return selfVar.owner:GetHighlightTemplate(control)
 			local XMLVirtualHighlightTemplateOfRow = selfVar.owner:GetHighlightTemplate(control)
@@ -3855,7 +3856,7 @@ local function getDefaultXMLTemplates(selfVar)
 			template = 'LibScrollableMenu_ComboBoxEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
-d(debugPrefix .. "XMLtemplate LSM_ENTRY_TYPE_NORMAL, setupFunc")
+--d(debugPrefix .. "XMLtemplate LSM_ENTRY_TYPE_NORMAL, setupFunc")
 				selfVar:SetupEntryLabel(control, data, list, LSM_ENTRY_TYPE_NORMAL)
 			end,
 		},
@@ -4274,7 +4275,7 @@ function comboBox_base:UpdateHighlightTemplate(control, data, isSubMenu, isConte
 	isContextMenu = isContextMenu or self.isContextMenu
 	local highlightTemplateData = self:GetHighlightTemplateData(control, data, isSubMenu, isContextMenu)
 	local highlightTemplate = (highlightTemplateData ~= nil and highlightTemplateData.template) or nil
-d(debugPrefix .. "UpdateHighlightTemplate - highlightTemplateData: " .. tos(highlightTemplateData) .. ", override: " .. tos(highlightTemplateData and highlightTemplateData.overwriteHighlightTemplate) .. "; current: " .. tos(control.m_data.m_highlightTemplate))
+--d(debugPrefix .. "UpdateHighlightTemplate - highlightTemplateData: " .. tos(highlightTemplateData) .. ", override: " .. tos(highlightTemplateData and highlightTemplateData.overwriteHighlightTemplate) .. "; current: " .. tos(control.m_data.m_highlightTemplate))
 	if control.m_data then
 		if highlightTemplateData == nil then
 			control.m_data.m_highlightTemplate = nil --defaultHighlightTemplateData.template ???
