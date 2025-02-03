@@ -611,6 +611,7 @@ local submenuClass_exposedVariables = {
 	["m_font"] = true,
 	["m_highlightColor"] = true,
 	["m_maxNumSelections"] = true,
+	["m_multiSelectItemData"] = true,
 	["m_overrideMaxSelectionsErrorText"] = true,
 	["multiSelectionTextFormatter"] = true,
 	["noSelectionText"] = true,
@@ -650,8 +651,8 @@ local submenuClass_exposedVariables = {
 	["narrateData"] = true,
 	["useDefaultHighlightForSubmenuWithCallback"] = true,
 	["visibleRowsSubmenu"] = true, --we only need this "visibleRowsSubmenu" for the submenus, mainMenu uses visibleRowsDropdown
-	["XMLRowTemplates"] = true, --TODO: is this being overwritten?
-	["XMLRowHighlightTemplates"] = true, --TODO: is this being overwritten?
+	["XMLRowTemplates"] = true,
+	["XMLRowHighlightTemplates"] = true,
 }
 
 -- Pass-through functions:
@@ -1866,8 +1867,6 @@ local function checkIfHiddenForReasons(selfVar, button, isContextMenu, owningWin
 			--todo 2024-08-07 Submenu -> Context menu -> Click on entry at the submenu (but outside the context menu) closes aLL menus -> why? It must only close the contextMenu then
 			if isOwnedByComboBox == true then
 				if not comboBox then
-					--todo check if submenu opened -> How?
-
 					--d("<1not comboBox -> true")
 					returnValue = true
 				else
@@ -2528,7 +2527,6 @@ local handlerFunctions  = {
 		end,
 		[LSM_ENTRY_TYPE_SUBMENU] = function(control, data)
 			local dropdown = onMouseExit(control, data, has_submenu)
-			--TODO: This is onMouseExit, MouseIsOver(control) should not apply.
 			if not (MouseIsOver(control) or dropdown:IsEnteringSubmenu()) then
 				dropdown:OnMouseExitTimeout(control)
 			end
@@ -3020,12 +3018,16 @@ function dropdownClass:IsEnteringSubmenu()
 	return false
 end
 
+--todo 20250203 Why is this function here? As aS proxy to the comboBoxClass:IsItemSelected function?
 function dropdownClass:IsItemSelected(item)
+--d(debugPrefix .. "dropdownClass:IsItemSelected - item: " ..tos(item))
 	if self.owner and self.owner.IsItemSelected then
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 65, tos(self.owner:IsItemSelected(item))) end
+--d(">dropdownClass:IsItemSelected 1")
 		return self.owner:IsItemSelected(item)
 	end
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 66) end
+--d(">dropdownClass:IsItemSelected returning false")
 	return false
 end
 
@@ -3337,55 +3339,38 @@ function dropdownClass:HideDropdown()
 	end
 end
 
-local counter = 0
+
 local function compareDrodpwonDataList(selfVar, scrollControl, item)
-counter = counter + 1
 	local dataList = ZO_ScrollList_GetDataList(scrollControl)
 
-LSM_DebugRefresh = {
-	self = ZO_ShallowTableCopy(selfVar),
-	item = item,
-	dataList = ZO_ShallowTableCopy(dataList),
-	activeControls = ZO_ShallowTableCopy(scrollControl.activeControls),
-}
-
-
 	for i, data in ipairs(dataList) do
-LSM_DebugRefresh.datas = LSM_DebugRefresh.datas or {}
-LSM_DebugRefresh.datas[counter] = {}
-LSM_DebugRefresh.datas[counter][i] = {
-	data = data,
-	dataSource = data:GetDataSource(),
-	wasItem = data:GetDataSource() == item,
-}
 		if data:GetDataSource() == item then
-	d(">found item")
 			return data
 		end
 	end
 end
 
 --Called from clearNewStatus, and dropdownClass:OnEntryMouseUp -> dropdownClass:OnEntrySelected -> --self(= dropdownClass).owner(= comboBoxClass of parentMenu?!):SetSelected -> self(comboBoxClass):SelectItem -> self.m_dropdownObject(dropdownClass):Refresh()
+-->Needed to make multiselection for submenus work! Checked scrollControl must be the one of the submenu and not the parentMenu's!
 function dropdownClass:Refresh(item)
-d("[LSM]dropdownClass:Refresh - item: " ..tos(item))
+--d("[LSM]dropdownClass:Refresh - item: " ..tos(item))
 	local entryData = nil
 	local scrollControl = self.scrollControl
 
 	if item then
 
-		--todo 20250131 self is the dropdownClass of the parentMenu, if a submenu item was clicked and the OnMouseUp -> comboBox:SetSelected -> dropdown refresh was called?
-		--todo so why isn't self the dropdownClass of the submenu where the entry was clicked? That way the comparison of self.scrollControl's data:GetDataSource() is always wrong with the item passed in
-		--todo and the items of the submenu never get selected, or updated properly
+		--20250131 self is the dropdownClass of the parentMenu, if a submenu item was clicked and the OnMouseUp -> comboBox:SetSelected -> dropdown refresh was called?
+		--so why isn't self the dropdownClass of the submenu where the entry was clicked? That way the comparison of self.scrollControl's data:GetDataSource() is always wrong with the item passed in
+		--and the items of the submenu never get selected, or updated properly
 		local submenu = self.m_submenu
 		local isSubmenuShown = (submenu ~= nil and submenu.m_isDropdownVisible == true) or false
 		if isSubmenuShown then
-d(">submenu dropdown opened!")
 			--Get the dropdown of the submenu
 			local dropdownObjectOfOpenedSubmenu = submenu.m_dropdownObject
 			if dropdownObjectOfOpenedSubmenu ~= nil then
 				scrollControl = dropdownObjectOfOpenedSubmenu.scrollControl
 				if scrollControl ~= nil then
-d(">>found submenu scrollControl: " .. tos(#ZO_ScrollList_GetDataList(scrollControl)) .. ", self.scrollControl: " .. tos(#ZO_ScrollList_GetDataList(self.scrollControl)))
+--d(">>found submenu scrollControl: " .. tos(#ZO_ScrollList_GetDataList(scrollControl)) .. ", self.scrollControl: " .. tos(#ZO_ScrollList_GetDataList(self.scrollControl)))
 					--If a submenu is "still opened" (because we moved the mouse above an entry that opens a submenu) but another non-submenu item was clicked, it accounts for the submenu scroll...
 					entryData = compareDrodpwonDataList(self, scrollControl, item)
 				end
@@ -3800,8 +3785,8 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
     ---v- 20250128 do NOT set this default values to false or true, or else the metattable lookup from parent combobox won't work! -v-
 	--self.m_enableMultiSelect = comboBoxDefaults.m_enableMultiSelect
     --self.m_maxNumSelections = comboBoxDefaults.m_maxNumSelections
+    --self.m_multiSelectItemData = {}
 	-- -^-
-    self.m_multiSelectItemData = {}
 
 	self.m_container = comboBoxContainer
 	local dropdownObject = self:GetDropdownObject(comboBoxContainer, depth)
@@ -4416,112 +4401,6 @@ function comboBox_base:SetOptions(options)
 	self.options = options
 end
 
-function comboBox_base:SetupEntryBase(control, data, list)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 104, tos(getControlName(control))) end
-	self.m_dropdownObject:SetupEntryBase(control, data, list) --Calls ZO_ComboBoxDropdown_Keyboard:SetupEntryBase where m_selectionHighlight is used for multiSelect
-	--todo 20250201 SetupEntryBase and then IsItemSelected is NOT called for a submenu's clicked item here?
-	--Callstack for a parentMenu where it works is:
-	--[[
-[LibScrollableMenu]UpdateHighlightTemplate - highlightTemplateData: table: 000001F168DC4410, override: true; current: LibScrollableMenu_Highlight_Normal
-|rstack traceback:
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:5268: in function 'comboBoxClass:IsItemSelected'
-|caaaaaa<Locals> self = [table:2]{enableFilter = T, currentSelectedItemText = "1 selected", m_nextFree = 2, m_font = "ZoFontGame", m_maxNumSelectionsErrorText = "Maximale Auswahl erreicht.", containerMinWidth = 632.85205078125, itemYPad = 0, noSelectionText = "", m_sortsItems = F, maxHeight = 450, headerFont = "ZoFontGame", multiSelectionTextFormatter = "<<1>> selected", baseEntryHeight = 25, visibleRows = 10, m_sortOrder = T, m_overrideMaxSelectionsErrorText = "[LibScrollableMenu]ERROR - Max...", m_height = 474, m_maxNumSelections = 2, headerCollapsible = T, highlightContextMenuOpeningControl = T, m_enableMultiSelect = T, visibleRowsSubmenu = 10, m_highlightTemplate = "ZO_SelectionHighlight", m_isDropdownVisible = T, headerCollapsed = T, disableFadeGradient = F, m_containerWidth = 632.85205078125, m_name = "LibScrollableMenuTestDropdown...", filterString = "", m_spacing = 0, horizontalAlignment = 0}, item = [table:3]{isCheckbox = F, isHeader = F, enabled = T, isRadioButton = F, customEntryTemplate = "LibScrollableMenu_ComboBoxEntr...", entryType = 1, hasSubmenu = F, name = "Name used as value, label show...", label = "Entry with label 1", isButton = F, isDivider = F} </Locals>|r
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:413: in function 'ZO_ComboBoxDropdown_Keyboard:SetupEntryBase'
-|caaaaaa<Locals> self = [table:4]{spacing = 0, nextScrollTypeId = 17}, control = ud, data = [table:5]{typeId = 3, m_highlightTemplate = "ZO_SelectionHighlight", bottom = 406, top = 381, m_index = 18}, list = ud </Locals>|r
-
-----------vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:4421: in function 'comboBox_base:SetupEntryBase'
-|caaaaaa<Locals> self = [table:2], control = ud, data = [table:5], list = ud </Locals>|r
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:4707: in function 'comboBox_base:SetupEntryLabelBase'
-|caaaaaa<Locals> self = [table:2], control = ud, data = [table:5], list = ud, font = "ZoFontGame", color = [table:6]{r = 0.77254909276962, g = 0.7607843875885, b = 0.61960786581039, a = 1}, horizontalAlignment = 0 </Locals>|r
-----------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:4718: in function 'comboBox_base:SetupEntryLabel'
-|caaaaaa<Locals> self = [table:2], control = ud, data = [table:5], list = ud, realEntryType = 1 </Locals>|r
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:3874: in function 'setupCallback'
-|caaaaaa<Locals> control = ud, data = [table:5], list = ud </Locals>|r
-
-/EsoUI/Libraries/ZO_Templates/ScrollTemplates.lua:2299: in function 'RefreshScrollListControl'
-|caaaaaa<Locals> self = ud, control = ud, dataEntry = [table:5], dataEntryData = [table:5], dataTypeInfo = [table:7]{height = 25, selectable = T} </Locals>|r
-/EsoUI/Libraries/ZO_Templates/ScrollTemplates.lua:2311: in function 'ZO_ScrollList_RefreshVisible'
-|caaaaaa<Locals> self = ud, optionalFilterData = [table:5], _ = 18, control = ud </Locals>|r
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:3401: in function 'dropdownClass:Refresh'
-|caaaaaa<Locals> self = [table:4], item = [table:3], entryData = [table:5], scrollControl = ud </Locals>|r
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:373: in function 'ZO_ComboBox:SelectItem'
-|caaaaaa<Locals> self = [table:2], item = [table:3], newSelectionStatus = F </Locals>|r
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:149: in function 'ZO_ComboBox:SetSelected'
-|caaaaaa<Locals> self = [table:2], index = 18, item = [table:3] </Locals>|r
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:629: in function 'ZO_ComboBoxDropdown_Keyboard:OnEntrySelected'
-|caaaaaa<Locals> self = [table:4], control = ud </Locals>|r
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:3138: in function 'dropdownClass:OnEntryMouseUp'
-|caaaaaa<Locals> self = [table:4], control = ud, button = 1, upInside = T, ignoreHandler = F, ctrl = F, alt = F, shift = F, data = [table:3], comboBox = [table:2] </Locals>|r
-LibScrollableMenuTestDropdown1Scroll13Row1_MouseUp:5: in function '(main chunk)'
-|caaaaaa<Locals> self = ud, button = 1, upInside = T, ctrl = F, alt = F, shift = F, command = F, dropdown = [table:4] </Locals>|r
-	]]
-
-
-	--Submenu clicked entry callstack does not execute 'comboBox_base:SetupEntryBase'
-	--[[
-[LibScrollableMenu]UpdateHighlightTemplate - highlightTemplateData: table: 000001F168DC4410, override: true; current: LibScrollableMenu_Highlight_Red
-|rstack traceback:
-user:/AddOns/LibDebugLogger/Initialization.lua:175: in function 'LogChatMessage'
-|caaaaaa<Locals> self = [table:1]{fireCallbackDepth = 0}, text = "[LibScrollableMenu]UpdateHighl..." </Locals>|r
-/EsoUI/Libraries/Utility/ZO_Hook.lua:18: in function 'AddDebugMessage'
-/EsoUI/Libraries/Globals/DebugUtils.lua:7: in function 'EmitMessage'
-|caaaaaa<Locals> text = "[LibScrollableMenu]UpdateHighl..." </Locals>|r
-/EsoUI/Libraries/Globals/DebugUtils.lua:43: in function 'd'
-|caaaaaa<Locals> i = 1, value = "[LibScrollableMenu]UpdateHighl..." </Locals>|r
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:4292: in function 'comboBox_base:UpdateHighlightTemplate'
-|caaaaaa<Locals> self = [table:2]{m_nextFree = 3, containerMinWidth = 50, m_height = 260, breadcrumbName = "SubmenuBreadcrumb", m_isDropdownVisible = T, m_containerWidth = 250, baseEntryHeight = 25, isSubmenu = T}, control = ud, data = [table:3]{typeId = 3, m_highlightTemplate = "LibScrollableMenu_Highlight_Re...", bottom = 25, top = 0, m_index = 1}, highlightTemplateData = [table:4]{overwriteHighlightTemplate = T, template = "LibScrollableMenu_Highlight_Re..."}, highlightTemplate = "LibScrollableMenu_Highlight_Re..." </Locals>|r
-
-----------vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-MISSING MISSING MISSING MISSING MISSING MISSING
-MISSING MISSING MISSING MISSING MISSING MISSING
-MISSING MISSING MISSING MISSING MISSING MISSING
-
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:4421: in function 'comboBox_base:SetupEntryBase'
-|caaaaaa<Locals> self = [table:2], control = ud, data = [table:5], list = ud </Locals>|r
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:4707: in function 'comboBox_base:SetupEntryLabelBase'
-|caaaaaa<Locals> self = [table:2], control = ud, data = [table:5], list = ud, font = "ZoFontGame", color = [table:6]{r = 0.77254909276962, g = 0.7607843875885, b = 0.61960786581039, a = 1}, horizontalAlignment = 0 </Locals>|r
-
-MISSING MISSING MISSING MISSING MISSING MISSING
-MISSING MISSING MISSING MISSING MISSING MISSING
-MISSING MISSING MISSING MISSING MISSING MISSING
-----------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:4722: in function 'comboBox_base:SetupEntryLabel'
-|caaaaaa<Locals> self = [table:2], control = ud, data = [table:3], list = ud, realEntryType = 1 </Locals>|r
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:3874: in function 'setupCallback'
-|caaaaaa<Locals> control = ud, data = [table:3], list = ud </Locals>|r
-
-/EsoUI/Libraries/ZO_Templates/ScrollTemplates.lua:2299: in function 'RefreshScrollListControl'
-|caaaaaa<Locals> self = ud, control = ud, dataEntry = [table:3], dataEntryData = [table:3], dataTypeInfo = [table:5]{height = 25, selectable = T} </Locals>|r
-/EsoUI/Libraries/ZO_Templates/ScrollTemplates.lua:2311: in function 'ZO_ScrollList_RefreshVisible'
-|caaaaaa<Locals> self = ud, optionalFilterData = [table:3], _ = 1, control = ud </Locals>|r
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:3401: in function 'dropdownClass:Refresh'
-|caaaaaa<Locals> self = [table:6]{spacing = 0, nextScrollTypeId = 17}, item = [table:7]{isCheckbox = F, isHeader = F, enabled = T, customEntryTemplate = "LibScrollableMenu_ComboBoxEntr...", highlightContextMenuOpeningControl = T, isRadioButton = F, m_highlightTemplate = "LibScrollableMenu_Highlight_Re...", entryType = 1, hasSubmenu = F, name = "Submenu Entry Test 1 (contextM...", isButton = F, isDivider = F}, entryData = [table:3], scrollControl = ud </Locals>|r
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:373: in function 'ZO_ComboBox:SelectItem'
-|caaaaaa<Locals> self = [table:8]{enableFilter = T, currentSelectedItemText = "", m_nextFree = 2, m_font = "ZoFontGame", m_maxNumSelectionsErrorText = "Maximale Auswahl erreicht.", containerMinWidth = 632.85205078125, itemYPad = 0, noSelectionText = "", m_sortsItems = F, maxHeight = 450, headerFont = "ZoFontGame", multiSelectionTextFormatter = "<<1>> selected", baseEntryHeight = 25, visibleRows = 10, m_sortOrder = T, m_overrideMaxSelectionsErrorText = "[LibScrollableMenu]ERROR - Max...", m_height = 474, m_maxNumSelections = 2, headerCollapsible = T, highlightContextMenuOpeningControl = T, m_enableMultiSelect = T, visibleRowsSubmenu = 10, m_highlightTemplate = "ZO_SelectionHighlight", m_isDropdownVisible = T, headerCollapsed = T, disableFadeGradient = F, m_containerWidth = 632.85205078125, m_name = "LibScrollableMenuTestDropdown...", filterString = "", m_spacing = 0, horizontalAlignment = 0}, item = [table:7], newSelectionStatus = F </Locals>|r
-(tail call): ?
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:149: in function 'ZO_ComboBox:SetSelected'
-|caaaaaa<Locals> self = [table:2], index = 1, item = [table:7] </Locals>|r
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:629: in function 'ZO_ComboBoxDropdown_Keyboard:OnEntrySelected'
-|caaaaaa<Locals> self = [table:9]{spacing = 0, anchorRight = T, nextScrollTypeId = 17}, control = ud </Locals>|r
-user:/AddOns/LibScrollableMenu/LibScrollableMenu.lua:3138: in function 'dropdownClass:OnEntryMouseUp'
-|caaaaaa<Locals> self = [table:9], control = ud, button = 1, upInside = T, ignoreHandler = F, ctrl = F, alt = F, shift = F, data = [table:7], comboBox = [table:2], isSubmenu = T </Locals>|r
-LibScrollableMenuTestDropdown1Scroll13Row1_MouseUp:5: in function '(main chunk)'
-|caaaaaa<Locals> self = ud, button = 1, upInside = T, ctrl = F, alt = F, shift = F, command = F, dropdown = [table:9] </Locals>|r
-	]]
-
-
-
-	control.callback = data.callback
-	control.contextMenuCallback = data.contextMenuCallback
-	control.closeOnSelect = (control.selectable and type(data.callback) == 'function') or false
-
-    control:SetMouseEnabled(data.enabled ~= false)
-end
-
 function comboBox_base:Show()
 	self.m_dropdownObject:Show(self, self.m_sortedItems, self.containerMinWidth, self.m_containerWidth, self.m_height, self:GetSpacing())
 	self.m_dropdownObject.control:BringWindowToTop()
@@ -4779,6 +4658,17 @@ do -- Row setup functions
 		return buttonControl, buttonGroup
 	end
 
+	function comboBox_base:SetupEntryBase(control, data, list)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 104, tos(getControlName(control))) end
+		self.m_dropdownObject:SetupEntryBase(control, data, list) --Calls ZO_ComboBoxDropdown_Keyboard:SetupEntryBase where m_selectionHighlight is used for multiSelect
+
+		control.callback = data.callback
+		control.contextMenuCallback = data.contextMenuCallback
+		control.closeOnSelect = (control.selectable and type(data.callback) == 'function') or false
+
+		control:SetMouseEnabled(data.enabled ~= false)
+	end
+
 	function comboBox_base:SetupEntryDivider(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 113, tos(getControlName(control)), tos(list)) end
 		control.typeId = LSM_ENTRY_TYPE_DIVIDER
@@ -4799,44 +4689,20 @@ do -- Row setup functions
 		horizontalAlignment = horizontalAlignment or self.horizontalAlignment
 
 		applyEntryFont(control, font, color, horizontalAlignment)
-		self:SetupEntryBase(control, data, list)
+		self:SetupEntryBase(control, data, list, realEntryType)
 	end
 
 	function comboBox_base:SetupEntryLabel(control, data, list, realEntryType)
-if realEntryType == LSM_ENTRY_TYPE_NORMAL then
-	d(debugPrefix .. "comboBox_base:SetupEntryLabel")
-end
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 115, tos(getControlName(control)), tos(list)) end
 		control.typeId = LSM_ENTRY_TYPE_NORMAL
 		addIcon(control, data, list)
 		addLabel(control, data, list)
-		self:SetupEntryLabelBase(control, data, list)
+		self:SetupEntryLabelBase(control, data, list, realEntryType)
 
 		if realEntryType == LSM_ENTRY_TYPE_NORMAL then
 			--Update the control.m_highlightTemplate
 			self:UpdateHighlightTemplate(control, data, nil, nil)
 		end
-
-		--todo 20250201 Submenu with multiselect clicked, setupCallback of entryType of the scrolllist called, got here:
-		--highlight row is not set to stick active and reapply while submenu reopens later? Why not?
-		--It works for non-submenu entries, but not with the submenu entries :(
-		--> Handled in vanilla code by ZO_ComboBoxDropdown_Keyboard:SetupEntryBase(control, data, list) ->
-
-		--todo 20250201 Why does it only fail at submenus, and works from the scratch in normal parentMenus?
---[[
-		--Code here is never true as it seems, so IsItemSelected fails? Overwritten at comboBoxClass to debug thus
-		if self.IsItemSelected(data:GetDataSource()) then
-d(">multiselection is enabled - selected #" .. tos(#self.m_multiSelectItemData))
-			if not control.m_selectionHighlight then
-				control.m_selectionHighlight = CreateControlFromVirtual("$(parent)Selection", control, "ZO_ComboBoxEntry_SelectedHighlight")
-d(">selection highlight is missing")
-			end
-
-			control.m_selectionHighlight:SetHidden(false)
-		elseif control.m_selectionHighlight then
-			control.m_selectionHighlight:SetHidden(true)
-		end
-]]
 	end
 
 	function comboBox_base:SetupEntrySubmenu(control, data, list)
@@ -5358,30 +5224,6 @@ function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
 	self:UpdateWidth(dropdownControl) --> Update self.m_containerWidth properly for self:Show (in self:UpdateHeight) call (including the now, in refreshDropdownHeader, updated header's width)
 	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now, in refreshDropdownHeader, updated header's height)
 end
-
-function comboBoxClass:IsItemSelected(item)
-d(debugPrefix .. "comboBoxClass:IsItemSelected - multiSelect: " ..tos(self.m_enableMultiSelect))
-LSM_DebugIsItemSelected = {
-	self = ZO_ShallowTableCopy(self),
-	item = ZO_ShallowTableCopy(item),
-	isMultiSelectEnabled = self.m_enableMultiSelect,
-	multiSelectedItemData = ZO_ShallowTableCopy(self.m_multiSelectItemData),
-}
-
-    if not self.m_enableMultiSelect then
-        return false
-    end
-
-    for i, itemData in ipairs(self.m_multiSelectItemData) do
-        if itemData == item then
-d(">found selected itemData")
-            return true
-        end
-    end
-
-    return false
-end
-
 
 --------------------------------------------------------------------
 -- submenuClass
@@ -6429,16 +6271,10 @@ b) FIXED - Submenus do close upon selection of an entry
 	--20250129 Reason: m_enableMultiSelect was set = false in submenu initialization and thus the metatable lookup from parent LSM combobox was not used!
 	-------> Also: Workaround implemented into dropdownClass:OnEntryMouseUp: checking self.owner.m_parentMenu.m_enableMultiSelect and using this for the submenu
 
-c) OPEN - Submenus do not show the selected highlight if multiselection is enabled, and they do not show as they open again (maybe related to b)?)
-	-> Reason:   onMouseUp -> self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem -> ZO_ComboBoxDropdown_Keyboard:Refresh(item) ->
-	-> if data:GetDataSource() == item is not true for the submenu!!! Seems that self.m_dropdownObject:Refresh(item) leads to local dataList = ZO_ScrollList_GetDataList(self.scrollControl)
-	-> but self.scrollControl is always the mainMenu scrollControl then, and not the one of the submenu
+c) FIXED - Submenus do not show the selected highlight if multiselection is enabled, and they do not show as they open again
+	--20250203 Reason: dropdownClass:Refresh needed to account for scrollControl of submenus, and m_multiSelectItemData must be read from parentMenu, and not set = {} at each submenu again!
+d) Open - Nested submenus do not update the selected entries highlight directly, but first as the submenu reopens (mouse moved away and back to it)
 
-	-> Fixed in function dropdownClass:Refresh now:
-	----> But the highlight controls still do not "stick" to the selected submenus and they do not show if the submenu is closed and reopened
-	------> todo: 20250201 function ZO_ScrollListRefreshVisible(scrollControl, itemData) is not updoating properly here
-	--------> calls RefreshScrollListControl(self, control, overrideSetupCallback) -> Calls the setupCallback of the item
-	----------> todo: 20250201 See comment at comboBox_base:SetupEntryBase -> about missing calls to SetupEntryLabelBase and SetupEntry Label at a clicked submenu item!
 
 [Fixed]
 #2501_1. Fix header with searchbox to have a minimum width
