@@ -95,9 +95,17 @@ local function test()
 		-- Options for the main combobox menu
 		--==============================================================================================================
 		local options = {
+			enableMultiSelect = true, --todo 20250127 test
+			maxNumSelections = 2,
+			maxNumSelectionsErrorText =		debugPrefix.."ERROR - Maximum items selected already",
+			multiSelectionTextFormatter = 	"<<1>> selected",
+			noSelectionText = 				"",
+			OnSelectionBlockedCallback = function() d(debugPrefix.."ERROR - Selection of entry was blocked!") end,
+
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
 			maxDropdownHeight = 450,
+			--maxDropdownWidth = 450,
 
 			--Big yellow headers!
 			--headerFont = "ZoFontHeader3",
