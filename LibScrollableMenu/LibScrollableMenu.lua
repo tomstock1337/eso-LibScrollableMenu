@@ -1008,8 +1008,11 @@ do
 		g_currentBottomLeftHeader = controlId
 
 		local height = control:GetHeight()
+
+--d(">header_applyAnchorSetToControl-controlId: " .. tos(controlId) .. ", heightOfCtrl: " .. tos(height) .. ", controlName: " ..getControlName(control))
+
 		if controlId == TOGGLE_BUTTON then
-			-- We want to keep height if collapsed but not add height for the button if not.
+			-- We want to keep height if collapsed, but not add height for the button if not collapsed.
 			height = collapsed and height or 0
 		--The control processed is the collapsed header's toggle button "click extension"
 		elseif controlId == TOGGLE_BUTTON_CLICK_EXTENSION then
@@ -1025,7 +1028,6 @@ do
 				control:SetDimensions(0, 0)
 			end
 		end
-
 		return height
 	end
 
@@ -1037,6 +1039,7 @@ do
 	end
 	
 	local function header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled)
+--d(debugPrefix .. "header_updateAnchors - collapsed: " ..tos(collapsed) .. "; isFilterEnabled: " ..tos(isFilterEnabled))
 		--local headerHeight = collapsed and 0 or 17
 		local headerHeight = 0
 		local controls = headerControl.controls
@@ -1063,6 +1066,7 @@ do
 			end
 		end
 
+--d(">headerHeight: " ..tos(headerHeight))
 		if headerHeight > 0 then
 			if not collapsed then
 				headerHeight = headerHeight + (ROW_OFFSET_Y * 3)
@@ -1147,6 +1151,8 @@ do
 	end
 
 	refreshDropdownHeader = function(comboBox, headerControl, options, collapsed)
+--d(debugPrefix .. "refreshDropdownHeader - collapsed: " ..tos(collapsed))
+
 		local controls = headerControl.controls
 
 		headerControl:SetHidden(true)
@@ -1170,6 +1176,7 @@ do
 		refreshResults[TOGGLE_BUTTON] = header_processData(controls[TOGGLE_BUTTON], getValueOrCallback(options.headerCollapsible, options))
 		refreshResults[TOGGLE_BUTTON_CLICK_EXTENSION] = header_processData(controls[TOGGLE_BUTTON_CLICK_EXTENSION], getValueOrCallback(options.headerCollapsible, options))
 
+		headerControl:SetDimensionConstraints(MIN_WIDTH_WITHOUT_SEARCH_HEADER, 0)
 		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled)
 	end
 end
@@ -4491,6 +4498,7 @@ function comboBox_base:UpdateHeight(control)
 	local headerHeight = 0
 	if control ~= nil then
 		headerHeight = self:GetBaseHeight(control)
+--d(">>header BaseHeight: " ..tos(headerHeight))
 	end
 
 	--Calculate the maximum height now:
@@ -4503,7 +4511,7 @@ function comboBox_base:UpdateHeight(control)
 		-- Add spacing to each row then subtract spacing for last row
 		maxHeightByEntries = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)
 
---d(">[LSM]maxRows: " ..tos(maxRows) .. ", maxHeightByEntries: " ..tos(maxHeightByEntries))
+--d(">>maxRows: " ..tos(maxRows) .. ", maxHeightByEntries: " ..tos(maxHeightByEntries))
 		--Add the header's height first, then add the rows' calculated needed total height
 		maxHeightInTotal = maxHeightByEntries
 	end
@@ -4521,7 +4529,7 @@ function comboBox_base:UpdateHeight(control)
 	--maxHeightInTotal = (maxHeightInTotal > screensMaxDropdownHeight and screensMaxDropdownHeight) or maxHeightInTotal
 	--If the height of the total height is below minHeight then increase it to be at least that high
 	maxHeightInTotal = zo_clamp(maxHeightInTotal, minHeight, screensMaxDropdownHeight)
---d(">[LSM]headerHeight: " ..tos(headerHeight) .. ", maxHeightInTotal: " ..tos(maxHeightInTotal))
+--d(">>>headerHeight: " ..tos(headerHeight) .. ", maxHeightInTotal: " ..tos(maxHeightInTotal))
 
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 107, tos(getControlName(control)), tos(maxHeightInTotal), tos(maxDropdownHeight), tos(maxHeightByEntries),  tos(baseEntryHeight), tos(maxRows), tos(spacing), tos(headerHeight)) end
@@ -5230,6 +5238,9 @@ end
 --Toggle function called as the collapsible header is clicked
 function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 139, tos(self.options), tos(toggleButtonCtrl)) end
+
+--d(debugPrefix .. "comboBoxClass:UpdateDropdownHeader")
+
 	local headerControl, dropdownControl = getHeaderControl(self)
 	if headerControl == nil then return end
 
@@ -5242,16 +5253,19 @@ function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
 			headerCollapsed = ZO_CheckButton_IsChecked(toggleButtonCtrl)
 
 			if options.headerCollapsed == nil then
+--d(">updateSavedVariable collapsedHeaderState: " ..tos(getHeaderToggleStateControlSavedVariableName(self)))
 				-- No need in saving state if we are going to force state by options.headerCollapsed
 				updateSavedVariable("collapsedHeaderState", headerCollapsed, getHeaderToggleStateControlSavedVariableName(self))
 			end
 		end
 	end
+--d(">headerCollapsed: " ..tos(headerCollapsed))
 
 	--d(debugPrefix.."comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(headerCollapsed))
 	refreshDropdownHeader(self, headerControl, self.options, headerCollapsed)
 	self:UpdateWidth(dropdownControl) --> Update self.m_containerWidth properly for self:Show (in self:UpdateHeight) call (including the now, in refreshDropdownHeader, updated header's width)
 	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now, in refreshDropdownHeader, updated header's height)
+--d(">new height: " ..tos(self.m_height))
 end
 
 --------------------------------------------------------------------
