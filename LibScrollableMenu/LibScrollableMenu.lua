@@ -370,7 +370,8 @@ local possibleEntryDataWithFunction = {
 --Default options/settings and values
 
 --ZO_ComboBox default settings: Will be copied over as default attributes to comboBoxClass and inherited to the scrollable
---dropdown helper classes
+--dropdown helper classes, but only if they were not set in an existing ZO_ComboBox already (e.g. multiselection, etc.)
+--befopre LSM was added
 local comboBoxDefaults = {
 	--From ZO_ComboBox
 	---member data with m_
@@ -413,6 +414,14 @@ local comboBoxDefaults = {
 	containerMinWidth = MIN_WIDTH_WITHOUT_SEARCH_HEADER,
 }
 lib.comboBoxDefaults = comboBoxDefaults
+
+--Always overwrite these settings in the comboBoxes with these default values of LSM
+--e.g. sorting = disabled (ZO_ComboBox default is sorting enabled)
+-->Key = comboBox variable name, value = true (true wil be checked! Only true will lead to copied value from source table to target table)
+local comboBoxDefaultsAlwaysOverwrite = {
+	sortEntries  = 	true, --LSM options value
+	m_sortsItems = 	true, --ZO_ComboBox real default is true
+}
 
 --Set the default highlight values
 defaultHighlightTemplate = comboBoxDefaults.m_highlightTemplate
@@ -1347,14 +1356,21 @@ end
 
 --Mix in table entries in other table and skip existing entries. Optionally run a callback function on each entry
 --e.g. getValueOrCallback(...)
-local function mixinTableAndSkipExisting(targetData, sourceData, callbackFunc, ...)
+local function mixinTableAndSkipExisting(targetData, sourceData, doNotSkipTable, callbackFunc, ...)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 10, tos(callbackFunc)) end
+	local useDoNotSkipTable = type(doNotSkipTable) == "table" and not ZO_IsTableEmpty(doNotSkipTable)
+	local useCallback = type(callbackFunc) == "function"
+--d(debugPrefix .. "mixinTableAndSkipExisting - useDoNotSkipTable: " .. tos(useDoNotSkipTable))
 	for i = 1, select("#", sourceData) do
 		local source = select(i, sourceData)
-		for k,v in pairs(source) do
-			--Skip existing entries in target table
-			if targetData[k] == nil then
-				targetData[k] = (callbackFunc ~= nil and callbackFunc(v, ...)) or v
+		for k, v in pairs(source) do
+--d(">k: " ..tos(k) .. ", v: " .. tos(v) .. ", target: " .. tos(targetData[k]))
+			--Skip existing entries in target table, unless they should not be skipped (see doNotSkipTable)
+			if targetData[k] == nil or (useDoNotSkipTable and doNotSkipTable[k] == true) then
+				targetData[k] = (useCallback == true and callbackFunc(v, ...)) or v
+--d(">>target new: " .. tos(targetData[k]) .. ", doNotSkipTable[k]: " .. tos(doNotSkipTable[k]))
+				--			else
+				--d(">existing [" .. tos(k) .. "] = " .. tos(v))
 			end
 		end
 	end
@@ -3777,7 +3793,7 @@ end
 local comboBox_base = ZO_ComboBox:Subclass()
 local submenuClass = comboBox_base:Subclass()
 
-function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
+function comboBox_base:Initialize(parent, comboBoxContainer, options, depth, initExistingComboBox)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 84, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
 	self.m_sortedItems = {}
 	self.m_unsortedItems = {}
@@ -3793,7 +3809,7 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth)
 	local dropdownObject = self:GetDropdownObject(comboBoxContainer, depth)
 	self:SetDropdownObject(dropdownObject)
 
-	self:UpdateOptions(options, true)
+	self:UpdateOptions(options, true, nil, initExistingComboBox)
 
 --[[
 LSM_DebugComboBoxBase = {
@@ -4857,7 +4873,7 @@ function comboBox_base:GetFilterFunction()
 	return filterFunction
 end
 
-function comboBox_base:UpdateOptions(options, onInit)
+function comboBox_base:UpdateOptions(options, onInit, isContextMenu, initExistingComboBox)
 	-- Overwrite at subclasses
 end
 
@@ -4884,9 +4900,10 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth, ini
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 126, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
 	comboBoxContainer.m_comboBox = self
 
+	--Set the self.default values
 	self:SetDefaults()
 
-	--Reset to the default ZO_ComboBox variables
+	--Get the self.defaults values and reset to the default ZO_ComboBox variables (if needed)
 	self:ResetToDefaults(initExistingComboBox)
 
 	-- Add all comboBox defaults not present.
@@ -4896,9 +4913,7 @@ function comboBoxClass:Initialize(parent, comboBoxContainer, options, depth, ini
 	self.containerMinWidth = nil --Will be filled via comboBox_base:SetMinMaxWidth(minWidth, maxWidth), from comboBox_base:UpdateWidth()
 	self.m_selectedItemText = comboBoxContainer:GetNamedChild("SelectedItemText")
 	self.m_multiSelectItemData = {}
-	comboBox_base.Initialize(self, parent, comboBoxContainer, options, depth)
-
-	--Custom added controls
+	comboBox_base.Initialize(self, parent, comboBoxContainer, options, depth, initExistingComboBox)
 
 	return self
 end
@@ -4909,8 +4924,9 @@ function comboBoxClass:UpdateMetatable(parent, comboBoxContainer, options)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 137, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(options)) end
 
 --d("comboBoxClass:UpdateMetatable")
-
+	--Pass in our comboBoxClass to the ZO_ComboBox (to add new functionality and methods, submenus etc.)
 	setmetatable(self, comboBoxClass)
+	--Apply the XML template to the combobox container, so the OnMouse* events etc. for LSM trigger properly
 	ApplyTemplateToControl(comboBoxContainer, 'LibScrollableMenu_ComboBox_Behavior')
 
 	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table
@@ -5000,7 +5016,7 @@ end
 
 function comboBoxClass:SetDefaults()
 	self.defaults = {}
-	for k, v in  pairs(comboBoxDefaults) do
+	for k, v in pairs(comboBoxDefaults) do
 		if v and self[k] ~= v then
 			self.defaults[k] = v
 		end
@@ -5013,11 +5029,21 @@ end
 --->In all cases the function comboBoxClass:UpdateOptions should update the options needed!
 function comboBoxClass:ResetToDefaults(initExistingComboBox)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 134) end
+--d(debugPrefix .. "comboBoxClass:ResetToDefaults - initExistingComboBox: " ..tos(initExistingComboBox))
+	--Mixin comboBoxDefaults to self.defautls again
 	local defaults = ZO_DeepTableCopy(comboBoxDefaults)
 	zo_mixin(defaults, self.defaults)
 
-	zo_mixin(self, defaults) -- overwrite existing ZO_ComboBox default values with LSM defaults
-
+	--Attention: zo_mixin overwrites the existing varibales like self.m_enableMultiSelect!
+	--Do not do that if we come from API function AddCustomScrollableComboBoxDropdownMenu
+	if initExistingComboBox == true then
+		-- do NOT overwrite existing ZO_ComboBox values with LSM defaults, but keep comboBox values that already exist
+		-- (skip some values though, like "sortEntries", and use the default values of LSM here)
+		-- They will either way be overwritten by self:UpdateOptions later, if necessary
+		mixinTableAndSkipExisting(self, defaults, comboBoxDefaultsAlwaysOverwrite, nil)
+	else
+		zo_mixin(self, defaults) -- overwrite existing ZO_ComboBox (self) values with LSM defaults
+	end
 	self:SetOptions(nil)
 end
 
@@ -5054,7 +5080,7 @@ function comboBoxClass:SetOption(LSMOptionsKey)
 	end
 end
 
-function comboBoxClass:UpdateOptions(options, onInit, isContextMenu)
+function comboBoxClass:UpdateOptions(options, onInit, isContextMenu, initExistingComboBox)
 	onInit = onInit or false
 	local optionsChanged = self.optionsChanged
 
@@ -5101,7 +5127,9 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu)
 		end
 	]]
 --d(">3 ResetToDefaults")
-		self:ResetToDefaults() -- Reset comboBox internal variables of ZO_ComboBox, e.g. m_font, and LSM defaults like visibleRowsDropdown
+		-- Reset comboBox internal variables of ZO_ComboBox, e.g. m_font, and LSM defaults like visibleRowsDropdown
+		--todo: 20250204 Check if this is needed -> initExistingComboBox: do not overwrite already existing variables of the ZO_ComboBox if the box was an existing one where LSM was only added to via AddCustomScrollableComboBoxDropdownMenu
+		self:ResetToDefaults((onInit == true and initExistingComboBox) or nil)
 
 		--Did the options change: Yes / OR Are the already stored options at the object nil or empty (should happen if self:UpdateOptions(options) was not called before): Yes
 		--> Use passed in options, or use the default ZO_ComboBox options added via self:ResetToDefaults() before
@@ -5280,7 +5308,7 @@ function submenuClass:Initialize(parent, comboBoxContainer, options, depth)
 	self.isSubmenu = true
 	self.m_parentMenu = parent
 
-	comboBox_base.Initialize(self, parent, comboBoxContainer, options, depth)
+	comboBox_base.Initialize(self, parent, comboBoxContainer, options, depth, nil)
 	self.breadcrumbName = 'SubmenuBreadcrumb'
 end
 
@@ -5497,7 +5525,7 @@ function contextMenuClass:ShowContextMenu(parentControl)
 		self:HideDropdown()
 	end
 
-	self:UpdateOptions(self.contextMenuOptions, nil, true) --Updates self.options
+	self:UpdateOptions(self.contextMenuOptions, nil, true, nil) --Updates self.options
 
 	self:HighlightOpeningControl()
 
