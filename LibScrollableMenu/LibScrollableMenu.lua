@@ -6254,7 +6254,7 @@ LibScrollableMenu = lib
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.34 - Updated 2025-01-27
+	CHANGELOG Current version: 2.34 - Updated 2025-02-04
 ---------------------------------------------------------------
 
 [WORKING ON]
@@ -6267,14 +6267,13 @@ LibScrollableMenu = lib
 -Added options.OnSelectionBlockedCallback
 
 2501_3 Bugs:
-a) OPEN - Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options.noSelectionText properly
+a) FIXED - Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options.noSelectionText properly
 b) FIXED - Submenus do close upon selection of an entry
 	--20250129 Reason: m_enableMultiSelect was set = false in submenu initialization and thus the metatable lookup from parent LSM combobox was not used!
 	-------> Also: Workaround implemented into dropdownClass:OnEntryMouseUp: checking self.owner.m_parentMenu.m_enableMultiSelect and using this for the submenu
 
 c) FIXED - Submenus do not show the selected highlight if multiselection is enabled, and they do not show as they open again
 	--20250203 Reason: dropdownClass:Refresh needed to account for scrollControl of submenus, and m_multiSelectItemData must be read from parentMenu, and not set = {} at each submenu again!
-d) Open - Nested submenus do not update the selected entries highlight directly, but first as the submenu reopens (mouse moved away and back to it)
 
 
 [Fixed]

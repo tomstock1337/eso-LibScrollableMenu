@@ -1,8 +1,14 @@
--v- ---------------LSM v2.33 - 2025-01-26---------------------------------------------------------------------------- -v-
--Bug fix #2501_1    Fix header with searchbox to have a minimum width
--Added #2501_2      Added option "maxDropdownWidth": Width of the dropdowns will be maximum this width (minimum width is 50, or 125 if the search editbox header is enabled. If the longest text of entries is < maxDropdownWidth then the dropdown's width will be the longest text entry width
-
--Working on #2501_3 Support Multiselect properly
+-v- ---------------LSM v2.34 - 2025-02-04---------------------------------------------------------------------------- -v-
+-Added  option "maxDropdownWidth": Width of the dropdowns will be maximum this width (minimum width is 50, or 125 if the search editbox header is enabled. If the longest text of entries is < maxDropdownWidth then the dropdown's width will be the longest text entry width
+-Bug fix Fix header with searchbox to have a minimum width
+-Bug fix Support Multiselect properly
+--Fixed submenu multiselection
+--Added  options.enableMultiSelect
+--Added  options.maxNumSelections
+--Added  options.maxNumSelectionsErrorText
+--Added  options.multiSelectionTextFormatter
+--Added  options.noSelectionText
+--Added  options.OnSelectionBlockedCallback
 
 
 -v- ---------------LSM v2.33 - 2025-01-01---------------------------------------------------------------------------- -v-
