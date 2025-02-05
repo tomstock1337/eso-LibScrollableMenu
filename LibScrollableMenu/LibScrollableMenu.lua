@@ -2497,23 +2497,28 @@ end
 local has_submenu = true
 local no_submenu = false
 
+local function checkForMultiSelectEnabled(selfVar, control)
+	local isMultiSelectEnabled = (selfVar.owner and selfVar.owner.m_enableMultiSelect) or false
+	return (not isMultiSelectEnabled and not control.closeOnSelect) or false
+end
+
 local handlerFunctions  = {
-	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
+	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO_ComboBox handler and only show tooltip
 	["onMouseEnter"] = {
-		[LSM_ENTRY_TYPE_NORMAL] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, ...)
 			onMouseEnter(control, data, no_submenu)
 			clearNewStatus(control, data)
-			return not control.closeOnSelect
+			return checkForMultiSelectEnabled(selfVar, control)
 		end,
-		[LSM_ENTRY_TYPE_HEADER] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, ...)
 			-- Return true to skip the default handler to prevent row highlight.
 			return true
 		end,
-		[LSM_ENTRY_TYPE_DIVIDER] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, ...)
 			-- Return true to skip the default handler to prevent row highlight.
 			return true
 		end,
-		[LSM_ENTRY_TYPE_SUBMENU] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, ...)
 			--d( debugPrefix .. 'onMouseEnter [LSM_ENTRY_TYPE_SUBMENU]')
 			local dropdown = onMouseEnter(control, data, has_submenu)
 			clearTimeout()
@@ -2521,15 +2526,15 @@ local handlerFunctions  = {
 			dropdown:ShowSubmenu(control)
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_CHECKBOX] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, ...)
 			onMouseEnter(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_BUTTON] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, ...)
 			onMouseEnter(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, ...)
 			onMouseEnter(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
@@ -2537,34 +2542,34 @@ local handlerFunctions  = {
 
 	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
 	["onMouseExit"] = {
-		[LSM_ENTRY_TYPE_NORMAL] = function(control, data)
+		[LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data)
 			onMouseExit(control, data, no_submenu)
-			return not control.closeOnSelect
+			return checkForMultiSelectEnabled(selfVar, control)
 		end,
-		[LSM_ENTRY_TYPE_HEADER] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, ...)
 			-- Return true to skip the default handler to prevent row highlight.
 			return true
 		end,
-		[LSM_ENTRY_TYPE_DIVIDER] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, ...)
 			-- Return true to skip the default handler to prevent row highlight.
 			return true
 		end,
-		[LSM_ENTRY_TYPE_SUBMENU] = function(control, data)
+		[LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data)
 			local dropdown = onMouseExit(control, data, has_submenu)
 			if not (MouseIsOver(control) or dropdown:IsEnteringSubmenu()) then
 				dropdown:OnMouseExitTimeout(control)
 			end
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_CHECKBOX] = function(control, data)
+		[LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data)
 			onMouseExit(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_BUTTON] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, ...)
 			onMouseExit(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(control, data, ...)
+		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, ...)
 			onMouseExit(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
@@ -2581,42 +2586,42 @@ local handlerFunctions  = {
 
 	-- return true to "select" entry via described way in ZO_ComboBox handler (see above) / return false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback
 	["onMouseUp"] = {
-		[LSM_ENTRY_TYPE_NORMAL] = function(control, data, button, upInside, ctrl, alt, shift)
+		[LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 --d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_NORMAL]')
 			onMouseUp(control, data, no_submenu)
 			return true
 		end,
-		[LSM_ENTRY_TYPE_HEADER] = function(control, data, button, upInside, ctrl, alt, shift)
+		[LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			return false
 		end,
-		[LSM_ENTRY_TYPE_DIVIDER] = function(control, data, button, upInside, ctrl, alt, shift)
+		[LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			return false
 		end,
-		[LSM_ENTRY_TYPE_SUBMENU] = function(control, data, button, upInside, ctrl, alt, shift)
+		[LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 --d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_SUBMENU]')
 			onMouseUp(control, data, has_submenu)
 			return control.closeOnSelect --if submenu entry has data.callback then select the entry
 		end,
-		[LSM_ENTRY_TYPE_CHECKBOX] = function(control, data, button, upInside, ctrl, alt, shift)
+		[LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
-		[LSM_ENTRY_TYPE_BUTTON] = function(control, data, button, upInside, ctrl, alt, shift)
+		[LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
-		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(control, data, button, upInside, ctrl, alt, shift)
+		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
 	},
 }
 
-local function runHandler(handlerTable, control, ...)
+local function runHandler(selfVar, handlerTable, control, ...)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 53, tos(getControlName(control)), tos(handlerTable), tos(control.typeId)) end
 	local handler = handlerTable[control.typeId]
 	if handler then
-		return handler(control, ...)
+		return handler(selfVar, control, ...)
 	end
 	return false
 end
@@ -2769,7 +2774,7 @@ local dropdownClass = ZO_ComboBoxDropdown_Keyboard:Subclass() --vanilla: XML ZO_
 -- dropdownClass:New(To simplify locating the beginning of the class
 function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 55, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
-	--df(debugPrefix.."dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+df(debugPrefix.."dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
 	local dropdownControl = CreateControlFromVirtual(comboBoxContainer:GetName(), GuiRoot, "LibScrollableMenu_Dropdown_Template", depth)
 	ZO_ComboBoxDropdown_Keyboard.Initialize(self, dropdownControl)
 	dropdownControl.object = self
@@ -2820,7 +2825,7 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	]]
 	-->!!! This will be the place where the function HighlightControl above calls the highlightTemplateOrFunction function !!!
 	scrollCtrl.highlightTemplateOrFunction = function(control)
---d(debugPrefix .. "scrollCtrl.highlightTemplateOrFunction - " .. tos(getControlName(control)))
+d(debugPrefix .. "scrollCtrl.highlightTemplateOrFunction - " .. tos(getControlName(control)))
 		if selfVar.owner then
 			--return selfVar.owner:GetHighlightTemplate(control)
 			local XMLVirtualHighlightTemplateOfRow = selfVar.owner:GetHighlightTemplate(control)
@@ -2835,10 +2840,12 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 			]]
 			LSM_CheckIfAnimationControlNeedsXMLTemplateChange(control, XMLVirtualHighlightTemplateOfRow)
 
+d(">XMLVirtualHighlightTemplateOfRow: " .. tos(XMLVirtualHighlightTemplateOfRow))
 			-->function PlayAnimationOnControl will set control[defaultHighLightAnimationFieldName] = animationControl then
 			--->Also see function scrollCtrl.highlightCallback below
 			return XMLVirtualHighlightTemplateOfRow, defaultHighLightAnimationFieldName --"LSM_HighlightAnimation"
 		end
+d("<<defaultHighlightTemplate: " .. tos(defaultHighlightTemplate))
 		return defaultHighlightTemplate, defaultHighLightAnimationFieldName --"ZO_SelectionHighlight", "LSM_HighlightAnimation"
 	end
 
@@ -2847,6 +2854,7 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	--highlight control, at this control, with the current one.
 	-->Will be set here and read in function scrollCtrl.highlightTemplateOrFunction above -> LSM_CheckIfAnimationControlNeedsXMLTemplateChange
 	scrollCtrl.highlightCallback = function(control, isHighlighting)
+d(debugPrefix .. "scrollCtrl.highlightCallback - " .. tos(isHighlighting))
 		if control ~= nil and isHighlighting == true then
 			if selfVar.owner then
 				local animationFieldName = control.highlightAnimationFieldName
@@ -2856,8 +2864,10 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 						animationFieldName = 	animationFieldName,
 						highlightXMLTemplate = 	selfVar.owner:GetHighlightTemplate(control)
 					}
+d(">control.LSM_rowHighlightData SET")
 				end
 			else
+d("<<<control.LSM_rowHighlightData DELETED")
 				control.LSM_rowHighlightData = nil
 			end
 		end
@@ -3061,17 +3071,19 @@ function dropdownClass:IsMouseOverOpeningControl()
 end
 
 function dropdownClass:OnMouseEnterEntry(control)
---d(debugPrefix .. "dropdownClass:OnMouseEnterEntry - name: " .. tos(getControlName(control)))
+d(debugPrefix .. "dropdownClass:OnMouseEnterEntry - name: " .. tos(getControlName(control)))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 68, tos(getControlName(control))) end
 	-- Added here for when mouse is moved from away from dropdowns over a row, it will know to close specific children
 	self:OnMouseExitTimeout(control)
 
 	local data = getControlData(control)
 	if data.enabled == true then
-		if not runHandler(handlerFunctions["onMouseEnter"], control, data) then
-			--Each entryType uses the default scrolltemplates.lua, function PlayAnimationOnControl via the zo_comboBoxDropdown_onMouseEnterEntry function call
-			--to get/create the highlight control and assign the virtual XML tempalte to it, and to set the highlight animation on the control.
-			--> See function dropdownClass:Initialize -> function scrollCtrl.highlightTemplateOrFunction and function scrollCtrl.highlightCallback
+		if not runHandler(self, handlerFunctions["onMouseEnter"], control, data) then
+d(">runhandler onMouseEnter!")
+			--Each entryType uses the default scrolltemplates.lua, function PlayAnimationOnControl via the zo_comboBoxDropdown_onMouseEnterEntry function call,
+			--which calls ZO_ScrollList_MouseEnter -> which calls HighlightControl -> Which calls self.highlightTemplateOrFunction(control) to get/create the
+			--highlight control, and assign the virtual XML template to it, and to set the highlight animation on the control.
+			--> See function dropdownClass:Initialize -> function scrollCtrl.highlightTemplateOrFunction and function scrollCtrl.highlightCallback here in LSM
 			zo_comboBoxDropdown_onMouseEnterEntry(self, control)
 		end
 
@@ -3094,7 +3106,7 @@ function dropdownClass:OnMouseExitEntry(control)
 	hideTooltip(control)
 	local data = getControlData(control)
 	self:OnMouseExitTimeout(control)
-	if data.enabled and not runHandler(handlerFunctions["onMouseExit"], control, data) then
+	if data.enabled and not runHandler(self, handlerFunctions["onMouseExit"], control, data) then
 		zo_comboBoxDropdown_onMouseExitEntry(self, control)
 	end
 
@@ -3160,7 +3172,7 @@ LSM_Debug = {
 				end
 --d(debugPrefix .. "OnEntryMouseUp-multiSelection: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(comboBox.isSubmenu))
 
-				if not ignoreHandler and runHandler(handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
+				if not ignoreHandler and runHandler(self, handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
 					self:RunItemCallback(data, data.ignoreCallback)
