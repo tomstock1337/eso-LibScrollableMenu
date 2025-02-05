@@ -2774,7 +2774,7 @@ local dropdownClass = ZO_ComboBoxDropdown_Keyboard:Subclass() --vanilla: XML ZO_
 -- dropdownClass:New(To simplify locating the beginning of the class
 function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 55, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
-df(debugPrefix.."dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+--df(debugPrefix.."dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
 	local dropdownControl = CreateControlFromVirtual(comboBoxContainer:GetName(), GuiRoot, "LibScrollableMenu_Dropdown_Template", depth)
 	ZO_ComboBoxDropdown_Keyboard.Initialize(self, dropdownControl)
 	dropdownControl.object = self
@@ -2825,7 +2825,7 @@ df(debugPrefix.."dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, d
 	]]
 	-->!!! This will be the place where the function HighlightControl above calls the highlightTemplateOrFunction function !!!
 	scrollCtrl.highlightTemplateOrFunction = function(control)
-d(debugPrefix .. "scrollCtrl.highlightTemplateOrFunction - " .. tos(getControlName(control)))
+--d(debugPrefix .. "scrollCtrl.highlightTemplateOrFunction - " .. tos(getControlName(control)))
 		if selfVar.owner then
 			--return selfVar.owner:GetHighlightTemplate(control)
 			local XMLVirtualHighlightTemplateOfRow = selfVar.owner:GetHighlightTemplate(control)
@@ -2840,12 +2840,12 @@ d(debugPrefix .. "scrollCtrl.highlightTemplateOrFunction - " .. tos(getControlNa
 			]]
 			LSM_CheckIfAnimationControlNeedsXMLTemplateChange(control, XMLVirtualHighlightTemplateOfRow)
 
-d(">XMLVirtualHighlightTemplateOfRow: " .. tos(XMLVirtualHighlightTemplateOfRow))
+--d(">XMLVirtualHighlightTemplateOfRow: " .. tos(XMLVirtualHighlightTemplateOfRow))
 			-->function PlayAnimationOnControl will set control[defaultHighLightAnimationFieldName] = animationControl then
 			--->Also see function scrollCtrl.highlightCallback below
 			return XMLVirtualHighlightTemplateOfRow, defaultHighLightAnimationFieldName --"LSM_HighlightAnimation"
 		end
-d("<<defaultHighlightTemplate: " .. tos(defaultHighlightTemplate))
+--d("<<defaultHighlightTemplate: " .. tos(defaultHighlightTemplate))
 		return defaultHighlightTemplate, defaultHighLightAnimationFieldName --"ZO_SelectionHighlight", "LSM_HighlightAnimation"
 	end
 
@@ -2854,7 +2854,7 @@ d("<<defaultHighlightTemplate: " .. tos(defaultHighlightTemplate))
 	--highlight control, at this control, with the current one.
 	-->Will be set here and read in function scrollCtrl.highlightTemplateOrFunction above -> LSM_CheckIfAnimationControlNeedsXMLTemplateChange
 	scrollCtrl.highlightCallback = function(control, isHighlighting)
-d(debugPrefix .. "scrollCtrl.highlightCallback - " .. tos(isHighlighting))
+--d(debugPrefix .. "scrollCtrl.highlightCallback - " .. tos(isHighlighting))
 		if control ~= nil and isHighlighting == true then
 			if selfVar.owner then
 				local animationFieldName = control.highlightAnimationFieldName
@@ -2864,10 +2864,10 @@ d(debugPrefix .. "scrollCtrl.highlightCallback - " .. tos(isHighlighting))
 						animationFieldName = 	animationFieldName,
 						highlightXMLTemplate = 	selfVar.owner:GetHighlightTemplate(control)
 					}
-d(">control.LSM_rowHighlightData SET")
+--d(">control.LSM_rowHighlightData SET")
 				end
 			else
-d("<<<control.LSM_rowHighlightData DELETED")
+--d("<<<control.LSM_rowHighlightData DELETED")
 				control.LSM_rowHighlightData = nil
 			end
 		end
@@ -3071,7 +3071,7 @@ function dropdownClass:IsMouseOverOpeningControl()
 end
 
 function dropdownClass:OnMouseEnterEntry(control)
-d(debugPrefix .. "dropdownClass:OnMouseEnterEntry - name: " .. tos(getControlName(control)))
+--d(debugPrefix .. "dropdownClass:OnMouseEnterEntry - name: " .. tos(getControlName(control)))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 68, tos(getControlName(control))) end
 	-- Added here for when mouse is moved from away from dropdowns over a row, it will know to close specific children
 	self:OnMouseExitTimeout(control)
@@ -3079,7 +3079,6 @@ d(debugPrefix .. "dropdownClass:OnMouseEnterEntry - name: " .. tos(getControlNam
 	local data = getControlData(control)
 	if data.enabled == true then
 		if not runHandler(self, handlerFunctions["onMouseEnter"], control, data) then
-d(">runhandler onMouseEnter!")
 			--Each entryType uses the default scrolltemplates.lua, function PlayAnimationOnControl via the zo_comboBoxDropdown_onMouseEnterEntry function call,
 			--which calls ZO_ScrollList_MouseEnter -> which calls HighlightControl -> Which calls self.highlightTemplateOrFunction(control) to get/create the
 			--highlight control, and assign the virtual XML template to it, and to set the highlight animation on the control.
