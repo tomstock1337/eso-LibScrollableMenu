@@ -2122,7 +2122,7 @@ local function clearNewStatus(control, data)
 			lib:FireCallbacks('NewStatusUpdated', control, data)
 			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 33, tos(getControlName(control))) end
 
-d(debugPrefix.."clearNewStatus - " .. tos(getControlName(control)))
+--d(debugPrefix.."clearNewStatus - " .. tos(getControlName(control)))
 			control.m_dropdownObject:Refresh(data)
 			
 			local parent = data.m_parentControl
