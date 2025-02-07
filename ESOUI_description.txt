@@ -1,9 +1,11 @@
+[SIZE="4"][COLOR="Cyan"][U]LibScrollableMenu (Short: LSM)[/U][/COLOR][/SIZE]
+
 Library for scrollable menus and nested submenus at ComboBoxes.
 Originally developed by Kyoma for Kyoma's Titlizer, now updated by IsJustaGhost, Baertram and tomstock1337.
 Example addons using this library: Improved Titleizer, AddonSelector, AdvancedFilters, merTorchbug updated.
 
 
-It features:
+LSM features:
 [LIST]
 [*]Scrollable menus at comboBoxes, or any other control (context menu)
 [*](Nested) submenus
@@ -14,6 +16,7 @@ It features:
 [*]Checkbox entry (can be added to a button group, which shows a default context menu to "Select all", "Deselect all", "Invert selection")
 [*]Radio button entries (at least 2 are needed and must be added to a buttonGroup)
 [*]Button entry 
+[*]Multiselection
 [*]Scrollable context menu (again with nested submenus) at any entry. Checkboxes in a group even got a default context menu to select all/deselect all/invert selection
 [*]MultiIcon at entries (multiple icons, looping through)
 [*]"Is new" state icon (to show a changed/new entry)
@@ -55,11 +58,12 @@ API syntax:
 --		number visibleRowsDropdown:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened dropdown
 --		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
 --		number maxDropdownHeight				Number or function returning number of total dropdown's maximum height
+--		number maxDropdownWidth					Number or function returning number of total dropdown's maximum width
 --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically. !!!Attention: Default is TRUE (sorting is enabled)!!!
 --		table sortType:optional					table or function returning table for the sort type, e.g. ZO_SORT_BY_NAME, ZO_SORT_BY_NAME_NUMERIC
 --		boolean sortOrder:optional				Boolean or function returning boolean for the sort order ZO_SORT_ORDER_UP or ZO_SORT_ORDER_DOWN
 -- 		string font:optional				 	String or function returning a string: font to use for the dropdown entries
--- 		number spacing:optional,	 			Number or function returning a Number: Spacing between the entries
+-- 		number spacing:optional,	 			Number or function returning a number: Spacing between the entries
 --		boolean disableFadeGradient:optional	Boolean or function returning a boolean: for the fading of the top/bottom scrolled rows
 --		string headerFont:optional				String or function returning a string: font to use for the header entries
 --		table headerColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for header entries
@@ -68,6 +72,13 @@ API syntax:
 --		boolean highlightContextMenuOpeningControl Boolean or function returning boolean if the openingControl of a context menu should be highlighted.
 --												If you set this to true you either also need to set data.m_highlightTemplate at the row and provide the XML template name for the highLight, e.g. "LibScrollableMenu_Highlight_Green".
 --												Or (if not at contextMenu options!!!) you can use the templateContextMenuOpeningControl at options.XMLRowHighlightTemplates[lib.scrollListRowTypes.LSM_ENTRY_TYPE_*] = { template = "ZO_SelectionHighlight" , templateContextMenuOpeningControl = "LibScrollableMenu_Highlight_Green" } to specify the XML highlight template for that entryType
+-->  ===Dropdown multiselection ========================================================================================
+--		boolean enableMultiSelect:optional		Boolean or function returning boolean if multiple items in the main-/submenu can be selected at the same time
+--		number maxNumSelections:optional		Number or function returning a number: Maximum number of selectable entries (at the same time)
+--		string maxNumSelectionsErrorText		String or function returning a string: The text showing if maximum number of selectable items was reached. Default: GetString(SI_COMBO_BOX_MAX_SELECTIONS_REACHED_ALERT)
+-- 		string multiSelectionTextFormatter:optional	String SI constant or function returning a string SI constant: The text showing how many items have been selected currently, with the multiselection enabled. Default: SI_COMBO_BOX_DEFAULT_MULTISELECTION_TEXT_FORMATTER
+-- 		string noSelectionText:optional			String or function returning a string: The text showing if no item is selected, with the multiselection enabled. Default: GetString(SI_COMBO_BOX_DEFAULT_NO_SELECTION_TEXT)
+--		function OnSelectionBlockedCallback:optional	function(selectedItem) codeHere end: callback function called as a multi-selection item selection was blocked
 -->  ===Dropdown header/title ==========================================================================================
 --		string titleText:optional				String or function returning a string: Title text to show above the dropdown entries
 --		string titleFont:optional				String or function returning a font string: Title text's font. Default: "ZoFontHeader3"
@@ -280,7 +291,7 @@ function LibScrollableMenu.SetButtonGroupState
 'OnContextMenuHide'   control, comboBoxObject A context menu of LSM (standalone, or at another LSM [sub]menu) is hidden
 'RadioButtonUpdated'  control, data, checked    A radiobutton entry's checked state was updated
 'CheckboxUpdated'     control, data, checked    A checkbox entry's checked state was updated
-
+'OnDropdownMenuAdded' control, options     A LSM menu was added to an existing ZO_ComboBox dropdown (here you can exchange values at the options table prior to creating the LSM menu)
 [/code]
 
 
