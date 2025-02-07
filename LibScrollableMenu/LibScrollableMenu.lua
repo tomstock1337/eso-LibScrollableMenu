@@ -1898,7 +1898,7 @@ local function checkIfHiddenForReasons(selfVar, button, isContextMenu, owningWin
 	local contextMenuDropdownObject = g_contextMenu.m_dropdownObject
 	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
 	local isCntxtMenOwnedByComboBox = contextMenuDropdownObject:IsOwnedByComboBox(comboBox)
---d(">isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu))
+d("[checkIfHiddenForReasons]isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu))
 
 
 	if not isContextMenu then
@@ -2014,6 +2014,7 @@ local function checkIfHiddenForReasons(selfVar, button, isContextMenu, owningWin
 			if mocCtrl and mocCtrl.closeOnSelect == false then
 				doNotHideContextMenu = true
 				suppressNextOnGlobalMouseUp = true
+--d(">suppressNextOnGlobalMouseUp: " ..tos(suppressNextOnGlobalMouseUp))
 				returnValue = false
 			end
 
@@ -3170,6 +3171,7 @@ LSM_Debug = {
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
 					suppressNextOnGlobalMouseUp = true
+--d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(suppressNextOnGlobalMouseUp))
 					return
 				end
 
@@ -3550,6 +3552,7 @@ function dropdownClass:ShowFilterEditBoxHistory(filterBox)
 
 			--Prevent LSM Hook at ShowMenu() to close the LSM below the cursor!!!
 			lib.preventLSMClosingZO_Menu = true
+--d(">preventLSMClosingZO_Menu: " ..tos(lib.preventLSMClosingZO_Menu))
 			ShowMenu(filterBox)
 			ZO_Tooltips_HideTextTooltip()
 		end
@@ -4093,7 +4096,7 @@ end
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
 function comboBox_base:OnGlobalMouseUp(eventId, button)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(suppressNextOnGlobalMouseUp)) end
---d("comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
+--d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
 	if suppressNextOnGlobalMouseUp then
 		suppressNextOnGlobalMouseUp = nil
 		return false
@@ -6276,6 +6279,7 @@ local function onAddonLoaded(event, name)
 		--Should the ZO_Menu not close any opened LSM? e.g. to show the textSearchHistory at the LSM text filter search box
 		if lib.preventLSMClosingZO_Menu then
 			lib.preventLSMClosingZO_Menu = nil
+--d("[ShowMenu]preventLSMClosingZO_Menu: " ..tos(lib.preventLSMClosingZO_Menu))
 			return
 		end
 		hideCurrentlyOpenedLSMAndContextMenu()
@@ -6359,6 +6363,7 @@ TODO - To check (future versions)
 	2. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
 	3. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
 	- fired on handlers dropdown_OnShow dropdown_OnHide
+	4. If header is enabled and the filter is enabled, you right clicked the editbox of the filter header, and choose an entry: Next left click outside does not close the opened dropdown)
 
 ---------------------------------------------------------------
 UPCOMING FEATURES  - What could be added in the future?
