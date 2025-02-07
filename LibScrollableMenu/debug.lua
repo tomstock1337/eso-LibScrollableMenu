@@ -126,7 +126,7 @@ local debugLogMessagePatterns = {
 	[72] = "dropdownClass:OnEntryMouseUp - contextMenuCallback!",
 	[73] = "dropdownClass:SelectItemByIndex - index: %s, ignoreCallback: %s",
 	[74] = "dropdownClass:RunItemCallback - item: %s, ignoreCallback: %s",
-	[75] = "dropdownClass:Show - comboBox: %s, minWidth: %s, maxHeight: %s, spacing: %s",
+	[75] = "dropdownClass:Show - comboBox: %s, minWidth: %s, maxWidth: %s, maxHeight: %s, spacing: %s",
 	[76] = ">totalDropDownWidth: %s, allItemsHeight: %s, desiredHeight: %s",
 	[77] = "dropdownClass:UpdateHeight",
 	[78] = "dropdownClass:OnShow",
@@ -229,6 +229,10 @@ local debugLogMessagePatterns = {
 	[175] = "ZO_Menu -> ShowMenu. Items#: %s, menuType:  %s",
 	[176] = "Debugging turned %s",
 	[177] = "Verbose debugging turned %s / Debugging: %s",
+	[178] = "dropdownClass:UpdateWidth",
+	[179] = "comboBox_base:GetMaxDropdownWidth - maxDropdownWidth: %s",
+	[180] = "comboBox_base:GetBaseWidth - control: %s, gotHeader: %s, width: %s",
+	[181] = "comboBox_base:UpdateWidth - control: %q, newWidth: %s, maxWidth: %s, maxDropdownWidth: %s, minWidth: %s",
 }
 
 
