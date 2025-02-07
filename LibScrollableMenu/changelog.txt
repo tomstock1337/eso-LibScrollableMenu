@@ -1,3 +1,16 @@
+-v- ---------------LSM v2.34 - 2025-02-07---------------------------------------------------------------------------- -v-
+-Added  option "maxDropdownWidth": Width of the dropdowns will be maximum this width (minimum width is 50, or 125 if the search editbox header is enabled. If the longest text of entries is < maxDropdownWidth then the dropdown's width will be the longest text entry width
+-Bug fix Fix header with searchbox to have a minimum width
+-Bug fix Support Multiselect properly
+--Fixed submenu multiselection
+--Added  options.enableMultiSelect
+--Added  options.maxNumSelections
+--Added  options.maxNumSelectionsErrorText
+--Added  options.multiSelectionTextFormatter
+--Added  options.noSelectionText
+--Added  options.OnSelectionBlockedCallback
+
+
 -v- ---------------LSM v2.33 - 2025-01-01---------------------------------------------------------------------------- -v-
 -Bug fix: Submenu options applied again via API function SetCustomScrollableMenuOptions did not apply (visibleRowsSubmenu e.g.)
 -Bug fix: Name of handler for context menu show and hide changed to proper Uppercase OnContextMenu*
@@ -13,7 +26,6 @@
 -Added: return values index/indices, entryData/entryDataTable to the context menu API functions AddCustomScrollableMenuEntry/Entries etc.
 -Renamed: API function lib.SetButtonGroupState to lib.ButtonGroupDefaultContextMenu as the name was missleading. It never changed or set any values directly it only added a contextmenu where you could choose "Select all", "Select none", "Invers"
 -Renamed: self.optionsData at contextMenus was properly renamed to self.contextMenuOptions
-
 
 -v- ---------------LSM v2.32 - 2024-10-19---------------------------------------------------------------------------- -v-
 -[Additions]-
