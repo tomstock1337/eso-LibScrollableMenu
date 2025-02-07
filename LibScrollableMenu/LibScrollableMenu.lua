@@ -416,11 +416,12 @@ local comboBoxDefaults = {
 lib.comboBoxDefaults = comboBoxDefaults
 
 --Always overwrite these settings in the comboBoxes with these default values of LSM
---e.g. sorting = disabled (ZO_ComboBox default is sorting enabled)
--->Key = comboBox variable name, value = true (true wil be checked! Only true will lead to copied value from source table to target table)
-local comboBoxDefaultsAlwaysOverwrite = {
-	sortEntries  = 	true, --LSM options value
-	m_sortsItems = 	true, --ZO_ComboBox real default is true
+--e.g. sorting = disabled (ZO_ComboBox default sorting = enabled).
+---> This will only happen if API function AddCustomScrollableComboBoxDropdownMenu was used to apply a LSM to an existing ZO_ComboBox!
+-->Key = comboBox variable name, value = table with if and changeTo. If the "ifEquals" check (can be a function or a value) passes then the changeTo (can be a function or a value)
+-- will be set as ZO_ComboBox[key]
+local comboBoxDefaultsContextualInitValues = {
+	m_sortsItems = 	{ ["ifEquals"]=true, ["changeTo"]=comboBoxDefaults.m_sortsItems }, --ZO_ComboBox real default is true
 }
 
 --Set the default highlight values
@@ -1371,13 +1372,28 @@ local function mixinTableAndSkipExisting(targetData, sourceData, doNotSkipTable,
 	for i = 1, select("#", sourceData) do
 		local source = select(i, sourceData)
 		for k, v in pairs(source) do
---d(">k: " ..tos(k) .. ", v: " .. tos(v) .. ", target: " .. tos(targetData[k]))
+			--d(">k: " ..tos(k) .. ", v: " .. tos(v) .. ", target: " .. tos(targetData[k]))
 			--Skip existing entries in target table, unless they should not be skipped (see doNotSkipTable)
-			if targetData[k] == nil or (useDoNotSkipTable and doNotSkipTable[k] == true) then
-				targetData[k] = (useCallback == true and callbackFunc(v, ...)) or v
---d(">>target new: " .. tos(targetData[k]) .. ", doNotSkipTable[k]: " .. tos(doNotSkipTable[k]))
-				--			else
-				--d(">existing [" .. tos(k) .. "] = " .. tos(v))
+			local doOverwrite = targetData[k] == nil
+			local doNotSkipDataOfKey = (useDoNotSkipTable and type(doNotSkipTable[k]) == "table" and doNotSkipTable[k]) or nil
+
+			if doOverwrite or doNotSkipDataOfKey ~= nil then
+				local newValue = v
+
+				if not doOverwrite and not useCallback and useDoNotSkipTable and doNotSkipDataOfKey ~= nil then
+					local ifEqualsCondResult = getValueOrCallback(doNotSkipDataOfKey["ifEquals"])
+					if targetData[k] == ifEqualsCondResult then
+						newValue = getValueOrCallback(doNotSkipDataOfKey["changeTo"])
+						doOverwrite = newValue ~= targetData[k]
+					end
+				end
+
+				if doOverwrite then
+					targetData[k] = (useCallback == true and callbackFunc(v, ...)) or newValue
+					--d(">>target new: " .. tos(targetData[k]) .. ", doNotSkipTable[k]: " .. tos(doNotSkipTable[k]))
+					--			else
+					--d(">existing [" .. tos(k) .. "] = " .. tos(v))
+				end
 			end
 		end
 	end
@@ -2099,13 +2115,14 @@ end
 local function clearNewStatus(control, data)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 32) end
 	if data.isNew then
-		-- Only directly change status on non-submenu entries. The are effected by child entries
+		-- Only directly change status on non-submenu entries. They are effected by child entries
 		if data.entries == nil then
 			data.isNew = false
 			
 			lib:FireCallbacks('NewStatusUpdated', control, data)
 			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 33, tos(getControlName(control))) end
 
+d(debugPrefix.."clearNewStatus - " .. tos(getControlName(control)))
 			control.m_dropdownObject:Refresh(data)
 			
 			local parent = data.m_parentControl
@@ -3388,32 +3405,24 @@ end
 --Called from clearNewStatus, and dropdownClass:OnEntryMouseUp -> dropdownClass:OnEntrySelected -> --self(= dropdownClass).owner(= comboBoxClass of parentMenu?!):SetSelected -> self(comboBoxClass):SelectItem -> self.m_dropdownObject(dropdownClass):Refresh()
 -->Needed to make multiselection for submenus work! Checked scrollControl must be the one of the submenu and not the parentMenu's!
 function dropdownClass:Refresh(item)
---d("[LSM]dropdownClass:Refresh - item: " ..tos(item))
+--d(debugPrefix.."dropdownClass:Refresh - item: " ..tos(item))
 	local entryData = nil
 	local scrollControl = self.scrollControl
 
 	if item then
-
 		--20250131 self is the dropdownClass of the parentMenu, if a submenu item was clicked and the OnMouseUp -> comboBox:SetSelected -> dropdown refresh was called?
-		--so why isn't self the dropdownClass of the submenu where the entry was clicked? That way the comparison of self.scrollControl's data:GetDataSource() is always wrong with the item passed in
-		--and the items of the submenu never get selected, or updated properly
-		local submenu = self.m_submenu
-		local isSubmenuShown = (submenu ~= nil and submenu.m_isDropdownVisible == true) or false
-		if isSubmenuShown then
-			--Get the dropdown of the submenu
-			local dropdownObjectOfOpenedSubmenu = submenu.m_dropdownObject
-			if dropdownObjectOfOpenedSubmenu ~= nil then
-				scrollControl = dropdownObjectOfOpenedSubmenu.scrollControl
-				if scrollControl ~= nil then
---d(">>found submenu scrollControl: " .. tos(#ZO_ScrollList_GetDataList(scrollControl)) .. ", self.scrollControl: " .. tos(#ZO_ScrollList_GetDataList(self.scrollControl)))
-					--If a submenu is "still opened" (because we moved the mouse above an entry that opens a submenu) but another non-submenu item was clicked, it accounts for the submenu scroll...
-					entryData = compareDrodpwonDataList(self, scrollControl, item)
-				end
-			end
+		--So why isn't self the dropdownClass of the submenu where the entry was clicked? That way the comparison of self.scrollControl's data:GetDataSource() is always wrong with the item passed in
+		--and the items of the submenu never get selected, or updated properly.
+		--Get the item's owner's scroll, if it's a submenu
+		scrollControl = (item.m_owner ~= nil and item.m_owner.m_scroll) or nil
+		if scrollControl ~= nil then
+			entryData = compareDrodpwonDataList(self, scrollControl, item)
+--d(">>found submenu #" .. tos(#ZO_ScrollList_GetDataList(scrollControl)) .. ", parentMent #" .. tos(#ZO_ScrollList_GetDataList(self.scrollControl)) .. "; entryData: " ..tos(entryData))
 		end
 
 		--No submenu entry found, compare with parent menu
 		if entryData == nil then
+--d(">>>taking parent menu entryData!")
 			scrollControl = self.scrollControl
 			entryData = compareDrodpwonDataList(self, scrollControl, item)
 		end
@@ -5057,9 +5066,9 @@ function comboBoxClass:ResetToDefaults(initExistingComboBox)
 	--Do not do that if we come from API function AddCustomScrollableComboBoxDropdownMenu
 	if initExistingComboBox == true then
 		-- do NOT overwrite existing ZO_ComboBox values with LSM defaults, but keep comboBox values that already exist
-		-- (skip some values though, like "sortEntries", and use the default values of LSM here)
-		-- They will either way be overwritten by self:UpdateOptions later, if necessary
-		mixinTableAndSkipExisting(self, defaults, comboBoxDefaultsAlwaysOverwrite, nil)
+		-- (skip some values though, like "m_sortsItems", and use the default values of LSM here, if the current ZO_ComboBox value matches the "if" condition)
+		--> They will either way be overwritten by self:UpdateOptions later, if necessary
+		mixinTableAndSkipExisting(self, defaults, comboBoxDefaultsContextualInitValues, nil)
 	else
 		zo_mixin(self, defaults) -- overwrite existing ZO_ComboBox (self) values with LSM defaults
 	end
@@ -6307,10 +6316,29 @@ LibScrollableMenu = lib
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.34 - Updated 2025-02-04
+	CHANGELOG Current version: 2.34 - Updated 2025-02-07
 ---------------------------------------------------------------
 
 [WORKING ON]
+
+2501_3 Bugs:
+a) FIXED - Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options.noSelectionText properly
+b) FIXED - Submenus do close upon selection of an entry
+	--20250129 Reason: m_enableMultiSelect was set = false in submenu initialization and thus the metatable lookup from parent LSM combobox was not used!
+	-------> Also: Workaround implemented into dropdownClass:OnEntryMouseUp: checking self.owner.m_parentMenu.m_enableMultiSelect and using this for the submenu
+c) FIXED - Submenus do not show the selected highlight if multiselection is enabled, and they do not show as they open again
+	--20250203 Reason: dropdownClass:Refresh needed to account for scrollControl of submenus, and m_multiSelectItemData must be read from parentMenu, and not set = {} at each submenu again!
+d) FIXED Nested submenu's multiselection selection highlight does not apply/refresh instatntly but only shows upon next open of the nested submenu
+
+
+[Fixed]
+#2501_1. Fix header with searchbox to have a minimum width
+#2501_4. Fix options of ZO_ComboBox, which have been set to that combobox (like sorting e.g.) before using API function AddCustomScrollableComboBoxDropdownMenu, stay at their already
+	     before chosen values (unless it was default "sorting" = true, this will be disabled then)
+
+[Added]
+#2501_2. Added option "maxDropdownWidth": Width of the dropdowns will be maximum this width (minimum width is 50, or 125 if the search editbox header is enabled).
+		 If the longest text of entries is < maxDropdownWidth then the dropdown's width will be the longest text entry width
 #2501_3. Support Multiselect properly
 -Added options.enableMultiSelect
 -Added options.maxNumSelections
@@ -6318,23 +6346,6 @@ LibScrollableMenu = lib
 -Added options.multiSelectionTextFormatter
 -Added options.noSelectionText
 -Added options.OnSelectionBlockedCallback
-
-2501_3 Bugs:
-a) FIXED - Initial text for noSelectionText is shown as default text of ZO_ComboBox and not updated from options.noSelectionText properly
-b) FIXED - Submenus do close upon selection of an entry
-	--20250129 Reason: m_enableMultiSelect was set = false in submenu initialization and thus the metatable lookup from parent LSM combobox was not used!
-	-------> Also: Workaround implemented into dropdownClass:OnEntryMouseUp: checking self.owner.m_parentMenu.m_enableMultiSelect and using this for the submenu
-
-c) FIXED - Submenus do not show the selected highlight if multiselection is enabled, and they do not show as they open again
-	--20250203 Reason: dropdownClass:Refresh needed to account for scrollControl of submenus, and m_multiSelectItemData must be read from parentMenu, and not set = {} at each submenu again!
-
-
-[Fixed]
-#2501_1. Fix header with searchbox to have a minimum width
-
-[Added]
-#2501_2. Added option "maxDropdownWidth": Width of the dropdowns will be maximum this width (minimum width is 50, or 125 if the search editbox header is enabled).
-		 If the longest text of entries is < maxDropdownWidth then the dropdown's width will be the longest text entry width
 
 [Changed]
 
