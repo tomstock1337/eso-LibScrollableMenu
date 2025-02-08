@@ -34,6 +34,7 @@ local fontConstants = constants.fonts
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local soundConstants = constants.sounds
+local handlerNameConstants = constants.handlerNames
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
 
@@ -43,18 +44,21 @@ local libUtil = lib.Util
 -----------------------------------------------------------------------
 -- Library local utility variables
 --------------------------------------------------------------------
-local throttledCallDelaySuffixCounter = 0
-local NIL_CHECK_TABLE = {}
-libUtil.NIL_CHECK_TABLE = NIL_CHECK_TABLE
+local libDivider = lib.DIVIDER
+
+local NIL_CHECK_TABLE = constants.NIL_CHECK_TABLE
+
 
 --Throttled calls
-local throttledCallDelayName = MAJOR .. '_throttledCallDelay'
-local throttledCallDelay = 10
+local throttledCallDelaySuffixCounter = 0
+local throttledCallDelayName = handlerNameConstants.throttledCallDelayName
+local throttledCallDelay = constants.throttledCallDelay
 
 --Context menus
 local g_contextMenu
 local getValueOrCallback
 local getControlName
+local recursiveOverEntries
 
 
 --------------------------------------------------------------------
@@ -116,6 +120,75 @@ end
 
 
 --------------------------------------------------------------------
+-- Entry functions
+--------------------------------------------------------------------
+--The default callback for the recursiveOverEntries function
+local function defaultRecursiveCallback()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 11) end
+	return false
+end
+
+-- Recursively loop over drdopdown entries, and submenu dropdown entries of that parent dropdown, and check if e.g. isNew needs to be updated
+-- Used for the search of the collapsible header too
+function libUtil.recursiveOverEntries(entry, callback)
+	recursiveOverEntries = libUtil.recursiveOverEntries
+	callback = callback or defaultRecursiveCallback
+
+	local result = callback(entry)
+	local submenu = (entry.entries ~= nil and getValueOrCallback(entry.entries, entry)) or {}
+
+	--local submenuType = type(submenu)
+	--assert(submenuType == 'table', sfor('["..MAJOR..':recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
+	if type(submenu) == "table" and #submenu > 0 then
+		for _, subEntry in pairs(submenu) do
+			local subEntryResult = recursiveOverEntries(subEntry, callback)
+			if subEntryResult then
+				result = subEntryResult
+			end
+		end
+	end
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 19, tos(#submenu), tos(result)) end
+	return result
+end
+recursiveOverEntries = libUtil.recursiveOverEntries
+
+function libUtil.validateEntryType(item)
+	--Prefer passed in entryType (if any provided)
+	local entryType = getValueOrCallback(item.entryType, item)
+
+	--Check if any other entryType could be determined
+	local isDivider = (((item.label ~= nil and item.label == libDivider) or item.name == libDivider) or (item.isDivider ~= nil and getValueOrCallback(item.isDivider, item))) or entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER == entryType
+	local isHeader = (item.isHeader ~= nil and getValueOrCallback(item.isHeader, item)) or entryTypeConstants.LSM_ENTRY_TYPE_HEADER == entryType
+	local isButton = (item.isButton ~= nil and getValueOrCallback(item.isButton, item)) or entryTypeConstants.LSM_ENTRY_TYPE_BUTTON == entryType
+	local isRadioButton = (item.isRadioButton ~= nil and getValueOrCallback(item.isRadioButton, item)) or entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON == entryType
+	local isCheckbox = (item.isCheckbox ~= nil and getValueOrCallback(item.isCheckbox, item)) or entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX == entryType
+	local hasSubmenu = (item.entries ~= nil and getValueOrCallback(item.entries, item) ~= nil) or entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU == entryType
+
+	--If no entryType was passed in: Get the entryType by the before determined data
+	if not entryType or entryType == entryTypeConstants.LSM_ENTRY_TYPE_NORMAL then
+		entryType = hasSubmenu and entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU or
+					isDivider and entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER or
+					isHeader and entryTypeConstants.LSM_ENTRY_TYPE_HEADER or
+					isCheckbox and entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX or
+					isButton and entryTypeConstants.LSM_ENTRY_TYPE_BUTTON or
+					isRadioButton and entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON or
+					entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
+	end
+
+	--Update the item's variables
+	item.isHeader = isHeader
+	item.isButton = isButton
+	item.isRadioButton = isRadioButton
+	item.isDivider = isDivider
+	item.isCheckbox = isCheckbox
+	item.hasSubmenu = hasSubmenu
+
+	--Set the entryType to the itm
+	item.entryType = entryType
+end
+
+
+--------------------------------------------------------------------
 -- Options functions
 --------------------------------------------------------------------
 --Get the options of the scrollable dropdownObject
@@ -124,6 +197,44 @@ function libUtil.getOptionsForDropdown(dropdown)
 	return dropdown.owner.options or {}
 end
 local getOptionsForDropdown = libUtil.getOptionsForDropdown
+
+
+--Mix in table entries in other table and skip existing entries. Optionally run a callback function on each entry
+--e.g. getValueOrCallback(...)
+function libUtil.mixinTableAndSkipExisting(targetData, sourceData, doNotSkipTable, callbackFunc, ...)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 10, tos(callbackFunc)) end
+	local useDoNotSkipTable = type(doNotSkipTable) == "table" and not ZO_IsTableEmpty(doNotSkipTable)
+	local useCallback = type(callbackFunc) == "function"
+--d(debugPrefix .. "mixinTableAndSkipExisting - useDoNotSkipTable: " .. tos(useDoNotSkipTable))
+	for i = 1, select("#", sourceData) do
+		local source = select(i, sourceData)
+		for k, v in pairs(source) do
+			--d(">k: " ..tos(k) .. ", v: " .. tos(v) .. ", target: " .. tos(targetData[k]))
+			--Skip existing entries in target table, unless they should not be skipped (see doNotSkipTable)
+			local doOverwrite = targetData[k] == nil
+			local doNotSkipDataOfKey = (useDoNotSkipTable and type(doNotSkipTable[k]) == "table" and doNotSkipTable[k]) or nil
+
+			if doOverwrite or doNotSkipDataOfKey ~= nil then
+				local newValue = v
+
+				if not doOverwrite and not useCallback and useDoNotSkipTable and doNotSkipDataOfKey ~= nil then
+					local ifEqualsCondResult = getValueOrCallback(doNotSkipDataOfKey["ifEquals"])
+					if targetData[k] == ifEqualsCondResult then
+						newValue = getValueOrCallback(doNotSkipDataOfKey["changeTo"])
+						doOverwrite = newValue ~= targetData[k]
+					end
+				end
+
+				if doOverwrite then
+					targetData[k] = (useCallback == true and callbackFunc(v, ...)) or newValue
+					--d(">>target new: " .. tos(targetData[k]) .. ", doNotSkipTable[k]: " .. tos(doNotSkipTable[k]))
+					--			else
+					--d(">existing [" .. tos(k) .. "] = " .. tos(v))
+				end
+			end
+		end
+	end
+end
 
 
 --------------------------------------------------------------------

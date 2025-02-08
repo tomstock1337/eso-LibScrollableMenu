@@ -59,6 +59,7 @@ local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
+local comboBoxDefaultsContextualInitValues = comboBoxConstants.defaultsContextualInitValues
 
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = comboBoxMappingConstants.LSMOptionsKeyToZO_ComboBoxOptionsKey
 local LSMOptionsToZO_ComboBoxOptionsCallbacks = comboBoxMappingConstants.LSMOptionsToZO_ComboBoxOptionsCallbacks
@@ -67,7 +68,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = comboBoxMappingConstants.LSMOpti
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
-
+local mixinTableAndSkipExisting = libUtil.mixinTableAndSkipExisting
 
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------

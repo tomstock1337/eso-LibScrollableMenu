@@ -60,6 +60,8 @@ local entryTypeDefaultsConstants = constants.entryTypes.defaults
 local comboBoxConstants = constants.comboBox
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local searchFilterConstants = constants.searchFilter
+local handlerNameConstants = constants.handlerNames
+local submenuConstants = constants.submenu
 
 local comboBoxDefaults = comboBoxConstants.defaults
 local noEntriesResults = searchFilterConstants.noEntriesResults
@@ -79,6 +81,7 @@ local getContextMenuReference = libUtil.getContextMenuReference
 local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
 local silenceEntryClickedSound = libUtil.silenceEntryClickedSound
 local throttledCall = libUtil.throttledCall
+local recursiveOverEntries = libUtil.recursiveOverEntries
 
 
 --locals
@@ -182,6 +185,26 @@ local function clearNewStatus(control, data)
 			end
 		end
 	end
+end
+
+
+--------------------------------------------------------------------
+-- Dropdown entry show/hide functions
+--------------------------------------------------------------------
+local function clearTimeout()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 7) end
+	EM:UnregisterForUpdate(handlerNameConstants.dropdownCallLaterHandle)
+end
+
+local function setTimeout(callback)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 8) end
+	clearTimeout()
+	--Delay the dropdown close callback so we can move the mouse above a new dropdown control and keep that opened e.g.
+	EM:RegisterForUpdate(handlerNameConstants.dropdownCallLaterHandle, submenuConstants.SUBMENU_SHOW_TIMEOUT, function()
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 9, tos(submenuConstants.SUBMENU_SHOW_TIMEOUT)) end
+		clearTimeout()
+		if callback then callback() end
+	end)
 end
 
 
@@ -477,6 +500,26 @@ local function addEntryToScrollList(self, item, dataList, index, allItemsHeight,
 end
 
 
+--------------------------------------------------------------------
+-- Dropdown scroll list functions
+--------------------------------------------------------------------
+local function compareDrodpwonDataList(selfVar, scrollControl, item)
+	local dataList = ZO_ScrollList_GetDataList(scrollControl)
+
+	for i, data in ipairs(dataList) do
+		if data:GetDataSource() == item then
+			return data
+		end
+	end
+end
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------
 -- LSM dropdown class definition
 --------------------------------------------------------------------
@@ -1090,17 +1133,6 @@ function dropdownClass:HideDropdown()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 82) end
 	if self.owner then
 		self.owner:HideDropdown()
-	end
-end
-
-
-local function compareDrodpwonDataList(selfVar, scrollControl, item)
-	local dataList = ZO_ScrollList_GetDataList(scrollControl)
-
-	for i, data in ipairs(dataList) do
-		if data:GetDataSource() == item then
-			return data
-		end
 	end
 end
 

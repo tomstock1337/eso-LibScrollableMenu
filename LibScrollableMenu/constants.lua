@@ -86,16 +86,25 @@ lib.classes = {}
 lib.Util = {}
 
 
+
+
 ------------------------------------------------------------------------------------------------------------------------
+--All kind of constants
+local NIL_CHECK_TABLE = {}
+constants.NIL_CHECK_TABLE = NIL_CHECK_TABLE
+
+--Throttled calls
+constants.throttledCallDelay = 		10
+
 --Handler names
 constants.handlerNames = {}
 constants.handlerNames.dropdownCallLaterHandle = 	MAJOR .. "_Timeout"
 constants.handlerNames.UINarrationName = 			MAJOR .. "_UINarration_"
 constants.handlerNames.UINarrationUpdaterName = 	MAJOR .. "_UINarrationUpdater_"
+constants.handlerNames.throttledCallDelayName = 	MAJOR .. '_throttledCallDelay'
 
 --ComboBox
 constants.comboBox = {}
-
 
 --Menu settings (main and submenu) - default values
 constants.dropdown = {}
