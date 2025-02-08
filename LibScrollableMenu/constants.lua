@@ -85,73 +85,82 @@ lib.classes = {}
 --------------------------------------------------------------------
 lib.Util = {}
 
-------------------------------------------------------------------------------------------------------------------------
---ZO_ComboBox function references
-local zo_comboBox_base_addItem = ZO_ComboBox_Base.AddItem
-local zo_comboBox_base_hideDropdown = ZO_ComboBox_Base.HideDropdown
-local zo_comboBox_base_updateItems = ZO_ComboBox_Base.UpdateItems
-
-local zo_comboBox_setItemEntryCustomTemplate = ZO_ComboBox.SetItemEntryCustomTemplate
-
---local zo_comboBoxDropdown_onEntrySelected = ZO_ComboBoxDropdown_Keyboard.OnEntrySelected
-local zo_comboBoxDropdown_onMouseExitEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseExitEntry
-local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseEnterEntry
-
-local suppressNextOnGlobalMouseUp
-local buttonGroupDefaultContextMenu
-
 
 ------------------------------------------------------------------------------------------------------------------------
+--Handler names
+constants.handlerNames = {}
+constants.handlerNames.dropdownCallLaterHandle = 	MAJOR .. "_Timeout"
+constants.handlerNames.UINarrationName = 			MAJOR .. "_UINarration_"
+constants.handlerNames.UINarrationUpdaterName = 	MAJOR .. "_UINarrationUpdater_"
+
+--ComboBox
+constants.comboBox = {}
+
+
 --Menu settings (main and submenu) - default values
-local DEFAULT_VISIBLE_ROWS = 10
-local DEFAULT_SORTS_ENTRIES = false --sort the entries in main- and submenu lists (ZO_ComboBox default is true!)
-local DEFAULT_HEIGHT                  = 250
-local MIN_WIDTH_WITHOUT_SEARCH_HEADER = 50
-local MIN_WIDTH_WITH_SEARCH_HEADER    = 125
+constants.dropdown = {}
+constants.dropdown.defaults = {}
+
+constants.dropdown.defaults.DEFAULT_VISIBLE_ROWS = 10
+constants.dropdown.defaults.DEFAULT_SORTS_ENTRIES = false --sort the entries in main- and submenu lists (ZO_ComboBox default is true!)
+constants.dropdown.defaults.DEFAULT_HEIGHT                  = 250
+constants.dropdown.defaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER = 50
+constants.dropdown.defaults.MIN_WIDTH_WITH_SEARCH_HEADER    = 125
+local dropdownDefaults = constants.dropdown.defaults
 
 --dropdown settings
-local SUBMENU_SHOW_TIMEOUT = 500 --350 ms before
-local dropdownCallLaterHandle = MAJOR .. "_Timeout"
+constants.submenu = {}
+constants.submenu.SUBMENU_SHOW_TIMEOUT = 500 --350 ms before
+--local submenu = constants.submenu
 
 --Entry type default settings
-local DIVIDER_ENTRY_HEIGHT = 7
-local HEADER_ENTRY_HEIGHT = 30
-local DEFAULT_SPACING = 0
-local WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = 4
+constants.entryTypes = {}
+constants.entryTypes.defaults = {}
+constants.entryTypes.defaults.DIVIDER_ENTRY_HEIGHT = 7
+constants.entryTypes.defaults.HEADER_ENTRY_HEIGHT = 30
+constants.entryTypes.defaults.DEFAULT_SPACING = 0
+constants.entryTypes.defaults.WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = 4
+local entryTypeDefaults = constants.entryTypes.defaults
 
 --Fonts
-local DEFAULT_FONT = 				"ZoFontGame"
-local HeaderFontTitle = 			"ZoFontHeader3"
-local HeaderFontSubtitle = 			"ZoFontHeader2"
+constants.fonts = {}
+constants.fonts.DEFAULT_FONT = 					"ZoFontGame"
+constants.fonts.HeaderFontTitle = 				"ZoFontHeader3"
+constants.fonts.HeaderFontSubtitle = 			"ZoFontHeader2"
+local fonts = constants.constants
 
 --Colors
-local HEADER_TEXT_COLOR = 			ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED))
-local DEFAULT_TEXT_COLOR = 			ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL))
-local DEFAULT_TEXT_HIGHLIGHT = 		ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT))
-local DEFAULT_TEXT_DISABLED_COLOR = ZO_GAMEPAD_UNSELECTED_COLOR
+constants.colors = {}
+constants.colors.HEADER_TEXT_COLOR = 			ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED))
+constants.colors.DEFAULT_TEXT_COLOR = 			ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL))
+constants.colors.DEFAULT_TEXT_HIGHLIGHT = 		ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT))
+constants.colors.DEFAULT_TEXT_DISABLED_COLOR = 	ZO_GAMEPAD_UNSELECTED_COLOR
+local colors = constants.colors
 
 --Textures
-local iconNewIcon = 				ZO_KEYBOARD_NEW_ICON
+constants.textures = {}
+constants.textures.iconNewIcon = 				ZO_KEYBOARD_NEW_ICON
 
---MultiIcon
-local iconNarrationNewValue = 		GetString(SI_SCREEN_NARRATION_NEW_ICON_NARRATION)
 
 --Narration
-local UINarrationName = MAJOR .. "_UINarration_"
-local UINarrationUpdaterName = MAJOR .. "_UINarrationUpdater_"
+constants.narration = {}
+constants.narration.iconNarrationNewValue = 		GetString(SI_SCREEN_NARRATION_NEW_ICON_NARRATION) --MultiIcon
 
 
 --local "global" variables
 --Highlight and animation
-local defaultHighlightTemplate 	-- See below at comboBoxDefaults
-local defaultHighlightColor 	-- See below at comboBoxDefaults
-local defaultHighLightAnimationFieldName = 'LSM_HighlightAnimation'
-local subAndContextMenuHighlightAnimationBreadcrumbsPattern = '%s_%s'
+constants.entryTypes.defaults.highlights = {}
+constants.entryTypes.defaults.highlights.defaultHighlightTemplate = nil 	-- See below at comboBoxDefaults
+constants.entryTypes.defaults.highlights.defaultHighlightColor = nil		-- See below at comboBoxDefaults
+constants.entryTypes.defaults.highlights.defaultHighLightAnimationFieldName = 'LSM_HighlightAnimation'
+constants.entryTypes.defaults.highlights.subAndContextMenuHighlightAnimationBreadcrumbsPattern = '%s_%s'
+
 
 --local "global" functions
 local getValueOrCallback
 local getDataSource
 local getControlName
+
 
 ------------------------------------------------------------------------------------------------------------------------
 --Entry types - For the scroll list's dataType of the menus
@@ -165,7 +174,6 @@ local LSM_ENTRY_TYPE_RADIOBUTTON = 7
 
 --Constant for the divider entryType
 lib.DIVIDER = "-"
-local libDivider = lib.DIVIDER
 
 --Make them accessible for the DropdownObject:New options table -> options.XMLRowTemplates
 lib.scrollListRowTypes = {
@@ -183,6 +191,7 @@ local scrollListRowTypes = lib.scrollListRowTypes
 for key, value in pairs(scrollListRowTypes) do
 	--Create the lib.LSM_ENTRY_TYPE* variables
 	lib[key] = value
+	constants.entryTypes[key] = value
 	--Create the LSM_ENTRY_TYPE*L globals
 	_G[key] = value
 end
@@ -192,6 +201,7 @@ local entryTypeToButtonChildName = {
 	[LSM_ENTRY_TYPE_CHECKBOX] = 	"Checkbox",
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = 	"RadioButton",
 }
+constants.entryTypes.entryTypeToButtonChildName = entryTypeToButtonChildName
 
 --Used in API RunCustomScrollableMenuItemsCallback and comboBox_base:AddCustomEntryTemplates to validate passed in entryTypes
 local libraryAllowedEntryTypes = {
@@ -224,6 +234,7 @@ local entryTypesForContextMenuWithoutMandatoryCallback = {
 	[LSM_ENTRY_TYPE_HEADER] = 		true,
 	[LSM_ENTRY_TYPE_SUBMENU] =		true,
 }
+constants.entryTypes.entryTypesForContextMenuWithoutMandatoryCallback = entryTypesForContextMenuWithoutMandatoryCallback
 
 --Table additionalData's key (e.g. isDivider) to the LSM entry type mapping
 local additionalDataKeyToLSMEntryType = {
@@ -233,6 +244,7 @@ local additionalDataKeyToLSMEntryType = {
 	["isButton"] = 		LSM_ENTRY_TYPE_BUTTON,
 	["isRadioButton"] = LSM_ENTRY_TYPE_RADIOBUTTON,
 }
+constants.entryTypes.additionalDataKeyToLSMEntryType = additionalDataKeyToLSMEntryType
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -261,34 +273,43 @@ end
 --The default row highlight data for all entries
 local defaultHighlightTemplateData = {
 	template = 	LSM_ROW_HIGHLIGHT_DEFAULT,
-	color = 	DEFAULT_TEXT_HIGHLIGHT,
+	color = 	colors.DEFAULT_TEXT_HIGHLIGHT,
 }
+constants.entryTypes.defaults.highlights.defaultHighlightTemplateData = defaultHighlightTemplateData
+
 --The default row highlight data for an entry having a submenu, where the entry itsself got a callback
 local defaultHighlightTemplateDataEntryHavingSubMenuWithCallback = {
 	template = 	LSM_ROW_HIGHLIGHT_GREEN, --green row
-	color = 	DEFAULT_TEXT_HIGHLIGHT,
+	color = 	colors.DEFAULT_TEXT_HIGHLIGHT,
 }
+constants.entryTypes.defaults.highlights.defaultHighlightTemplateDataEntryHavingSubMenuWithCallback = defaultHighlightTemplateDataEntryHavingSubMenuWithCallback
+
 --The default row highlight data for an entry opening a contextMenu
 local defaultHighlightTemplateDataEntryContextMenuOpeningControl = {
 	template = 	LSM_ROW_HIGHLIGHT_GREEN, --green row
-	color = 	DEFAULT_TEXT_HIGHLIGHT,
+	color = 	colors.DEFAULT_TEXT_HIGHLIGHT,
 }
+constants.entryTypes.defaults.highlights.defaultHighlightTemplateDataEntryContextMenuOpeningControl = defaultHighlightTemplateDataEntryContextMenuOpeningControl
+
 
 
 
 ------------------------------------------------------------------------------------------------------------------------
 --Entries data
+constants.data = {}
+constants.data.subtables = {}
 --The subtable in entry.data table where all LibScrollableMenu relevant extra data and functions etc. are stored
-local LSM_DATA_SUBTABLE =						"_LSM"
+constants.data.subtables.LSM_DATA_SUBTABLE =						"_LSM"
 --The subtable names in the entry.data[LSM_DATA_SUBTABLE] table where:
 ---the original data table is copied to, for reference and e.g. keeping passed in m_highlightTemplate etc. values
-local LSM_DATA_SUBTABLE_ORIGINAL_DATA =			"OriginalData"
+constants.data.subtables.LSM_DATA_SUBTABLE_ORIGINAL_DATA =			"OriginalData"
 ---the functions of data[key] are stored, so we can execute them each time we need it to return the real value for data[key]
-local LSM_DATA_SUBTABLE_CALLBACK_FUNCTIONS = 	"funcData"
+constants.data.subtables.LSM_DATA_SUBTABLE_CALLBACK_FUNCTIONS = 	"funcData"
 
 
 ------------------------------------------------------------------------------------------------------------------------
 --Entries key mapping
+constants.comboBox.mapping = {}
 
 --The mapping between LibScrollableMenu entry key and ZO_ComboBox entry key. Used in addItem_Base -> updateVariables
 -->Only keys provided in this table will be copied from item.additionalData to item directly!
@@ -302,6 +323,7 @@ local LSMEntryKeyZO_ComboBoxEntryKey = {
 	--Keys which can be passed in at API functions like AddCustomScrollableMenuEntry
 	-->Will be taken care of in func updateVariable -> at the else if selfVar[key] == nil then ...
 }
+constants.comboBox.mapping.LSMEntryKeyZO_ComboBoxEntryKey = LSMEntryKeyZO_ComboBoxEntryKey
 
 ------------------------------------------------------------------------------------------------------------------------
 --Entries which can use a function and need to be updated via function updateDataValues
@@ -322,7 +344,7 @@ local possibleEntryDataWithFunction = {
 	--entryData returning true by default
 	["enabled"] = 	nilToTrue,
 }
-
+constants.comboBox.mapping.possibleEntryDataWithFunction = possibleEntryDataWithFunction
 
 ------------------------------------------------------------------------------------------------------------------------
 --Default options/settings and values
@@ -334,23 +356,23 @@ local comboBoxDefaults = {
 	--From ZO_ComboBox
 	---member data with m_
 	m_customEntryTemplateInfos =	nil,
-	m_disabledColor = 				DEFAULT_TEXT_DISABLED_COLOR,
+	m_disabledColor = 				colors.DEFAULT_TEXT_DISABLED_COLOR,
 	m_enableMultiSelect = 			false,
-	m_font = 						DEFAULT_FONT,
-	m_height = 						DEFAULT_HEIGHT,
-	m_highlightColor = 				DEFAULT_TEXT_HIGHLIGHT,
+	m_font = 						fonts.DEFAULT_FONT,
+	m_height = 						dropdownDefaults.DEFAULT_HEIGHT,
+	m_highlightColor = 				colors.DEFAULT_TEXT_HIGHLIGHT,
 	m_highlightTemplate =			LSM_ROW_HIGHLIGHT_DEFAULT, --ZO_SelectionHighlight
 	m_isDropdownVisible = 			false,
 	m_maxNumSelections = 			nil,
 	m_maxNumSelectionsErrorText =	GetString(SI_COMBO_BOX_MAX_SELECTIONS_REACHED_ALERT),
-	m_normalColor = 				DEFAULT_TEXT_COLOR,
+	m_normalColor = 				colors.DEFAULT_TEXT_COLOR,
 	m_preshowDropdownFn = 			nil,
 	m_selectedColor =				{ GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED) },
 	m_selectedItemData = 			nil,
 	m_sortsItems = 					false, --ZO_ComboBox real default is true
 	m_sortOrder = 					ZO_SORT_ORDER_UP,
 	m_sortType = 					ZO_SORT_BY_NAME,
-	m_spacing = 					DEFAULT_SPACING,
+	m_spacing = 					dropdownDefaults.DEFAULT_SPACING,
 	multiSelectionTextFormatter = 	SI_COMBO_BOX_DEFAULT_MULTISELECTION_TEXT_FORMATTER,
 	noSelectionText = 				GetString(SI_COMBO_BOX_DEFAULT_NO_SELECTION_TEXT),
 	onSelectionBlockedCallback =	nil,
@@ -363,15 +385,15 @@ local comboBoxDefaults = {
 
 	--LibScrollableMenu internal (e.g. options)
 	disableFadeGradient = 			false,
-	headerFont =					DEFAULT_FONT,
-	headerColor = 					HEADER_TEXT_COLOR,
-	visibleRows = 					DEFAULT_VISIBLE_ROWS,
-	visibleRowsSubmenu = 			DEFAULT_VISIBLE_ROWS,
+	headerFont =					fonts.DEFAULT_FONT,
+	headerColor = 					colors.HEADER_TEXT_COLOR,
+	visibleRows = 					dropdownDefaults.DEFAULT_VISIBLE_ROWS,
+	visibleRowsSubmenu = 			dropdownDefaults.DEFAULT_VISIBLE_ROWS,
 	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 	headerCollapsed = 				false,
-	containerMinWidth = MIN_WIDTH_WITHOUT_SEARCH_HEADER,
+	containerMinWidth = 			dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER,
 }
-lib.comboBoxDefaults = comboBoxDefaults
+constants.comboBox.defaults = comboBoxDefaults
 
 --Always overwrite these settings in the comboBoxes with these default values of LSM
 --e.g. sorting = disabled (ZO_ComboBox default sorting = enabled).
@@ -381,34 +403,34 @@ lib.comboBoxDefaults = comboBoxDefaults
 local comboBoxDefaultsContextualInitValues = {
 	m_sortsItems = 	{ ["ifEquals"]=true, ["changeTo"]=comboBoxDefaults.m_sortsItems }, --ZO_ComboBox real default is true
 }
+constants.comboBox.defaultsContextualInitValues = comboBoxDefaultsContextualInitValues
 
 --Set the default highlight values
-defaultHighlightTemplate = comboBoxDefaults.m_highlightTemplate
-defaultHighlightColor = comboBoxDefaults.m_highlightColor
+constants.entryTypes.defaults.highlights.defaultHighlightTemplate = comboBoxDefaults.m_highlightTemplate
+constants.entryTypes.defaults.highlights.defaultHighlightColor = comboBoxDefaults.m_highlightColor
 
 
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
 local defaultComboBoxOptions  = {
 	["disableFadeGradient"] = 		false,
-	["font"] = 						DEFAULT_FONT,
+	["font"] = 						fonts.DEFAULT_FONT,
 	["headerCollapsed"] =			false,
 	["headerCollapsible"] = 		false,
 	["highlightContextMenuOpeningControl"] = false,
-	["sortEntries"] = 				DEFAULT_SORTS_ENTRIES,
-	["spacing"] = 					DEFAULT_SPACING,
+	["sortEntries"] = 				dropdownDefaults.DEFAULT_SORTS_ENTRIES,
+	["spacing"] = 					dropdownDefaults.DEFAULT_SPACING,
 	["useDefaultHighlightForSubmenuWithCallback"] = false,
-	["visibleRowsDropdown"] = 		DEFAULT_VISIBLE_ROWS,
-	["visibleRowsSubmenu"] = 		DEFAULT_VISIBLE_ROWS,
+	["visibleRowsDropdown"] = 		dropdownDefaults.DEFAULT_VISIBLE_ROWS,
+	["visibleRowsSubmenu"] = 		dropdownDefaults.DEFAULT_VISIBLE_ROWS,
 	--["XMLRowTemplates"] = 		table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 	--["XMLRowHighlightTemplates"] =table, --Will be set at comboBoxClass:UpdateOptions(options) from options (see function comboBox_base:AddCustomEntryTemplates)
 }
-lib.defaultComboBoxOptions  = defaultComboBoxOptions
+constants.comboBox.defaultComboBoxOptions  = defaultComboBoxOptions
 
 
 ------------------------------------------------------------------------------------------------------------------------
 -- LSM Options -> ZO_ComboBox options
 ------------------------------------------------------------------------------------------------------------------------
-
 --Options key mapping
 --The mapping between LibScrollableMenu options key and ZO_ComboBox's key. Used in comboBoxClass:UpdateOptions()
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
@@ -452,7 +474,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["spacing"] = 				"m_spacing",
 	["visibleRowsDropdown"] =	"visibleRows",
 }
-lib.LSMOptionsKeyToZO_ComboBoxOptionsKey = LSMOptionsKeyToZO_ComboBoxOptionsKey
+constants.comboBox.mapping.LSMOptionsKeyToZO_ComboBoxOptionsKey = LSMOptionsKeyToZO_ComboBoxOptionsKey
 
 
 --The callback functions for the mapped LSM option -> ZO_ComboBox options (where any provided/needed)
@@ -560,7 +582,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		comboBoxObject:UpdateHeight(comboBoxObject.m_dropdown)
 	end,
 }
-lib.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCallbacks
+constants.comboBox.mapping.LSMOptionsToZO_ComboBoxOptionsCallbacks = LSMOptionsToZO_ComboBoxOptionsCallbacks
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -622,6 +644,7 @@ local submenuClass_exposedVariables = {
 	["XMLRowTemplates"] = true,
 	["XMLRowHighlightTemplates"] = true,
 }
+constants.submenu.submenuClass_exposedVariables = submenuClass_exposedVariables
 
 -- Pass-through functions:
 --If submenuClass_exposedFunctions[variable] == true: if submenuClass[key] is not nil, returns submenuClass[key](submenu.m_comboBox, ...)
@@ -629,23 +652,29 @@ local submenuClass_exposedFunctions = {
 	["SelectItem"] = true, -- (item, ignoreCallback)
 	["IsItemSelected"] = true,
 }
+constants.submenu.submenuClass_exposedFunctions = submenuClass_exposedFunctions
 
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Search filter
+constants.searchFilter = {}
+
 --No entry found in main menu
 local noEntriesResults = {
 	enabled = false,
 	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS),
-	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
+	m_disabledColor = colors.DEFAULT_TEXT_DISABLED_COLOR,
 }
+constants.searchFilter.noEntriesResults = noEntriesResults
+
 --No entry found in sub menu
-local noEntriesSubmenu = {
-	name = GetString(SI_QUICKSLOTS_EMPTY),
+local noEntriesSubmenuResults = {
 	enabled = false,
-	m_disabledColor = DEFAULT_TEXT_DISABLED_COLOR,
+	name = GetString(SI_QUICKSLOTS_EMPTY),
+	m_disabledColor = colors.DEFAULT_TEXT_DISABLED_COLOR,
 --	m_disabledColor = ZO_ERROR_COLOR,
 }
+constants.searchFilter.noEntriesSubmenuResults = noEntriesSubmenuResults
 
 --LSM entryTypes which should be processed by the text search/filter. Basically all entryTypes that use a label/name
 local filteredEntryTypes = {
@@ -657,15 +686,19 @@ local filteredEntryTypes = {
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
 	--[LSM_ENTRY_TYPE_DIVIDER] = false,
 }
+constants.searchFilter.filteredEntryTypes = filteredEntryTypes
+
 --Table defines if some names of the entries count as "search them or skip them".
 --true: Item's name does not need to be searched -> skip them / false: search the item's name as usual
 local filterNamesExempts = {
 	--Direct check via "name" string
 	[""] = true,
-	[noEntriesSubmenu.name] = true, -- "Empty"
+	[noEntriesSubmenuResults.name] = true, -- "Empty"
 	--Check via type(name)
 	--["nil"] = true,
 }
+constants.searchFilter.filterNamesExempts = filterNamesExempts
+
 
 
 ------------------------------------------------------------------------------------------------------------------------

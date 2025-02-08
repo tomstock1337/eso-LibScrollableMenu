@@ -1,6 +1,9 @@
 local lib = LibScrollableMenu
 if not lib then return end
 
+local MAJOR = lib.name
+
+
 --------------------------------------------------------------------
 -- For debugging and logging
 --------------------------------------------------------------------
@@ -53,8 +56,14 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 local suppressNextOnGlobalMouseUp
 local buttonGroupDefaultContextMenu
 
+local constants = lib.contants
+local comboBoxConstants = constants.comboBox
+local comboBoxMappingConstants = comboBoxConstants.mapping
+local comboBoxDefaults = comboBoxConstants.defaults
+
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
+local getValueOrCallback = libUtil.getValueOrCallback
 
 
 --------------------------------------------------------------------
@@ -70,6 +79,7 @@ local g_contextMenu
 -- LSM contextMenu class definition
 --------------------------------------------------------------------
 local contextMenuClass = comboBoxClass:Subclass()
+classes.contextMenuClass = contextMenuClass
 
 
 --------------------------------------------------------------------
@@ -230,4 +240,7 @@ local function createContextMenuObject()
 	local comboBoxContainer = CreateControlFromVirtual(MAJOR .. "_ContextMenu", GuiRoot, "ZO_ComboBox")
 	g_contextMenu = contextMenuClass:New(comboBoxContainer)
 	lib.contextMenu = g_contextMenu
+
+	lib.CreateContextMenuObject = nil --remove globally accessible function after first call
 end
+lib.CreateContextMenuObject = createContextMenuObject

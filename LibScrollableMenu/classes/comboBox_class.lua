@@ -1,6 +1,9 @@
 local lib = LibScrollableMenu
 if not lib then return end
 
+local MAJOR = lib.name
+
+
 --------------------------------------------------------------------
 -- For debugging and logging
 --------------------------------------------------------------------
@@ -51,8 +54,18 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 local suppressNextOnGlobalMouseUp
 local buttonGroupDefaultContextMenu
 
+local constants = lib.contants
+local comboBoxConstants = constants.comboBox
+local comboBoxMappingConstants = comboBoxConstants.mapping
+local comboBoxDefaults = comboBoxConstants.defaults
+
+local LSMOptionsKeyToZO_ComboBoxOptionsKey = comboBoxMappingConstants.LSMOptionsKeyToZO_ComboBoxOptionsKey
+local LSMOptionsToZO_ComboBoxOptionsCallbacks = comboBoxMappingConstants.LSMOptionsToZO_ComboBoxOptionsCallbacks
+
+
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
+local getValueOrCallback = libUtil.getValueOrCallback
 
 
 ------------------------------------------------------------------------------------------------------------------------

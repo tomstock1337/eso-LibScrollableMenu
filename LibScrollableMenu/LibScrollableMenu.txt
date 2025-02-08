@@ -24,10 +24,12 @@ constants.lua
 debug/LSM_debug.lua
 
 ##Classes for the LSM comboBoxes
+classes/dropdown_class.lua
 classes/comboBox_base.lua
 classes/comboBox_class.lua
 classes/submenu_class.lua
 classes/contextMenu_class.lua
+classes/buttonGroup_class.lua
 
 ##LSM code and functions
 code/LSM_Util.lua

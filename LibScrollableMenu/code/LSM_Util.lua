@@ -29,6 +29,11 @@ local trem = table.remove
 -----------------------------------------------------------------------
 -- Library utility
 --------------------------------------------------------------------
+local constants = lib.contants
+local comboBoxConstants = constants.comboBox
+local comboBoxMappingConstants = comboBoxConstants.mapping
+local comboBoxDefaults = comboBoxConstants.defaults
+
 local libUtil = lib.Util
 
 
@@ -42,6 +47,20 @@ libUtil.NIL_CHECK_TABLE = NIL_CHECK_TABLE
 --Throttled calls
 local throttledCallDelayName = MAJOR .. '_throttledCallDelay'
 local throttledCallDelay = 10
+
+--Context menus
+local g_contextMenu
+
+
+--------------------------------------------------------------------
+-- Get the context menu reference variable
+--------------------------------------------------------------------
+function libUtil.getContextMenuReference()
+	g_contextMenu = g_contextMenu or lib.contextMenu
+	return g_contextMenu
+end
+
+
 
 
 --------------------------------------------------------------------

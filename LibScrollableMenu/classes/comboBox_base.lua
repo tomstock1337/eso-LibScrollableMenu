@@ -1,6 +1,9 @@
 local lib = LibScrollableMenu
 if not lib then return end
 
+local MAJOR = lib.name
+
+
 --------------------------------------------------------------------
 -- For debugging and logging
 --------------------------------------------------------------------
@@ -49,8 +52,22 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 local suppressNextOnGlobalMouseUp
 local buttonGroupDefaultContextMenu
 
+local constants = lib.contants
+local comboBoxConstants = constants.comboBox
+local comboBoxMappingConstants = comboBoxConstants.mapping
+local searchFilterConstants = constants.searchFilter
+
+local comboBoxDefaults = comboBoxConstants.defaults
+local noEntriesResults = searchFilterConstants.noEntriesResults
+local noEntriesSubmenuResults = searchFilterConstants.noEntriesSubmenuResults
+local filteredEntryTypes = searchFilterConstants.filteredEntryTypes
+local filterNamesExempts = searchFilterConstants.filterNamesExempts
+
+
+
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
+local getValueOrCallback = libUtil.getValueOrCallback
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -663,11 +680,11 @@ function comboBox_base:RefreshSortedItems(parentControl)
 	local entries = self:GetEntries()
 	-- Ignore nil entries
 	if entries ~= nil then
-		-- replace empty entries with noEntriesSubmenu item
+		-- replace empty entries with noEntriesSubmenuResults item
 		if ZO_IsTableEmpty(entries) then
-			noEntriesSubmenu.m_owner = self
-			noEntriesSubmenu.m_parentControl = parentControl
-			self:AddItem(noEntriesSubmenu, ZO_COMBOBOX_SUPPRESS_UPDATE)
+			noEntriesSubmenuResults.m_owner = self
+			noEntriesSubmenuResults.m_parentControl = parentControl
+			self:AddItem(noEntriesSubmenuResults, ZO_COMBOBOX_SUPPRESS_UPDATE)
 		else
 			for _, item in ipairs(entries) do
 				item.m_owner = self
