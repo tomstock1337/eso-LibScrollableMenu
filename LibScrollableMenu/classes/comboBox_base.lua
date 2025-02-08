@@ -57,6 +57,7 @@ local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local searchFilterConstants = constants.searchFilter
+local handlerNames = constants.handlerNames
 
 local comboBoxDefaults = comboBoxConstants.defaults
 local noEntriesResults = searchFilterConstants.noEntriesResults
@@ -69,11 +70,158 @@ local filterNamesExempts = searchFilterConstants.filterNamesExempts
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
+local showTooltip = libUtil.showTooltip
+local hideTooltip = libUtil.hideTooltip
 
 
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
+--local helper functions
+
+--------------------------------------------------------------------
+--Filtering
+--------------------------------------------------------------------
+--options.customFilterFunc needs the same signature/parameters like this function
+--return value needs to be a boolean: true = found/false = not found
+-->Attention: prefix "/" in the filterString still jumps this function for submenus as non-matching will be always found that way!
+local function defaultFilterFunc(p_item, p_filterString)
+	local name = p_item.label or p_item.name
+	return zostrlow(name):find(p_filterString) ~= nil
+end
+
+
+--------------------------------------------------------------------
+-- Local narration functions
+--------------------------------------------------------------------
+local function isAccessibilitySettingEnabled(settingId)
+	local isSettingEnabled = GetSetting_Bool(SETTING_TYPE_ACCESSIBILITY, settingId)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 40, tos(settingId), tos(isSettingEnabled)) end
+	return isSettingEnabled
+end
+
+local function isAccessibilityModeEnabled()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 41) end
+	return isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_ACCESSIBILITY_MODE)
+end
+
+local function isAccessibilityUIReaderEnabled()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 42) end
+	return isAccessibilityModeEnabled() and isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_SCREEN_NARRATION)
+end
+
+--Currently commented as these functions are used in each addon and the addons either pass in options.narrate table so their
+--functions will be called for narration, or not
+local function canNarrate()
+	--todo: Add any other checks, like "Is any LSM menu still showing and narration should still read?"
+	return true
+end
+
+--local customNarrateEntryNumber = 0
+local function addNewUINarrationText(newText, stopCurrent)
+	if isAccessibilityUIReaderEnabled() == false then return end
+	stopCurrent = stopCurrent or false
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 43, tos(newText), tos(stopCurrent)) end
+--d( "["..MAJOR.."]AddNewChatNarrationText-stopCurrent: " ..tostring(stopCurrent) ..", text: " ..tostring(newText))
+	--Stop the current UI narration before adding a new?
+	if stopCurrent == true then
+		--StopNarration(true)
+		ClearActiveNarration()
+	end
+
+	--!DO NOT USE CHAT NARRATION AS IT IS TO CLUNKY / NON RELIABLE!
+	--Remove any - from the text as it seems to make the text not "always" be read?
+	--local newTextClean = string.gsub(newText, "-", "")
+
+	--if newTextClean == nil or newTextClean == "" then return end
+	--PlaySound(SOUNDS.TREE_HEADER_CLICK)
+	--if LibDebugLogger == nil and DebugLogViewer == nil then
+		--Using this API does no always properly work
+		--RequestReadTextChatToClient(newText)
+		--Adding it to the chat as debug message works better/more reliably
+		--But this will add a timestamp which is read, too :-(
+		--CHAT_ROUTER:AddDebugMessage(newText)
+	--else
+		--Using this API does no always properly work
+		--RequestReadTextChatToClient(newText)
+		--Adding it to the chat as debug message works better/more reliably
+		--But this will add a timestamp which is read, too :-(
+		--Disable DebugLogViewer capture of debug messages?
+		--LibDebugLogger:SetBlockChatOutputEnabled(false)
+		--CHAT_ROUTER:AddDebugMessage(newText)
+		--LibDebugLogger:SetBlockChatOutputEnabled(true)
+	--end
+	--RequestReadTextChatToClient(newTextClean)
+
+
+	--Use UI Screen reader narration
+	local addOnNarationData = {
+		canNarrate = function()
+			return canNarrate() --ADDONS_FRAGMENT:IsShowing() -->Is currently showing
+		end,
+		selectedNarrationFunction = function()
+			return SNM:CreateNarratableObject(newText)
+		end,
+	}
+	--customNarrateEntryNumber = customNarrateEntryNumber + 1
+	local customNarrateEntryName = handlerNames.UINarrationName --.. tostring(customNarrateEntryNumber)
+	SNM:RegisterCustomObject(customNarrateEntryName, addOnNarationData)
+	SNM:QueueCustomEntry(customNarrateEntryName)
+	RequestReadPendingNarrationTextToClient(NARRATION_TYPE_UI_SCREEN)
+end
+
+--Delayed narration updater function to prevent queuing the same type of narration (e.g. OnMouseEnter and OnMouseExit)
+--several times after another, if you move the mouse from teh top of a menu to the bottom of the menu, hitting all entries once
+-->Only the last entry will be narrated then, where the mouse stops
+local function onUpdateDoNarrate(uniqueId, delay, callbackFunc)
+	local updaterName = handlerNames.UINarrationUpdaterName ..tos(uniqueId)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 44, tos(updaterName), tos(delay)) end
+
+	EM:UnregisterForUpdate(updaterName)
+	if isAccessibilityUIReaderEnabled() == false or callbackFunc == nil then return end
+	delay = delay or 1000
+	EM:RegisterForUpdate(updaterName, delay, function()
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 45, tos(updaterName)) end
+		if isAccessibilityUIReaderEnabled() == false then EM:UnregisterForUpdate(updaterName) return end
+		callbackFunc()
+		EM:UnregisterForUpdate(updaterName)
+	end)
+end
+
+--Own narration functions, if ever needed -> Currently the addons pass in their narration functions
+local function onMouseEnterOrExitNarrate(narrateText, stopCurrent)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 46, tos(narrateText), tos(stopCurrent)) end
+	onUpdateDoNarrate("OnMouseEnterExit", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
+end
+
+local function onSelectedNarrate(narrateText, stopCurrent)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 47, tos(narrateText), tos(stopCurrent)) end
+	onUpdateDoNarrate("OnEntryOrButtonSelected", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
+end
+
+local function onMouseMenuOpenOrCloseNarrate(narrateText, stopCurrent)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 48, tos(narrateText), tos(stopCurrent)) end
+	onUpdateDoNarrate("OnMenuOpenOrClose", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
+end
+--Lookup table for ScrollableHelper:Narrate() function -> If a string will be returned as 1st return parameter (and optionally a boolean as 2nd, for stopCurrent)
+--by the addon's narrate function, the library will lookup the function to use for the narration event, and narrate it then via the UI narration.
+-->Select the same function if you want to suppress multiple similar messages to be played after another (e.g. OnMouseEnterExitNarrate for similar OnMouseEnter/Exit events)
+local narrationEventToLibraryNarrateFunction = {
+	["OnComboBoxMouseEnter"] = 	onMouseEnterOrExitNarrate,
+	["OnComboBoxMouseExit"] =	onMouseEnterOrExitNarrate,
+	["OnMenuShow"] = 			onMouseEnterOrExitNarrate,
+	["OnMenuHide"] = 			onMouseEnterOrExitNarrate,
+	["OnSubMenuShow"] = 		onMouseMenuOpenOrCloseNarrate,
+	["OnSubMenuHide"] = 		onMouseMenuOpenOrCloseNarrate,
+	["OnEntryMouseEnter"] = 	onMouseEnterOrExitNarrate,
+	["OnEntryMouseExit"] = 		onMouseEnterOrExitNarrate,
+	["OnEntrySelected"] = 		onSelectedNarrate,
+	["OnCheckboxUpdated"] = 	onSelectedNarrate,
+	["OnRadioButtonUpdated"] = 	onSelectedNarrate,
+}
+
+
+
 --------------------------------------------------------------------
 -- LSM ComboBox base & submenu classes definition
 --------------------------------------------------------------------

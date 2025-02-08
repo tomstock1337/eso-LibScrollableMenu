@@ -45,6 +45,8 @@ local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
 local defaultComboBoxOptions = comboBoxConstants.defaultComboBoxOptions
 
+local allowedEntryTypesForContextMenu = lib.allowedEntryTypesForContextMenu
+local entryTypesForContextMenuWithoutMandatoryCallback = entryTypeConstants.entryTypesForContextMenuWithoutMandatoryCallback
 
 local libDivider = lib.DIVIDER
 
@@ -52,6 +54,7 @@ local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
 local getContextMenuReference = libUtil.getContextMenuReference
+local getButtonGroupOfEntryType = libUtil.getButtonGroupOfEntryType
 
 
 local g_contextMenu

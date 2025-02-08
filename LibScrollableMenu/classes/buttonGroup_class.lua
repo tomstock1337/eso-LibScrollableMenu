@@ -69,18 +69,13 @@ local filterNamesExempts = searchFilterConstants.filterNamesExempts
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
-
+local checkIfContextMenuOpenedButOtherControlWasClicked = libUtil.checkIfContextMenuOpenedButOtherControlWasClicked
+local showTooltip = libUtil.showTooltip
+local hideTooltip = libUtil.hideTooltip
 
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
-
---Local helper functions
-local function getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
-	local buttonGroupObject = comboBox.m_buttonGroup
-	local buttonGroupOfEntryType = (buttonGroupObject ~= nil and buttonGroupObject[entryType] ~= nil and buttonGroupObject[entryType][groupIndex]) or nil
-	return buttonGroupOfEntryType
-end
 
 --------------------------------------------------------------------
 -- LSM buttonGroup class definition

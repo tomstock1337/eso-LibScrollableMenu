@@ -70,6 +70,8 @@ local submenuClass_exposedFunctions = submenuConstants.submenuClass_exposedFunct
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
+local showTooltip = libUtil.showTooltip
+local hideTooltip = libUtil.hideTooltip
 
 
 ------------------------------------------------------------------------------------------------------------------------

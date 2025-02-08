@@ -65,6 +65,8 @@ local comboBoxDefaults = comboBoxConstants.defaults
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
+local showTooltip = libUtil.showTooltip
+local hideTooltip = libUtil.hideTooltip
 
 
 --------------------------------------------------------------------

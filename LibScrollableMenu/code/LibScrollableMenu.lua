@@ -23,10 +23,12 @@ local trem = table.remove
 --------------------------------------------------------------------
 local constants = lib.contants
 local entryTypeConstants = constants.entryTypes
-
 local comboBoxConstants = constants.comboBox
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
+
+local additionalDataKeyToLSMEntryType = entryTypeConstants.additionalDataKeyToLSMEntryType
+
 
 local libDivider = lib.DIVIDER
 
@@ -93,38 +95,7 @@ end
 
 
 
---------------------------------------------------------------------
--- Breadcrumb animation highlight
---------------------------------------------------------------------
---Did the virtual XML template for the highlight row change at the control? Reset the highlight control then so it will
---be build new with the new XML template, and same name -> Via ESOUI scrolltemplates.lua, PlayAnimationOnControl function
-local function LSM_CheckIfAnimationControlNeedsXMLTemplateChange(control, controlTemplate)
-	local retVar = false
-	if control and controlTemplate then
-		local rowHighlightData = control.LSM_rowHighlightData --was set to the control via self.highlightCallback(control, true) function at the scrollList!
-		local highlightControlXMLTemplate = (rowHighlightData ~= nil and rowHighlightData.highlightXMLTemplate) or nil
-		--Highlight control exists already and the XML template changed (e.g. scrolling an existing ScrollList row)
-		if highlightControlXMLTemplate ~= nil and highlightControlXMLTemplate ~= controlTemplate then
-			--Reset the animation timeline control and the highlight control
-			local animationFieldName = rowHighlightData.animationFieldName
-			if animationFieldName and control[animationFieldName] ~= nil then
-				control[animationFieldName] = nil
 
-				local highlightControlName = rowHighlightData.highlightControlName
-				if highlightControlName ~= nil then
-					if _G[highlightControlName] ~= nil then
-						_G[highlightControlName] = nil
-					end
-				end
-			end
-			retVar = true
-		end
-	end
-
-	--Reset the table at the control
-	control.LSM_rowHighlightData = nil
-	return retVar
-end
 
 --Similar function to /esoui/libraries/zo_templates/scrolltempaltes.lua, function PlayAnimationOnControl used for ZO_ScrollList
 -->But here only for the contextmenu and submenu opening controls!
@@ -580,7 +551,7 @@ local function checkEntryType(text, entryType, additionalData, isAddDataTypeTabl
 			--It should be a divider, according to the passed in text?
 			if getValueOrCallback(text, ((isAddDataTypeTable and additionalData) or options)) == libDivider then
 --d("<entry is divider, by text")
-				return entryTypeConstants.entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
+				return entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
 			end
 		end
 
@@ -609,7 +580,7 @@ local function checkEntryType(text, entryType, additionalData, isAddDataTypeTabl
 --d(">>!!additionalData.name check")
 				if getValueOrCallback(name, additionalData) == libDivider then
 --d("<entry is divider, by name")
-					return entryTypeConstants.entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
+					return entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
 				end
 			end
 			local label = additionalData.label
@@ -617,7 +588,7 @@ local function checkEntryType(text, entryType, additionalData, isAddDataTypeTabl
 --d(">>!!additionalData.label check")
 				if getValueOrCallback(label, additionalData) == libDivider then
 --d("<entry is divider, by label")
-					return entryTypeConstants.entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
+					return entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
 				end
 			end
 		end
@@ -820,11 +791,7 @@ local function updateDataValues(data, onlyTheseEntries)
 	updateDataByFunctions(data)
 end
 
---Check if an entry got the isNew set
-local function getIsNew(_entry)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 17) end
-	return getValueOrCallback(_entry.isNew, _entry) or false
-end
+
 
 local function preUpdateSubItems(item)
 	if item[LSM_DATA_SUBTABLE] == nil then
@@ -866,97 +833,8 @@ local function recursiveOverEntries(entry, callback)
 	return result
 end
 
---(Un)Silence the OnClicked sound of a selected dropdown entry
-local function silenceEntryClickedSound(doSilence, entryType)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 20, tos(doSilence), tos(entryType)) end
-	local soundNameForSilence = entryTypeToSilenceSoundName[entryType]
-	if soundNameForSilence == nil then return end
-	if doSilence == true then
-		SOUNDS[soundNameForSilence] = soundClickedSilenced
-	else
-		local origSound = entryTypeToOriginalSelectedSound[entryType]
-		SOUNDS[soundNameForSilence] = origSound
-	end
-end
 
---Get the options of the scrollable dropdownObject
-local function getOptionsForDropdown(dropdown)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 21) end
-	return dropdown.owner.options or {}
-end
 
---Check if a sound should be played if a dropdown entry was selected
-local function playSelectedSoundCheck(dropdown, entryType)
-	entryType = entryType or entryTypeConstants.entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 22, tos(entryType)) end
-
-	silenceEntryClickedSound(false, entryType)
-
-	local soundToPlay
-	local soundToPlayOrig = entryTypeToOriginalSelectedSound[entryType]
-	local options = getOptionsForDropdown(dropdown)
-
-	if options ~= nil then
-		--Chosen at options to play no selected sound?
-		if getValueOrCallback(options.selectedSoundDisabled, options) == true then
-			silenceEntryClickedSound(true, entryType)
-			return
-		else
-			--Custom selected sound passed in?
-			soundToPlay = getValueOrCallback(options.selectedSound, options)
-			--Use default selected sound
-			if soundToPlay == nil then soundToPlay = soundToPlayOrig end
-		end
-	else
-		soundToPlay = soundToPlayOrig
-	end
-	PlaySound(soundToPlay)
-end
-
---Recursivley map the entries of a submenu and add them to the mapTable
---used for the callback "NewStatusUpdated" to provide the mapTable with the entries
-local function doMapEntries(entryTable, mapTable, entryTableType)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 23) end
-	if entryTableType == nil then
-		-- If getValueOrCallback returns nil then return {}
-		entryTable = getValueOrCallback(entryTable) or {}
-	end
-
-	for _, entry in pairs(entryTable) do
-		if entry.entries then
-			doMapEntries(entry.entries, mapTable)
-		end
-		
-		if entry.callback then
-			mapTable[entry] = entry
-		end
-	end
-end
-
--- This function will create a map of all entries recursively. Useful when there are submenu entries
--- and you want to use them for comparing in the callbacks, NewStatusUpdated, CheckboxUpdated, RadioButtonUpdated
-local function mapEntries(entryTable, mapTable, blank)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 24) end
-
-	if blank ~= nil then
-		entryTable = mapTable
-		mapTable = blank
-		blank = nil
-	end
-	
-	local entryTableType, mapTableType = type(entryTable), type(mapTable)
-	local entryTableToMap = entryTable
-	if entryTableType == "function" then
-		entryTableToMap = getValueOrCallback(entryTable)
-		entryTableType = type(entryTableToMap)
-	end
-
-	assert(entryTableType == 'table' and mapTableType == 'table' , sfor("["..MAJOR..":MapEntries] tables expected, got %q = %s, %q = %s", "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
-	
-	-- Splitting these up so the above is not done each iteration
-	doMapEntries(entryTableToMap, mapTable, entryTableType)
-end
-lib.MapEntries = mapEntries
 
 local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIconCtrl, parentHeight)
 	--singleIconDataTab can be a table or any other format (supported: string or function returning a string)
@@ -1334,20 +1212,7 @@ d("[checkIfHiddenForReasons]isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isC
 	return returnValue
 end
 
---Check if a context menu was shown and a control not belonging to that context menu was clicked
---Returns boolean true if that was the case -> Prevent selection of entries or changes of radioButtons/checkboxes
---while a context menu was opened and one directly clicks on that other entry
-local function checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, buttonId)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 29, tos(comboBox == g_contextMenu), tos(g_contextMenu:IsDropdownVisible())) end
-	if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
---d("!!!!ContextMenu - check if OPENED!!!!! comboBox: " ..tos(comboBox))
-		if comboBox ~= nil then
-			return comboBox:HiddenForReasons(buttonId)
-		end
-	end
---d("<<combobox not hidden for reasons")
-	return false
-end
+
 
 local function getMouseOver_HiddenFor_Info()
 	local mocCtrl = moc()
@@ -1379,57 +1244,7 @@ local function areAnyEntriesNew(entry)
 end
 ]]
 
--- Add/Remove the new status of a dropdown entry.
--- This works up from the mouse-over entry's submenu up to the dropdown,
--- as long as it does not run into a submenu still having a new entry.
-local function updateSubmenuNewStatus(control)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 31) end
-	-- reverse parse
-	local isNew = false
-	
-	local data = getControlData(control)
-	local submenuEntries = getValueOrCallback(data.entries, data) or {}
-	
-	-- We are only going to check the current submenu's entries, not recursively
-	-- down from here since we are working our way up until we find a new entry.
-	for _, subentry in ipairs(submenuEntries) do
-		if getIsNew(subentry) then
-			isNew = true
-		end
-	end
-	-- Set flag on submenu
-	data.isNew = isNew
-	if not isNew then
-		ZO_ScrollList_RefreshVisible(control.m_dropdownObject.scrollControl)
-			
-		local parent = data.m_parentControl
-		if parent then
-			updateSubmenuNewStatus(parent)
-		end
-	end
-end
 
---Remove the new status of a dropdown entry
-local function clearNewStatus(control, data)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 32) end
-	if data.isNew then
-		-- Only directly change status on non-submenu entries. They are effected by child entries
-		if data.entries == nil then
-			data.isNew = false
-			
-			lib:FireCallbacks('NewStatusUpdated', control, data)
-			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 33, tos(getControlName(control))) end
-
---d(debugPrefix.."clearNewStatus - " .. tos(getControlName(control)))
-			control.m_dropdownObject:Refresh(data)
-			
-			local parent = data.m_parentControl
-			if parent then
-				updateSubmenuNewStatus(parent)
-			end
-		end
-	end
-end
 
 local function validateEntryType(item)
 	--Prefer passed in entryType (if any provided)
@@ -1509,576 +1324,60 @@ end
 -- Local tooltip functions
 --------------------------------------------------------------------
 
-local function resetCustomTooltipFuncVars()
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 36) end
-	lib.lastCustomTooltipFunction = nil
-	lib.onHideCustomTooltipFunc = nil
-end
 
---Hide the tooltip of a dropdown entry
-local function hideTooltip(control)
---d(debugPrefix .. "hideTooltip - name: " .. tos(getControlName(control)))
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 37, tos(lib.onHideCustomTooltipFunc)) end
-	if lib.onHideCustomTooltipFunc then
-		lib.onHideCustomTooltipFunc()
-	else
-		ZO_Tooltips_HideTextTooltip()
+
+
+
+
+
+
+
+
+
+--Recursivley map the entries of a submenu and add them to the mapTable
+--used for the callback "NewStatusUpdated" to provide the mapTable with the entries
+local function doMapEntries(entryTable, mapTable, entryTableType)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 23) end
+	if entryTableType == nil then
+		-- If getValueOrCallback returns nil then return {}
+		entryTable = getValueOrCallback(entryTable) or {}
 	end
-	resetCustomTooltipFuncVars()
-end
 
-local function getTooltipAnchor(self, control, tooltipText, hasSubmenu)
-	local relativeTo = control
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 38, tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu)) end
-
-	local submenu = self:GetSubmenu()
-	if hasSubmenu then
-		if submenu and not submenu:IsDropdownVisible() then
-			return getTooltipAnchor(self, control, tooltipText, hasSubmenu)
+	for _, entry in pairs(entryTable) do
+		if entry.entries then
+			doMapEntries(entry.entries, mapTable)
 		end
-		relativeTo = submenu.m_dropdownObject.control
-	else
-		if submenu and submenu:IsDropdownVisible() then
-			submenu:HideDropdown()
-		end
-	end
 
-	local point, offsetX, offsetY, relativePoint = BOTTOMLEFT, 0, 0, TOPRIGHT
-
-	local anchorPoint = select(2, relativeTo:GetAnchor())
-	local right = anchorPoint ~= 3
-	if not right then
-		local width, height = GuiRoot:GetDimensions()
-		local fontObject = _G[DEFAULT_FONT]
-		local nameWidth = (type(tooltipText) == "string" and GetStringWidthScaled(fontObject, tooltipText, 1, SPACE_INTERFACE)) or 250
-
-		if control:GetRight() + nameWidth > width then
-			right = true
-		end
-	end
-
-	if right then
-		if hasSubmenu then
-			point, relativePoint = BOTTOMRIGHT, TOPRIGHT
-		else
-			point, relativePoint = RIGHT, LEFT
-		end
-	else
-		if hasSubmenu then
-			point, relativePoint = BOTTOMLEFT, TOPLEFT
-		else
-			point, relativePoint = LEFT, RIGHT
-		end
-	end
-	-- In the order used in InitializeTooltip
-	return relativeTo, point, offsetX, offsetY, relativePoint
-end
-
-
---Show the tooltip of a dropdown entry. First check for any custom tooltip function that handles the control show/hide
---and if none is provided use default InformationTooltip
---> For a custom tooltip example see line below:
---[[
---Custom tooltip function example
-Function to show and hide a custom tooltip control. Pass that in to the data table of any entry, via data.customTooltip!
-Your function needs to create and show/hide that control, and populate the text etc to the control too!
-Parameters:
--control The control the tooltip blongs to
--doShow boolean to show if your mouse is inside the control and should show the tooltip. Must be false if tooltip should hide
--data The table with the current data of the rowControl
-	-> To distinguish if the tooltip should be hidden or shown:	If 1st param data is missing the tooltip will be hidden! If data is provided the tooltip wil be shown
--rowControl The userdata of the control the tooltip should show about
--point, offsetX, offsetY, relativePoint: Suggested anchoring points
-
-Example - Show an item tooltip of an inventory item
-data.customTooltip = function(control, doShow, data, relativeTo, point, offsetX, offsetY, relativePoint)
-	ClearTooltip(ItemTooltip)
-	if doShow and data then
-		InitializeTooltip(ItemTooltip, relativeTo, point, offsetX, offsetY, relativePoint)
-		ItemTooltip:SetBagItem(data.bagId, data.slotIndex)
-		ItemTooltipTopLevel:BringWindowToTop()
-	end
-end
-
-Another example using a custom control of your addon to show the tooltip:
-customTooltipFunc = function(control, doShow, data, rowControl, point, offsetX, offsetY, relativePoint)
-	if not doShow or data == nil then
-		myAddon.myTooltipControl:SetHidden(true)
-	else
-		myAddon.myTooltipControl:ClearAnchors()
-		myAddon.myTooltipControl:SetAnchor(point, rowControl, relativePoint, offsetX, offsetY)
-		myAddon.myTooltipControl:SetText(data.tooltip)
-		myAddon.myTooltipControl:SetHidden(false)
-	end
-end
-]]
-local function showTooltip(self, control, data, hasSubmenu)
-	resetCustomTooltipFuncVars()
-
-	local tooltipData = getValueOrCallback(data.tooltip, data)
-	local tooltipText = getValueOrCallback(tooltipData, data)
-	local customTooltipFunc = data.customTooltip
-	if type(customTooltipFunc) ~= "function" then customTooltipFunc = nil end
-
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 39, tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu), tos(customTooltipFunc)) end
-
-	--To prevent empty tooltips from opening.
-	if tooltipText == nil and customTooltipFunc == nil then return end
-
-	local relativeTo, point, offsetX, offsetY, relativePoint = getTooltipAnchor(self, control, tooltipText, hasSubmenu)
-
-	--RelativeTo is a control?
-	if type(relativeTo) == "userdata" and type(relativeTo.IsControlHidden) == "function" then
-		if customTooltipFunc ~= nil then
-			lib.lastCustomTooltipFunction = customTooltipFunc
-
-			local onHideCustomTooltipFunc = function()
-				customTooltipFunc(control, false, nil) --Set 2nd param to false and leave 3rd param data empty so the calling func knows we are hiding
-			end
-			lib.onHideCustomTooltipFunc = onHideCustomTooltipFunc
-			customTooltipFunc(control, true, data, relativeTo, point, offsetX, offsetY, relativePoint)
-		else
-			InitializeTooltip(InformationTooltip, relativeTo, point, offsetX, offsetY, relativePoint)
-			SetTooltipText(InformationTooltip, tooltipText)
-			InformationTooltipTopLevel:BringWindowToTop()
+		if entry.callback then
+			mapTable[entry] = entry
 		end
 	end
 end
 
---------------------------------------------------------------------
--- Local narration functions
---------------------------------------------------------------------
+-- This function will create a map of all entries recursively. Useful when there are submenu entries
+-- and you want to use them for comparing in the callbacks, NewStatusUpdated, CheckboxUpdated, RadioButtonUpdated
+local function mapEntries(entryTable, mapTable, blank)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 24) end
 
-local function isAccessibilitySettingEnabled(settingId)
-	local isSettingEnabled = GetSetting_Bool(SETTING_TYPE_ACCESSIBILITY, settingId)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 40, tos(settingId), tos(isSettingEnabled)) end
-	return isSettingEnabled
-end
-
-local function isAccessibilityModeEnabled()
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 41) end
-	return isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_ACCESSIBILITY_MODE)
-end
-
-local function isAccessibilityUIReaderEnabled()
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 42) end
-	return isAccessibilityModeEnabled() and isAccessibilitySettingEnabled(ACCESSIBILITY_SETTING_SCREEN_NARRATION)
-end
-
---Currently commented as these functions are used in each addon and the addons either pass in options.narrate table so their
---functions will be called for narration, or not
-local function canNarrate()
-	--todo: Add any other checks, like "Is any LSM menu still showing and narration should still read?"
-	return true
-end
-
---local customNarrateEntryNumber = 0
-local function addNewUINarrationText(newText, stopCurrent)
-	if isAccessibilityUIReaderEnabled() == false then return end
-	stopCurrent = stopCurrent or false
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 43, tos(newText), tos(stopCurrent)) end
---d( "["..MAJOR.."]AddNewChatNarrationText-stopCurrent: " ..tostring(stopCurrent) ..", text: " ..tostring(newText))
-	--Stop the current UI narration before adding a new?
-	if stopCurrent == true then
-		--StopNarration(true)
-		ClearActiveNarration()
+	if blank ~= nil then
+		entryTable = mapTable
+		mapTable = blank
+		blank = nil
 	end
 
-	--!DO NOT USE CHAT NARRATION AS IT IS TO CLUNKY / NON RELIABLE!
-	--Remove any - from the text as it seems to make the text not "always" be read?
-	--local newTextClean = string.gsub(newText, "-", "")
-
-	--if newTextClean == nil or newTextClean == "" then return end
-	--PlaySound(SOUNDS.TREE_HEADER_CLICK)
-	--if LibDebugLogger == nil and DebugLogViewer == nil then
-		--Using this API does no always properly work
-		--RequestReadTextChatToClient(newText)
-		--Adding it to the chat as debug message works better/more reliably
-		--But this will add a timestamp which is read, too :-(
-		--CHAT_ROUTER:AddDebugMessage(newText)
-	--else
-		--Using this API does no always properly work
-		--RequestReadTextChatToClient(newText)
-		--Adding it to the chat as debug message works better/more reliably
-		--But this will add a timestamp which is read, too :-(
-		--Disable DebugLogViewer capture of debug messages?
-		--LibDebugLogger:SetBlockChatOutputEnabled(false)
-		--CHAT_ROUTER:AddDebugMessage(newText)
-		--LibDebugLogger:SetBlockChatOutputEnabled(true)
-	--end
-	--RequestReadTextChatToClient(newTextClean)
-
-
-	--Use UI Screen reader narration
-	local addOnNarationData = {
-		canNarrate = function()
-			return canNarrate() --ADDONS_FRAGMENT:IsShowing() -->Is currently showing
-		end,
-		selectedNarrationFunction = function()
-			return SNM:CreateNarratableObject(newText)
-		end,
-	}
-	--customNarrateEntryNumber = customNarrateEntryNumber + 1
-	local customNarrateEntryName = UINarrationName --.. tostring(customNarrateEntryNumber)
-	SNM:RegisterCustomObject(customNarrateEntryName, addOnNarationData)
-	SNM:QueueCustomEntry(customNarrateEntryName)
-	RequestReadPendingNarrationTextToClient(NARRATION_TYPE_UI_SCREEN)
-end
-
---Delayed narration updater function to prevent queuing the same type of narration (e.g. OnMouseEnter and OnMouseExit)
---several times after another, if you move the mouse from teh top of a menu to the bottom of the menu, hitting all entries once
--->Only the last entry will be narrated then, where the mouse stops
-local function onUpdateDoNarrate(uniqueId, delay, callbackFunc)
-	local updaterName = UINarrationUpdaterName ..tos(uniqueId)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 44, tos(updaterName), tos(delay)) end
-
-	EM:UnregisterForUpdate(updaterName)
-	if isAccessibilityUIReaderEnabled() == false or callbackFunc == nil then return end
-	delay = delay or 1000
-	EM:RegisterForUpdate(updaterName, delay, function()
-		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 45, tos(updaterName)) end
-		if isAccessibilityUIReaderEnabled() == false then EM:UnregisterForUpdate(updaterName) return end
-		callbackFunc()
-		EM:UnregisterForUpdate(updaterName)
-	end)
-end
-
---Own narration functions, if ever needed -> Currently the addons pass in their narration functions
-local function onMouseEnterOrExitNarrate(narrateText, stopCurrent)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 46, tos(narrateText), tos(stopCurrent)) end
-	onUpdateDoNarrate("OnMouseEnterExit", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
-end
-
-local function onSelectedNarrate(narrateText, stopCurrent)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 47, tos(narrateText), tos(stopCurrent)) end
-	onUpdateDoNarrate("OnEntryOrButtonSelected", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
-end
-
-local function onMouseMenuOpenOrCloseNarrate(narrateText, stopCurrent)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 48, tos(narrateText), tos(stopCurrent)) end
-	onUpdateDoNarrate("OnMenuOpenOrClose", 25, function() addNewUINarrationText(narrateText, stopCurrent) end)
-end
---Lookup table for ScrollableHelper:Narrate() function -> If a string will be returned as 1st return parameter (and optionally a boolean as 2nd, for stopCurrent)
---by the addon's narrate function, the library will lookup the function to use for the narration event, and narrate it then via the UI narration.
--->Select the same function if you want to suppress multiple similar messages to be played after another (e.g. OnMouseEnterExitNarrate for similar OnMouseEnter/Exit events)
-local narrationEventToLibraryNarrateFunction = {
-	["OnComboBoxMouseEnter"] = 	onMouseEnterOrExitNarrate,
-	["OnComboBoxMouseExit"] =	onMouseEnterOrExitNarrate,
-	["OnMenuShow"] = 			onMouseEnterOrExitNarrate,
-	["OnMenuHide"] = 			onMouseEnterOrExitNarrate,
-	["OnSubMenuShow"] = 		onMouseMenuOpenOrCloseNarrate,
-	["OnSubMenuHide"] = 		onMouseMenuOpenOrCloseNarrate,
-	["OnEntryMouseEnter"] = 	onMouseEnterOrExitNarrate,
-	["OnEntryMouseExit"] = 		onMouseEnterOrExitNarrate,
-	["OnEntrySelected"] = 		onSelectedNarrate,
-	["OnCheckboxUpdated"] = 	onSelectedNarrate,
-	["OnRadioButtonUpdated"] = 	onSelectedNarrate,
-}
-
---------------------------------------------------------------------
--- Dropdown entry/row handlers
---------------------------------------------------------------------
-
-local function onMouseEnter(control, data, hasSubmenu)
-	local dropdown = control.m_dropdownObject
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 49, tos(getControlName(control)), tos(hasSubmenu)) end
-	lib:FireCallbacks('EntryOnMouseEnter', control, data)
-	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 50, tos(getControlName(control)), tos(hasSubmenu)) end
-
-	return dropdown
-end
-
-local function onMouseExit(control, data, hasSubmenu)
-	local dropdown = control.m_dropdownObject
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 51, tos(getControlName(control)), tos(hasSubmenu)) end
-	lib:FireCallbacks('EntryOnMouseExit', control, data)
-	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 52, tos(getControlName(control)), tos(hasSubmenu)) end
-
-	return dropdown
-end
-
-local function onMouseUp(control, data, hasSubmenu)
-	local dropdown = control.m_dropdownObject
-
-	lib:FireCallbacks('OnEntrySelected', control, data)
-	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
-
-	hideTooltip(control)
-	return dropdown
-end
-
-local has_submenu = true
-local no_submenu = false
-
-local function checkForMultiSelectEnabled(selfVar, control)
-	local isMultiSelectEnabled = (selfVar.owner and selfVar.owner.m_enableMultiSelect) or false
-	return (not isMultiSelectEnabled and not control.closeOnSelect) or false
-end
-
-local handlerFunctions  = {
-	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO_ComboBox handler and only show tooltip
-	["onMouseEnter"] = {
-		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, ...)
-			onMouseEnter(control, data, no_submenu)
-			clearNewStatus(control, data)
-			return checkForMultiSelectEnabled(selfVar, control)
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, ...)
-			-- Return true to skip the default handler to prevent row highlight.
-			return true
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, ...)
-			-- Return true to skip the default handler to prevent row highlight.
-			return true
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, ...)
-			--d( debugPrefix .. 'onMouseEnter [entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU]')
-			local dropdown = onMouseEnter(control, data, has_submenu)
-			clearTimeout()
-			--Show the submenu of the entry
-			dropdown:ShowSubmenu(control)
-			return false --not control.closeOnSelect
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, ...)
-			onMouseEnter(control, data, no_submenu)
-			return false --not control.closeOnSelect
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, ...)
-			onMouseEnter(control, data, no_submenu)
-			return false --not control.closeOnSelect
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, ...)
-			onMouseEnter(control, data, no_submenu)
-			return false --not control.closeOnSelect
-		end,
-	},
-
-	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
-	["onMouseExit"] = {
-		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data)
-			onMouseExit(control, data, no_submenu)
-			return checkForMultiSelectEnabled(selfVar, control)
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, ...)
-			-- Return true to skip the default handler to prevent row highlight.
-			return true
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, ...)
-			-- Return true to skip the default handler to prevent row highlight.
-			return true
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data)
-			local dropdown = onMouseExit(control, data, has_submenu)
-			if not (MouseIsOver(control) or dropdown:IsEnteringSubmenu()) then
-				dropdown:OnMouseExitTimeout(control)
-			end
-			return false --not control.closeOnSelect
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data)
-			onMouseExit(control, data, no_submenu)
-			return false --not control.closeOnSelect
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, ...)
-			onMouseExit(control, data, no_submenu)
-			return false --not control.closeOnSelect
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, ...)
-			onMouseExit(control, data, no_submenu)
-			return false --not control.closeOnSelect
-		end,
-	},
-
-	--The onMouseUp will be used to select an entry in the menu/submenu/nested submenu/context menu
-	---> It will be called from dropdownClass:OnEntryMouseUp, and then call the ZO_ComboBoxDropdown_Keyboard.OnEntrySelected -> ZO_ComboBox:SetSelected -> ZO_ComboBox:SelectItem -> then:
-	-----> If no multiselection is enabled: ZO_ComboBox_Base.SelectItem -> ZO_ComboBox_Base:ItemSelectedClickHelper(item, ignoreCallback) -> item.callback(comboBox, itemName, item, selectionChanged, oldItem) function
-	-----> If multiselection is enabled: ZO_ComboBox:SelectItem contains the code via self:AddItemToSelected etc.
-
-	---> The parameters for the LibScrollableMenu entry.callback functions will be:  (comboBox, itemName, item, selectionChanged, oldItem) -> The last param oldItem might change to checked for check and radiobuttons!
-	---> The return value true/false controls if the calling function runHandler -> dropdownClass.OnEntryMouseUp(control, button, upInside, ctrl, alt, shift) -> will select the entry
-	---> to the dropdown via ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp(control, button, upInside, ctrl, alt, shift)
-
-	-- return true to "select" entry via described way in ZO_ComboBox handler (see above) / return false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback
-	["onMouseUp"] = {
-		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
---d(debugPrefix .. 'onMouseUp [entryTypeConstants.LSM_ENTRY_TYPE_NORMAL]')
-			onMouseUp(control, data, no_submenu)
-			return true
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
-			return false
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
-			return false
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
---d(debugPrefix .. 'onMouseUp [entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU]')
-			onMouseUp(control, data, has_submenu)
-			return control.closeOnSelect --if submenu entry has data.callback then select the entry
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
-			onMouseUp(control, data, no_submenu)
-			return false
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
-			onMouseUp(control, data, no_submenu)
-			return false
-		end,
-		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
-			onMouseUp(control, data, no_submenu)
-			return false
-		end,
-	},
-}
-
-local function runHandler(selfVar, handlerTable, control, ...)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 53, tos(getControlName(control)), tos(handlerTable), tos(control.typeId)) end
-	local handler = handlerTable[control.typeId]
-	if handler then
-		return handler(selfVar, control, ...)
-	end
-	return false
-end
-
---------------------------------------------------------------------
--- Dropdown entry filter functions
---------------------------------------------------------------------
-
---local helper variables for string filter functions
-local ignoreSubmenu 			--if using / prefix submenu entries not matching the search term should still be shown
-local lastEntryVisible  = true	--Was the last entry processed visible at the results list? Used to e.g. show the divider below too
-local filterString				--the search string
-local filterFunc				--the filter function to use. Default is "defaultFilterFunc". Custom filterFunc can be added via options.customFilterFunc
-
---options.customFilterFunc needs the same signature/parameters like this function
---return value needs to be a boolean: true = found/false = not found
--->Attention: prefix "/" in the filterString still jumps this function for submenus as non-matching will be always found that way!
-local function defaultFilterFunc(p_item, p_filterString)
-	local name = p_item.label or p_item.name
-	return zostrlow(name):find(p_filterString) ~= nil
-end
-
---Check if entry should be added to the search/filter of the string search of the collapsible header
--->Returning true: item must be considered for the search / false: item should be skipped
-local function passItemToSearch(item)
-	--Check if name of entry counts as "to search", or not
-	if filterString ~= "" then
-		local name = item.label or item.name
-		--Name is missing: Do not filter
-		if name == nil then return false end
-		return not filterNamesExempts[name]
-	end
-	return false
-end
-
---Search the item's label or name now, if the entryType of the item should be processed by text search, and if the entry
---was not marked as "not to search" (always show in search results) in it's data
-local function filterResults(item)
-	local entryType = item.entryType
-	if not entryType or filteredEntryTypes[entryType] then
-		--Should the item be skipped at the search filters?
-		local doNotFilter = getValueOrCallback(item.doNotFilter, item) or false
-		if doNotFilter == true then
-			return true -- always included
-		end
-		--Check for other prerequisites
-		if passItemToSearch(item) == true then
-			--Not excluded, do the string comparison now
-			return filterFunc(item, filterString)
-		end
-	else
-		return lastEntryVisible
-	end
-end
-
---String filter the visible results, if options.enableFilter == true
--->if doFilter is true the text search will be executed, else textsearch is not executed -> Item should be shown directly
-local function itemPassesFilter(item, doFilter)
-	--Check if the data.name / data.label are provided (also check all other data.* keys if functions need to be executed)
-	if verifyLabelString(item) then
-		if doFilter then
-			--Recursively check menu entries (submenu and nested submenu entries) for the matching search string
-			return recursiveOverEntries(item, filterResults)
-		else
-			return true
-		end
-	end
-end
-
---------------------------------------------------------------------
--- Dropdown entry functions
---------------------------------------------------------------------
-local function createScrollableComboBoxEntry(self, item, index, entryType)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 54, tos(index), tos(entryType)) end
-	local entryData = ZO_EntryData:New(item)
-	entryData.m_index = index
-	entryData.m_owner = self.owner
-	entryData.m_dropdownObject = self
-	entryData:SetupAsScrollListDataEntry(entryType)
-	return entryData
-end
-
-local function addEntryToScrollList(self, item, dataList, index, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
-	local entryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
-	local entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
-	local widthPadding = 0
-	if self.customEntryTemplateInfos and item.customEntryTemplate then
-		local templateInfo = self.customEntryTemplateInfos[item.customEntryTemplate]
-		if templateInfo then
-			entryType = templateInfo.typeId
-			entryHeight = templateInfo.entryHeight
-			 -- for static width padding beyond string length, such as submenu icon
-			widthPadding = templateInfo.widthPadding or 0
-
-			-- If the entry has an icon, or isNew, we add the row height to adjust for icon size.
-			local iconPadding = (item.isNew or item.icon) and entryHeight or 0
-			widthPadding = widthPadding + iconPadding
-		end
+	local entryTableType, mapTableType = type(entryTable), type(mapTable)
+	local entryTableToMap = entryTable
+	if entryTableType == "function" then
+		entryTableToMap = getValueOrCallback(entryTable)
+		entryTableType = type(entryTableToMap)
 	end
 
-	if isLastEntry then
-		--entryTypes are added via ZO_ScrollList_AddDataType and there always exists 1 respective "last" entryType too,
-		--which handles the spacing at the last (most bottom) list entry to be different compared to the normal entryType
-		entryType = entryType + 1
-	else
-		entryHeight = entryHeight + spacing
-	end
+	assert(entryTableType == 'table' and mapTableType == 'table' , sfor("["..MAJOR..":MapEntries] tables expected, got %q = %s, %q = %s", "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
 
-	allItemsHeight = allItemsHeight + entryHeight
-
-	local entry = createScrollableComboBoxEntry(self, item, index, entryType)
-	tins(dataList, entry)
-
-	local fontObject = self.owner:GetItemFontObject(item) --self.owner:GetDropdownFontObject()
-	--Check string width of label (alternative text to show at entry) or name (internal value used)
-	local nameWidth = GetStringWidthScaled(fontObject, item.label or item.name, 1, SPACE_INTERFACE) + widthPadding
-	if nameWidth > largestEntryWidth then
-		largestEntryWidth = nameWidth
-	end
-	return allItemsHeight, largestEntryWidth
+	-- Splitting these up so the above is not done each iteration
+	doMapEntries(entryTableToMap, mapTable, entryTableType)
 end
-
---Reset function which is called for the scrollList entryType pool's rowControls as they get hidden/scrolled out of sight
-local function poolControlReset(selfVar, control)
-    control:SetHidden(true)
-
-	if control.isSubmenu then
-		if control.m_owner.m_submenu then
-			control.m_owner.m_submenu:HideDropdown()
-		end
-	end
-
-	local button = control.m_button
-	if button then
-		local buttonGroup = button.m_buttonGroup
-		if buttonGroup ~= nil then
-			--local buttonGroupIndex = button.m_buttonGroupIndex
-			buttonGroup:Remove(button)
-		end
-	end
-end
-
+lib.MapEntries = mapEntries
 
 
 ------------------------------------------------------------------------------------------------------------------------

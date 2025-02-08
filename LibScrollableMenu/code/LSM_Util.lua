@@ -30,8 +30,10 @@ local trem = table.remove
 -- Library utility
 --------------------------------------------------------------------
 local constants = lib.contants
+local fontConstants = constants.fonts
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
+local soundConstants = constants.sounds
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
 
@@ -51,17 +53,8 @@ local throttledCallDelay = 10
 
 --Context menus
 local g_contextMenu
-
-
---------------------------------------------------------------------
--- Get the context menu reference variable
---------------------------------------------------------------------
-function libUtil.getContextMenuReference()
-	g_contextMenu = g_contextMenu or lib.contextMenu
-	return g_contextMenu
-end
-
-
+local getValueOrCallback
+local getControlName
 
 
 --------------------------------------------------------------------
@@ -77,7 +70,7 @@ function libUtil.getValueOrCallback(arg, ...)
 		return arg
 	end
 end
-local getValueOrCallback = libUtil.getValueOrCallback
+getValueOrCallback = libUtil.getValueOrCallback
 
 
 --------------------------------------------------------------------
@@ -91,7 +84,7 @@ function libUtil.getControlName(control, alternativeControl)
 	ctrlName = ctrlName or "n/a"
 	return ctrlName
 end
-local getControlName = libUtil.getControlName
+getControlName = libUtil.getControlName
 
 function libUtil.getHeaderControl(selfVar)
 	if ZO_IsTableEmpty(selfVar.options) then return end
@@ -123,6 +116,17 @@ end
 
 
 --------------------------------------------------------------------
+-- Options functions
+--------------------------------------------------------------------
+--Get the options of the scrollable dropdownObject
+function libUtil.getOptionsForDropdown(dropdown)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 21) end
+	return dropdown.owner.options or {}
+end
+local getOptionsForDropdown = libUtil.getOptionsForDropdown
+
+
+--------------------------------------------------------------------
 -- Delayed / queued calls
 --------------------------------------------------------------------
 function libUtil.throttledCall(callback, delay, throttledCallNameSuffix)
@@ -139,3 +143,227 @@ function libUtil.throttledCall(callback, delay, throttledCallNameSuffix)
 	end)
 end
 --local throttledCall = libUtil.throttledCall
+
+
+--------------------------------------------------------------------
+-- Context menu functions
+--------------------------------------------------------------------
+function libUtil.getContextMenuReference()
+	g_contextMenu = g_contextMenu or lib.contextMenu
+	return g_contextMenu
+end
+local getContextMenuReference = libUtil.getContextMenuReference
+
+--Check if a context menu was shown and a control not belonging to that context menu was clicked
+--Returns boolean true if that was the case -> Prevent selection of entries or changes of radioButtons/checkboxes
+--while a context menu was opened and one directly clicks on that other entry
+function libUtil.checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, buttonId)
+	getContextMenuReference()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 29, tos(comboBox == g_contextMenu), tos(g_contextMenu:IsDropdownVisible())) end
+	if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
+--d("!!!!ContextMenu - check if OPENED!!!!! comboBox: " ..tos(comboBox))
+		if comboBox ~= nil then
+			return comboBox:HiddenForReasons(buttonId)
+		end
+	end
+--d("<<combobox not hidden for reasons")
+	return false
+end
+
+
+--------------------------------------------------------------------
+-- Button group functions
+--------------------------------------------------------------------
+function libUtil.getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
+	local buttonGroupObject = comboBox.m_buttonGroup
+	local buttonGroupOfEntryType = (buttonGroupObject ~= nil and buttonGroupObject[entryType] ~= nil and buttonGroupObject[entryType][groupIndex]) or nil
+	return buttonGroupOfEntryType
+end
+
+
+--------------------------------------------------------------------
+-- Tooltip functions
+--------------------------------------------------------------------
+local function resetCustomTooltipFuncVars()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 36) end
+	lib.lastCustomTooltipFunction = nil
+	lib.onHideCustomTooltipFunc = nil
+end
+
+--Hide the tooltip of a dropdown entry
+function libUtil.hideTooltip(control)
+--d(debugPrefix .. "hideTooltip - name: " .. tos(getControlName(control)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 37, tos(lib.onHideCustomTooltipFunc)) end
+	if lib.onHideCustomTooltipFunc then
+		lib.onHideCustomTooltipFunc()
+	else
+		ZO_Tooltips_HideTextTooltip()
+	end
+	resetCustomTooltipFuncVars()
+end
+
+local getTooltipAnchor
+function libUtil.getTooltipAnchor(self, control, tooltipText, hasSubmenu)
+	getTooltipAnchor = libUtil.getTooltipAnchor
+	local relativeTo = control
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 38, tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu)) end
+
+	local submenu = self:GetSubmenu()
+	if hasSubmenu then
+		if submenu and not submenu:IsDropdownVisible() then
+			return getTooltipAnchor(self, control, tooltipText, hasSubmenu)
+		end
+		relativeTo = submenu.m_dropdownObject.control
+	else
+		if submenu and submenu:IsDropdownVisible() then
+			submenu:HideDropdown()
+		end
+	end
+
+	local point, offsetX, offsetY, relativePoint = BOTTOMLEFT, 0, 0, TOPRIGHT
+
+	local anchorPoint = select(2, relativeTo:GetAnchor())
+	local right = anchorPoint ~= 3
+	if not right then
+		local width, height = GuiRoot:GetDimensions()
+		local fontObject = _G[fontConstants.DEFAULT_FONT]
+		local nameWidth = (type(tooltipText) == "string" and GetStringWidthScaled(fontObject, tooltipText, 1, SPACE_INTERFACE)) or 250
+
+		if control:GetRight() + nameWidth > width then
+			right = true
+		end
+	end
+
+	if right then
+		if hasSubmenu then
+			point, relativePoint = BOTTOMRIGHT, TOPRIGHT
+		else
+			point, relativePoint = RIGHT, LEFT
+		end
+	else
+		if hasSubmenu then
+			point, relativePoint = BOTTOMLEFT, TOPLEFT
+		else
+			point, relativePoint = LEFT, RIGHT
+		end
+	end
+	-- In the order used in InitializeTooltip
+	return relativeTo, point, offsetX, offsetY, relativePoint
+end
+getTooltipAnchor = libUtil.getTooltipAnchor
+
+
+--Show the tooltip of a dropdown entry. First check for any custom tooltip function that handles the control show/hide
+--and if none is provided use default InformationTooltip
+--> For a custom tooltip example see line below:
+--[[
+--Custom tooltip function example
+Function to show and hide a custom tooltip control. Pass that in to the data table of any entry, via data.customTooltip!
+Your function needs to create and show/hide that control, and populate the text etc to the control too!
+Parameters:
+-control The control the tooltip blongs to
+-doShow boolean to show if your mouse is inside the control and should show the tooltip. Must be false if tooltip should hide
+-data The table with the current data of the rowControl
+	-> To distinguish if the tooltip should be hidden or shown:	If 1st param data is missing the tooltip will be hidden! If data is provided the tooltip wil be shown
+-rowControl The userdata of the control the tooltip should show about
+-point, offsetX, offsetY, relativePoint: Suggested anchoring points
+
+Example - Show an item tooltip of an inventory item
+data.customTooltip = function(control, doShow, data, relativeTo, point, offsetX, offsetY, relativePoint)
+	ClearTooltip(ItemTooltip)
+	if doShow and data then
+		InitializeTooltip(ItemTooltip, relativeTo, point, offsetX, offsetY, relativePoint)
+		ItemTooltip:SetBagItem(data.bagId, data.slotIndex)
+		ItemTooltipTopLevel:BringWindowToTop()
+	end
+end
+
+Another example using a custom control of your addon to show the tooltip:
+customTooltipFunc = function(control, doShow, data, rowControl, point, offsetX, offsetY, relativePoint)
+	if not doShow or data == nil then
+		myAddon.myTooltipControl:SetHidden(true)
+	else
+		myAddon.myTooltipControl:ClearAnchors()
+		myAddon.myTooltipControl:SetAnchor(point, rowControl, relativePoint, offsetX, offsetY)
+		myAddon.myTooltipControl:SetText(data.tooltip)
+		myAddon.myTooltipControl:SetHidden(false)
+	end
+end
+]]
+function libUtil.showTooltip(self, control, data, hasSubmenu)
+	resetCustomTooltipFuncVars()
+
+	local tooltipData = getValueOrCallback(data.tooltip, data)
+	local tooltipText = getValueOrCallback(tooltipData, data)
+	local customTooltipFunc = data.customTooltip
+	if type(customTooltipFunc) ~= "function" then customTooltipFunc = nil end
+
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 39, tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu), tos(customTooltipFunc)) end
+
+	--To prevent empty tooltips from opening.
+	if tooltipText == nil and customTooltipFunc == nil then return end
+
+	local relativeTo, point, offsetX, offsetY, relativePoint = getTooltipAnchor(self, control, tooltipText, hasSubmenu)
+
+	--RelativeTo is a control?
+	if type(relativeTo) == "userdata" and type(relativeTo.IsControlHidden) == "function" then
+		if customTooltipFunc ~= nil then
+			lib.lastCustomTooltipFunction = customTooltipFunc
+
+			local onHideCustomTooltipFunc = function()
+				customTooltipFunc(control, false, nil) --Set 2nd param to false and leave 3rd param data empty so the calling func knows we are hiding
+			end
+			lib.onHideCustomTooltipFunc = onHideCustomTooltipFunc
+			customTooltipFunc(control, true, data, relativeTo, point, offsetX, offsetY, relativePoint)
+		else
+			InitializeTooltip(InformationTooltip, relativeTo, point, offsetX, offsetY, relativePoint)
+			SetTooltipText(InformationTooltip, tooltipText)
+			InformationTooltipTopLevel:BringWindowToTop()
+		end
+	end
+end
+
+--------------------------------------------------------------------
+-- Sound functions
+--------------------------------------------------------------------
+--(Un)Silence the OnClicked sound of a selected dropdown entry
+function libUtil.silenceEntryClickedSound(doSilence, entryType)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 20, tos(doSilence), tos(entryType)) end
+	local soundNameForSilence = soundConstants.entryTypeToSilenceSoundName[entryType]
+	if soundNameForSilence == nil then return end
+	if doSilence == true then
+		SOUNDS[soundNameForSilence] = soundConstants.soundClickedSilenced
+	else
+		local origSound = soundConstants.entryTypeToOriginalSelectedSound[entryType]
+		SOUNDS[soundNameForSilence] = origSound
+	end
+end
+local silenceEntryClickedSound = libUtil.silenceEntryClickedSound
+
+--Check if a sound should be played if a dropdown entry was selected
+function libUtil.playSelectedSoundCheck(dropdown, entryType)
+	entryType = entryType or entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 22, tos(entryType)) end
+
+	silenceEntryClickedSound(false, entryType)
+
+	local soundToPlay
+	local soundToPlayOrig = soundConstants.entryTypeToOriginalSelectedSound[entryType]
+	local options = getOptionsForDropdown(dropdown)
+
+	if options ~= nil then
+		--Chosen at options to play no selected sound?
+		if getValueOrCallback(options.selectedSoundDisabled, options) == true then
+			silenceEntryClickedSound(true, entryType)
+			return
+		else
+			--Custom selected sound passed in?
+			soundToPlay = getValueOrCallback(options.selectedSound, options)
+			--Use default selected sound
+			if soundToPlay == nil then soundToPlay = soundToPlayOrig end
+		end
+	else
+		soundToPlay = soundToPlayOrig
+	end
+	PlaySound(soundToPlay)
+end
