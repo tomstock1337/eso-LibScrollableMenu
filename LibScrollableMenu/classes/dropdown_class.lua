@@ -32,6 +32,7 @@ local trem = table.remove
 --------------------------------------------------------------------
 local classes = lib.classes
 
+
 --------------------------------------------------------------------
 --ZO_ComboBox function references
 --------------------------------------------------------------------
@@ -50,7 +51,7 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 --LSM library locals
 --------------------------------------------------------------------
 local g_contextMenu
-local suppressNextOnGlobalMouseUp
+local suppressNextOnGlobalMouseUp = lib.suppressNextOnGlobalMouseUp
 local buttonGroupDefaultContextMenu
 
 --Constants
@@ -82,6 +83,8 @@ local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
 local silenceEntryClickedSound = libUtil.silenceEntryClickedSound
 local throttledCall = libUtil.throttledCall
 local recursiveOverEntries = libUtil.recursiveOverEntries
+local getIsNew = libUtil.getIsNew
+local updateDataByFunctions = libUtil.updateDataByFunctions
 
 
 --locals
@@ -129,12 +132,9 @@ local function LSM_CheckIfAnimationControlNeedsXMLTemplateChange(control, contro
 end
 
 
---Check if an entry got the isNew set
-local function getIsNew(_entry)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 17) end
-	return getValueOrCallback(_entry.isNew, _entry) or false
-end
-
+--------------------------------------------------------------------
+-- Dropdown show/hide functions
+--------------------------------------------------------------------
 -- Add/Remove the new status of a dropdown entry.
 -- This works up from the mouse-over entry's submenu up to the dropdown,
 -- as long as it does not run into a submenu still having a new entry.
@@ -187,9 +187,18 @@ local function clearNewStatus(control, data)
 	end
 end
 
+-- Prevents errors on the off chance a non-string makes it through into ZO_ComboBox
+local function verifyLabelString(data)
+	--Check for data.* keys to run any function and update data[key] with actual values
+	updateDataByFunctions(data)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 18, tos(data.name)) end
+	--Require the name to be a string
+	return type(data.name) == 'string'
+end
+
 
 --------------------------------------------------------------------
--- Dropdown entry show/hide functions
+-- Dropdown show/hide functions
 --------------------------------------------------------------------
 local function clearTimeout()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 7) end
@@ -262,7 +271,6 @@ end
 --------------------------------------------------------------------
 -- Dropdown entry/row handlers
 --------------------------------------------------------------------
-
 local function onMouseEnter(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 49, tos(getControlName(control)), tos(hasSubmenu)) end
@@ -513,7 +521,17 @@ local function compareDrodpwonDataList(selfVar, scrollControl, item)
 	end
 end
 
+local function getDropdownTemplate(enabled, baseTemplate, alternate, default)
+	baseTemplate = MAJOR .. baseTemplate
+	local templateName = sfor('%s%s', baseTemplate, (enabled and alternate or default))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 2, tos(templateName)) end
+	return templateName
+end
 
+local function getScrollContentsTemplate(barHidden)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 3, tos(barHidden)) end
+	return getDropdownTemplate(barHidden, '_ScrollContents', '_BarHidden', '_BarShown')
+end
 
 
 

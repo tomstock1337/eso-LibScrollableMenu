@@ -49,7 +49,7 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 --------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
-local suppressNextOnGlobalMouseUp
+local suppressNextOnGlobalMouseUp = lib.suppressNextOnGlobalMouseUp
 local buttonGroupDefaultContextMenu
 
 local constants = lib.contants
@@ -59,6 +59,10 @@ local comboBoxMappingConstants = comboBoxConstants.mapping
 local searchFilterConstants = constants.searchFilter
 local handlerNames = constants.handlerNames
 local subTableConstants = constants.data.subtables
+local textureConstants = constants.textures
+local narrationConstants = constants.narration
+local entryTypeDefaults = entryTypeConstants.defaults
+
 
 local comboBoxDefaults = comboBoxConstants.defaults
 local noEntriesResults = searchFilterConstants.noEntriesResults
@@ -71,12 +75,21 @@ local filterNamesExempts = searchFilterConstants.filterNamesExempts
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
+local getControlData = libUtil.getControlData
+local getComboBox = libUtil.getComboBox
 local getDataSource = libUtil.getDataSource
 local showTooltip = libUtil.showTooltip
 local hideTooltip = libUtil.hideTooltip
+local recursiveOverEntries = libUtil.recursiveOverEntries
+local getIsNew = libUtil.getIsNew
+local validateEntryType = libUtil.validateEntryType
+local updateDataByFunctions = libUtil.updateDataByFunctions
+local hideContextMenu = libUtil.hideContextMenu
 
-
-local NIL_CHECK_TABLE = constants.NIL_CHECK_TABLE
+local libDivider = lib.DIVIDER
+local WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = entryTypeDefaults.WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
+local iconNewIcon = textureConstants.iconNewIcon
+local iconNarrationNewValue = narrationConstants.iconNarrationNewValue
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -264,21 +277,6 @@ local function addEntryLSM(data, subTB, key, valueOrCallbackFunc)
 	data._LSM = _lsm --Update the original data's _LSM table
 end
 
---Execute pre-stored callback functions of the data table, in data._LSM.funcData
-local function updateDataByFunctions(data)
-	data = getDataSource(data)
-
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 13, tos(data)) end
-	--If subTable _LSM  (of row's data) contains funcData subTable: This contains the original functions passed in for
-	--example "label" or "name" (instead of passing in strings). Loop the functions and execute those now for each found
-	local lsmData = data[subTableConstants.LSM_DATA_SUBTABLE] or NIL_CHECK_TABLE
-	local funcData = lsmData[subTableConstants.LSM_DATA_SUBTABLE_CALLBACK_FUNCTIONS] or NIL_CHECK_TABLE
-
-	--Execute the callback functions for e.g. "name", "label", "checked", "enabled", ... now
-	for _, updateFN in pairs(funcData) do
-		updateFN(data)
-	end
-end
 
 --Check if any data.* entry is a function (via table possibleEntryDataWithFunctionAndDefaultValue) and add them to
 --subTable data._LSM.funcData
@@ -348,7 +346,7 @@ local function updateDataValues(data, onlyTheseEntries)
 end
 
 local function preUpdateSubItems(item)
-	if item[LSM_DATA_SUBTABLE] == nil then
+	if item[subTableConstants.LSM_DATA_SUBTABLE] == nil then
 		--Get/build the additionalData table, and name/label etc. functions' texts and data
 		updateDataValues(item)
 	end
@@ -390,6 +388,143 @@ local function setItemEntryCustomTemplate(item, customEntryTemplates)
 	end
 end
 
+
+local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIconCtrl, parentHeight)
+	--singleIconDataTab can be a table or any other format (supported: string or function returning a string)
+	local iconValue
+	local iconDataType = type(singleIconDataOrTab)
+	local iconDataGotMoreParams = false
+	--Is the passed in iconData a table?
+	if iconDataType == "table" then
+		--table of format { [1] = "texture path to .dds here or a function returning the path" }
+		if singleIconDataOrTab[1] ~= nil then
+			iconValue = getValueOrCallback(singleIconDataOrTab[1], data)
+		--or a table containing more info like { [1]= {iconTexture = "path or funciton returning a path", width=24, height=24, tint=ZO_ColorDef, narration="", tooltip=function return "tooltipText" end}, [2] = { ... } }
+		else
+			iconDataGotMoreParams = true
+			iconValue = getValueOrCallback(singleIconDataOrTab.iconTexture, data)
+		end
+	else
+		--No table, only  e.g. String or function returning a string
+		iconValue = getValueOrCallback(singleIconDataOrTab, data)
+	end
+
+	local isNewValue = getValueOrCallback(data.isNew, data)
+	local visible = isNewValue == true or iconValue ~= nil
+
+	local iconHeight = parentHeight
+	-- This leaves a padding to keep the label from being too close to the edge
+	local iconWidth = visible and iconHeight or WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
+
+	if visible == true then
+		multiIconCtrl.data = multiIconCtrl.data or {}
+		if iconIdx == 1 then multiIconCtrl.data.tooltipText = nil end
+
+		if iconDataGotMoreParams then
+			--Icon's height and width
+			if singleIconDataOrTab.width ~= nil then
+				iconWidth = zo_clamp(getValueOrCallback(singleIconDataOrTab.width, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
+			end
+			if singleIconDataOrTab.height ~= nil then
+				iconHeight = zo_clamp(getValueOrCallback(singleIconDataOrTab.height, data), WITHOUT_ICON_LABEL_DEFAULT_OFFSETX, parentHeight)
+			end
+		end
+
+		if isNewValue == true then
+			multiIconCtrl:AddIcon(iconNewIcon, nil, iconNarrationNewValue)
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 25) end
+			--d(debugPrefix .. "updateIcon - Adding \'new icon\'")
+		end
+		if iconValue ~= nil then
+			--Icon's color
+			local iconTint
+			if iconDataGotMoreParams then
+				iconTint = getValueOrCallback(singleIconDataOrTab.iconTint, data)
+				if type(iconTint) == "string" then
+					local iconColorDef = ZO_ColorDef:New(iconTint)
+					iconTint = iconColorDef
+				end
+			end
+
+			--Icon's tooltip? Reusing default tooltip functions of controls: ZO_Options_OnMouseEnter and ZO_Options_OnMouseExit
+			-->Just add each icon as identifier and then the tooltipText (1 line = 1 icon)
+			local tooltipForIcon = (visible and iconDataGotMoreParams and getValueOrCallback(singleIconDataOrTab.tooltip, data)) or nil
+			if tooltipForIcon ~= nil and tooltipForIcon ~= "" then
+				local tooltipTextAtMultiIcon = multiIconCtrl.data.tooltipText
+				if tooltipTextAtMultiIcon == nil then
+					tooltipTextAtMultiIcon =  zo_iconTextFormat(iconValue, 24, 24, tooltipForIcon, iconTint)
+				else
+					tooltipTextAtMultiIcon = tooltipTextAtMultiIcon .. "\n" .. zo_iconTextFormat(iconValue, 24, 24, tooltipForIcon, iconTint)
+				end
+				multiIconCtrl.data.tooltipText = tooltipTextAtMultiIcon
+			end
+
+			--Icon's narration
+			local iconNarration = (iconDataGotMoreParams and getValueOrCallback(singleIconDataOrTab.iconNarration, data)) or nil
+			multiIconCtrl:AddIcon(iconValue, iconTint, iconNarration)
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 26, tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration)) end
+		end
+
+		return true, iconWidth, iconHeight
+	end
+	return false, iconWidth, iconHeight
+end
+
+--Update the icons of a dropdown entry's MultiIcon control
+local function updateIcons(control, data)
+	local multiIconContainerCtrl = control.m_iconContainer
+	local multiIconCtrl = control.m_icon
+	multiIconCtrl:ClearIcons()
+
+	local iconWidth = WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
+	local parentHeight = multiIconCtrl:GetParent():GetHeight()
+	local iconHeight = parentHeight
+
+	local iconData = getValueOrCallback(data.icon, data)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 27, tos(iconData ~= nil and #iconData or 0)) end
+
+	local anyIconWasAdded = false
+	local iconDataType = iconData ~= nil and type(iconData) or nil
+	if iconDataType ~= nil then
+		if iconDataType ~= 'table' then
+			--If only a "any.dds" texture path or a function returning this was passed in
+			iconData = { [1] = { iconTexture = iconData } }
+		end
+		for iconIdx, singleIconData in ipairs(iconData) do
+			local l_anyIconWasAdded, l_iconWidth, l_iconHeight = updateIcon(control, data, iconIdx, singleIconData, multiIconCtrl, parentHeight)
+			if l_anyIconWasAdded == true then
+				anyIconWasAdded = true
+			end
+			if l_iconWidth > iconWidth then iconWidth = l_iconWidth end
+			if l_iconHeight > iconHeight then iconHeight = l_iconHeight end
+		end
+
+	end
+	multiIconCtrl:SetMouseEnabled(anyIconWasAdded) --todo 20240527 Make that dependent on getValueOrCallback(data.enabled, data) ?! And update via multiIconCtrl:Hide()/multiIconCtrl:Show() on each show of menu!
+	multiIconCtrl:SetDrawTier(DT_MEDIUM)
+	multiIconCtrl:SetDrawLayer(DL_CONTROLS)
+	multiIconCtrl:SetDrawLevel(10)
+
+	if anyIconWasAdded then
+		multiIconCtrl:SetHandler("OnMouseEnter", function(...)
+			ZO_Options_OnMouseEnter(...)
+			InformationTooltipTopLevel:BringWindowToTop()
+		end)
+		multiIconCtrl:SetHandler("OnMouseExit", ZO_Options_OnMouseExit)
+
+		multiIconCtrl:Show() --todo 20240527 Make that dependent on getValueOrCallback(data.enabled, data) ?! And update via multiIconCtrl:Hide()/multiIconCtrl:Show() on each show of menu!
+	end
+
+
+	-- Using the control also as a padding. if no icon then shrink it
+	-- This also allows for keeping the icon in size with the row height.
+	multiIconContainerCtrl:SetDimensions(iconWidth, iconHeight)
+	--TODO: see how this effects it
+	--	multiIconCtrl:SetDimensions(iconWidth, iconHeight)
+	multiIconCtrl:SetHidden(not anyIconWasAdded)
+end
+
+
 -- We can add any row-type post checks and update dataEntry with static values.
 local function addItem_Base(self, itemEntry)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 35, tos(itemEntry)) end
@@ -410,8 +545,30 @@ local function addItem_Base(self, itemEntry)
 	runPostItemSetupFunction(self, itemEntry)
 end
 
+local function getMouseOver_HiddenFor_Info()
+	local mocCtrl = moc()
+	local owningWindow = mocCtrl and mocCtrl:GetOwningWindow()
+	local comboBox = getComboBox(owningWindow or mocCtrl)
+
+	--If submenu exists and is shown: the combobox for the m_dropdownObject owner check should be the submenu's one
+	--[[
+	if mocCtrl.m_owner and mocCtrl.m_owner.isSubmenu == true then
+		local ownerSubmenu = mocCtrl.m_owner.m_submenu
+		if ownerSubmenu and ownerSubmenu:IsDropdownVisible() then
+d(">submenu is open -> use it for owner check")
+			comboBox = ownerSubmenu
+		end
+	end
+	]]
+
+	-- owningWindow, mocCtrl, comboBox, entry
+	return owningWindow, mocCtrl, comboBox, getControlData(mocCtrl)
+end
 
 
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------
 -- LSM ComboBox base & submenu classes definition
 --------------------------------------------------------------------

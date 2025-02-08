@@ -32,6 +32,7 @@ local trem = table.remove
 --------------------------------------------------------------------
 local classes = lib.classes
 
+
 --------------------------------------------------------------------
 --ZO_ComboBox function references
 --------------------------------------------------------------------
@@ -49,9 +50,6 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 --------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
-local suppressNextOnGlobalMouseUp
-local buttonGroupDefaultContextMenu
-
 local constants = lib.contants
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox

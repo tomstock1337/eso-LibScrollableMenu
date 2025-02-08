@@ -31,7 +31,7 @@ local trem = table.remove
 --Library classes
 --------------------------------------------------------------------
 local classes = lib.classes
-local comboBoxBaseClass = classes.comboBoxBaseClass
+local comboBox_base = classes.comboboxBaseClass
 
 
 --------------------------------------------------------------------
@@ -51,9 +51,6 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 --------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
-local suppressNextOnGlobalMouseUp
-local buttonGroupDefaultContextMenu
-
 local constants = lib.contants
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
@@ -66,9 +63,13 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = comboBoxMappingConstants.LSMOpti
 
 
 local libUtil = lib.Util
+local getSavedVariable = libUtil.getSavedVariable
+local updateSavedVariable = libUtil.updateSavedVariable
+
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
 local mixinTableAndSkipExisting = libUtil.mixinTableAndSkipExisting
+local hideContextMenu = libUtil.hideContextMenu
 
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
@@ -76,7 +77,7 @@ local mixinTableAndSkipExisting = libUtil.mixinTableAndSkipExisting
 --------------------------------------------------------------------
 -- LSM ComboBox class definition
 --------------------------------------------------------------------
-local comboBoxClass = comboBoxBaseClass:Subclass()
+local comboBoxClass = comboBox_base:Subclass()
 classes.comboBoxClass = comboBoxClass
 
 

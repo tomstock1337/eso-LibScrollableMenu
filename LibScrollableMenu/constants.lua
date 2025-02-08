@@ -14,6 +14,9 @@ if not lib then return end
 --Libray locals
 --------------------------------------------------------------------
 local MAJOR = lib.name
+
+lib.suppressNextOnGlobalMouseUp = false
+
 lib.constants = {}
 local constants = lib.constants
 
@@ -129,7 +132,7 @@ constants.entryTypes.defaults.DIVIDER_ENTRY_HEIGHT = 7
 constants.entryTypes.defaults.HEADER_ENTRY_HEIGHT = 30
 constants.entryTypes.defaults.DEFAULT_SPACING = 0
 constants.entryTypes.defaults.WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = 4
-local entryTypeDefaults = constants.entryTypes.defaults
+--local entryTypeDefaults = constants.entryTypes.defaults
 
 --Fonts
 constants.fonts = {}
@@ -153,7 +156,7 @@ constants.textures.iconNewIcon = 				ZO_KEYBOARD_NEW_ICON
 
 --Narration
 constants.narration = {}
-constants.narration.iconNarrationNewValue = 		GetString(SI_SCREEN_NARRATION_NEW_ICON_NARRATION) --MultiIcon
+constants.narration.iconNarrationNewValue = 	GetString(SI_SCREEN_NARRATION_NEW_ICON_NARRATION) --MultiIcon
 
 
 --local "global" variables
@@ -222,6 +225,7 @@ local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_BUTTON] =		true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] =	true,
 }
+constants.entryTypes.libraryAllowedEntryTypes = libraryAllowedEntryTypes
 lib.AllowedEntryTypes = libraryAllowedEntryTypes
 
 --Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be allowed for the contextMenus
@@ -234,6 +238,7 @@ local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_BUTTON] = 		true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = 	true,
 }
+constants.entryTypes.allowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
 lib.AllowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
 
 --Used in API AddCustomScrollableMenuEntry to validate passed in entryTypes to be used without a callback function
