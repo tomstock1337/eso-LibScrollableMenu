@@ -53,6 +53,7 @@ local suppressNextOnGlobalMouseUp
 local buttonGroupDefaultContextMenu
 
 local constants = lib.contants
+local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local searchFilterConstants = constants.searchFilter
@@ -162,15 +163,15 @@ end
 local function getDefaultXMLTemplates(selfVar)
 	--The virtual XML templates, with their setup functions for the row controls, for the different row types
 	local defaultXMLTemplates  = {
-		[LSM_ENTRY_TYPE_NORMAL] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = {
 			template = 'LibScrollableMenu_ComboBoxEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
 --d(debugPrefix .. "XMLtemplate LSM_ENTRY_TYPE_NORMAL, setupFunc")
-				selfVar:SetupEntryLabel(control, data, list, LSM_ENTRY_TYPE_NORMAL)
+				selfVar:SetupEntryLabel(control, data, list, entryTypeConstants.LSM_ENTRY_TYPE_NORMAL)
 			end,
 		},
-		[LSM_ENTRY_TYPE_SUBMENU] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = {
 			template = 'LibScrollableMenu_ComboBoxSubmenuEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
@@ -178,21 +179,21 @@ local function getDefaultXMLTemplates(selfVar)
 				selfVar:SetupEntrySubmenu(control, data, list)
 			end,
 		},
-		[LSM_ENTRY_TYPE_DIVIDER] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = {
 			template = 'LibScrollableMenu_ComboBoxDividerEntry',
 			rowHeight = DIVIDER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
 				selfVar:SetupEntryDivider(control, data, list)
 			end,
 		},
-		[LSM_ENTRY_TYPE_HEADER] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = {
 			template = 'LibScrollableMenu_ComboBoxHeaderEntry',
 			rowHeight = HEADER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
 				selfVar:SetupEntryHeader(control, data, list)
 			end,
 		},
-		[LSM_ENTRY_TYPE_CHECKBOX] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = {
 			template = 'LibScrollableMenu_ComboBoxCheckboxEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
@@ -200,7 +201,7 @@ local function getDefaultXMLTemplates(selfVar)
 				selfVar:SetupEntryCheckbox(control, data, list)
 			end,
 		},
-		[LSM_ENTRY_TYPE_BUTTON] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON] = {
 			template = 'LibScrollableMenu_ComboBoxButtonEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
@@ -208,7 +209,7 @@ local function getDefaultXMLTemplates(selfVar)
 				selfVar:SetupEntryButton(control, data, list)
 			end,
 		},
-		[LSM_ENTRY_TYPE_RADIOBUTTON] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = {
 			template = 'LibScrollableMenu_ComboBoxRadioButtonEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
@@ -220,36 +221,36 @@ local function getDefaultXMLTemplates(selfVar)
 
 	--The virtual XML highlight templates (mouse moved above an antry), for the different row types
 	local defaultXMLHighlightTemplates = {
-		[LSM_ENTRY_TYPE_NORMAL] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = {
 			template = defaultHighlightTemplate,
 			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
 			color = defaultHighlightColor,
 		},
-		[LSM_ENTRY_TYPE_SUBMENU] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = {
 			template = defaultHighlightTemplate,
 			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
 			templateSubMenuWithCallback = LSM_ROW_HIGHLIGHT_GREEN, -- template for the entry where a submenu is opened but you can click the entry to call a callback too
 			color = defaultHighlightColor,
 		},
-		[LSM_ENTRY_TYPE_DIVIDER] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = {
 			template = defaultHighlightTemplate,
 			color = defaultHighlightColor,
 		},
-		[LSM_ENTRY_TYPE_HEADER] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = {
 			template = defaultHighlightTemplate,
 			color = defaultHighlightColor,
 		},
-		[LSM_ENTRY_TYPE_CHECKBOX] = {
-			template = defaultHighlightTemplate,
-			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
-			color = defaultHighlightColor,
-		},
-		[LSM_ENTRY_TYPE_BUTTON] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = {
 			template = defaultHighlightTemplate,
 			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
 			color = defaultHighlightColor,
 		},
-		[LSM_ENTRY_TYPE_RADIOBUTTON] = {
+		[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON] = {
+			template = defaultHighlightTemplate,
+			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
+			color = defaultHighlightColor,
+		},
+		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = {
 			template = defaultHighlightTemplate,
 			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
 			color = defaultHighlightColor,
@@ -351,10 +352,10 @@ function comboBox_base:AddCustomEntryTemplates(options, isContextMenu)
 	end
 
 	--Update the current object's rowHeight (normal entry type)
-	local normalEntryHeight = XMLrowTemplatesToUse[LSM_ENTRY_TYPE_NORMAL].rowHeight
+	local normalEntryHeight = XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL].rowHeight
 	-- We will use this, per-comboBox, to set max rows.
 	self.baseEntryHeight = normalEntryHeight
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 89, tos(normalEntryHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_DIVIDER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_HEADER].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_CHECKBOX].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_BUTTON].rowHeight), tos(XMLrowTemplatesToUse[LSM_ENTRY_TYPE_RADIOBUTTON].rowHeight)) end
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 89, tos(normalEntryHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_HEADER].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON].rowHeight)) end
 end
 
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
@@ -759,7 +760,7 @@ function comboBox_base:UpdateItems()
 	zo_comboBox_base_updateItems(self)
 
 	--[[
-	20240615 Should not be needed anymore as this is already done at runPostItemSetupFunction[LSM_ENTRY_TYPE_SUBMENU] in add_itemBase
+	20240615 Should not be needed anymore as this is already done at runPostItemSetupFunction[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] in add_itemBase
 	for _, itemEntry in pairs(self.m_sortedItems) do
 		if itemEntry.hasSubmenu then
 			recursiveOverEntries(itemEntry, preUpdateSubItems)
@@ -963,7 +964,7 @@ do -- Row setup functions
 			buttonGroup:SetButtonState(buttonControl, data.clicked, isEnabled, IGNORECALLBACK)
 			--	buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
 
-			if entryType == LSM_ENTRY_TYPE_CHECKBOX and data.rightClickCallback == nil and data.contextMenuCallback == nil then
+			if entryType == entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX and data.rightClickCallback == nil and data.contextMenuCallback == nil then
 				data.rightClickCallback = buttonGroupDefaultContextMenu
 			end
 		end
@@ -983,7 +984,7 @@ do -- Row setup functions
 
 	function comboBox_base:SetupEntryDivider(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 113, tos(getControlName(control)), tos(list)) end
-		control.typeId = LSM_ENTRY_TYPE_DIVIDER
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
 		addDivider(control, data, list)
 		self:SetupEntryBase(control, data, list)
 		control.isDivider = true
@@ -1006,12 +1007,12 @@ do -- Row setup functions
 
 	function comboBox_base:SetupEntryLabel(control, data, list, realEntryType)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 115, tos(getControlName(control)), tos(list)) end
-		control.typeId = LSM_ENTRY_TYPE_NORMAL
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
 		addIcon(control, data, list)
 		addLabel(control, data, list)
 		self:SetupEntryLabelBase(control, data, list, realEntryType)
 
-		if realEntryType == LSM_ENTRY_TYPE_NORMAL then
+		if realEntryType == entryTypeConstants.LSM_ENTRY_TYPE_NORMAL then
 			--Update the control.m_highlightTemplate
 			self:UpdateHighlightTemplate(control, data, nil, nil)
 		end
@@ -1021,7 +1022,7 @@ do -- Row setup functions
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 116, tos(getControlName(control)), tos(list)) end
 		self:SetupEntryLabel(control, data, list)
 		addArrow(control, data, list)
-		control.typeId = LSM_ENTRY_TYPE_SUBMENU
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU
 
 --d(debugPrefix .. "submenu setup: - name: " .. tos(getValueOrCallback(data.label or data.name, data)) ..", closeOnSelect: " ..tos(control.closeOnSelect) .. "; m_highlightTemplate: " ..tos(data.m_highlightTemplate) )
 
@@ -1033,7 +1034,7 @@ do -- Row setup functions
 		addDivider(control, data, list)
 		self:SetupEntryLabel(control, data, list)
 		control.isHeader = true
-		control.typeId = LSM_ENTRY_TYPE_HEADER
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_HEADER
 	end
 
 
@@ -1057,7 +1058,7 @@ do -- Row setup functions
 		end
 		self:SetupEntryLabel(control, data, list)
 		control.isRadioButton = true
-		control.typeId = LSM_ENTRY_TYPE_RADIOBUTTON
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON
 
 		self:UpdateHighlightTemplate(control, data, nil, nil)
 
@@ -1093,7 +1094,7 @@ do -- Row setup functions
 
 		self:SetupEntryLabel(control, data, list)
 		control.isCheckbox = true
-		control.typeId = LSM_ENTRY_TYPE_CHECKBOX
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX
 
 		self:UpdateHighlightTemplate(control, data, nil, nil)
 
@@ -1106,7 +1107,7 @@ do -- Row setup functions
 
 		-- The row it's self is treated as a button, no child button
 		control.isButton = true
-		control.typeId = LSM_ENTRY_TYPE_BUTTON
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_BUTTON
 		addIcon(control, data, list)
 		addLabel(control, data, list)
 

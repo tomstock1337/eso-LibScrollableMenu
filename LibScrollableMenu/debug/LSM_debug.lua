@@ -33,6 +33,7 @@ local LSM_LOGTYPE_ERROR = libDebug.LSM_LOGTYPE_ERROR
 
 local loggerTypeToName = libDebug.loggerTypeToName
 
+
 --------------------------------------------------------------------
 -- Debug logging
 --------------------------------------------------------------------

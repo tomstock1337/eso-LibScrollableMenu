@@ -53,6 +53,7 @@ local suppressNextOnGlobalMouseUp
 local buttonGroupDefaultContextMenu
 
 local constants = lib.contants
+local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local searchFilterConstants = constants.searchFilter
@@ -105,7 +106,7 @@ function buttonGroupClass:Add(button, entryType)
 			self.m_buttons[button] = { originalHandler = originalHandler, isValidOption = true, entryType = entryType } -- newly added buttons always start as valid options for now.
 
 			--d( debugPrefix..'isRadioButton ' .. tos(isRadioButton))
-			if entryType == LSM_ENTRY_TYPE_RADIOBUTTON then
+			if entryType == entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON then
 				-- This throws away return values from the original function, which is most likely ok in the case of a click handler.
 				local newHandler = function(control, buttonId, ignoreCallback)
 --d( debugPrefix.. 'buttonGroup -> OnClicked handler. Calling HandleClick')

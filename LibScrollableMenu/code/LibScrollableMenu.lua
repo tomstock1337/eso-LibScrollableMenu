@@ -22,6 +22,8 @@ local trem = table.remove
 -- LSM library locals
 --------------------------------------------------------------------
 local constants = lib.contants
+local entryTypeConstants = constants.entryTypes
+
 local comboBoxConstants = constants.comboBox
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
@@ -30,6 +32,7 @@ local libDivider = lib.DIVIDER
 
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
+local getControlData = libUtil.getControlData
 local getValueOrCallback = libUtil.getValueOrCallback
 local getContextMenuReference = libUtil.getContextMenuReference
 
@@ -577,7 +580,7 @@ local function checkEntryType(text, entryType, additionalData, isAddDataTypeTabl
 			--It should be a divider, according to the passed in text?
 			if getValueOrCallback(text, ((isAddDataTypeTable and additionalData) or options)) == libDivider then
 --d("<entry is divider, by text")
-				return LSM_ENTRY_TYPE_DIVIDER
+				return entryTypeConstants.entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
 			end
 		end
 
@@ -606,7 +609,7 @@ local function checkEntryType(text, entryType, additionalData, isAddDataTypeTabl
 --d(">>!!additionalData.name check")
 				if getValueOrCallback(name, additionalData) == libDivider then
 --d("<entry is divider, by name")
-					return LSM_ENTRY_TYPE_DIVIDER
+					return entryTypeConstants.entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
 				end
 			end
 			local label = additionalData.label
@@ -614,7 +617,7 @@ local function checkEntryType(text, entryType, additionalData, isAddDataTypeTabl
 --d(">>!!additionalData.label check")
 				if getValueOrCallback(label, additionalData) == libDivider then
 --d("<entry is divider, by label")
-					return LSM_ENTRY_TYPE_DIVIDER
+					return entryTypeConstants.entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
 				end
 			end
 		end
@@ -884,7 +887,7 @@ end
 
 --Check if a sound should be played if a dropdown entry was selected
 local function playSelectedSoundCheck(dropdown, entryType)
-	entryType = entryType or LSM_ENTRY_TYPE_NORMAL
+	entryType = entryType or entryTypeConstants.entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 22, tos(entryType)) end
 
 	silenceEntryClickedSound(false, entryType)
@@ -1162,14 +1165,14 @@ lib.getComboBoxsSortedItems = getComboBoxsSortedItems
 --------------------------------------------------------------------
 --Functions to run per item's entryType, after the item has been setup (e.g. to add missing mandatory data or change visuals)
 local postItemSetupFunctions = {
-	[LSM_ENTRY_TYPE_SUBMENU] = function(comboBox, itemEntry)
+	[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(comboBox, itemEntry)
 		itemEntry.isNew = recursiveOverEntries(itemEntry, preUpdateSubItems)
 	end,
-	[LSM_ENTRY_TYPE_HEADER] = function(comboBox, itemEntry)
+	[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = function(comboBox, itemEntry)
 		itemEntry.font = comboBox.headerFont or itemEntry.font
 		itemEntry.color = comboBox.headerColor or itemEntry.color
 	end,
-	[LSM_ENTRY_TYPE_DIVIDER] = function(comboBox, itemEntry)
+	[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = function(comboBox, itemEntry)
 		itemEntry.name = libDivider
 	end,
 }
@@ -1433,22 +1436,22 @@ local function validateEntryType(item)
 	local entryType = getValueOrCallback(item.entryType, item)
 
 	--Check if any other entryType could be determined
-	local isDivider = (((item.label ~= nil and item.label == libDivider) or item.name == libDivider) or (item.isDivider ~= nil and getValueOrCallback(item.isDivider, item))) or LSM_ENTRY_TYPE_DIVIDER == entryType
-	local isHeader = (item.isHeader ~= nil and getValueOrCallback(item.isHeader, item)) or LSM_ENTRY_TYPE_HEADER == entryType
-	local isButton = (item.isButton ~= nil and getValueOrCallback(item.isButton, item)) or LSM_ENTRY_TYPE_BUTTON == entryType
-	local isRadioButton = (item.isRadioButton ~= nil and getValueOrCallback(item.isRadioButton, item)) or LSM_ENTRY_TYPE_RADIOBUTTON == entryType
-	local isCheckbox = (item.isCheckbox ~= nil and getValueOrCallback(item.isCheckbox, item)) or LSM_ENTRY_TYPE_CHECKBOX == entryType
-	local hasSubmenu = (item.entries ~= nil and getValueOrCallback(item.entries, item) ~= nil) or LSM_ENTRY_TYPE_SUBMENU == entryType
+	local isDivider = (((item.label ~= nil and item.label == libDivider) or item.name == libDivider) or (item.isDivider ~= nil and getValueOrCallback(item.isDivider, item))) or entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER == entryType
+	local isHeader = (item.isHeader ~= nil and getValueOrCallback(item.isHeader, item)) or entryTypeConstants.LSM_ENTRY_TYPE_HEADER == entryType
+	local isButton = (item.isButton ~= nil and getValueOrCallback(item.isButton, item)) or entryTypeConstants.LSM_ENTRY_TYPE_BUTTON == entryType
+	local isRadioButton = (item.isRadioButton ~= nil and getValueOrCallback(item.isRadioButton, item)) or entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON == entryType
+	local isCheckbox = (item.isCheckbox ~= nil and getValueOrCallback(item.isCheckbox, item)) or entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX == entryType
+	local hasSubmenu = (item.entries ~= nil and getValueOrCallback(item.entries, item) ~= nil) or entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU == entryType
 
 	--If no entryType was passed in: Get the entryType by the before determined data
-	if not entryType or entryType == LSM_ENTRY_TYPE_NORMAL then
-		entryType = hasSubmenu and LSM_ENTRY_TYPE_SUBMENU or
-					isDivider and LSM_ENTRY_TYPE_DIVIDER or
-					isHeader and LSM_ENTRY_TYPE_HEADER or
-					isCheckbox and LSM_ENTRY_TYPE_CHECKBOX or
-					isButton and LSM_ENTRY_TYPE_BUTTON or
-					isRadioButton and LSM_ENTRY_TYPE_RADIOBUTTON or
-					LSM_ENTRY_TYPE_NORMAL
+	if not entryType or entryType == entryTypeConstants.LSM_ENTRY_TYPE_NORMAL then
+		entryType = hasSubmenu and entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU or
+					isDivider and entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER or
+					isHeader and entryTypeConstants.LSM_ENTRY_TYPE_HEADER or
+					isCheckbox and entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX or
+					isButton and entryTypeConstants.LSM_ENTRY_TYPE_BUTTON or
+					isRadioButton and entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON or
+					entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
 	end
 
 	--Update the item's variables
@@ -1817,36 +1820,36 @@ end
 local handlerFunctions  = {
 	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO_ComboBox handler and only show tooltip
 	["onMouseEnter"] = {
-		[LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, ...)
+		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, ...)
 			onMouseEnter(control, data, no_submenu)
 			clearNewStatus(control, data)
 			return checkForMultiSelectEnabled(selfVar, control)
 		end,
-		[LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, ...)
+		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, ...)
 			-- Return true to skip the default handler to prevent row highlight.
 			return true
 		end,
-		[LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, ...)
+		[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, ...)
 			-- Return true to skip the default handler to prevent row highlight.
 			return true
 		end,
-		[LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, ...)
-			--d( debugPrefix .. 'onMouseEnter [LSM_ENTRY_TYPE_SUBMENU]')
+		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, ...)
+			--d( debugPrefix .. 'onMouseEnter [entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU]')
 			local dropdown = onMouseEnter(control, data, has_submenu)
 			clearTimeout()
 			--Show the submenu of the entry
 			dropdown:ShowSubmenu(control)
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, ...)
+		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, ...)
 			onMouseEnter(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, ...)
+		[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, ...)
 			onMouseEnter(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, ...)
+		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, ...)
 			onMouseEnter(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
@@ -1854,34 +1857,34 @@ local handlerFunctions  = {
 
 	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
 	["onMouseExit"] = {
-		[LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data)
+		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data)
 			onMouseExit(control, data, no_submenu)
 			return checkForMultiSelectEnabled(selfVar, control)
 		end,
-		[LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, ...)
+		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, ...)
 			-- Return true to skip the default handler to prevent row highlight.
 			return true
 		end,
-		[LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, ...)
+		[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, ...)
 			-- Return true to skip the default handler to prevent row highlight.
 			return true
 		end,
-		[LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data)
+		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data)
 			local dropdown = onMouseExit(control, data, has_submenu)
 			if not (MouseIsOver(control) or dropdown:IsEnteringSubmenu()) then
 				dropdown:OnMouseExitTimeout(control)
 			end
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data)
+		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data)
 			onMouseExit(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, ...)
+		[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, ...)
 			onMouseExit(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
-		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, ...)
+		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, ...)
 			onMouseExit(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
@@ -1898,31 +1901,31 @@ local handlerFunctions  = {
 
 	-- return true to "select" entry via described way in ZO_ComboBox handler (see above) / return false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback
 	["onMouseUp"] = {
-		[LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
---d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_NORMAL]')
+		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+--d(debugPrefix .. 'onMouseUp [entryTypeConstants.LSM_ENTRY_TYPE_NORMAL]')
 			onMouseUp(control, data, no_submenu)
 			return true
 		end,
-		[LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			return false
 		end,
-		[LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+		[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			return false
 		end,
-		[LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
---d(debugPrefix .. 'onMouseUp [LSM_ENTRY_TYPE_SUBMENU]')
+		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+--d(debugPrefix .. 'onMouseUp [entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU]')
 			onMouseUp(control, data, has_submenu)
 			return control.closeOnSelect --if submenu entry has data.callback then select the entry
 		end,
-		[LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
-		[LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+		[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
-		[LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
@@ -2018,7 +2021,7 @@ end
 
 local function addEntryToScrollList(self, item, dataList, index, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
 	local entryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
-	local entryType = LSM_ENTRY_TYPE_NORMAL
+	local entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
 	local widthPadding = 0
 	if self.customEntryTemplateInfos and item.customEntryTemplate then
 		local templateInfo = self.customEntryTemplateInfos[item.customEntryTemplate]
@@ -2077,33 +2080,6 @@ local function poolControlReset(selfVar, control)
 end
 
 
---------------------------------------------------------------------
--- dropdownClass
---------------------------------------------------------------------
-
-
-
---------------------------------------------------------------------
--- buttonGroupClass
---  (radio) buttons in a group will change their checked state to false if another button in the group was clicked
---------------------------------------------------------------------
-
---------------------------------------------------------------------
--- ComboBox classes
---------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ------------------------------------------------------------------------------------------------------------------------
 -- API functions for custom scrollable inventory context menu (ZO_Menu / LibCustomMenu support)
@@ -2138,8 +2114,8 @@ end
 --XML OnClick handler for checkbox and radiobuttons
 function lib.XMLButtonOnInitialize(control, entryType)
 	--Which XML button control's handler was used, checkbox or radiobutton?
-	local isCheckbox = entryType == LSM_ENTRY_TYPE_CHECKBOX
-	local isRadioButton = not isCheckbox and entryType == LSM_ENTRY_TYPE_RADIOBUTTON
+	local isCheckbox = entryType == entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX
+	local isRadioButton = not isCheckbox and entryType == entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON
 
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
 --d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))

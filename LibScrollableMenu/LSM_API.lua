@@ -39,6 +39,7 @@ local comboBoxClass = classes.comboBoxClass
 --------------------------------------------------------------------
 
 local constants = lib.contants
+local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
@@ -246,7 +247,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 
 	--Determine the entryType based on text, passed in entryType, and/or additionalData table
 	entryType = checkEntryType(text, entryType, additionalData, isAddDataTypeTable, options)
-	entryType = entryType or LSM_ENTRY_TYPE_NORMAL
+	entryType = entryType or entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
 
 	local generatedText
 
@@ -254,7 +255,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	local generatedEntryType = getValueOrCallback(entryType, (isAddDataTypeTable and additionalData) or options)
 
 	--If entry is a divider
-	if generatedEntryType == LSM_ENTRY_TYPE_DIVIDER then
+	if generatedEntryType == entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER then
 		text = libDivider
 	end
 
@@ -281,7 +282,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 	end
 
 	--Is the text a ---------- divider line, or entryType is divider?
-	local isDivider = generatedEntryType == LSM_ENTRY_TYPE_DIVIDER or generatedText == libDivider
+	local isDivider = generatedEntryType == entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER or generatedText == libDivider
 	if isDivider then callback = nil end
 
 	--Fallback vor old verions of LSM <2.1 where additionalData table was missing and isNew was used as the same parameter
@@ -333,7 +334,7 @@ local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableSubMenuEntry(text, entries)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 163, tos(text), tos(entries)) end
-	return addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_SUBMENU, entries, nil)
+	return addCustomScrollableMenuEntry(text, nil, entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU, entries, nil)
 end
 
 --Adds a divider line to the context menu entries
@@ -341,7 +342,7 @@ end
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuDivider()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 164) end
-	return addCustomScrollableMenuEntry(libDivider, nil, LSM_ENTRY_TYPE_DIVIDER, nil, nil)
+	return addCustomScrollableMenuEntry(libDivider, nil, entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER, nil, nil)
 end
 
 --Adds a header line to the context menu entries
@@ -349,7 +350,7 @@ end
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuHeader(text, additionalData)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 165, tos(text)) end
-	return addCustomScrollableMenuEntry(text, nil, LSM_ENTRY_TYPE_HEADER, nil, additionalData)
+	return addCustomScrollableMenuEntry(text, nil, entryTypeConstants.LSM_ENTRY_TYPE_HEADER, nil, additionalData)
 end
 
 --Adds a checkbox line to the context menu entries
@@ -362,7 +363,7 @@ function AddCustomScrollableMenuCheckbox(text, callback, checked, additionalData
 		additionalData = additionalData or {}
 		additionalData.checked = checked
 	end
-	return addCustomScrollableMenuEntry(text, callback, LSM_ENTRY_TYPE_CHECKBOX, nil, additionalData)
+	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX, nil, additionalData)
 end
 
 
@@ -591,7 +592,7 @@ function buttonGroupDefaultContextMenu(comboBox, control, data)
 		{ -- LSM_ENTRY_TYPE_NORMAL selecct and close.
 			name = GetString(SI_LSM_CNTXT_CHECK_ALL), --Check All
 			--entryType = LSM_ENTRY_TYPE_BUTTON,
-			entryType = LSM_ENTRY_TYPE_NORMAL,
+			entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL,
 			--additionalData = {
 				--horizontalAlignment = TEXT_ALIGN_CENTER,
 				--selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
@@ -605,7 +606,7 @@ function buttonGroupDefaultContextMenu(comboBox, control, data)
 		},
 		{
 			name = GetString(SI_LSM_CNTXT_CHECK_NONE),-- Check none
-			entryType = LSM_ENTRY_TYPE_NORMAL,
+			entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL,
 			--additionalData = {
 				--horizontalAlignment = TEXT_ALIGN_CENTER,
 				--selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
@@ -618,7 +619,7 @@ function buttonGroupDefaultContextMenu(comboBox, control, data)
 		},
 		{ -- LSM_ENTRY_TYPE_BUTTON allows for, invert, undo, invert, undo
 			name = GetString(SI_LSM_CNTXT_CHECK_INVERT), -- Invert
-			entryType = LSM_ENTRY_TYPE_NORMAL,
+			entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL,
 			callback = function()
 				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 				if buttonGroupOfEntryType == nil then return end

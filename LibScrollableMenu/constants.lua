@@ -703,19 +703,29 @@ constants.searchFilter.filterNamesExempts = filterNamesExempts
 
 ------------------------------------------------------------------------------------------------------------------------
 --Sound settings
+constants.sounds = {}
 
 local origSoundComboClicked = 	SOUNDS.COMBO_CLICK
 local origSoundDefaultClicked = SOUNDS.DEFAULT_CLICK
 local soundClickedSilenced	= 	SOUNDS.NONE
+constants.sounds.origSoundComboClicked = origSoundComboClicked
+constants.sounds.origSoundDefaultClicked = origSoundDefaultClicked
+constants.sounds.soundClickedSilenced = soundClickedSilenced
+
 --Sound names of the combobox entry selected sounds
 local defaultClick = "DEFAULT_CLICK"
+constants.sounds.defaultClick = defaultClick
 local comboClick = "COMBO_CLICK"
+constants.sounds.comboClick = comboClick
+
 local entryTypeToSilenceSoundName = {
 	[LSM_ENTRY_TYPE_NORMAL] 	= 	comboClick,
 	[LSM_ENTRY_TYPE_CHECKBOX]	=	defaultClick,
 	[LSM_ENTRY_TYPE_BUTTON] 	= 	defaultClick,
 	[LSM_ENTRY_TYPE_RADIOBUTTON]= 	defaultClick,
 }
+constants.sounds.entryTypeToSilenceSoundName = entryTypeToSilenceSoundName
+
 --Original sounds of the combobox entry selected sounds
 local entryTypeToOriginalSelectedSound = {
 	[LSM_ENTRY_TYPE_NORMAL]		= origSoundComboClicked,
@@ -723,10 +733,7 @@ local entryTypeToOriginalSelectedSound = {
 	[LSM_ENTRY_TYPE_BUTTON] 	= origSoundDefaultClicked,
 	[LSM_ENTRY_TYPE_RADIOBUTTON]= origSoundDefaultClicked,
 }
-
-
-
-
+constants.sounds.entryTypeToOriginalSelectedSound = entryTypeToOriginalSelectedSound
 
 
 

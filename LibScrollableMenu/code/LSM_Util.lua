@@ -30,6 +30,7 @@ local trem = table.remove
 -- Library utility
 --------------------------------------------------------------------
 local constants = lib.contants
+local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
@@ -118,7 +119,7 @@ function libUtil.getControlData(control)
 
 	return getDataSource(data)
 end
-local getControlData = libUtil.getControlData
+--local getControlData = libUtil.getControlData
 
 
 --------------------------------------------------------------------
@@ -137,4 +138,4 @@ function libUtil.throttledCall(callback, delay, throttledCallNameSuffix)
 		callback()
 	end)
 end
-local throttledCall = libUtil.throttledCall
+--local throttledCall = libUtil.throttledCall

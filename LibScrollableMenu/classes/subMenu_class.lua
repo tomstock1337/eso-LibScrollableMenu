@@ -57,6 +57,7 @@ local suppressNextOnGlobalMouseUp
 local buttonGroupDefaultContextMenu
 
 local constants = lib.contants
+local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local submenuConstants = constants.submenu
 local comboBoxMappingConstants = comboBoxConstants.mapping
