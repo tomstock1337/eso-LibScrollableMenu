@@ -35,9 +35,11 @@ local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local soundConstants = constants.sounds
 local handlerNameConstants = constants.handlerNames
+local subTableConstants = constants.data.subtables
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
-local subTableConstants = constants.data.subtables
+local defaultHighlightData = entryTypeConstants.defaults.highlights
+
 
 local libUtil = lib.Util
 
@@ -857,8 +859,6 @@ end
 lib.getComboBoxsSortedItems = libUtil.getComboBoxsSortedItems
 
 
-
-
 --------------------------------------------------------------------
 -- Highlight & Animation
 --------------------------------------------------------------------
@@ -908,8 +908,7 @@ local function removeAnimationOnControl(control, animationFieldName, animateInst
 	end
 end
 
-
-local function unhighlightControl(selfVar, instantly, control, resetHighlightTemplate)
+function libUtil.unhighlightControl(selfVar, instantly, control, resetHighlightTemplate)
 	local highlightControl = selfVar.highlightedControl
 	if highlightControl then
 		removeAnimationOnControl(highlightControl, highlightControl.breadcrumbName, instantly)
@@ -929,6 +928,8 @@ local function unhighlightControl(selfVar, instantly, control, resetHighlightTem
 		end
 	end
 end
+local unhighlightControl = libUtil.unhighlightControl
+
 
 --Should only be called from submenu or contextmenu's OnMouseEnter
 -->Normal menus use the scrolltemplates.lua function HighlightControl via normal ZO_ScrolList. See function "highlightTemplateOrFunction"
@@ -944,10 +945,19 @@ function libUtil.SubOrContextMenu_highlightControl(selfVar, control)
 	local highlightTemplate = selfVar:GetHighlightTemplate(control)
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 1, tos(highlightTemplate)) end
-	if type(highlightTemplate) ~= "string" then return defaultHighlightTemplate end
+	if type(highlightTemplate) ~= "string" then return defaultHighlightData.defaultHighlightTemplate end
 
 	--Use the breadcrumbName as animationFieldName (e.g. LSM_HighlightAnimation_SubmenuBreadcrumb or LSM_HighlightAnimation_ContextMenuBreadcrumb)
-	control.breadcrumbName = sfor(subAndContextMenuHighlightAnimationBreadcrumbsPattern, defaultHighLightAnimationFieldName, tos(selfVar.breadcrumbName))
+	control.breadcrumbName = sfor(defaultHighlightData.subAndContextMenuHighlightAnimationBreadcrumbsPattern, defaultHighlightData.defaultHighLightAnimationFieldName, tos(selfVar.breadcrumbName))
 	SubOrContextMenu_PlayAnimationOnControl(control, highlightTemplate, control.breadcrumbName, false, 0.5)
 	selfVar.highlightedControl = control
 end
+
+
+--------------------------------------------------------------------
+-- Screen / UI helper functions
+--------------------------------------------------------------------
+function libUtil.getScreensMaxDropdownHeight()
+	return GuiRoot:GetHeight() - 100
+end
+

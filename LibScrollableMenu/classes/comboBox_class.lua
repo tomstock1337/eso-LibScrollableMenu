@@ -71,6 +71,34 @@ local getValueOrCallback = libUtil.getValueOrCallback
 local mixinTableAndSkipExisting = libUtil.mixinTableAndSkipExisting
 local hideContextMenu = libUtil.hideContextMenu
 
+
+
+
+
+--------------------------------------------------------------------
+-- local helper functions
+--------------------------------------------------------------------
+--Control types which should save the parentName to the SV (for the header's toggleState) instead of each children
+--e.g. ZO_ScrollLists
+local headerToggleControlTypesSaveTheParent = {
+	[CT_SCROLL] = true
+}
+local function getHeaderToggleStateControlSavedVariableName(selfVar)
+	local openingControlOrComboBoxName = selfVar:GetUniqueName()
+	if openingControlOrComboBoxName then
+		local openingControlOrComboBoxCtrl = _G[openingControlOrComboBoxName]
+		local parentCtrl = openingControlOrComboBoxCtrl:GetParent()
+		--Parent control is a scrollList -> then save the parent as SV entry name, and not each single row of the scrollList
+		if parentCtrl and parentCtrl.GetType and headerToggleControlTypesSaveTheParent[parentCtrl:GetType()] then
+--d(">parentName: " ..tos(getControlName(parentCtrl)))
+			return getControlName(parentCtrl)
+		end
+	end
+--d(">openingControlOrComboBoxName: " ..tos(openingControlOrComboBoxName))
+	return openingControlOrComboBoxName
+end
+
+
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------

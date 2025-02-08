@@ -193,9 +193,11 @@ function submenuClass:HideDropdownInternal()
 		self.onHideDropdownCallback()
 	end
 
+	--[[ todo 20250208 non exisitng function?!
 	if self.highlightedControl then
 		unhighlightHighlightedControl(self)
 	end
+	]]
 end
 
 function submenuClass:HideDropdown()

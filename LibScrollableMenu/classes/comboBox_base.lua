@@ -71,7 +71,6 @@ local filteredEntryTypes = searchFilterConstants.filteredEntryTypes
 local filterNamesExempts = searchFilterConstants.filterNamesExempts
 
 
-
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
@@ -85,6 +84,9 @@ local getIsNew = libUtil.getIsNew
 local validateEntryType = libUtil.validateEntryType
 local updateDataByFunctions = libUtil.updateDataByFunctions
 local hideContextMenu = libUtil.hideContextMenu
+local unhighlightControl = libUtil.unhighlightControl
+local getScreensMaxDropdownHeight = libUtil.getScreensMaxDropdownHeight
+
 
 local libDivider = lib.DIVIDER
 local WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = entryTypeDefaults.WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
