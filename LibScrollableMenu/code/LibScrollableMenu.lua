@@ -37,8 +37,11 @@ local getControlName = libUtil.getControlName
 local getControlData = libUtil.getControlData
 local getValueOrCallback = libUtil.getValueOrCallback
 local getContextMenuReference = libUtil.getContextMenuReference
+local checkIfContextMenuOpenedButOtherControlWasClicked = libUtil.checkIfContextMenuOpenedButOtherControlWasClicked
+local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
+local getContextMenuReference = libUtil.getContextMenuReference
 
-local getDataSource
+local g_contextMenu
 
 
 --------------------------------------------------------------------
@@ -55,10 +58,12 @@ local dlog = libDebug.DebugLog
 --SavedVariables
 --------------------------------------------------------------------
 local svConstants = lib.SVConstans
-local sv = lib.SV
+--local sv = lib.SV
 
 
-
+--------------------------------------------------------------------
+-- Local helper functions
+--------------------------------------------------------------------
 --Called from ZO_Menu's ShowMenu, if preventing the call via lib.preventLSMClosingZO_Menu == true is not enabled
 --and called if the SCENE_MANAGER shows a scene
 local function hideCurrentlyOpenedLSMAndContextMenu()
@@ -68,201 +73,6 @@ local function hideCurrentlyOpenedLSMAndContextMenu()
 		openMenu:HideDropdown()
 	end
 end
-
-
-
-
-
---------------------------------------------------------------------
--- Local entry/item data functions
---------------------------------------------------------------------
-
-
---20240727 Prevent selection of entries if a context menu was opened and a left click was done "outside of the context menu"
---Param isContextMenu will be true if coming from contextMenuClass:GetHiddenForReasons function or it will change to true if
---any contextMenu is curently shown as this function runs
---Returns boolean true if the click should NOT affect the clicked control, and should only close the contextMenu
-local function checkIfHiddenForReasons(selfVar, button, isContextMenu, owningWindow, mocCtrl, comboBox, entry, isSubmenu)
-	isContextMenu = isContextMenu or false
-
-	local returnValue = false
-
-	--Check if context menu is currently shown
-	local isContextMenuVisible = isContextMenu or g_contextMenu:IsDropdownVisible()
-	if not isContextMenu and isContextMenuVisible == true then isContextMenu = true end
-
-	local dropdownObject = selfVar.m_dropdownObject
-	local contextMenuDropdownObject = g_contextMenu.m_dropdownObject
-	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
-	local isCntxtMenOwnedByComboBox = contextMenuDropdownObject:IsOwnedByComboBox(comboBox)
---d("[checkIfHiddenForReasons]isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu))
-
-
-	if not isContextMenu then
-		--No context menu currently shown
-		if button == MOUSE_BUTTON_INDEX_LEFT then
-			--todo 2024-08-07 Submenu -> Context menu -> Click on entry at the submenu (but outside the context menu) closes aLL menus -> why? It must only close the contextMenu then
-			if isOwnedByComboBox == true then
-				if not comboBox then
-					--d("<1not comboBox -> true")
-					returnValue = true
-				else
-					--Is the mocEntry an empty table (something else was clicked than a LSM entry)
-					if ZO_IsTableEmpty(entry) then
-						--d("<1ZO_IsTableEmpty(entry) -> true")
-						returnValue = true
-					else
-
-						if mocCtrl then
-							local owner = mocCtrl.m_owner
-							if owner then
-								--d("1>>owner found")
-								--Does moc entry belong to a LSM menu and it IS the current comboBox?
-								if owner == comboBox then
-									--d(">>1 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
-									returnValue = mocCtrl.closeOnSelect
-								else
-									--d(">>1 - true")
-									--Does moc entry belong to a LSM menu but it's not the current comboBox?
-									returnValue = true
-								end
-							end
-						else
-							--d(">>1 - no mocCtrl")
-						end
-					end
-				end
-			elseif isCntxtMenOwnedByComboBox ~= nil then
-				--20240807 Works for context menu clicks rasied from a subenu but not if context menu go a submenu itsself....
-				return not isCntxtMenOwnedByComboBox
-			else
-				returnValue = true
-			end
-
-		elseif button == MOUSE_BUTTON_INDEX_RIGHT then
-			returnValue = true --close as a context menu might open
-		end
-
-	else
-		local doNotHideContextMenu = false
-		--Context menu is currently shown
-		if button == MOUSE_BUTTON_INDEX_LEFT then
-			--Is there no LSM comboBox available? Close the context menu
-			if not comboBox then
-				--d("<2not comboBox -> true")
-				returnValue = true
-			else
-				--Is the mocEntry an empty table (something else was clicked than a LSM entry)
-				if ZO_IsTableEmpty(entry) then
-					--d("<2ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown))
-					-- Was e.g. a context menu's submenu search header's editBox or the refresh button left clicked?
-					if mocCtrl then
-						if (contextMenuDropdownObject == mocCtrl.m_dropdownObject or (mocCtrl.GetOwningWindow and mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown)) then
---d(">>2 - submenu search header editBox or refresh button clicked")
-							returnValue = false
-							doNotHideContextMenu = true
-						else
-							-- or was a checkbox's [ ] box control in a contextMenu's submenu clicked directly?
-							if mocCtrl.m_owner == nil then
-								local parent = mocCtrl:GetParent()
-								mocCtrl = parent
-							end
-							local owner = mocCtrl.m_owner
---d(">>2 - isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
-							if owner and (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
---d(">>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
-								returnValue = not mocCtrl.closeOnSelect
-							else
-								returnValue = true
-							end
-						end
-					else
-						returnValue = true
-					end
-				else
-
-					if mocCtrl then
-						local owner = mocCtrl.m_owner or mocCtrl:GetParent().m_owner
-						if owner then
-							--d(">>2_1owner found")
-							--Does moc entry belong to a LSM menu and it IS the current contextMenu?
-							if owner == g_contextMenu then --comboBox then
-								--d(">>2_1 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
-								returnValue = mocCtrl.closeOnSelect
-							else
-								--d(">>2_1 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
-								--Does moc entry belong to a LSM menu but it's not the current contextMenu?
-								--Is it a submenu entry of the context menu?
-								if (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
-									--d(">>>2_1 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
-									returnValue = not mocCtrl.closeOnSelect
-								else
-									--d(">>>2_1 - true")
-									returnValue = true
-								end
-							end
-						else
-							--d(">>2_1 - owner not found")
-						end
-					end
-				end
-			end
-			--Do not hide the contextMenu if the mocCtrl clicked should keep the menu opened
-			if mocCtrl and mocCtrl.closeOnSelect == false then
-				doNotHideContextMenu = true
-				suppressNextOnGlobalMouseUp = true
---d(">suppressNextOnGlobalMouseUp: " ..tos(suppressNextOnGlobalMouseUp))
-				returnValue = false
-			end
-
-		elseif button == MOUSE_BUTTON_INDEX_RIGHT then
-			-- Was e.g. the search header's editBox left clicked?
-			if mocCtrl and contextMenuDropdownObject == mocCtrl.m_dropdownObject then
-				returnValue = false
-				doNotHideContextMenu = true
-			else
-				returnValue = true --close context menu
-			end
-		end
-
-		--Reset the contextmenus' opened dropdown value so next check in comboBox_base:HiddenForReasons(button) will not show g_contextMenu:IsDropdownVisible() == true!
-		if not doNotHideContextMenu then
-			hideContextMenu()
-		end
-	end
-
-	return returnValue
-end
-
-
-
--- Recursively check for new entries.
--->Done within preUpdateSubItems func now
---[[
-local function areAnyEntriesNew(entry)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 30) end
-	return recursiveOverEntries(entry, getIsNew, true)
-end
-]]
-
-
-
-
-
-
-
---------------------------------------------------------------------
--- Local tooltip functions
---------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
 
 
 --Recursivley map the entries of a submenu and add them to the mapTable
@@ -287,7 +97,7 @@ end
 
 -- This function will create a map of all entries recursively. Useful when there are submenu entries
 -- and you want to use them for comparing in the callbacks, NewStatusUpdated, CheckboxUpdated, RadioButtonUpdated
-local function mapEntries(entryTable, mapTable, blank)
+function lib.mapEntries(entryTable, mapTable, blank)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 24) end
 
 	if blank ~= nil then
@@ -303,18 +113,13 @@ local function mapEntries(entryTable, mapTable, blank)
 		entryTableType = type(entryTableToMap)
 	end
 
-	assert(entryTableType == 'table' and mapTableType == 'table' , sfor("["..MAJOR..":MapEntries] tables expected, got %q = %s, %q = %s", "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
+	assert(entryTableType == 'table' and mapTableType == 'table' , sfor("["..MAJOR..".MapEntries] tables expected, got %q = %s, %q = %s", "entryTable", tos(entryTableType), "mapTable", tos(mapTableType)))
 
 	-- Splitting these up so the above is not done each iteration
 	doMapEntries(entryTableToMap, mapTable, entryTableType)
 end
-lib.MapEntries = mapEntries
 
 
-------------------------------------------------------------------------------------------------------------------------
--- API functions for custom scrollable inventory context menu (ZO_Menu / LibCustomMenu support)
-------------------------------------------------------------------------------------------------------------------------
---> See ZO_Menu2LSM_Mapping.lua
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -361,6 +166,8 @@ function lib.XMLButtonOnInitialize(control, entryType)
 				end
 
 			elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
+				g_contextMenu = getContextMenuReference()
+
 				local owner = parent.m_owner
 				local data = getControlData(parent)
 				local rightClickCallback = data.contextMenuCallback or data.rightClickCallback
@@ -406,7 +213,7 @@ local function onAddonLoaded(event, name)
 
 	--SavedVariables
 	lib.SV = ZO_SavedVars:NewAccountWide(svConstants.name, svConstants.version, svConstants.profile, svConstants.defaults)
-	sv = lib.SV
+	--sv = lib.SV
 
 	--Create the ZO_ComboBox and the g_contextMenu object (lib.contextMenu) for the LSM contextmenus
 	lib.CreateContextMenuObject()

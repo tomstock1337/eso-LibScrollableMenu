@@ -1133,7 +1133,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 		--	callback        = callback __function__,
 		--	tooltip         = tooltip __string or function?__,
 		--}
-		lib:MapEntries(comboBoxMenuEntries, entryMap)
+		lib.MapEntries(comboBoxMenuEntries, entryMap)
 
 		comboBox.entryMap = entryMap
 		-- This example callback is checking if the data matches a new combobox entry from this addon.

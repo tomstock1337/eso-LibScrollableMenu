@@ -280,6 +280,7 @@ local scrollListRowHighlights = lib.scrollListRowHighlights
 for key, value in pairs(scrollListRowHighlights) do
 	--Create the lib.LSM_ROW_HIGHLIGHT* variables
 	lib[key] = value
+	constants.entryTypes.defaults.highlights[key] = value
 	--Create the LSM_ROW_HIGHLIGHT* globals
 	_G[key] = value
 end

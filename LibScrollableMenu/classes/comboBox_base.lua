@@ -17,20 +17,19 @@ local dlog = libDebug.DebugLog
 -- Locals
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
-local AM = GetAnimationManager() --ANIMATION_MANAGER
 local EM = GetEventManager() --EVENT_MANAGER
 local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
-local sfor = string.format
 local zostrlow = zo_strlower
 local tins = table.insert
-local trem = table.remove
 
 
 --------------------------------------------------------------------
 --Library classes
 --------------------------------------------------------------------
 local classes = lib.classes
+local buttonGroupClass = classes.buttonGroupClass
+
 
 --------------------------------------------------------------------
 --ZO_ComboBox function references
@@ -41,20 +40,17 @@ local zo_comboBox_base_updateItems = ZO_ComboBox_Base.UpdateItems
 
 local zo_comboBox_setItemEntryCustomTemplate = ZO_ComboBox.SetItemEntryCustomTemplate
 
---local zo_comboBoxDropdown_onEntrySelected = ZO_ComboBoxDropdown_Keyboard.OnEntrySelected
-local zo_comboBoxDropdown_onMouseExitEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseExitEntry
-local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseEnterEntry
-
 
 --------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
 local suppressNextOnGlobalMouseUp = lib.suppressNextOnGlobalMouseUp
-local buttonGroupDefaultContextMenu
+local buttonGroupDefaultContextMenu = lib.ButtonGroupDefaultContextMenu --Is loaded from API file. Will be updated later inside functions where used
 
 local constants = lib.contants
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
+local dropdownConstants = constants.dropdown
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local searchFilterConstants = constants.searchFilter
 local handlerNames = constants.handlerNames
@@ -62,22 +58,18 @@ local subTableConstants = constants.data.subtables
 local textureConstants = constants.textures
 local narrationConstants = constants.narration
 local entryTypeDefaults = entryTypeConstants.defaults
+local entryTypeDefaultsHighlights = entryTypeDefaults.highlights
+local dropdownDefaults = dropdownConstants.defaults
 
 
-local comboBoxDefaults = comboBoxConstants.defaults
-local noEntriesResults = searchFilterConstants.noEntriesResults
+local libraryAllowedEntryTypes = entryTypeConstants.libraryAllowedEntryTypes
 local noEntriesSubmenuResults = searchFilterConstants.noEntriesSubmenuResults
-local filteredEntryTypes = searchFilterConstants.filteredEntryTypes
-local filterNamesExempts = searchFilterConstants.filterNamesExempts
-
 
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
 local getControlData = libUtil.getControlData
 local getComboBox = libUtil.getComboBox
-local getDataSource = libUtil.getDataSource
-local showTooltip = libUtil.showTooltip
 local hideTooltip = libUtil.hideTooltip
 local recursiveOverEntries = libUtil.recursiveOverEntries
 local getIsNew = libUtil.getIsNew
@@ -86,12 +78,15 @@ local updateDataByFunctions = libUtil.updateDataByFunctions
 local hideContextMenu = libUtil.hideContextMenu
 local unhighlightControl = libUtil.unhighlightControl
 local getScreensMaxDropdownHeight = libUtil.getScreensMaxDropdownHeight
+local getContextMenuReference = libUtil.getContextMenuReference
 
 
 local libDivider = lib.DIVIDER
 local WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = entryTypeDefaults.WITHOUT_ICON_LABEL_DEFAULT_OFFSETX
 local iconNewIcon = textureConstants.iconNewIcon
 local iconNarrationNewValue = narrationConstants.iconNarrationNewValue
+
+local g_contextMenu
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -568,6 +563,8 @@ d(">submenu is open -> use it for owner check")
 end
 
 
+
+
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
@@ -678,14 +675,14 @@ local function getDefaultXMLTemplates(selfVar)
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = {
 			template = 'LibScrollableMenu_ComboBoxDividerEntry',
-			rowHeight = DIVIDER_ENTRY_HEIGHT,
+			rowHeight = entryTypeDefaults.DIVIDER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
 				selfVar:SetupEntryDivider(control, data, list)
 			end,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = {
 			template = 'LibScrollableMenu_ComboBoxHeaderEntry',
-			rowHeight = HEADER_ENTRY_HEIGHT,
+			rowHeight = entryTypeDefaults.HEADER_ENTRY_HEIGHT,
 			setupFunc = function(control, data, list)
 				selfVar:SetupEntryHeader(control, data, list)
 			end,
@@ -719,38 +716,38 @@ local function getDefaultXMLTemplates(selfVar)
 	--The virtual XML highlight templates (mouse moved above an antry), for the different row types
 	local defaultXMLHighlightTemplates = {
 		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = {
-			template = defaultHighlightTemplate,
-			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
-			color = defaultHighlightColor,
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = {
-			template = defaultHighlightTemplate,
-			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
-			templateSubMenuWithCallback = LSM_ROW_HIGHLIGHT_GREEN, -- template for the entry where a submenu is opened but you can click the entry to call a callback too
-			color = defaultHighlightColor,
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
+			templateSubMenuWithCallback = entryTypeDefaultsHighlights.LSM_ROW_HIGHLIGHT_GREEN, -- template for the entry where a submenu is opened but you can click the entry to call a callback too
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = {
-			template = defaultHighlightTemplate,
-			color = defaultHighlightColor,
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = {
-			template = defaultHighlightTemplate,
-			color = defaultHighlightColor,
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = {
-			template = defaultHighlightTemplate,
-			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
-			color = defaultHighlightColor,
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON] = {
-			template = defaultHighlightTemplate,
-			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
-			color = defaultHighlightColor,
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = {
-			template = defaultHighlightTemplate,
-			templateContextMenuOpeningControl = defaultHighlightTemplate, --template for an entry providing a contextMenu
-			color = defaultHighlightColor,
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 	}
 	return defaultXMLTemplates, defaultXMLHighlightTemplates
@@ -901,10 +898,10 @@ function comboBox_base:GetBaseWidth(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 91, tos(getControlName(control)), tos(control.header ~= nil), tos(control.header ~= nil and control.header:GetWidth() or 0)) end
 	if control and control.header then
 		local minWidth = control.header:GetWidth()
-		if minWidth <= 0 then minWidth = MIN_WIDTH_WITHOUT_SEARCH_HEADER end
+		if minWidth <= 0 then minWidth = dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER end
 		return minWidth
 	end
-	return MIN_WIDTH_WITHOUT_SEARCH_HEADER
+	return dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER
 end
 
 
@@ -940,6 +937,7 @@ function comboBox_base:GetSubmenu()
 end
 
 function comboBox_base:HiddenForReasons(button)
+	g_contextMenu = getContextMenuReference()
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 96, tos(button)) end
 --d("comboBox_base:HiddenForReasons - button: " .. tos(button))
@@ -1029,7 +1027,7 @@ function comboBox_base:GetHighlightTemplateData(control, m_data, isSubMenu, isCo
 
 	local appliedHighlightTemplate = self:GetHighlightTemplate(control)
 	local appliedHighlightTemplateCopy = appliedHighlightTemplate
-	local highlightTemplateData = ((self.XMLRowHighlightTemplates[entryType] ~= nil and ZO_ShallowTableCopy(self.XMLRowHighlightTemplates[entryType])) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(defaultHighlightTemplateData) --loose the reference so we can overwrite values below, without changing originals
+	local highlightTemplateData = ((self.XMLRowHighlightTemplates[entryType] ~= nil and ZO_ShallowTableCopy(self.XMLRowHighlightTemplates[entryType])) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(entryTypeDefaultsHighlights.defaultHighlightTemplateData) --loose the reference so we can overwrite values below, without changing originals
 	highlightTemplateData.overwriteHighlightTemplate = highlightTemplateData.overwriteHighlightTemplate or false
 
 	local options = self:GetOptions()
@@ -1038,12 +1036,12 @@ function comboBox_base:GetHighlightTemplateData(control, m_data, isSubMenu, isCo
 	--Check if the original data passed in got a m_highlightTemplate, m_highlightColor etc. which should always be used
 	-->Original data was copied to data._LSM.OriginalData.data via function updateDataValues in addItembase
 	if data then
-		local origData = data[LSM_DATA_SUBTABLE] and data[LSM_DATA_SUBTABLE][LSM_DATA_SUBTABLE_ORIGINAL_DATA] and data[LSM_DATA_SUBTABLE][LSM_DATA_SUBTABLE_ORIGINAL_DATA].data
+		local origData = data[subTableConstants.LSM_DATA_SUBTABLE] and data[subTableConstants.LSM_DATA_SUBTABLE][subTableConstants.LSM_DATA_SUBTABLE_ORIGINAL_DATA] and data[subTableConstants.LSM_DATA_SUBTABLE][subTableConstants.LSM_DATA_SUBTABLE_ORIGINAL_DATA].data
 		if origData then
 			if origData.m_highlightTemplate or origData.m_highlightColor then
 				local origHighlightTemplateData = {}
 				origHighlightTemplateData.template = 	origData.m_highlightTemplate
-				origHighlightTemplateData.color = 		origData.m_highlightColor or defaultHighlightColor
+				origHighlightTemplateData.color = 		origData.m_highlightColor or entryTypeDefaultsHighlights.defaultHighlightColor
 
 				origHighlightTemplateData.overwriteHighlightTemplate = true
 
@@ -1057,7 +1055,7 @@ function comboBox_base:GetHighlightTemplateData(control, m_data, isSubMenu, isCo
 			--Color the highlight light row green if the submenu has a callback (entry opening a submenu can be clicked to select it)
 			--but keep the color of the text as defined in options (self.XMLRowHighlightTemplates[entryType].color)
 			--Was a custom template provided in "templateSubMenuWithCallback" for that case, then use it. Else use default template (green)
-			highlightTemplateData.template = ((highlightTemplateData.templateSubMenuWithCallback ~= nil and highlightTemplateData.templateSubMenuWithCallback) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(defaultHighlightTemplateDataEntryHavingSubMenuWithCallback).template
+			highlightTemplateData.template = ((highlightTemplateData.templateSubMenuWithCallback ~= nil and highlightTemplateData.templateSubMenuWithCallback) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(entryTypeDefaultsHighlights.defaultHighlightTemplateDataEntryHavingSubMenuWithCallback).template
 		end
 	else
 		local isContextMenuAndHighlightContextMenuOpeningControl = (options ~= nil and options.highlightContextMenuOpeningControl == true) or self.highlightContextMenuOpeningControl == true
@@ -1069,7 +1067,7 @@ function comboBox_base:GetHighlightTemplateData(control, m_data, isSubMenu, isCo
 			if gotRightCLickCallback and not isOwnedByContextMenuComboBox then
 
 				--highlightContextMenuOpeningControl support -> highlightTemplateData.templateContextMenuOpeningControl
-				highlightTemplateData.template = ((highlightTemplateData.templateContextMenuOpeningControl ~= nil and highlightTemplateData.templateContextMenuOpeningControl) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(defaultHighlightTemplateDataEntryContextMenuOpeningControl).template
+				highlightTemplateData.template = ((highlightTemplateData.templateContextMenuOpeningControl ~= nil and highlightTemplateData.templateContextMenuOpeningControl) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(entryTypeDefaultsHighlights.defaultHighlightTemplateDataEntryContextMenuOpeningControl).template
 				highlightTemplateData.overwriteHighlightTemplate = true
 			end
 		end
@@ -1344,7 +1342,7 @@ function comboBox_base:UpdateWidth(control)
 	-->Will be overwritten at Show function IF no maxWidth is set and any entry in the list is wider (text width) than the container width
 	local maxDropdownWidth = self:GetMaxDropdownWidth()
 	local maxWidthInTotal = maxDropdownWidth or self.m_containerWidth
-	if maxWidthInTotal <= 0 then maxWidthInTotal = MIN_WIDTH_WITHOUT_SEARCH_HEADER end
+	if maxWidthInTotal <= 0 then maxWidthInTotal = dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER end
 
 	--Calculate end width
 	local newWidth = maxWidthInTotal
@@ -1418,7 +1416,7 @@ do -- Row setup functions
 	local function addButton(comboBox, control, data, toggleFunction)
 		local entryType = control.typeId
 		if entryType == nil then return end
-		local childName = entryTypeToButtonChildName[entryType]
+		local childName = entryTypeConstants.entryTypeToButtonChildName[entryType]
 		if childName == nil then return end
 
 		local buttonControl = control.m_button or control:GetNamedChild(childName)
@@ -1462,6 +1460,7 @@ do -- Row setup functions
 			--	buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
 
 			if entryType == entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX and data.rightClickCallback == nil and data.contextMenuCallback == nil then
+				buttonGroupDefaultContextMenu = buttonGroupDefaultContextMenu or lib.ButtonGroupDefaultContextMenu
 				data.rightClickCallback = buttonGroupDefaultContextMenu
 			end
 		end
@@ -1499,7 +1498,7 @@ do -- Row setup functions
 		horizontalAlignment = horizontalAlignment or self.horizontalAlignment
 
 		applyEntryFont(control, font, color, horizontalAlignment)
-		self:SetupEntryBase(control, data, list, realEntryType)
+		self:SetupEntryBase(control, data, list, nil)
 	end
 
 	function comboBox_base:SetupEntryLabel(control, data, list, realEntryType)
@@ -1507,7 +1506,7 @@ do -- Row setup functions
 		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
 		addIcon(control, data, list)
 		addLabel(control, data, list)
-		self:SetupEntryLabelBase(control, data, list, realEntryType)
+		self:SetupEntryLabelBase(control, data, list)
 
 		if realEntryType == entryTypeConstants.LSM_ENTRY_TYPE_NORMAL then
 			--Update the control.m_highlightTemplate

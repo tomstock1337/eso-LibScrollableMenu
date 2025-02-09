@@ -17,12 +17,9 @@ local dlog = libDebug.DebugLog
 -- Locals
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
-local AM = GetAnimationManager() --ANIMATION_MANAGER
 local EM = GetEventManager() --EVENT_MANAGER
-local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
 local sfor = string.format
-local zostrlow = zo_strlower
 local tins = table.insert
 local trem = table.remove
 
@@ -36,12 +33,6 @@ local classes = lib.classes
 --------------------------------------------------------------------
 --ZO_ComboBox function references
 --------------------------------------------------------------------
-local zo_comboBox_base_addItem = ZO_ComboBox_Base.AddItem
-local zo_comboBox_base_hideDropdown = ZO_ComboBox_Base.HideDropdown
-local zo_comboBox_base_updateItems = ZO_ComboBox_Base.UpdateItems
-
-local zo_comboBox_setItemEntryCustomTemplate = ZO_ComboBox.SetItemEntryCustomTemplate
-
 --local zo_comboBoxDropdown_onEntrySelected = ZO_ComboBoxDropdown_Keyboard.OnEntrySelected
 local zo_comboBoxDropdown_onMouseExitEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseExitEntry
 local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseEnterEntry
@@ -54,13 +45,14 @@ local g_contextMenu
 local suppressNextOnGlobalMouseUp = lib.suppressNextOnGlobalMouseUp
 local refreshDropdownHeader
 
+local has_submenu = true
+local no_submenu = false
+
 
 --Constants
 local constants = lib.contants
 local entryTypeConstants = constants.entryTypes
 local entryTypeDefaultsConstants = constants.entryTypes.defaults
-local comboBoxConstants = constants.comboBox
-local comboBoxMappingConstants = comboBoxConstants.mapping
 local searchFilterConstants = constants.searchFilter
 local handlerNameConstants = constants.handlerNames
 local submenuConstants = constants.submenu
@@ -69,9 +61,7 @@ local fontConstants = constants.fonts
 
 
 local dropdownDefaults = dropdownConstants.defaults
-local comboBoxDefaults = comboBoxConstants.defaults
 local noEntriesResults = searchFilterConstants.noEntriesResults
-local noEntriesSubmenuResults = searchFilterConstants.noEntriesSubmenuResults
 local filteredEntryTypes = searchFilterConstants.filteredEntryTypes
 local filterNamesExempts = searchFilterConstants.filterNamesExempts
 
@@ -90,7 +80,6 @@ local showTooltip = libUtil.showTooltip
 local hideTooltip = libUtil.hideTooltip
 local getContextMenuReference = libUtil.getContextMenuReference
 local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
-local silenceEntryClickedSound = libUtil.silenceEntryClickedSound
 local throttledCall = libUtil.throttledCall
 local recursiveOverEntries = libUtil.recursiveOverEntries
 local getIsNew = libUtil.getIsNew
@@ -103,6 +92,7 @@ local ignoreSubmenu 			--if using / prefix submenu entries not matching the sear
 local lastEntryVisible  = true	--Was the last entry processed visible at the results list? Used to e.g. show the divider below too
 local filterString				--the search string
 local filterFunc				--the filter function to use. Default is "defaultFilterFunc". Custom filterFunc can be added via options.customFilterFunc
+local throttledCallDropdownClassSetFilterStringSuffix =  "_DropdownClass_SetFilterString"
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -279,8 +269,37 @@ end
 
 
 --------------------------------------------------------------------
+-- Dropdown entry/row pool control functions
+--------------------------------------------------------------------
+--Reset function which is called for the scrollList entryType pool's rowControls as they get hidden/scrolled out of sight
+local function poolControlReset(selfVar, control)
+    control:SetHidden(true)
+
+	if control.isSubmenu then
+		if control.m_owner.m_submenu then
+			control.m_owner.m_submenu:HideDropdown()
+		end
+	end
+
+	local button = control.m_button
+	if button then
+		local buttonGroup = button.m_buttonGroup
+		if buttonGroup ~= nil then
+			--local buttonGroupIndex = button.m_buttonGroupIndex
+			buttonGroup:Remove(button)
+		end
+	end
+end
+
+
+--------------------------------------------------------------------
 -- Dropdown entry/row handlers
 --------------------------------------------------------------------
+local function checkForMultiSelectEnabled(selfVar, control)
+	local isMultiSelectEnabled = (selfVar.owner and selfVar.owner.m_enableMultiSelect) or false
+	return (not isMultiSelectEnabled and not control.closeOnSelect) or false
+end
+
 local function onMouseEnter(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 49, tos(getControlName(control)), tos(hasSubmenu)) end
@@ -309,14 +328,6 @@ local function onMouseUp(control, data, hasSubmenu)
 
 	hideTooltip(control)
 	return dropdown
-end
-
-local has_submenu = true
-local no_submenu = false
-
-local function checkForMultiSelectEnabled(selfVar, control)
-	local isMultiSelectEnabled = (selfVar.owner and selfVar.owner.m_enableMultiSelect) or false
-	return (not isMultiSelectEnabled and not control.closeOnSelect) or false
 end
 
 local handlerFunctions  = {
@@ -443,26 +454,6 @@ local function runHandler(selfVar, handlerTable, control, ...)
 	return false
 end
 
---Reset function which is called for the scrollList entryType pool's rowControls as they get hidden/scrolled out of sight
-local function poolControlReset(selfVar, control)
-    control:SetHidden(true)
-
-	if control.isSubmenu then
-		if control.m_owner.m_submenu then
-			control.m_owner.m_submenu:HideDropdown()
-		end
-	end
-
-	local button = control.m_button
-	if button then
-		local buttonGroup = button.m_buttonGroup
-		if buttonGroup ~= nil then
-			--local buttonGroupIndex = button.m_buttonGroupIndex
-			buttonGroup:Remove(button)
-		end
-	end
-end
-
 
 --------------------------------------------------------------------
 -- Dropdown entry functions
@@ -524,7 +515,7 @@ end
 local function compareDrodpwonDataList(selfVar, scrollControl, item)
 	local dataList = ZO_ScrollList_GetDataList(scrollControl)
 
-	for i, data in ipairs(dataList) do
+	for _, data in ipairs(dataList) do
 		if data:GetDataSource() == item then
 			return data
 		end
@@ -813,15 +804,16 @@ do
 
 		-- Others
 		local isFilterEnabled = comboBox:IsFilterEnabled()
-		refreshResults[FILTER_CONTAINER] = header_processData(controls[FILTER_CONTAINER], isFilterEnabled, collapsed)
-		refreshResults[CUSTOM_CONTROL] = header_processControl(controls[CUSTOM_CONTROL], getValueOrCallback(options.customHeaderControl, options), collapsed)
-		refreshResults[TOGGLE_BUTTON] = header_processData(controls[TOGGLE_BUTTON], getValueOrCallback(options.headerCollapsible, options))
+		refreshResults[FILTER_CONTAINER] = 				header_processData(controls[FILTER_CONTAINER], isFilterEnabled, collapsed)
+		refreshResults[CUSTOM_CONTROL] = 				header_processControl(controls[CUSTOM_CONTROL], getValueOrCallback(options.customHeaderControl, options), collapsed)
+		refreshResults[TOGGLE_BUTTON] = 				header_processData(controls[TOGGLE_BUTTON], getValueOrCallback(options.headerCollapsible, options))
 		refreshResults[TOGGLE_BUTTON_CLICK_EXTENSION] = header_processData(controls[TOGGLE_BUTTON_CLICK_EXTENSION], getValueOrCallback(options.headerCollapsible, options))
 
 		headerControl:SetDimensionConstraints(MIN_WIDTH_WITHOUT_SEARCH_HEADER, 0)
 		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled)
 	end
 end
+
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -1503,8 +1495,8 @@ end
 local function clearTextSearchHistory(self, comboBoxContainerName)
 	self.wasTextSearchContextMenuEntryClicked = true
 	if comboBoxContainerName == nil or comboBoxContainerName == "" then return end
-	if ZO_IsTableEmpty(sv.textSearchHistory[comboBoxContainerName]) then return end
-	sv.textSearchHistory[comboBoxContainerName] = nil
+	if ZO_IsTableEmpty(lib.SV.textSearchHistory[comboBoxContainerName]) then return end
+	lib.SV.textSearchHistory[comboBoxContainerName] = nil
 end
 
 local function addTextSearchEditBoxTextToHistory(comboBox, filterBox, historyText)
@@ -1513,8 +1505,8 @@ local function addTextSearchEditBoxTextToHistory(comboBox, filterBox, historyTex
 	local comboBoxContainerName = comboBox:GetUniqueName()
 	if comboBoxContainerName == nil or comboBoxContainerName == "" then return end
 
-	sv.textSearchHistory[comboBoxContainerName] = sv.textSearchHistory[comboBoxContainerName] or {}
-	local textSearchHistory = sv.textSearchHistory[comboBoxContainerName]
+	lib.SV.textSearchHistory[comboBoxContainerName] = lib.SV.textSearchHistory[comboBoxContainerName] or {}
+	local textSearchHistory = lib.SV.textSearchHistory[comboBoxContainerName]
 	--Entry already in the history, abort now
 	if ZO_IsElementInNumericallyIndexedTable(textSearchHistory, historyText) then return end
 	tins(textSearchHistory, 1, historyText)
@@ -1543,7 +1535,6 @@ function dropdownClass:WasTextSearchContextMenuEntryClicked(mocCtrl)
 	return false
 end
 
-local throttledCallDropdownClassSetFilterStringSuffix =  "_DropdownClass_SetFilterString"
 function dropdownClass:SetFilterString(filterBox)
  --d("dropdownClass:SetFilterString")
 	if self.m_comboBox then
@@ -1571,7 +1562,7 @@ function dropdownClass:ShowFilterEditBoxHistory(filterBox)
 --d(debugPrefix .. "dropdownClass:ShowFilterEditBoxHistory - comboBoxContainerName: " .. tos(comboBoxContainerName))
 		if comboBoxContainerName == nil or comboBoxContainerName == "" then return end
 		--Get the last saved text search (history) and show them as context menu
-		local textSearchHistory = sv.textSearchHistory[comboBoxContainerName]
+		local textSearchHistory = lib.SV.textSearchHistory[comboBoxContainerName]
 		if not ZO_IsTableEmpty(textSearchHistory) then
 			self.wasTextSearchContextMenuEntryClicked = nil
 			ClearMenu()

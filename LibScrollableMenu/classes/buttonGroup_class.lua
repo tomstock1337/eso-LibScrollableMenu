@@ -1,30 +1,21 @@
 local lib = LibScrollableMenu
 if not lib then return end
 
-local MAJOR = lib.name
+--local MAJOR = lib.name
 
 
 --------------------------------------------------------------------
 -- For debugging and logging
 --------------------------------------------------------------------
 --Logging and debugging
-local libDebug = lib.Debug
-local debugPrefix = libDebug.prefix
+--local libDebug = lib.Debug
+--local debugPrefix = libDebug.prefix
 
-local dlog = libDebug.DebugLog
+--local dlog = libDebug.DebugLog
 
 --------------------------------------------------------------------
 -- Locals
 --------------------------------------------------------------------
---ZOs local speed-up/reference variables
-local AM = GetAnimationManager() --ANIMATION_MANAGER
-local EM = GetEventManager() --EVENT_MANAGER
-local SNM = SCREEN_NARRATION_MANAGER
-local tos = tostring
-local sfor = string.format
-local zostrlow = zo_strlower
-local tins = table.insert
-local trem = table.remove
 
 
 --------------------------------------------------------------------
@@ -34,41 +25,15 @@ local classes = lib.classes
 
 
 --------------------------------------------------------------------
---ZO_ComboBox function references
---------------------------------------------------------------------
-local zo_comboBox_base_addItem = ZO_ComboBox_Base.AddItem
-local zo_comboBox_base_hideDropdown = ZO_ComboBox_Base.HideDropdown
-local zo_comboBox_base_updateItems = ZO_ComboBox_Base.UpdateItems
-
-local zo_comboBox_setItemEntryCustomTemplate = ZO_ComboBox.SetItemEntryCustomTemplate
-
---local zo_comboBoxDropdown_onEntrySelected = ZO_ComboBoxDropdown_Keyboard.OnEntrySelected
-local zo_comboBoxDropdown_onMouseExitEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseExitEntry
-local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseEnterEntry
-
-
---------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
 local constants = lib.contants
 local entryTypeConstants = constants.entryTypes
-local comboBoxConstants = constants.comboBox
-local comboBoxMappingConstants = comboBoxConstants.mapping
-local searchFilterConstants = constants.searchFilter
-
-local comboBoxDefaults = comboBoxConstants.defaults
-local noEntriesResults = searchFilterConstants.noEntriesResults
-local noEntriesSubmenuResults = searchFilterConstants.noEntriesSubmenuResults
-local filteredEntryTypes = searchFilterConstants.filteredEntryTypes
-local filterNamesExempts = searchFilterConstants.filterNamesExempts
-
 
 
 local libUtil = lib.Util
-local getControlName = libUtil.getControlName
-local getValueOrCallback = libUtil.getValueOrCallback
+--local getControlName = libUtil.getControlName
 local checkIfContextMenuOpenedButOtherControlWasClicked = libUtil.checkIfContextMenuOpenedButOtherControlWasClicked
-local showTooltip = libUtil.showTooltip
 local hideTooltip = libUtil.hideTooltip
 
 ------------------------------------------------------------------------------------------------------------------------
