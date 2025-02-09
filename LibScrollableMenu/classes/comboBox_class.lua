@@ -30,7 +30,7 @@ local comboBox_base = classes.comboboxBaseClass
 --------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
-local constants = lib.contants
+local constants = lib.constants
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local dropdownConstants = constants.dropdown

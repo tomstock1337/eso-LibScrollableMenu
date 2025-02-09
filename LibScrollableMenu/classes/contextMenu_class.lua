@@ -32,7 +32,7 @@ local comboBoxClass = classes.comboBoxClass
 --------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
-local constants = lib.contants
+local constants = lib.constants
 
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName

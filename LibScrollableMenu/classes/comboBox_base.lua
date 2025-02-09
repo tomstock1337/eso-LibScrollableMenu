@@ -48,7 +48,7 @@ local zo_comboBox_setItemEntryCustomTemplate = ZO_ComboBox.SetItemEntryCustomTem
 local suppressNextOnGlobalMouseUp = lib.suppressNextOnGlobalMouseUp
 local buttonGroupDefaultContextMenu = lib.ButtonGroupDefaultContextMenu --Is loaded from API file. Will be updated later inside functions where used
 
-local constants = lib.contants
+local constants = lib.constants
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local dropdownConstants = constants.dropdown

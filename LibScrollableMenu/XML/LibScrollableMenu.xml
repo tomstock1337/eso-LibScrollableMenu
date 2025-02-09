@@ -136,7 +136,7 @@
 				<Button name="$(parent)Checkbox" inherits="ZO_CheckButton" level="3">
 					<OnInitialized>
 						<!-- We propogate the row OnMouseUp to the button's OnClicked so clicking the row simulates clicking the button -->
-						LibScrollableMenu.XMLButtonOnInitialize(self, LSM_ENTRY_TYPE_CHECKBOX)
+						LibScrollableMenu.XML.XMLButtonOnInitialize(self, LSM_ENTRY_TYPE_CHECKBOX)
 					</OnInitialized>
 
 					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
@@ -171,7 +171,7 @@
 				<Button name="$(parent)RadioButton" inherits="ZO_RadioButton" level="3">
 					<OnInitialized>
 						<!-- We propogate the row OnMouseUp to the button's OnClicked so clicking the row simulates clicking the button -->
-						LibScrollableMenu.XMLButtonOnInitialize(self, LSM_ENTRY_TYPE_RADIOBUTTON)
+						LibScrollableMenu.XML.XMLButtonOnInitialize(self, LSM_ENTRY_TYPE_RADIOBUTTON)
 					</OnInitialized>
 
 					<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
@@ -287,7 +287,7 @@
 						local title = self:GetNamedChild("Title")
 						local subTitle = self:GetNamedChild("SubTitle")
 						local filterContainer = self:GetNamedChild("FilterContainer")
-						local headerControls = LibScrollableMenu.headerControls
+						local headerControls = LibScrollableMenu.XML.headerControls
 						self.controls = {
 							[headerControls.PARENT] 			= self,
 							[headerControls.TITLE] 				= title,
@@ -367,7 +367,7 @@
 									/>
 
 									<OnMouseEnter>
-										LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET), nil)
+										LibScrollableMenu.XML.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, GetString(SI_HOOK_POINT_STORE_RESET), nil)
 									</OnMouseEnter>
 
 									<OnMouseExit>
@@ -375,7 +375,7 @@
 									</OnMouseExit>
 									
 									<OnClicked>
-										LibScrollableMenu.OnXMLControlEventHandler("ResetFilters", self, self:GetOwningWindow())
+										LibScrollableMenu.XML.OnXMLControlEventHandler("ResetFilters", self, self:GetOwningWindow())
 									</OnClicked>
 								</Button>
 								
@@ -397,11 +397,11 @@
 										<EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="ZO_DefaultEditForBackdrop" defaultText="SI_SEARCH_FILTER_BY">
 											<OnTextChanged>
 												ClearMenu()
-												LibScrollableMenu.OnXMLControlEventHandler("SetFilterString", self, self)
+												LibScrollableMenu.XML.OnXMLControlEventHandler("SetFilterString", self, self)
 											</OnTextChanged>
 
 											<OnMouseEnter>
-												LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, GetString(SI_LSM_SEARCH_FILTER_TOOLTIP), nil)
+												LibScrollableMenu.XML.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, GetString(SI_LSM_SEARCH_FILTER_TOOLTIP), nil)
 											</OnMouseEnter>
 
 											<OnMouseExit>
@@ -409,7 +409,7 @@
 											</OnMouseExit>
 
 											<OnMouseUp>
-												LibScrollableMenu.OnXMLControlEventHandler("OnFilterEditBoxMouseUp", self, self, button, upInside, ctrl, alt, shift)
+												LibScrollableMenu.XML.OnXMLControlEventHandler("OnFilterEditBoxMouseUp", self, self, button, upInside, ctrl, alt, shift)
 											</OnMouseUp>
 										</EditBox>
 									</Controls>
@@ -536,7 +536,7 @@
 							/>
 
 							<OnMouseEnter>
-								LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, self:GetTooltipText(), nil)
+								LibScrollableMenu.XML.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, self:GetTooltipText(), nil)
 							</OnMouseEnter>
 
 							<OnMouseExit>
@@ -560,7 +560,7 @@
 							<OnMouseEnter>
 								local owningWindow = self:GetOwningWindow()
 								if owningWindow then
-									LibScrollableMenu.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, owningWindow.toggleButton and owningWindow.toggleButton:GetTooltipText(), owningWindow)
+									LibScrollableMenu.XML.OnXMLControlEventHandler("ShowTextTooltip", self, self, BOTTOM, owningWindow.toggleButton and owningWindow.toggleButton:GetTooltipText(), owningWindow)
 								end
 							</OnMouseEnter>
 

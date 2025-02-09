@@ -17,6 +17,10 @@ local MAJOR = lib.name
 
 lib.suppressNextOnGlobalMouseUp = false
 
+--Library's XML
+lib.XML = {}
+
+--Constants for the library
 lib.constants = {}
 local constants = lib.constants
 
@@ -113,8 +117,8 @@ constants.comboBox = {}
 constants.dropdown = {}
 constants.dropdown.defaults = {}
 
-constants.dropdown.defaults.DEFAULT_VISIBLE_ROWS = 10
-constants.dropdown.defaults.DEFAULT_SORTS_ENTRIES = false --sort the entries in main- and submenu lists (ZO_ComboBox default is true!)
+constants.dropdown.defaults.DEFAULT_VISIBLE_ROWS 			= 10
+constants.dropdown.defaults.DEFAULT_SORTS_ENTRIES 			= false --sort the entries in main- and submenu lists (ZO_ComboBox default is true!)
 constants.dropdown.defaults.DEFAULT_HEIGHT                  = 250
 constants.dropdown.defaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER = 50
 constants.dropdown.defaults.MIN_WIDTH_WITH_SEARCH_HEADER    = 125
@@ -128,18 +132,18 @@ constants.submenu.SUBMENU_SHOW_TIMEOUT = 500 --350 ms before
 --Entry type default settings
 constants.entryTypes = {}
 constants.entryTypes.defaults = {}
-constants.entryTypes.defaults.DIVIDER_ENTRY_HEIGHT = 7
-constants.entryTypes.defaults.HEADER_ENTRY_HEIGHT = 30
-constants.entryTypes.defaults.DEFAULT_SPACING = 0
-constants.entryTypes.defaults.WITHOUT_ICON_LABEL_DEFAULT_OFFSETX = 4
---local entryTypeDefaults = constants.entryTypes.defaults
+constants.entryTypes.defaults.DIVIDER_ENTRY_HEIGHT 					= 7
+constants.entryTypes.defaults.HEADER_ENTRY_HEIGHT 					= 30
+constants.entryTypes.defaults.DEFAULT_SPACING 						= 0
+constants.entryTypes.defaults.WITHOUT_ICON_LABEL_DEFAULT_OFFSETX 	= 4
+local entryTypeDefaults = constants.entryTypes.defaults
 
 --Fonts
 constants.fonts = {}
 constants.fonts.DEFAULT_FONT = 					"ZoFontGame"
 constants.fonts.HeaderFontTitle = 				"ZoFontHeader3"
 constants.fonts.HeaderFontSubtitle = 			"ZoFontHeader2"
-local fonts = constants.constants
+local fonts = constants.fonts
 
 --Colors
 constants.colors = {}
@@ -387,7 +391,7 @@ local comboBoxDefaults = {
 	m_sortsItems = 					false, --ZO_ComboBox real default is true
 	m_sortOrder = 					ZO_SORT_ORDER_UP,
 	m_sortType = 					ZO_SORT_BY_NAME,
-	m_spacing = 					dropdownDefaults.DEFAULT_SPACING,
+	m_spacing = 					entryTypeDefaults.DEFAULT_SPACING,
 	multiSelectionTextFormatter = 	SI_COMBO_BOX_DEFAULT_MULTISELECTION_TEXT_FORMATTER,
 	noSelectionText = 				GetString(SI_COMBO_BOX_DEFAULT_NO_SELECTION_TEXT),
 	onSelectionBlockedCallback =	nil,
@@ -433,7 +437,7 @@ local defaultComboBoxOptions  = {
 	["headerCollapsible"] = 		false,
 	["highlightContextMenuOpeningControl"] = false,
 	["sortEntries"] = 				dropdownDefaults.DEFAULT_SORTS_ENTRIES,
-	["spacing"] = 					dropdownDefaults.DEFAULT_SPACING,
+	["spacing"] = 					entryTypeDefaults.DEFAULT_SPACING,
 	["useDefaultHighlightForSubmenuWithCallback"] = false,
 	["visibleRowsDropdown"] = 		dropdownDefaults.DEFAULT_VISIBLE_ROWS,
 	["visibleRowsSubmenu"] = 		dropdownDefaults.DEFAULT_VISIBLE_ROWS,

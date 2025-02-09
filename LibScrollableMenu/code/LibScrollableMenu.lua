@@ -21,7 +21,7 @@ local trem = table.remove
 --------------------------------------------------------------------
 -- LSM library locals
 --------------------------------------------------------------------
-local constants = lib.contants
+local constants = lib.constants
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local comboBoxMappingConstants = comboBoxConstants.mapping
@@ -128,8 +128,8 @@ end
 
 --Called from XML at e.g. the collapsible header's editbox, and other controls
 --Used for event handlers like OnMouseUp and OnChanged etc.
-function lib.OnXMLControlEventHandler(owningWindowFunctionName, refVar, ...)
-	--d(debugPrefix .. "lib.OnXMLControlEventHandler - owningWindowFunctionName: " .. tos(owningWindowFunctionName))
+function lib.XML.OnXMLControlEventHandler(owningWindowFunctionName, refVar, ...)
+	--d(debugPrefix .. "lib.XML.OnXMLControlEventHandler - owningWindowFunctionName: " .. tos(owningWindowFunctionName))
 
 	if refVar == nil or owningWindowFunctionName == nil then return end
 
@@ -147,7 +147,7 @@ end
 
 
 --XML OnClick handler for checkbox and radiobuttons
-function lib.XMLButtonOnInitialize(control, entryType)
+function lib.XML.XMLButtonOnInitialize(control, entryType)
 	--Which XML button control's handler was used, checkbox or radiobutton?
 	local isCheckbox = entryType == entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX
 	local isRadioButton = not isCheckbox and entryType == entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON

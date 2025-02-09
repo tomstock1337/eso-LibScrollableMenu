@@ -27,7 +27,7 @@ local classes = lib.classes
 --------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
-local constants = lib.contants
+local constants = lib.constants
 local entryTypeConstants = constants.entryTypes
 
 

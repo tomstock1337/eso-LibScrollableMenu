@@ -26,7 +26,7 @@ local sfor = string.format
 -----------------------------------------------------------------------
 -- Library utility
 --------------------------------------------------------------------
-local constants = lib.contants
+local constants = lib.constants
 local fontConstants = constants.fonts
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
@@ -404,8 +404,10 @@ end
 local getContextMenuReference = libUtil.getContextMenuReference
 
 function libUtil.hideContextMenu()
---d(debugPrefix .. "hideContextMenu")
+	--d(debugPrefix .. "hideContextMenu")
 	g_contextMenu = getContextMenuReference()
+	if g_contextMenu == nil then return end
+
 	if g_contextMenu:IsDropdownVisible() then
 		g_contextMenu:HideDropdown()
 	end

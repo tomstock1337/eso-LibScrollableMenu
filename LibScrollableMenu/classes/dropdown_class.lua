@@ -50,7 +50,7 @@ local no_submenu = false
 
 
 --Constants
-local constants = lib.contants
+local constants = lib.constants
 local entryTypeConstants = constants.entryTypes
 local entryTypeDefaultsConstants = constants.entryTypes.defaults
 local searchFilterConstants = constants.searchFilter
@@ -573,7 +573,7 @@ local headerControls = {
 	TOGGLE_BUTTON		= 6,
 	TOGGLE_BUTTON_CLICK_EXTENSION = 7, -- control that anchors to the toggle buttons left to make the whole header's width clickable to toggle the collapsed state
 }
---lib.headerControls = headerControls
+lib.XML.headerControls = headerControls --Needed for XML
 
 do
 	-- Alias the control names to make the code less verbose and more readable.
