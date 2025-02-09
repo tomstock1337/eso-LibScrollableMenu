@@ -17,14 +17,9 @@ local dlog = libDebug.DebugLog
 -- Locals
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
-local AM = GetAnimationManager() --ANIMATION_MANAGER
-local EM = GetEventManager() --EVENT_MANAGER
-local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
 local sfor = string.format
-local zostrlow = zo_strlower
 local tins = table.insert
-local trem = table.remove
 
 
 --------------------------------------------------------------------
@@ -41,8 +36,6 @@ local comboBoxClass = classes.comboBoxClass
 local constants = lib.contants
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
-local comboBoxMappingConstants = comboBoxConstants.mapping
-local comboBoxDefaults = comboBoxConstants.defaults
 local defaultComboBoxOptions = comboBoxConstants.defaultComboBoxOptions
 
 local libDivider = lib.DIVIDER
