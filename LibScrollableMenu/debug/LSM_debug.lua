@@ -14,6 +14,7 @@ local LDL = LibDebugLogger
 -- Locals
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
+local tos = tostring
 local sfor = string.format
 
 

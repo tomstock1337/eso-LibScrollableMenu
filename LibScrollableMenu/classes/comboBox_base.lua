@@ -29,6 +29,7 @@ local tins = table.insert
 --------------------------------------------------------------------
 local classes = lib.classes
 local buttonGroupClass = classes.buttonGroupClass
+local dropdownClass = classes.dropdownClass
 
 
 --------------------------------------------------------------------
@@ -1498,7 +1499,7 @@ do -- Row setup functions
 		horizontalAlignment = horizontalAlignment or self.horizontalAlignment
 
 		applyEntryFont(control, font, color, horizontalAlignment)
-		self:SetupEntryBase(control, data, list, nil)
+		self:SetupEntryBase(control, data, list)
 	end
 
 	function comboBox_base:SetupEntryLabel(control, data, list, realEntryType)

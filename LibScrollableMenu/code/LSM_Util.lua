@@ -19,12 +19,9 @@ local dlog = libDebug.DebugLog
 --ZOs local speed-up/reference variables
 local AM = GetAnimationManager() --ANIMATION_MANAGER
 local EM = GetEventManager() --EVENT_MANAGER
-local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
 local sfor = string.format
-local zostrlow = zo_strlower
-local tins = table.insert
-local trem = table.remove
+
 
 -----------------------------------------------------------------------
 -- Library utility
