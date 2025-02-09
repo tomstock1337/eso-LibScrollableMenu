@@ -1021,6 +1021,7 @@ end
 -- entry type opening a submenu and having it's own callback (templateSubMenuWithCallback) highlights, contextMenu opening
 -- control (templateContextMenuOpeningControl) highlights
 function comboBox_base:GetHighlightTemplateData(control, m_data, isSubMenu, isContextMenu)
+	g_contextMenu = getContextMenuReference()
 	local entryType = control.typeId
 
 	--Get the highlight template based on the entryType

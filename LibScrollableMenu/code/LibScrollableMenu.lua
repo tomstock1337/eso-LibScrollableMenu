@@ -97,7 +97,7 @@ end
 
 -- This function will create a map of all entries recursively. Useful when there are submenu entries
 -- and you want to use them for comparing in the callbacks, NewStatusUpdated, CheckboxUpdated, RadioButtonUpdated
-function lib.mapEntries(entryTable, mapTable, blank)
+local function mapEntries(entryTable, mapTable, blank)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 24) end
 
 	if blank ~= nil then
@@ -118,7 +118,8 @@ function lib.mapEntries(entryTable, mapTable, blank)
 	-- Splitting these up so the above is not done each iteration
 	doMapEntries(entryTableToMap, mapTable, entryTableType)
 end
-
+lib.MapEntries = mapEntries
+libUtil.MapEntries = mapEntries
 
 
 

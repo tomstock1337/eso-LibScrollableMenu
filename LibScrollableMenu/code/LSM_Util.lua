@@ -33,8 +33,6 @@ local comboBoxConstants = constants.comboBox
 local soundConstants = constants.sounds
 local handlerNameConstants = constants.handlerNames
 local subTableConstants = constants.data.subtables
-local comboBoxMappingConstants = comboBoxConstants.mapping
-local comboBoxDefaults = comboBoxConstants.defaults
 local defaultHighlightData = entryTypeConstants.defaults.highlights
 
 
@@ -61,27 +59,11 @@ local throttledCallDelay = constants.throttledCallDelay
 
 --Context menus
 local g_contextMenu
-local getValueOrCallback
+local getValueOrCallback = libUtil.getValueOrCallback
 local getControlName
 local getControlData
 local recursiveOverEntries
 local getComboBox
-
-
---------------------------------------------------------------------
--- Determine value or function returned value
---------------------------------------------------------------------
---Run function arg to get the return value (passing in ... as optional params to that function),
---or directly use non-function return value arg
-function libUtil.getValueOrCallback(arg, ...)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 6, tos(arg)) end
-	if type(arg) == "function" then
-		return arg(...)
-	else
-		return arg
-	end
-end
-getValueOrCallback = libUtil.getValueOrCallback
 
 
 --------------------------------------------------------------------
@@ -413,7 +395,7 @@ function libUtil.hideContextMenu()
 	end
 	g_contextMenu:ClearItems()
 end
-local hideContextMenu = libUtil.hideContextMenu()
+local hideContextMenu = libUtil.hideContextMenu
 
 function libUtil.validateContextMenuSubmenuEntries(entries, options, calledByStr)
 	--Passed in contextMenuEntries are a function -> Must return a table then

@@ -10,6 +10,14 @@ lib.version = "2.35"
 if not lib then return end
 --------------------------------------------------------------------
 
+
+--------------------------------------------------------------------
+-- Locals
+--------------------------------------------------------------------
+--ZOs local speed-up/reference variables
+local tos = tostring
+
+
 --------------------------------------------------------------------
 --Libray locals
 --------------------------------------------------------------------
@@ -17,7 +25,8 @@ local MAJOR = lib.name
 
 lib.suppressNextOnGlobalMouseUp = false
 
---Library's XML
+
+--Library's XML functions and code
 lib.XML = {}
 
 --Constants for the library
@@ -34,6 +43,8 @@ lib.Debug.doVerboseDebug = false
 
 local debugPrefix = "[" .. MAJOR .. "]"
 lib.Debug.prefix = debugPrefix
+local libDebug = lib.Debug
+
 
 --DebugLog types
 local LSM_LOGTYPE_DEBUG = 1
@@ -56,6 +67,8 @@ local loggerTypeToName = {
 	[LSM_LOGTYPE_ERROR] = 			" -ERROR- ",
 }
 lib.Debug.loggerTypeToName = loggerTypeToName
+
+local dlog = libDebug.DebugLog --nil here, will be updated upon usage within functions below
 
 
 --------------------------------------------------------------------
@@ -91,7 +104,24 @@ lib.classes = {}
 -- Library utility
 --------------------------------------------------------------------
 lib.Util = {}
+local libUtil = lib.Util
 
+
+--Determine value or function returned value
+--Run function arg to get the return value (passing in ... as optional params to that function),
+--or directly use non-function return value arg
+function libUtil.getValueOrCallback(arg, ...)
+	if libDebug.doDebug then
+		dlog = dlog or libDebug.DebugLog
+		dlog(libDebug.LSM_LOGTYPE_VERBOSE, 6, tos(arg))
+	end
+	if type(arg) == "function" then
+		return arg(...)
+	else
+		return arg
+	end
+end
+local getValueOrCallback = libUtil.getValueOrCallback
 
 
 
@@ -170,12 +200,6 @@ constants.entryTypes.defaults.highlights.defaultHighlightTemplate = nil 	-- See 
 constants.entryTypes.defaults.highlights.defaultHighlightColor = nil		-- See below at comboBoxDefaults
 constants.entryTypes.defaults.highlights.defaultHighLightAnimationFieldName = 'LSM_HighlightAnimation'
 constants.entryTypes.defaults.highlights.subAndContextMenuHighlightAnimationBreadcrumbsPattern = '%s_%s'
-
-
---local "global" functions
-local getValueOrCallback
-local getDataSource
-local getControlName
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -522,12 +546,12 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		local options = comboBoxObject.options
 		local updatedOptions = comboBoxObject.updatedOptions
 
-		local maxNumSelections = 			updatedOptions.maxNumSelections or getValueOrCallback(options.maxNumSelections) or comboBoxDefaults.m_maxNumSelections
+		local maxNumSelections = 			updatedOptions.maxNumSelections or 				getValueOrCallback(options.maxNumSelections) or comboBoxDefaults.m_maxNumSelections
 		if maxNumSelections ~= nil and maxNumSelections < 0 then maxNumSelections = nil	end
-		local maxNumSelectionsErrorText = 	updatedOptions.maxNumSelectionsErrorText or getValueOrCallback(options.maxNumSelectionsErrorText) or comboBoxDefaults.m_maxNumSelectionsErrorText
-		local noSelectionText = 			updatedOptions.noSelectionText or getValueOrCallback(options.noSelectionText) or comboBoxDefaults.noSelectionText
-		local multiSelectionTextFormatter = updatedOptions.multiSelectionTextFormatter or getValueOrCallback(options.multiSelectionTextFormatter) or comboBoxDefaults.multiSelectionTextFormatter
-		local onSelectionBlockedCallback = 	(updatedOptions.OnSelectionBlockedCallback or options.OnSelectionBlockedCallback) or comboBoxDefaults.onSelectionBlockedCallback
+		local maxNumSelectionsErrorText = 	updatedOptions.maxNumSelectionsErrorText or 	getValueOrCallback(options.maxNumSelectionsErrorText) or comboBoxDefaults.m_maxNumSelectionsErrorText
+		local noSelectionText = 			updatedOptions.noSelectionText or 				getValueOrCallback(options.noSelectionText) or comboBoxDefaults.noSelectionText
+		local multiSelectionTextFormatter = updatedOptions.multiSelectionTextFormatter or 	getValueOrCallback(options.multiSelectionTextFormatter) or comboBoxDefaults.multiSelectionTextFormatter
+		local onSelectionBlockedCallback = 	(updatedOptions.OnSelectionBlockedCallback or 	options.OnSelectionBlockedCallback) or comboBoxDefaults.onSelectionBlockedCallback
 
 		updatedOptions.maxNumSelections = maxNumSelections
 		updatedOptions.maxNumSelectionsErrorText = maxNumSelectionsErrorText
