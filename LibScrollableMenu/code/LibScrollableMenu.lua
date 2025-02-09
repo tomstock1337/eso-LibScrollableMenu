@@ -289,8 +289,9 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 ---------------------------------------------------------------
 
 [WORKING ON]
-
-Split up into several files
+-Split up into several files
+-If multiselection is enabled: LSM test Entry having a submenu AND a callbakc is selectable -> should not be the case
+-If multiselection is enabled: LSM test Maximum number of selectable entries is not working (maybe after submenus were opened)
 
 [Fixed]
 Removed globally leaking variables
