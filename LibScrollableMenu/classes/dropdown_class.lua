@@ -812,6 +812,7 @@ do
 		headerControl:SetDimensionConstraints(MIN_WIDTH_WITHOUT_SEARCH_HEADER, 0)
 		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled)
 	end
+	lib.Util.refreshDropdownHeader = refreshDropdownHeader
 end
 
 

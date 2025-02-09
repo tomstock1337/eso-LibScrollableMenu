@@ -17,14 +17,7 @@ local dlog = libDebug.DebugLog
 -- Locals
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
-local AM = GetAnimationManager() --ANIMATION_MANAGER
-local EM = GetEventManager() --EVENT_MANAGER
-local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
-local sfor = string.format
-local zostrlow = zo_strlower
-local tins = table.insert
-local trem = table.remove
 
 
 --------------------------------------------------------------------
@@ -35,28 +28,17 @@ local comboBox_base = classes.comboboxBaseClass
 
 
 --------------------------------------------------------------------
---ZO_ComboBox function references
---------------------------------------------------------------------
-local zo_comboBox_base_addItem = ZO_ComboBox_Base.AddItem
-local zo_comboBox_base_hideDropdown = ZO_ComboBox_Base.HideDropdown
-local zo_comboBox_base_updateItems = ZO_ComboBox_Base.UpdateItems
-
-local zo_comboBox_setItemEntryCustomTemplate = ZO_ComboBox.SetItemEntryCustomTemplate
-
---local zo_comboBoxDropdown_onEntrySelected = ZO_ComboBoxDropdown_Keyboard.OnEntrySelected
-local zo_comboBoxDropdown_onMouseExitEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseExitEntry
-local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMouseEnterEntry
-
-
---------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
 local constants = lib.contants
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
+local dropdownConstants = constants.dropdown
 local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
 local comboBoxDefaultsContextualInitValues = comboBoxConstants.defaultsContextualInitValues
+local dropdownDefaults = dropdownConstants.defaults
+
 
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = comboBoxMappingConstants.LSMOptionsKeyToZO_ComboBoxOptionsKey
 local LSMOptionsToZO_ComboBoxOptionsCallbacks = comboBoxMappingConstants.LSMOptionsToZO_ComboBoxOptionsCallbacks
@@ -70,9 +52,9 @@ local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
 local mixinTableAndSkipExisting = libUtil.mixinTableAndSkipExisting
 local hideContextMenu = libUtil.hideContextMenu
-
-
-
+local checkIfHiddenForReasons = libUtil.checkIfHiddenForReasons
+local getHeaderControl = libUtil.getHeaderControl
+local refreshDropdownHeader = libUtil.refreshDropdownHeader
 
 
 --------------------------------------------------------------------
@@ -168,8 +150,8 @@ end
 
 -- [New functions]
 function comboBoxClass:GetMaxRows()
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 128, tos(self.visibleRows or DEFAULT_VISIBLE_ROWS)) end
-	return self.visibleRows or DEFAULT_VISIBLE_ROWS
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 128, tos(self.visibleRows or dropdownDefaults.DEFAULT_VISIBLE_ROWS)) end
+	return self.visibleRows or dropdownDefaults.DEFAULT_VISIBLE_ROWS
 end
 
 function comboBoxClass:GetMenuPrefix()
