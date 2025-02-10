@@ -272,7 +272,6 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 
-
 ------------------------------------------------------------------------------------------------------------------------
 -- Notes | Changelog | TODO | UPCOMING FEATURES
 ------------------------------------------------------------------------------------------------------------------------
@@ -285,16 +284,18 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.35 - Updated 2025-02-08
+	CHANGELOG Current version: 2.35 - Updated 2025-02-10
 ---------------------------------------------------------------
+Max error #: 2025_8
+
 
 [WORKING ON]
--Split up into several files
--If multiselection is enabled: LSM test Entry having a submenu AND a callbakc is selectable -> should not be the case
--If multiselection is enabled: LSM test Maximum number of selectable entries is not working (maybe after submenus were opened)
+-2025_5:	Split up into several files
+-2025_6:	FIXED 20250210 - RETEST: OPEN! If multiselection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
+-2025_7:	If multiselection is enabled: LSM test Maximum number of selectable entries is not working (maybe after submenus were opened)
 
 [Fixed]
-Removed globally leaking variables
+-2025_8:	Removed globally leaking variables
 
 [Added]
 

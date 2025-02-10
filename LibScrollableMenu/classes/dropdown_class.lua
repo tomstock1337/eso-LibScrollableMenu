@@ -428,7 +428,7 @@ local handlerFunctions  = {
 		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 --d(debugPrefix .. 'onMouseUp [entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU]')
 			onMouseUp(control, data, has_submenu)
-			return control.closeOnSelect --if submenu entry has data.callback then select the entry
+			return checkForMultiSelectEnabled(selfVar, control) --control.closeOnSelect --if submenu entry has data.callback then select the entry #2025_6
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
