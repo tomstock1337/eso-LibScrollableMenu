@@ -295,9 +295,19 @@ end
 --------------------------------------------------------------------
 -- Dropdown entry/row handlers
 --------------------------------------------------------------------
-local function checkForMultiSelectEnabled(selfVar, control)
+--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO_ComboBox handler and only show tooltip
+--return false to run default ZO_ComboBox OnMouseExit handler + tooltip / true to skip original ZO_ComboBox handler and only show tooltip
+--return false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback / return true to "select" entry via described way in ZO_ComboBox handler
+local function checkForMultiSelectEnabled(selfVar, control, isOnMouseUp)
 	local isMultiSelectEnabled = (selfVar.owner and selfVar.owner.m_enableMultiSelect) or false
-	return (not isMultiSelectEnabled and not control.closeOnSelect) or false
+	if isOnMouseUp then
+		if isMultiSelectEnabled then
+			return false
+		end
+		return control.closeOnSelect
+	else
+		return (not isMultiSelectEnabled and not control.closeOnSelect) or false
+	end
 end
 
 local function onMouseEnter(control, data, hasSubmenu)
@@ -368,7 +378,7 @@ local handlerFunctions  = {
 		end,
 	},
 
-	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
+	--return false to run default ZO_ComboBox OnMouseExit handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
 	["onMouseExit"] = {
 		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data)
 			onMouseExit(control, data, no_submenu)
@@ -428,7 +438,7 @@ local handlerFunctions  = {
 		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 --d(debugPrefix .. 'onMouseUp [entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU]')
 			onMouseUp(control, data, has_submenu)
-			return checkForMultiSelectEnabled(selfVar, control) --control.closeOnSelect --if submenu entry has data.callback then select the entry #2025_6
+			return checkForMultiSelectEnabled(selfVar, control, true) --control.closeOnSelect --if submenu entry has data.callback then select the entry #2025_6
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
