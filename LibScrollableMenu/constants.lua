@@ -398,7 +398,7 @@ constants.comboBox.mapping.possibleEntryDataWithFunction = possibleEntryDataWith
 local comboBoxDefaults = {
 	--From ZO_ComboBox
 	---member data with m_
-	m_customEntryTemplateInfos =	nil,
+	--m_customEntryTemplateInfos =	nil,
 	m_disabledColor = 				colors.DEFAULT_TEXT_DISABLED_COLOR,
 	m_enableMultiSelect = 			false,
 	m_font = 						fonts.DEFAULT_FONT,
@@ -406,19 +406,19 @@ local comboBoxDefaults = {
 	m_highlightColor = 				colors.DEFAULT_TEXT_HIGHLIGHT,
 	m_highlightTemplate =			LSM_ROW_HIGHLIGHT_DEFAULT, --ZO_SelectionHighlight
 	m_isDropdownVisible = 			false,
-	m_maxNumSelections = 			nil,
+	--m_maxNumSelections = 			nil,
 	m_maxNumSelectionsErrorText =	GetString(SI_COMBO_BOX_MAX_SELECTIONS_REACHED_ALERT),
 	m_normalColor = 				colors.DEFAULT_TEXT_COLOR,
-	m_preshowDropdownFn = 			nil,
+	--m_preshowDropdownFn = 			nil,
 	m_selectedColor =				{ GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_SELECTED) },
-	m_selectedItemData = 			nil,
+	--m_selectedItemData = 			nil,
 	m_sortsItems = 					false, --ZO_ComboBox real default is true
 	m_sortOrder = 					ZO_SORT_ORDER_UP,
 	m_sortType = 					ZO_SORT_BY_NAME,
 	m_spacing = 					entryTypeDefaults.DEFAULT_SPACING,
 	multiSelectionTextFormatter = 	SI_COMBO_BOX_DEFAULT_MULTISELECTION_TEXT_FORMATTER,
 	noSelectionText = 				GetString(SI_COMBO_BOX_DEFAULT_NO_SELECTION_TEXT),
-	onSelectionBlockedCallback =	nil,
+	--onSelectionBlockedCallback =	nil,
 
 	--non member data
 	horizontalAlignment = 			TEXT_ALIGN_LEFT,

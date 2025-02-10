@@ -290,10 +290,10 @@ Max error #: 2025_9
 
 
 [WORKING ON]
--2025_7:	If multiselection is enabled: LSM test Maximum number of selectable entries is not working (maybe after submenus were opened)
 
 [Fixed]
 -2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
+-2025_7:	FIXED 20250210 - RETEST: DONE! If multiselection is enabled: LSM test Maximum number of selectable entries (maxNumSelections) is not working (maybe after submenus were opened)
 -2025_8:	Removed globally leaking variables
 -2025_9:	FIXED 20250210 - RETEST: DONE! If multiSelection is disabled: Entries opening a submenu, having a callback, do not select the submenu entry anymore
 
