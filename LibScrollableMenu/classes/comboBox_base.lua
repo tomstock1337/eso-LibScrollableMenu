@@ -9,9 +9,10 @@ local MAJOR = lib.name
 --------------------------------------------------------------------
 --Logging and debugging
 local libDebug = lib.Debug
-local debugPrefix = libDebug.prefix
+--local debugPrefix = libDebug.prefix
 
 local dlog = libDebug.DebugLog
+
 
 --------------------------------------------------------------------
 -- Locals
@@ -80,6 +81,8 @@ local hideContextMenu = libUtil.hideContextMenu
 local unhighlightControl = libUtil.unhighlightControl
 local getScreensMaxDropdownHeight = libUtil.getScreensMaxDropdownHeight
 local getContextMenuReference = libUtil.getContextMenuReference
+local subMenuArrowColor = libUtil.subMenuArrowColor
+local checkIfSubmenuArrowColorNeedsChange = libUtil.checkIfSubmenuArrowColorNeedsChange
 
 
 local libDivider = lib.DIVIDER
@@ -348,6 +351,10 @@ local function preUpdateSubItems(item)
 		--Get/build the additionalData table, and name/label etc. functions' texts and data
 		updateDataValues(item)
 	end
+
+	--If multiselection is enabled: Check if the submenu(s) got any selected entries and color the submenus opening arrow then
+	checkIfSubmenuArrowColorNeedsChange(item)
+
 	--Return if the data got a new flag
 	return getIsNew(item)
 end
@@ -1401,6 +1408,7 @@ do -- Row setup functions
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 110, tos(getControlName(control)), tos(list)) end
 		control.m_arrow = control:GetNamedChild("Arrow")
 		data.hasSubmenu = true
+		subMenuArrowColor(control, nil)
 	end
 
 	local function addDivider(control, data, list)

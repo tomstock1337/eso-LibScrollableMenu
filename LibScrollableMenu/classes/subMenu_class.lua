@@ -9,7 +9,7 @@ local MAJOR = lib.name
 --------------------------------------------------------------------
 --Logging and debugging
 local libDebug = lib.Debug
-local debugPrefix = libDebug.prefix
+--local debugPrefix = libDebug.prefix
 
 local dlog = libDebug.DebugLog
 

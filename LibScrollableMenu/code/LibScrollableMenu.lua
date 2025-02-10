@@ -8,14 +8,9 @@ local MAJOR = lib.name
 -- Locals
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
-local AM = GetAnimationManager() --ANIMATION_MANAGER
 local EM = GetEventManager() --EVENT_MANAGER
-local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
 local sfor = string.format
-local zostrlow = zo_strlower
-local tins = table.insert
-local trem = table.remove
 
 
 --------------------------------------------------------------------
@@ -23,23 +18,14 @@ local trem = table.remove
 --------------------------------------------------------------------
 local constants = lib.constants
 local entryTypeConstants = constants.entryTypes
-local comboBoxConstants = constants.comboBox
-local comboBoxMappingConstants = comboBoxConstants.mapping
-local comboBoxDefaults = comboBoxConstants.defaults
 
-local additionalDataKeyToLSMEntryType = entryTypeConstants.additionalDataKeyToLSMEntryType
-
-
-local libDivider = lib.DIVIDER
 
 local libUtil = lib.Util
-local getControlName = libUtil.getControlName
 local getControlData = libUtil.getControlData
 local getValueOrCallback = libUtil.getValueOrCallback
 local getContextMenuReference = libUtil.getContextMenuReference
 local checkIfContextMenuOpenedButOtherControlWasClicked = libUtil.checkIfContextMenuOpenedButOtherControlWasClicked
 local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
-local getContextMenuReference = libUtil.getContextMenuReference
 
 local g_contextMenu
 
@@ -49,7 +35,7 @@ local g_contextMenu
 --------------------------------------------------------------------
 --Logging and debugging
 local libDebug = lib.Debug
-local debugPrefix = libDebug.prefix
+--local debugPrefix = libDebug.prefix
 
 local dlog = libDebug.DebugLog
 
@@ -284,12 +270,13 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.35 - Updated 2025-02-10
+	CHANGELOG Current version: 2.35 - Updated 2025-02-11
 ---------------------------------------------------------------
-Max error #: 2025_9
+Max error #: 2025_10
 
 
 [WORKING ON]
+-2025_10:	If multiselection is enabled submenus with a selection should show the submenu arrow colored differently
 
 [Fixed]
 -2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case

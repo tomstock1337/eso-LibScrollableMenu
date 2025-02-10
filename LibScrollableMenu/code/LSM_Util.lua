@@ -29,7 +29,7 @@ local sfor = string.format
 local constants = lib.constants
 local fontConstants = constants.fonts
 local entryTypeConstants = constants.entryTypes
-local comboBoxConstants = constants.comboBox
+local colorConstants = constants.colors
 local soundConstants = constants.sounds
 local handlerNameConstants = constants.handlerNames
 local subTableConstants = constants.data.subtables
@@ -143,6 +143,17 @@ getControlData = libUtil.getControlData
 --------------------------------------------------------------------
 -- Entry functions
 --------------------------------------------------------------------
+function libUtil.subMenuArrowColor(control, color)
+	if control.m_arrow == nil then return end
+	control.m_arrow:SetColor(color or colorConstants.DEFAULT_ARROW_COLOR)
+end
+local subMenuArrowColor = libUtil.subMenuArrowColor
+
+
+function libUtil.checkIfSubmenuArrowColorNeedsChange(_entry)
+	--todo 20260211
+end
+
 --Check if an entry got the isNew set
 function libUtil.getIsNew(_entry)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 17) end
