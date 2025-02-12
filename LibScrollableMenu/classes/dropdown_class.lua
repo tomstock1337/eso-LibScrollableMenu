@@ -24,6 +24,12 @@ local sfor = string.format
 local tins = table.insert
 local trem = table.remove
 
+local stringType = "string"
+local numberType = "number"
+local functionType = "function"
+local booleanType = "boolean"
+local userDataType = "userdata"
+
 
 --------------------------------------------------------------------
 --Library classes
@@ -85,6 +91,7 @@ local throttledCall = libUtil.throttledCall
 local recursiveOverEntries = libUtil.recursiveOverEntries
 local getIsNew = libUtil.getIsNew
 local updateDataByFunctions = libUtil.updateDataByFunctions
+local compareDropdownDataList = libUtil.compareDropdownDataList
 
 
 --locals
@@ -134,12 +141,64 @@ end
 
 
 --------------------------------------------------------------------
--- Dropdown show/hide functions
+-- Dropdown (nested) submenu parsing functions
 --------------------------------------------------------------------
--- Add/Remove the new status of a dropdown entry.
--- This works up from the mouse-over entry's submenu up to the dropdown,
--- as long as it does not run into a submenu still having a new entry.
-local function updateSubmenuNewStatus(control)
+-- Add/Remove the isAnySubmenuEntrySelected status
+-- This works up from the mouse-over entry's submenu to the dropdown,
+-- but only on entries having (opening) a submenu
+-- as long as it does not run into a submenu still having a matching entry.
+local function updateSubmenuIsAnyEntrySelectedStatus(selfVar, control, isMultiSelectEnabled)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 184) end
+	local comboBox = selfVar.owner
+	if not comboBox then return end
+
+	--Only go on if multiselection is enabled
+	if isMultiSelectEnabled == nil then
+		isMultiSelectEnabled = comboBox.m_enableMultiSelect
+	end
+	if not isMultiSelectEnabled then return end
+
+	local isAnySubmenuEntrySelected = false
+
+	local data = getControlData(control)
+	local submenuEntries = getValueOrCallback(data.entries, data) or {}
+
+	-- We are only going to check the current submenu's entries, not recursively
+	-- down from here since we are working our way up until we find an entry.
+	for idx, subentry in ipairs(submenuEntries) do
+		if comboBox:IsItemSelected(subentry) then
+d(">submenu item is selected: " .. tos(idx))
+LSM_Debug = LSM_Debug or {}
+LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus = LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus or {}
+LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus[#LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus+1] = {
+	indexFound = idx,
+	comboBox = comboBox,
+	subentry = ZO_ShallowTableCopy(subentry),
+	submenuEntries = ZO_ShallowTableCopy(submenuEntries),
+}
+
+			isAnySubmenuEntrySelected = true
+			break
+		end
+	end
+
+	-- Set flag on submenu opening control
+	control.isAnySubmenuEntrySelected = isAnySubmenuEntrySelected
+
+	if not isAnySubmenuEntrySelected then
+		ZO_ScrollList_RefreshVisible(control.m_dropdownObject.scrollControl)
+
+		local parent = data.m_parentControl
+		if parent then
+			updateSubmenuIsAnyEntrySelectedStatus(selfVar, parent, isMultiSelectEnabled)
+		end
+	end
+end
+
+-- Add/Remove the new status of a dropdown entry,
+-- This works up from the mouse-over entry's submenu to the dropdown,
+-- as long as it does not run into a submenu still having a matching entry.
+local function updateSubmenuNewStatus(selfVar, control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 31) end
 	-- reverse parse
 	local isNew = false
@@ -150,51 +209,99 @@ local function updateSubmenuNewStatus(control)
 	-- We are only going to check the current submenu's entries, not recursively
 	-- down from here since we are working our way up until we find a new entry.
 	for _, subentry in ipairs(submenuEntries) do
-		if getIsNew(subentry) then
+		if getIsNew(subentry, nil) then
 			isNew = true
 		end
 	end
-	-- Set flag on submenu
-	data.isNew = isNew
+
+	if isNew ~= data.isNew then
+		-- Set flag on submenu
+		data.isNew = isNew
+
+		lib:FireCallbacks('NewStatusUpdated', control, data)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 33, tos(getControlName(control))) end
+	end
+
 	if not isNew then
 		ZO_ScrollList_RefreshVisible(control.m_dropdownObject.scrollControl)
 
 		local parent = data.m_parentControl
 		if parent then
-			updateSubmenuNewStatus(parent)
+			updateSubmenuNewStatus(selfVar, parent)
 		end
 	end
 end
 
---Remove the new status of a dropdown entry
-local function clearNewStatus(control, data)
+local function checkSubmenuOnMouseEnterTasks(selfVar, control, data)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 183) end
+	--local doRefresh = false
+	local comboBox = selfVar.owner
+	local isMultiSelectEnabled = (comboBox ~= nil and comboBox.m_enableMultiSelect) or false
+
+	--Remove the isAnySubmenuEntrySelected status of a dropdown entry
+	-->Generally do this even if multiSelectionw as disabled
+	--if isMultiSelectEnabled == true then
+		-- Only directly change status on submenu openingControl entries
+		if control.hasSubmenu == true or data.entries ~= nil then
+			if control.isAnySubmenuEntrySelected == true then
+				control.isAnySubmenuEntrySelected = false
+				--doRefresh = true
+			--end
+
+			--if doRefresh == true then
+				control.m_dropdownObject:Refresh(data)
+			end
+		else
+			--Check parent menus (from bottom -> up to top)
+			local parent = data.m_parentControl
+			if parent then
+				updateSubmenuIsAnyEntrySelectedStatus(selfVar, parent, isMultiSelectEnabled)
+			end
+		end
+	--end
+end
+
+local function checkNormalOnMouseEnterTasks(selfVar, control, data)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 32) end
+	--local doRefresh = false
+
+	--Remove the isNew status of a dropdown entry
 	if data.isNew then
 		-- Only directly change status on non-submenu entries. They are effected by child entries
 		if data.entries == nil then
-			data.isNew = false
+			--if data.isNew == true then
+				data.isNew = false
+				lib:FireCallbacks('NewStatusUpdated', control, data)
+				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 33, tos(getControlName(control))) end
+				--doRefresh = true
+			--d(debugPrefix.."checkNormalOnMouseEnterTasks - " .. tos(getControlName(control)))
+			--end
 
-			lib:FireCallbacks('NewStatusUpdated', control, data)
-			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 33, tos(getControlName(control))) end
+			--if doRefresh == true then
+				control.m_dropdownObject:Refresh(data)
+			--end
 
---d(debugPrefix.."clearNewStatus - " .. tos(getControlName(control)))
-			control.m_dropdownObject:Refresh(data)
-
+			--Check parent menus (from bottom -> up to top)
 			local parent = data.m_parentControl
 			if parent then
-				updateSubmenuNewStatus(parent)
+				updateSubmenuNewStatus(selfVar, parent)
 			end
 		end
 	end
 end
 
--- Prevents errors on the off chance a non-string makes it through into ZO_ComboBox
-local function verifyLabelString(data)
-	--Check for data.* keys to run any function and update data[key] with actual values
-	updateDataByFunctions(data)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 18, tos(data.name)) end
-	--Require the name to be a string
-	return type(data.name) == 'string'
+--Run checks for submenus and nested submenus (upwards from the current item opening a submenu!) if you move the mouse above an entry
+--e.g.multiselection any item selected in submenus
+local function doSubmenuOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 182) end
+	checkSubmenuOnMouseEnterTasks(selfVar, control, data)
+end
+
+--Run checks for submenus and nested submenus (upwards from the current item!) if you move the mouse above an entry
+--e.g. isNew
+local function doOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 30) end
+	checkNormalOnMouseEnterTasks(selfVar, control, data)
 end
 
 
@@ -221,6 +328,15 @@ end
 --------------------------------------------------------------------
 -- Dropdown entry filter functions
 --------------------------------------------------------------------
+-- Prevents errors on the off chance a non-string makes it through into ZO_ComboBox
+local function verifyLabelString(data)
+	--Check for data.* keys to run any function and update data[key] with actual values
+	updateDataByFunctions(data)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 18, tos(data.name)) end
+	--Require the name to be a string
+	return type(data.name) == stringType
+end
+
 --Check if entry should be added to the search/filter of the string search of the collapsible header
 -->Returning true: item must be considered for the search / false: item should be skipped
 local function passItemToSearch(item)
@@ -236,7 +352,7 @@ end
 
 --Search the item's label or name now, if the entryType of the item should be processed by text search, and if the entry
 --was not marked as "not to search" (always show in search results) in it's data
-local function filterResults(item)
+local function filterResults(item, comboBox)
 	local entryType = item.entryType
 	if not entryType or filteredEntryTypes[entryType] then
 		--Should the item be skipped at the search filters?
@@ -256,12 +372,12 @@ end
 
 --String filter the visible results, if options.enableFilter == true
 -->if doFilter is true the text search will be executed, else textsearch is not executed -> Item should be shown directly
-local function itemPassesFilter(item, doFilter)
+local function itemPassesFilter(item, comboBox, doFilter)
 	--Check if the data.name / data.label are provided (also check all other data.* keys if functions need to be executed)
 	if verifyLabelString(item) then
 		if doFilter then
 			--Recursively check menu entries (submenu and nested submenu entries) for the matching search string
-			return recursiveOverEntries(item, filterResults)
+			return recursiveOverEntries(item, comboBox, filterResults)
 		else
 			return true
 		end
@@ -346,7 +462,7 @@ local handlerFunctions  = {
 	["onMouseEnter"] = {
 		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, ...)
 			onMouseEnter(control, data, no_submenu)
-			clearNewStatus(control, data)
+			doOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
 			return checkForMultiSelectEnabled(selfVar, control)
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = function(selfVar, control, data, ...)
@@ -361,6 +477,7 @@ local handlerFunctions  = {
 			--d( debugPrefix .. 'onMouseEnter [entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU]')
 			local dropdown = onMouseEnter(control, data, has_submenu)
 			clearTimeout()
+			--doSubmenuOnMouseEnterNestedSubmenuChecks(selfVar, control, data) --todo 20250212 Done in function libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate
 			--Show the submenu of the entry
 			dropdown:ShowSubmenu(control)
 			return false --not control.closeOnSelect
@@ -523,16 +640,6 @@ end
 --------------------------------------------------------------------
 -- Dropdown scroll list functions
 --------------------------------------------------------------------
-local function compareDrodpwonDataList(selfVar, scrollControl, item)
-	local dataList = ZO_ScrollList_GetDataList(scrollControl)
-
-	for _, data in ipairs(dataList) do
-		if data:GetDataSource() == item then
-			return data
-		end
-	end
-end
-
 local function getDropdownTemplate(enabled, baseTemplate, alternate, default)
 	baseTemplate = MAJOR .. baseTemplate
 	local templateName = sfor('%s%s', baseTemplate, (enabled and alternate or default))
@@ -760,15 +867,15 @@ do
 
 		local dataType = type(data)
 
-		if dataType == "function" then
+		if dataType == functionType then
 			data = data(control)
 		end
 
-		if dataType == "string" or dataType == "number" then
+		if dataType == stringType or dataType == numberType then
 			control:SetText(data)
 		end
 
-		if dataType == "boolean" then
+		if dataType == booleanType then
 			return data
 		end
 
@@ -782,8 +889,8 @@ do
 		end
 
 		local dataType = type(customControl)
-		control:SetHidden(dataType ~= "userdata")
-		if dataType == "userdata" then
+		control:SetHidden(dataType ~= userDataType)
+		if dataType == userDataType then
 			customControl:SetParent(control)
 			customControl:ClearAnchors()
 			customControl:SetAnchor(TOP, control, TOP, 0, 0)
@@ -877,7 +984,7 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	--[[
 		local function HighlightControl(self, control)
 			local highlightTemplate, animationFieldName
-			if type(self.highlightTemplateOrFunction) == "function" then
+			if type(self.highlightTemplateOrFunction) == functionType then
 				-->!!! This will be the place where the code below is called !!!
 				highlightTemplate, animationFieldName = self.highlightTemplateOrFunction(control)
 			else
@@ -1376,7 +1483,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	for i = 1, numItems do
 		local item = itemTable[i]
 		local isLastEntry = i == numItems
-		if itemPassesFilter(item, textSearchEnabled) then
+		if itemPassesFilter(item, comboBox, textSearchEnabled) then
 			allItemsHeight, largestEntryWidth = addEntryToScrollList(self, item, dataList, i, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
 			lastEntryVisible = true
 		else
@@ -1447,7 +1554,7 @@ function dropdownClass:HideDropdown()
 	end
 end
 
---Called from clearNewStatus, and dropdownClass:OnEntryMouseUp -> dropdownClass:OnEntrySelected -> --self(= dropdownClass).owner(= comboBoxClass of parentMenu?!):SetSelected -> self(comboBoxClass):SelectItem -> self.m_dropdownObject(dropdownClass):Refresh()
+--Called from checkNormalOnMouseEnterTasks, and dropdownClass:OnEntryMouseUp -> dropdownClass:OnEntrySelected -> --self(= dropdownClass).owner(= comboBoxClass of parentMenu?!):SetSelected -> self(comboBoxClass):SelectItem -> self.m_dropdownObject(dropdownClass):Refresh()
 -->Needed to make multiselection for submenus work! Checked scrollControl must be the one of the submenu and not the parentMenu's!
 function dropdownClass:Refresh(item)
 --d(debugPrefix.."dropdownClass:Refresh - item: " ..tos(item))
@@ -1461,7 +1568,7 @@ function dropdownClass:Refresh(item)
 		--Get the item's owner's scroll, if it's a submenu
 		scrollControl = (item.m_owner ~= nil and item.m_owner.m_scroll) or nil
 		if scrollControl ~= nil then
-			entryData = compareDrodpwonDataList(self, scrollControl, item)
+			entryData = compareDropdownDataList(self, scrollControl, item)
 --d(">>found submenu #" .. tos(#ZO_ScrollList_GetDataList(scrollControl)) .. ", parentMent #" .. tos(#ZO_ScrollList_GetDataList(self.scrollControl)) .. "; entryData: " ..tos(entryData))
 		end
 
@@ -1469,7 +1576,7 @@ function dropdownClass:Refresh(item)
 		if entryData == nil then
 --d(">>>taking parent menu entryData!")
 			scrollControl = self.scrollControl
-			entryData = compareDrodpwonDataList(self, scrollControl, item)
+			entryData = compareDropdownDataList(self, scrollControl, item)
 		end
 	end
 	ZO_ScrollList_RefreshVisible(scrollControl, entryData)

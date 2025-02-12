@@ -70,9 +70,9 @@ local debugLogMessagePatterns = {
 	[27] = "updateIcons - numIcons %s",
 	[28] = "getControlData - name:  %s",
 	[29] = "checkIfContextMenuOpenedButOtherControlWasClicked - cbox == ctxtMenu? %s; cntxt dropdownVis? %s",
-	[30] = "areAnyEntriesNew",
+	[30] = "doOnMouseEnterNestedSubmenuChecks",
 	[31] = "updateSubmenuNewStatus",
-	[32] = "clearNewStatus",
+	[32] = "checkSubmenuOnMouseEnterTasks",
 	[33] = "FireCallbacks: NewStatusUpdated - control:  %s",
 	[34] = "setItemEntryCustomTemplate - name: %q, entryType: %s",
 	[35] = "addItem_Base - itemEntry:  %s",
@@ -222,6 +222,9 @@ local debugLogMessagePatterns = {
 	[179] = "comboBox_base:GetMaxDropdownWidth - maxDropdownWidth: %s",
 	[180] = "comboBox_base:GetBaseWidth - control: %s, gotHeader: %s, width: %s",
 	[181] = "comboBox_base:UpdateWidth - control: %q, newWidth: %s, maxWidth: %s, maxDropdownWidth: %s, minWidth: %s",
+	[182] = "doSubmenuOnMouseEnterNestedSubmenuChecks",
+	[183] = "checkSubmenuOnMouseEnterTasks",
+	[184] = "updateSubmenuIsAnyEntrySelectedStatus",
 }
 
 

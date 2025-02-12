@@ -82,7 +82,6 @@ local unhighlightControl = libUtil.unhighlightControl
 local getScreensMaxDropdownHeight = libUtil.getScreensMaxDropdownHeight
 local getContextMenuReference = libUtil.getContextMenuReference
 local subMenuArrowColor = libUtil.subMenuArrowColor
-local checkIfSubmenuArrowColorNeedsChange = libUtil.checkIfSubmenuArrowColorNeedsChange
 
 
 local libDivider = lib.DIVIDER
@@ -346,23 +345,22 @@ local function updateDataValues(data, onlyTheseEntries)
 	updateDataByFunctions(data)
 end
 
-local function preUpdateSubItems(item)
+local function preUpdateSubItems(item, comboBox)
 	if item[subTableConstants.LSM_DATA_SUBTABLE] == nil then
 		--Get/build the additionalData table, and name/label etc. functions' texts and data
 		updateDataValues(item)
 	end
 
-	--If multiselection is enabled: Check if the submenu(s) got any selected entries and color the submenus opening arrow then
-	checkIfSubmenuArrowColorNeedsChange(item)
+
 
 	--Return if the data got a new flag
-	return getIsNew(item)
+	return getIsNew(item, comboBox)
 end
 
 --Functions to run per item's entryType, after the item has been setup (e.g. to add missing mandatory data or change visuals)
 local postItemSetupFunctions = {
 	[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(comboBox, itemEntry)
-		itemEntry.isNew = recursiveOverEntries(itemEntry, preUpdateSubItems)
+		itemEntry.isNew = recursiveOverEntries(itemEntry, comboBox, preUpdateSubItems)
 	end,
 	[entryTypeConstants.LSM_ENTRY_TYPE_HEADER] = function(comboBox, itemEntry)
 		itemEntry.font = comboBox.headerFont or itemEntry.font
@@ -1262,15 +1260,6 @@ end
 
 function comboBox_base:UpdateItems()
 	zo_comboBox_base_updateItems(self)
-
-	--[[
-	20240615 Should not be needed anymore as this is already done at runPostItemSetupFunction[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] in add_itemBase
-	for _, itemEntry in pairs(self.m_sortedItems) do
-		if itemEntry.hasSubmenu then
-			recursiveOverEntries(itemEntry, preUpdateSubItems)
-		end
-	end
-	]]
 end
 
 function comboBox_base:UpdateHeight(control)
@@ -1407,8 +1396,7 @@ do -- Row setup functions
 	local function addArrow(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 110, tos(getControlName(control)), tos(list)) end
 		control.m_arrow = control:GetNamedChild("Arrow")
-		data.hasSubmenu = true
-		subMenuArrowColor(control, nil)
+		subMenuArrowColor(control, data)
 	end
 
 	local function addDivider(control, data, list)
@@ -1527,8 +1515,9 @@ do -- Row setup functions
 	function comboBox_base:SetupEntrySubmenu(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 116, tos(getControlName(control)), tos(list)) end
 		self:SetupEntryLabel(control, data, list)
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU --do not move (before self:SetupEntryLabel) up or else submenus won't work/open properly!
+		data.hasSubmenu = true
 		addArrow(control, data, list)
-		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU
 
 --d(debugPrefix .. "submenu setup: - name: " .. tos(getValueOrCallback(data.label or data.name, data)) ..", closeOnSelect: " ..tos(control.closeOnSelect) .. "; m_highlightTemplate: " ..tos(data.m_highlightTemplate) )
 

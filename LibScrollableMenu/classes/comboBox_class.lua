@@ -9,7 +9,7 @@ local MAJOR = lib.name
 --------------------------------------------------------------------
 --Logging and debugging
 local libDebug = lib.Debug
---local debugPrefix = libDebug.prefix
+local debugPrefix = libDebug.prefix
 
 local dlog = libDebug.DebugLog
 
@@ -26,6 +26,12 @@ local tos = tostring
 --------------------------------------------------------------------
 local classes = lib.classes
 local comboBox_base = classes.comboboxBaseClass
+
+
+--------------------------------------------------------------------
+--ZO_ComboBox function references
+--------------------------------------------------------------------
+local zo_comboBox_base_selectItem = ZO_ComboBox_Base.SelectItem
 
 
 --------------------------------------------------------------------
@@ -56,6 +62,7 @@ local hideContextMenu = libUtil.hideContextMenu
 local checkIfHiddenForReasons = libUtil.checkIfHiddenForReasons
 local getHeaderControl = libUtil.getHeaderControl
 local refreshDropdownHeader = libUtil.refreshDropdownHeader
+local recursiveMultiSelectSubmenuOpeningControlUpdate = libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate
 
 
 --------------------------------------------------------------------
@@ -458,4 +465,78 @@ function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
 	self:UpdateWidth(dropdownControl) --> Update self.m_containerWidth properly for self:Show (in self:UpdateHeight) call (including the now, in refreshDropdownHeader, updated header's width)
 	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now, in refreshDropdownHeader, updated header's height)
 --d(">new height: " ..tos(self.m_height))
+end
+
+function comboBoxClass:AddItemToSelected(item)
+    if not self.m_enableMultiSelect then
+        return
+    end
+
+	--Multiselection
+    table.insert(self.m_multiSelectItemData, item)
+	--Set a possible submenu's openingControl.isAnySubmenuEntrySelected
+	recursiveMultiSelectSubmenuOpeningControlUpdate(self, item, true)
+end
+
+function comboBoxClass:RemoveItemFromSelected(item)
+    if not self.m_enableMultiSelect then
+        return
+    end
+
+	--Multiselection
+    for i, itemData in ipairs(self.m_multiSelectItemData) do
+        if itemData == item then
+			--Reset the submenu's openingControl.isAnySubmenuEntrySelected, if no other item in the submenu is still marked
+			--Check if other submenu entries are selected: use extra lookup tables self.m_multiSelectItemDataSubmenu[submenuOpeningControl] = { [item1] = true, ... }
+            table.remove(self.m_multiSelectItemData, i)
+			recursiveMultiSelectSubmenuOpeningControlUpdate(self, item, nil)
+            return
+        end
+    end
+end
+
+--ZO_ComboBoxDropdown_Keyboard:OnEntrySelected(control) -> self.owner (comboboxClass) :SetSelected -> self (comboboxClass) :SelectItem
+function comboBoxClass:SelectItem(item, ignoreCallback)
+    --No multiselection
+	if not self.m_enableMultiSelect then
+        return zo_comboBox_base_selectItem(self, item, ignoreCallback)
+    end
+
+    if item.enabled == false then
+        return false
+    end
+
+	--Multiselection
+    local newSelectionStatus = not self:IsItemSelected(item)
+    if newSelectionStatus then
+        if self.m_maxNumSelections == nil or self:GetNumSelectedEntries() < self.m_maxNumSelections then
+d(debugPrefix.."comboBoxClass:SelectItem -> AddItemToSelected")
+            self:AddItemToSelected(item)
+        else
+            if not self.onSelectionBlockedCallback or self.onSelectionBlockedCallback(item) ~= true then
+                local alertText = self:GetSelectionBlockedErrorText()
+                if ZO_REMOTE_SCENE_CHANGE_ORIGIN == SCENE_MANAGER_MESSAGE_ORIGIN_INTERNAL then
+                    RequestAlert(UI_ALERT_CATEGORY_ALERT, SOUNDS.GENERAL_ALERT_ERROR, alertText)
+                elseif ZO_REMOTE_SCENE_CHANGE_ORIGIN == SCENE_MANAGER_MESSAGE_ORIGIN_INGAME then
+                    ZO_Alert(UI_ALERT_CATEGORY_ALERT, SOUNDS.GENERAL_ALERT_ERROR, alertText)
+                end
+                return false
+            end
+        end
+    else
+        self:RemoveItemFromSelected(item)
+    end
+	--todo 20250212 Replace sound with LSM selected sound
+    PlaySound(SOUNDS.COMBO_CLICK)
+
+    if item.callback and not ignoreCallback then
+        item.callback(self, item.name, item)
+    end
+    self:RefreshSelectedItemText()
+    -- refresh the data that was just selected so the selection highlight properly shows/hides
+    if self.m_dropdownObject:IsOwnedByComboBox(self) then
+        self.m_dropdownObject:Refresh(item)
+    end
+
+    return true
 end

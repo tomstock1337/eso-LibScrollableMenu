@@ -107,6 +107,7 @@ end
 --		table headerColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for header entries
 --		table normalColor:optional				table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all normal (enabled) entries
 --		table disabledColor:optional 			table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for all disabled entries
+--		table submenuArrowColor:optional		table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for the submenu opening arrow > texture
 --		boolean highlightContextMenuOpeningControl Boolean or function returning boolean if the openingControl of a context menu should be highlighted.
 --												If you set this to true you either also need to set data.m_highlightTemplate at the row and provide the XML template name for the highLight, e.g. "LibScrollableMenu_Highlight_Green".
 --												Or (if not at contextMenu options!!!) you can use the templateContextMenuOpeningControl at options.XMLRowHighlightTemplates[lib.scrollListRowTypes.LSM_ENTRY_TYPE_*] = { template = "ZO_SelectionHighlight" , templateContextMenuOpeningControl = "LibScrollableMenu_Highlight_Green" } to specify the XML highlight template for that entryType
@@ -116,6 +117,7 @@ end
 --		string maxNumSelectionsErrorText		String or function returning a string: The text showing if maximum number of selectable items was reached. Default: GetString(SI_COMBO_BOX_MAX_SELECTIONS_REACHED_ALERT)
 -- 		string multiSelectionTextFormatter:optional	String SI constant or function returning a string SI constant: The text showing how many items have been selected currently, with the multiselection enabled. Default: SI_COMBO_BOX_DEFAULT_MULTISELECTION_TEXT_FORMATTER
 -- 		string noSelectionText:optional			String or function returning a string: The text showing if no item is selected, with the multiselection enabled. Default: GetString(SI_COMBO_BOX_DEFAULT_NO_SELECTION_TEXT)
+--		table multiSelectSubmenuSelectedArrowColor:optional		table (ZO_ColorDef) or function returning a color table with r, g, b, a keys and their values: for the submenu opening arrow > texture where multiselection is enabled and any (nested) submenu entry was selected
 --		function OnSelectionBlockedCallback:optional	function(selectedItem) codeHere end: callback function called as a multi-selection item selection was blocked
 -->  ===Dropdown header/title ==========================================================================================
 --		string titleText:optional				String or function returning a string: Title text to show above the dropdown entries

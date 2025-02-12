@@ -100,6 +100,7 @@ local function test()
 			maxNumSelectionsErrorText =		debugPrefix.."ERROR - Maximum items selected already",
 			multiSelectionTextFormatter = 	"<<1>> selected",
 			noSelectionText = 				"",
+			multiSelectSubmenuSelectedArrowColor = ZO_ColorDef:New("4dff85"), --green "rgba(77, 255, 133, 1.00)"
 			OnSelectionBlockedCallback = function() d(debugPrefix.."ERROR - Selection of entry was blocked!") end,
 
 			visibleRowsDropdown = 10,

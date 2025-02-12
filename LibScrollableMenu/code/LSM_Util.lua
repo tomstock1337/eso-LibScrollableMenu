@@ -22,6 +22,11 @@ local EM = GetEventManager() --EVENT_MANAGER
 local tos = tostring
 local sfor = string.format
 
+local functionType = "function"
+local userdataType = "userdata"
+local stringType = "string"
+local tableType = "table"
+
 
 -----------------------------------------------------------------------
 -- Library utility
@@ -64,6 +69,7 @@ local getControlName
 local getControlData
 local recursiveOverEntries
 local getComboBox
+local recursiveMultiSelectSubmenuOpeningControlUpdate
 
 
 --------------------------------------------------------------------
@@ -96,7 +102,7 @@ function libUtil.updateSavedVariable(svOptionName, newValue, subTableName)
 	local svOptionData = lib.SV[svOptionName]
 	if svOptionData == nil then return end
 	if subTableName ~= nil then
-		if type(svOptionData) ~= "table" then return end
+		if type(svOptionData) ~= tableType then return end
 --d(">>sv is table")
 		lib.SV[svOptionName][subTableName] = newValue
 	else
@@ -111,7 +117,7 @@ function libUtil.getSavedVariable(svOptionName, subTableName)
 	local svOptionData = lib.SV[svOptionName]
 	if svOptionData == nil then return end
 	if subTableName ~= nil then
-		if type(svOptionData) ~= "table" then return end
+		if type(svOptionData) ~= tableType then return end
 		return lib.SV[svOptionName][subTableName]
 	else
 		return lib.SV[svOptionName]
@@ -122,11 +128,19 @@ end
 --------------------------------------------------------------------
 -- Data & data source determination
 --------------------------------------------------------------------
-function libUtil.getDataSource(data)
-	if data and data.dataSource then
-		return data:GetDataSource()
+function libUtil.getDataSource(dataOrControl)
+	local retData
+	if dataOrControl ~= nil then
+		retData = dataOrControl
+		if retData.dataSource == nil and type(retData) == userdataType then
+			retData = dataOrControl.m_data or dataOrControl
+		end
+
+		if retData and retData.dataSource then
+			return retData:GetDataSource()
+		end
 	end
-	return data or NIL_CHECK_TABLE
+	return retData or NIL_CHECK_TABLE
 end
 local getDataSource = libUtil.getDataSource
 
@@ -143,43 +157,36 @@ getControlData = libUtil.getControlData
 --------------------------------------------------------------------
 -- Entry functions
 --------------------------------------------------------------------
-function libUtil.subMenuArrowColor(control, color)
-	if control.m_arrow == nil then return end
-	control.m_arrow:SetColor(color or colorConstants.DEFAULT_ARROW_COLOR)
-end
-local subMenuArrowColor = libUtil.subMenuArrowColor
+function libUtil.compareDropdownDataList(selfVar, scrollControl, item)
+	local dataList = ZO_ScrollList_GetDataList(scrollControl)
 
-
-function libUtil.checkIfSubmenuArrowColorNeedsChange(_entry)
-	--todo 20260211
+	for _, data in ipairs(dataList) do
+		if data:GetDataSource() == item then
+			return data
+		end
+	end
 end
-
---Check if an entry got the isNew set
-function libUtil.getIsNew(_entry)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 17) end
-	return getValueOrCallback(_entry.isNew, _entry) or false
-end
-
---The default callback for the recursiveOverEntries function
-local function defaultRecursiveCallback()
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 11) end
-	return false
-end
+local compareDropdownDataList = libUtil.compareDropdownDataList
 
 -- Recursively loop over drdopdown entries, and submenu dropdown entries of that parent dropdown, and check if e.g. isNew needs to be updated
 -- Used for the search of the collapsible header too
-function libUtil.recursiveOverEntries(entry, callback)
-	recursiveOverEntries = libUtil.recursiveOverEntries
-	callback = callback or defaultRecursiveCallback
+function libUtil.recursiveOverEntries(entry, comboBox, callback, ...)
+	recursiveOverEntries = recursiveOverEntries or libUtil.recursiveOverEntries
+	--callback = callback or defaultRecursiveCallback
+	--No need to loop all entries just to return false always in the end! Do return it early here
+	if type(callback) ~= functionType then
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 19, 0, tos(false)) end
+		return false
+	end
 
-	local result = callback(entry)
+	local result = callback(entry, comboBox, ...)
 	local submenu = (entry.entries ~= nil and getValueOrCallback(entry.entries, entry)) or {}
 
 	--local submenuType = type(submenu)
 	--assert(submenuType == 'table', sfor('["..MAJOR..':recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
-	if type(submenu) == "table" and #submenu > 0 then
+	if type(submenu) == tableType and #submenu > 0 then
 		for _, subEntry in pairs(submenu) do
-			local subEntryResult = recursiveOverEntries(subEntry, callback)
+			local subEntryResult = recursiveOverEntries(subEntry, comboBox, callback, ...)
 			if subEntryResult then
 				result = subEntryResult
 			end
@@ -189,6 +196,118 @@ function libUtil.recursiveOverEntries(entry, callback)
 	return result
 end
 recursiveOverEntries = libUtil.recursiveOverEntries
+
+--Check if any submenu item is still selected within multiSelection
+function libUtil.checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect(item, comboBox)
+	if item == nil or comboBox == nil then return false end
+	if not comboBox.m_enableMultiSelect then return false end
+
+	local currentSubmenuItems = comboBox.m_sortedItems
+	if not ZO_IsTableEmpty(currentSubmenuItems) then
+		local multiSelectedItemData = comboBox.m_multiSelectItemData
+		if not ZO_IsTableEmpty(multiSelectedItemData) then
+			for _, currentSubmenuItem in ipairs(currentSubmenuItems) do
+				for _, selectedSubmenuItem in ipairs(multiSelectedItemData) do
+					if selectedSubmenuItem == currentSubmenuItem then
+d(">found still selected item in submenu: " ..tos(selectedSubmenuItem))
+						--Update the current submenu's comboBox openingControl arrow
+						if comboBox.m_dropdownObject ~= nil and comboBox.openingControl ~= nil then
+d(">>refreshing the scrolList's openingControl: " .. tos(comboBox.openingControl))
+							ZO_ScrollList_RefreshVisible(comboBox.m_dropdownObject.scrollControl, getDataSource(comboBox.openingControl))
+						end
+						return true
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+local checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect = libUtil.checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect
+
+
+--Recursively check the current item's submenu's openingControl and set the isAnySubmenuEntrySelected boolean value there,
+--then check if that submenu got another parentMenu and go on upwards with these openingControls until all flags are set.
+--Call the scrolllist update for the submenu's openingControl then to refresh the visible submenu opening arrow texture and color
+function libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate(selfVar, item, newValue, parentDepth)
+	recursiveMultiSelectSubmenuOpeningControlUpdate = recursiveMultiSelectSubmenuOpeningControlUpdate or libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate
+	parentDepth = parentDepth or 0
+	--Get the opening control of the currently shown submenu (if a submenu was opened)
+	local comboBoxOfItem = (parentDepth == 0 and item.m_owner) or (parentDepth > 0 and selfVar) or nil
+	if comboBoxOfItem == nil or not comboBoxOfItem.isSubmenu then return end
+	local openingControl = comboBoxOfItem.openingControl --(selfVar ~= nil and selfVar.isSubmenu and selfVar.openingControl) or nil
+
+LSM_Debug = LSM_Debug or {}
+LSM_Debug.multiSelectSubmenuOpeningControlUpdate = LSM_Debug.multiSelectSubmenuOpeningControlUpdate or {}
+local counter = #LSM_Debug.multiSelectSubmenuOpeningControlUpdate +1
+LSM_Debug.multiSelectSubmenuOpeningControlUpdate[counter] = {
+	selfVar = selfVar,
+	openingControl = openingControl,
+	item = ZO_ShallowTableCopy(item),
+	newValue = newValue,
+}
+
+	if openingControl ~= nil then
+d(debugPrefix .. "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+d("[multiSelectSubmenuOpeningControlUpdate]parentDepth: " ..tos(parentDepth).."- OpeniningControl: " .. getControlName(openingControl))
+		if newValue == true then
+d(">parentDepth: " ..tos(parentDepth) ..", isAnySubmenuEntrySelected = " ..tos(newValue))
+			openingControl.isAnySubmenuEntrySelected = newValue
+
+			--Check recursively for another parentMenu (nested submenu's parent) -> "Go Up"
+			local parentMenu = openingControl.m_owner ~= nil and openingControl.m_owner.m_parentMenu
+			if parentMenu ~= nil and parentDepth < 100 then --security check to prevent endless loops! Max 100 iterations
+				parentDepth = parentDepth + 1
+				recursiveMultiSelectSubmenuOpeningControlUpdate(parentMenu, parentMenu, newValue, parentDepth)
+			end
+		else
+			--Check if any other entry is selected in the same submenu (or any deeper submenus) -> "Go down"
+			--and only then set the openingControls isAnySubmenuEntrySelected = nil?
+			local foundStillSelectedItem = recursiveOverEntries(item, comboBoxOfItem, checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect)
+d("<parentDepth: " ..tos(parentDepth) ..", foundStillSelectedItem = " ..tos(foundStillSelectedItem))
+			--No submenu item in the current, or nested deeper, submenu is still selected?
+			if not foundStillSelectedItem then
+				openingControl.isAnySubmenuEntrySelected = nil
+			end
+		end
+		ZO_ScrollList_RefreshVisible(comboBoxOfItem.m_dropdownObject.scrollControl, getDataSource(openingControl))
+	end
+end
+recursiveMultiSelectSubmenuOpeningControlUpdate = libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate
+
+function libUtil.subMenuArrowColor(control, data)
+	if control.m_arrow == nil then return end
+	local comboBox = control.m_owner
+	local isMultiSelectionEnabled = (comboBox and comboBox.m_enableMultiSelect) or false -- todo 20250211 Replace with correct value m_enableMultiSelect from comboBox -> via control's m_dropdownObject e.g.?
+	local isMultiSelectSubmenuEntrySelected = (isMultiSelectionEnabled == true and control.isAnySubmenuEntrySelected) or false
+
+	local options = (comboBox and comboBox:GetOptions()) or nil
+	local multiSelectSubmenuSelectedArrowColor = (isMultiSelectSubmenuEntrySelected == true and options ~= nil and getValueOrCallback(options.multiSelectSubmenuSelectedArrowColor, options)) or nil
+	local submenuArrowColor = (not isMultiSelectSubmenuEntrySelected and options ~= nil and getValueOrCallback(options.submenuArrowColor, options)) or nil
+
+	local newColor = ((isMultiSelectSubmenuEntrySelected == true and multiSelectSubmenuSelectedArrowColor) or (not isMultiSelectSubmenuEntrySelected and submenuArrowColor)) or nil --or colorConstants.DEFAULT_ARROW_COLOR
+d(debugPrefix .. "isMultiSelectSubmenuEntrySelected: " ..tos(isMultiSelectSubmenuEntrySelected) ..", arrowColor: " ..tos(newColor))
+LSM_Debug = LSM_Debug or {}
+LSM_Debug.subMenuArrowColor = { isMultiSelectSubmenuEntrySelected = isMultiSelectSubmenuEntrySelected, control = control, data = data, newColor = newColor,  }
+	if newColor ~= nil then
+		control.m_arrow:SetColor(newColor:UnpackRGBA())
+	end
+end
+--local subMenuArrowColor = libUtil.subMenuArrowColor
+
+--Check if an entry got the isNew set
+function libUtil.getIsNew(_entry, _comboBox)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 17) end
+	return getValueOrCallback(_entry.isNew, _entry) or false
+end
+
+--The default callback for the recursiveOverEntries function
+--[[
+local function defaultRecursiveCallback(_entry, _comboBox)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 11) end
+	return false
+end
+]]
 
 function libUtil.validateEntryType(item)
 	--Prefer passed in entryType (if any provided)
@@ -334,8 +453,8 @@ local getOptionsForDropdown = libUtil.getOptionsForDropdown
 --e.g. getValueOrCallback(...)
 function libUtil.mixinTableAndSkipExisting(targetData, sourceData, doNotSkipTable, callbackFunc, ...)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 10, tos(callbackFunc)) end
-	local useDoNotSkipTable = type(doNotSkipTable) == "table" and not ZO_IsTableEmpty(doNotSkipTable)
-	local useCallback = type(callbackFunc) == "function"
+	local useDoNotSkipTable = type(doNotSkipTable) == tableType and not ZO_IsTableEmpty(doNotSkipTable)
+	local useCallback = type(callbackFunc) == functionType
 --d(debugPrefix .. "mixinTableAndSkipExisting - useDoNotSkipTable: " .. tos(useDoNotSkipTable))
 	for i = 1, select("#", sourceData) do
 		local source = select(i, sourceData)
@@ -343,7 +462,7 @@ function libUtil.mixinTableAndSkipExisting(targetData, sourceData, doNotSkipTabl
 			--d(">k: " ..tos(k) .. ", v: " .. tos(v) .. ", target: " .. tos(targetData[k]))
 			--Skip existing entries in target table, unless they should not be skipped (see doNotSkipTable)
 			local doOverwrite = targetData[k] == nil
-			local doNotSkipDataOfKey = (useDoNotSkipTable and type(doNotSkipTable[k]) == "table" and doNotSkipTable[k]) or nil
+			local doNotSkipDataOfKey = (useDoNotSkipTable and type(doNotSkipTable[k]) == tableType and doNotSkipTable[k]) or nil
 
 			if doOverwrite or doNotSkipDataOfKey ~= nil then
 				local newValue = v
@@ -480,10 +599,14 @@ function libUtil.getTooltipAnchor(self, control, tooltipText, hasSubmenu)
 
 	local submenu = self:GetSubmenu()
 	if hasSubmenu then
-		if submenu and not submenu:IsDropdownVisible() then
-			return getTooltipAnchor(self, control, tooltipText, hasSubmenu)
+		if submenu then
+			if not submenu:IsDropdownVisible() then
+				return getTooltipAnchor(self, control, tooltipText, hasSubmenu)
+			end
+			if submenu.m_dropdownObject then
+				relativeTo = submenu.m_dropdownObject.control
+			end
 		end
-		relativeTo = submenu.m_dropdownObject.control
 	else
 		if submenu and submenu:IsDropdownVisible() then
 			submenu:HideDropdown()
@@ -497,7 +620,7 @@ function libUtil.getTooltipAnchor(self, control, tooltipText, hasSubmenu)
 	if not right then
 		local width, height = GuiRoot:GetDimensions()
 		local fontObject = _G[fontConstants.DEFAULT_FONT]
-		local nameWidth = (type(tooltipText) == "string" and GetStringWidthScaled(fontObject, tooltipText, 1, SPACE_INTERFACE)) or 250
+		local nameWidth = (type(tooltipText) == stringType and GetStringWidthScaled(fontObject, tooltipText, 1, SPACE_INTERFACE)) or 250
 
 		if control:GetRight() + nameWidth > width then
 			right = true
@@ -566,7 +689,7 @@ function libUtil.showTooltip(self, control, data, hasSubmenu)
 	local tooltipData = getValueOrCallback(data.tooltip, data)
 	local tooltipText = getValueOrCallback(tooltipData, data)
 	local customTooltipFunc = data.customTooltip
-	if type(customTooltipFunc) ~= "function" then customTooltipFunc = nil end
+	if type(customTooltipFunc) ~= functionType then customTooltipFunc = nil end
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 39, tos(getControlName(control)), tos(tooltipText), tos(hasSubmenu), tos(customTooltipFunc)) end
 
@@ -576,7 +699,7 @@ function libUtil.showTooltip(self, control, data, hasSubmenu)
 	local relativeTo, point, offsetX, offsetY, relativePoint = getTooltipAnchor(self, control, tooltipText, hasSubmenu)
 
 	--RelativeTo is a control?
-	if type(relativeTo) == "userdata" and type(relativeTo.IsControlHidden) == "function" then
+	if type(relativeTo) == userdataType and type(relativeTo.IsControlHidden) == functionType then
 		if customTooltipFunc ~= nil then
 			lib.lastCustomTooltipFunction = customTooltipFunc
 
@@ -937,7 +1060,7 @@ function libUtil.SubOrContextMenu_highlightControl(selfVar, control)
 	local highlightTemplate = selfVar:GetHighlightTemplate(control)
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 1, tos(highlightTemplate)) end
-	if type(highlightTemplate) ~= "string" then return defaultHighlightData.defaultHighlightTemplate end
+	if type(highlightTemplate) ~= stringType then return defaultHighlightData.defaultHighlightTemplate end
 
 	--Use the breadcrumbName as animationFieldName (e.g. LSM_HighlightAnimation_SubmenuBreadcrumb or LSM_HighlightAnimation_ContextMenuBreadcrumb)
 	control.breadcrumbName = sfor(defaultHighlightData.subAndContextMenuHighlightAnimationBreadcrumbsPattern, defaultHighlightData.defaultHighLightAnimationFieldName, tos(selfVar.breadcrumbName))

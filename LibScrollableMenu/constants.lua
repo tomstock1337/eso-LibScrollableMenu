@@ -181,7 +181,7 @@ constants.colors.HEADER_TEXT_COLOR = 			ZO_ColorDef:New(GetInterfaceColor(INTERF
 constants.colors.DEFAULT_TEXT_COLOR = 			ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL))
 constants.colors.DEFAULT_TEXT_HIGHLIGHT = 		ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT))
 constants.colors.DEFAULT_TEXT_DISABLED_COLOR = 	ZO_GAMEPAD_UNSELECTED_COLOR
-constants.colors.DEFAULT_ARROW_COLOR = 			ZO_ColorDef:New(1, 1, 1, 1)
+constants.colors.DEFAULT_ARROW_COLOR = 			ZO_ColorDef:New("FFFFFF")
 local colors = constants.colors
 
 --Textures
@@ -424,14 +424,15 @@ local comboBoxDefaults = {
 	itemYPad = 						0,
 
 	--LibScrollableMenu internal (e.g. options)
+	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+	containerMinWidth = 			dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER,
 	disableFadeGradient = 			false,
 	headerFont =					fonts.DEFAULT_FONT,
 	headerColor = 					colors.HEADER_TEXT_COLOR,
+	headerCollapsed = 				false,
+	submenuArrowColor = 			colors.DEFAULT_ARROW_COLOR,
 	visibleRows = 					dropdownDefaults.DEFAULT_VISIBLE_ROWS,
 	visibleRowsSubmenu = 			dropdownDefaults.DEFAULT_VISIBLE_ROWS,
-	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
-	headerCollapsed = 				false,
-	containerMinWidth = 			dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER,
 }
 constants.comboBox.defaults = comboBoxDefaults
 
@@ -512,6 +513,8 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["sortOrder"] = 			"m_sortOrder",
 	["sortType"] = 				"m_sortType",
 	["spacing"] = 				"m_spacing",
+	["submenuArrowColor"] =		"submenuArrowColor",
+	["multiSelectSubmenuSelectedArrowColor"] = "multiSelectSubmenuSelectedArrowColor",
 	["visibleRowsDropdown"] =	"visibleRows",
 }
 constants.comboBox.mapping.LSMOptionsKeyToZO_ComboBoxOptionsKey = LSMOptionsKeyToZO_ComboBoxOptionsKey
@@ -679,6 +682,8 @@ local submenuClass_exposedVariables = {
 	["maxDropdownWidth"] = true,
 	["m_highlightTemplate"] = true,
 	["narrateData"] = true,
+	["submenuArrowColor"] =	 true,
+	["multiSelectSubmenuSelectedArrowColor"] = true,
 	["useDefaultHighlightForSubmenuWithCallback"] = true,
 	["visibleRowsSubmenu"] = true, --we only need this "visibleRowsSubmenu" for the submenus, mainMenu uses visibleRowsDropdown
 	["XMLRowTemplates"] = true,
