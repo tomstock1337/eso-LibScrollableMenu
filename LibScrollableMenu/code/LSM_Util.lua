@@ -70,6 +70,7 @@ local getControlData
 local recursiveOverEntries
 local getComboBox
 local recursiveMultiSelectSubmenuOpeningControlUpdate
+local checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect
 
 
 --------------------------------------------------------------------
@@ -172,6 +173,8 @@ local compareDropdownDataList = libUtil.compareDropdownDataList
 -- Used for the search of the collapsible header too
 function libUtil.recursiveOverEntries(entry, comboBox, callback, ...)
 	recursiveOverEntries = recursiveOverEntries or libUtil.recursiveOverEntries
+local doDebug = callback and callback == checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect
+if doDebug then d("!!!!!!!!!! RecursiveOverEntries") end
 	--callback = callback or defaultRecursiveCallback
 	--No need to loop all entries just to return false always in the end! Do return it early here
 	if type(callback) ~= functionType then
@@ -181,6 +184,10 @@ function libUtil.recursiveOverEntries(entry, comboBox, callback, ...)
 
 	local result = callback(entry, comboBox, ...)
 	local submenu = (entry.entries ~= nil and getValueOrCallback(entry.entries, entry)) or {}
+if doDebug then
+	d("!> Result: " ..tos(result) .. ", #submenu: " ..tos(#submenu))
+end
+
 
 	--local submenuType = type(submenu)
 	--assert(submenuType == 'table', sfor('["..MAJOR..':recursiveOverEntries] table expected, got %q = %s', "submenu", tos(submenuType)))
@@ -188,6 +195,9 @@ function libUtil.recursiveOverEntries(entry, comboBox, callback, ...)
 		for _, subEntry in pairs(submenu) do
 			local subEntryResult = recursiveOverEntries(subEntry, comboBox, callback, ...)
 			if subEntryResult then
+if doDebug then
+	d("!> subEntryResult: " ..tos(subEntryResult))
+end
 				result = subEntryResult
 			end
 		end
@@ -198,24 +208,40 @@ end
 recursiveOverEntries = libUtil.recursiveOverEntries
 
 --Check if any submenu item is still selected within multiSelection
+local levelChecked = 0
 function libUtil.checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect(item, comboBox)
+	checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect = checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect or libUtil.checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect
+	levelChecked = levelChecked + 1
 	if item == nil or comboBox == nil then return false end
 	if not comboBox.m_enableMultiSelect then return false end
 
-	local currentSubmenuItems = comboBox.m_sortedItems
+	local currentSubmenuItems = item.m_owner and item.m_owner.m_sortedItems --comboBox.m_sortedItems
 	if not ZO_IsTableEmpty(currentSubmenuItems) then
+d("______________________________________________________________")
+d("[checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect]levelChecked: " .. tos(levelChecked))
+d(">found current submenu items #" ..tos(#currentSubmenuItems))
 		local multiSelectedItemData = comboBox.m_multiSelectItemData
 		if not ZO_IsTableEmpty(multiSelectedItemData) then
+d(">>found currently selected items #" .. tos(#multiSelectedItemData))
 			for _, currentSubmenuItem in ipairs(currentSubmenuItems) do
 				for _, selectedSubmenuItem in ipairs(multiSelectedItemData) do
 					if selectedSubmenuItem == currentSubmenuItem then
-d(">found still selected item in submenu: " ..tos(selectedSubmenuItem))
+d(">>>found still selected item in submenu: " ..tos(selectedSubmenuItem))
+LSM_Debug = LSM_Debug or {}
+LSM_Debug.checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect = LSM_Debug.checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect or {}
+LSM_Debug.checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect[#LSM_Debug.checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect +1] = {
+	item = item ~= nil and ZO_ShallowTableCopy(item),
+	comboBox = comboBox ~= nil and ZO_ShallowTableCopy(comboBox),
+}
 						--Update the current submenu's comboBox openingControl arrow
 						if comboBox.m_dropdownObject ~= nil and comboBox.openingControl ~= nil then
-d(">>refreshing the scrolList's openingControl: " .. tos(comboBox.openingControl))
-							ZO_ScrollList_RefreshVisible(comboBox.m_dropdownObject.scrollControl, getDataSource(comboBox.openingControl))
+d(">>>>refreshing the scrolList's openingControl: " .. tos(comboBox.openingControl))
+							local dataEntryOfOpeningControl = (comboBox.openingControl.dataEntry and comboBox.openingControl.dataEntry.data) or nil
+							ZO_ScrollList_RefreshVisible(comboBox.m_dropdownObject.scrollControl, dataEntryOfOpeningControl)
 						end
 						return true
+					else
+d("<non selected submenuitem: " ..tos(currentSubmenuItem.name or currentSubmenuItem.dataEntry.data.name))
 					end
 				end
 			end
@@ -223,8 +249,7 @@ d(">>refreshing the scrolList's openingControl: " .. tos(comboBox.openingControl
 	end
 	return false
 end
-local checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect = libUtil.checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect
-
+checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect = libUtil.checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect
 
 --Recursively check the current item's submenu's openingControl and set the isAnySubmenuEntrySelected boolean value there,
 --then check if that submenu got another parentMenu and go on upwards with these openingControls until all flags are set.
@@ -232,46 +257,80 @@ local checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect = libUtil.checkIfS
 function libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate(selfVar, item, newValue, parentDepth)
 	recursiveMultiSelectSubmenuOpeningControlUpdate = recursiveMultiSelectSubmenuOpeningControlUpdate or libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate
 	parentDepth = parentDepth or 0
-	--Get the opening control of the currently shown submenu (if a submenu was opened)
-	local comboBoxOfItem = (parentDepth == 0 and item.m_owner) or (parentDepth > 0 and selfVar) or nil
-	if comboBoxOfItem == nil or not comboBoxOfItem.isSubmenu then return end
-	local openingControl = comboBoxOfItem.openingControl --(selfVar ~= nil and selfVar.isSubmenu and selfVar.openingControl) or nil
 
 LSM_Debug = LSM_Debug or {}
 LSM_Debug.multiSelectSubmenuOpeningControlUpdate = LSM_Debug.multiSelectSubmenuOpeningControlUpdate or {}
 local counter = #LSM_Debug.multiSelectSubmenuOpeningControlUpdate +1
+
+d(debugPrefix .. "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+d("[multiSelectSubmenuOpeningControlUpdate]counter: " .. tos(counter) ..", parentDepth: " ..tos(parentDepth))
+
+	--Get the opening control of the currently shown submenu (if a submenu was opened)
+	-->parentDepth > 0: selfVar is the openingControl's parentMenu
+	local comboBoxOfItem = item.m_owner --(parentDepth == 0 and item.m_owner) or (parentDepth > 0 and selfVar) or nil
+	if comboBoxOfItem == nil or not comboBoxOfItem.isSubmenu then return end
+	local openingControl = comboBoxOfItem.openingControl --(selfVar ~= nil and selfVar.isSubmenu and selfVar.openingControl) or nil
+
 LSM_Debug.multiSelectSubmenuOpeningControlUpdate[counter] = {
 	selfVar = selfVar,
 	openingControl = openingControl,
-	item = ZO_ShallowTableCopy(item),
+	item = type(item) == "table" and ZO_ShallowTableCopy(item) or item,
 	newValue = newValue,
 }
 
 	if openingControl ~= nil then
-d(debugPrefix .. "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-d("[multiSelectSubmenuOpeningControlUpdate]parentDepth: " ..tos(parentDepth).."- OpeniningControl: " .. getControlName(openingControl))
-		if newValue == true then
-d(">parentDepth: " ..tos(parentDepth) ..", isAnySubmenuEntrySelected = " ..tos(newValue))
-			openingControl.isAnySubmenuEntrySelected = newValue
+		d(">OpeningControl: " .. getControlName(openingControl))
 
-			--Check recursively for another parentMenu (nested submenu's parent) -> "Go Up"
-			local parentMenu = openingControl.m_owner ~= nil and openingControl.m_owner.m_parentMenu
-			if parentMenu ~= nil and parentDepth < 100 then --security check to prevent endless loops! Max 100 iterations
-				parentDepth = parentDepth + 1
-				recursiveMultiSelectSubmenuOpeningControlUpdate(parentMenu, parentMenu, newValue, parentDepth)
-			end
-		else
-			--Check if any other entry is selected in the same submenu (or any deeper submenus) -> "Go down"
-			--and only then set the openingControls isAnySubmenuEntrySelected = nil?
-			local foundStillSelectedItem = recursiveOverEntries(item, comboBoxOfItem, checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect)
-d("<parentDepth: " ..tos(parentDepth) ..", foundStillSelectedItem = " ..tos(foundStillSelectedItem))
-			--No submenu item in the current, or nested deeper, submenu is still selected?
-			if not foundStillSelectedItem then
-				openingControl.isAnySubmenuEntrySelected = nil
+		local foundStillSelectedItem = false
+		local selectedEntries = comboBoxOfItem:GetNumSelectedEntries()
+		local isAnyEntrySelected = selectedEntries <= 0
+		if not isAnyEntrySelected then
+			d("<["..(parentDepth) .."]not any entry selected anymore!")
+			newValue = nil
+		end
+
+		--Check if no multiselect entry is selected at all anymore
+		--Always check uowards if any arrow needs to be refreshed
+		if newValue == true then
+			d(">["..(parentDepth) .."]isAnySubmenuEntrySelected = " ..tos(newValue))
+			openingControl.isAnySubmenuEntrySelected = newValue
+		end
+
+		--Check recursively for another parentMenu (nested submenu's parent) -> "Go Up"
+		local parentMenu = openingControl.m_owner ~= nil and openingControl.m_owner.m_parentMenu
+		if parentMenu ~= nil and parentDepth < 100 then --security check to prevent endless loops! Max 100 iterations
+			parentDepth = parentDepth + 1
+
+			d("-------->>found a parentMenu, depth: " ..tos(parentDepth))
+			recursiveMultiSelectSubmenuOpeningControlUpdate(parentMenu, getDataSource(openingControl), newValue, parentDepth)
+			d("<--------back from parentmenu, depth: " ..tos(parentDepth))
+		end
+
+		--Check downwards for any arrow change needed too
+		levelChecked = 0
+		--Check if any other entry is selected in the same submenu (or any deeper submenus) -> "Go down"
+		--and only then set the openingControls isAnySubmenuEntrySelected = nil?
+		d("-------->>checkingRecursiveSubmenuEntries")
+		foundStillSelectedItem = recursiveOverEntries(item, comboBoxOfItem, checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect)
+		d("<["..(parentDepth) .."]foundStillSelectedItem = " ..tos(foundStillSelectedItem))
+		--No submenu item in the current, or nested deeper, submenu is still selected,
+		--And we unselected the current?
+		if not newValue and (not foundStillSelectedItem or not isAnyEntrySelected) then
+			openingControl.isAnySubmenuEntrySelected = nil
+		end
+
+		--Mark the openingControl's arrow now via refreshing it and calling the setupFunction callback of the entryType
+		if newValue == true or (not newValue and (not isAnyEntrySelected or not foundStillSelectedItem)) then
+			if openingControl.m_dropdownObject ~= nil then
+				local dataOfOpeningControl = openingControl.dataEntry.data --getDataSource(openingControl)
+				d(">refreshing scrollControl of openingControl, dataSource: " .. tos(dataOfOpeningControl ~= nil and dataOfOpeningControl.name))
+				ZO_ScrollList_RefreshVisible(openingControl.m_dropdownObject.scrollControl, dataOfOpeningControl)
 			end
 		end
-		ZO_ScrollList_RefreshVisible(comboBoxOfItem.m_dropdownObject.scrollControl, getDataSource(openingControl))
+	--else
+		--d("<openingControl not found!")
 	end
+	d(debugPrefix .. "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 end
 recursiveMultiSelectSubmenuOpeningControlUpdate = libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate
 
@@ -282,10 +341,10 @@ function libUtil.subMenuArrowColor(control, data)
 	local isMultiSelectSubmenuEntrySelected = (isMultiSelectionEnabled == true and control.isAnySubmenuEntrySelected) or false
 
 	local options = (comboBox and comboBox:GetOptions()) or nil
-	local multiSelectSubmenuSelectedArrowColor = (isMultiSelectSubmenuEntrySelected == true and options ~= nil and getValueOrCallback(options.multiSelectSubmenuSelectedArrowColor, options)) or nil
-	local submenuArrowColor = (not isMultiSelectSubmenuEntrySelected and options ~= nil and getValueOrCallback(options.submenuArrowColor, options)) or nil
+	local multiSelectSubmenuSelectedArrowColor = (isMultiSelectSubmenuEntrySelected == true and options ~= nil and getValueOrCallback(options.multiSelectSubmenuSelectedArrowColor, options)) or colorConstants.DEFAULT_ARROW_COLOR
+	local submenuArrowColor = (not isMultiSelectSubmenuEntrySelected and options ~= nil and getValueOrCallback(options.submenuArrowColor, options)) or colorConstants.DEFAULT_ARROW_COLOR
 
-	local newColor = ((isMultiSelectSubmenuEntrySelected == true and multiSelectSubmenuSelectedArrowColor) or (not isMultiSelectSubmenuEntrySelected and submenuArrowColor)) or nil --or colorConstants.DEFAULT_ARROW_COLOR
+	local newColor = ((isMultiSelectSubmenuEntrySelected == true and multiSelectSubmenuSelectedArrowColor) or (not isMultiSelectSubmenuEntrySelected and submenuArrowColor)) or colorConstants.DEFAULT_ARROW_COLOR
 d(debugPrefix .. "isMultiSelectSubmenuEntrySelected: " ..tos(isMultiSelectSubmenuEntrySelected) ..", arrowColor: " ..tos(newColor))
 LSM_Debug = LSM_Debug or {}
 LSM_Debug.subMenuArrowColor = { isMultiSelectSubmenuEntrySelected = isMultiSelectSubmenuEntrySelected, control = control, data = data, newColor = newColor,  }
