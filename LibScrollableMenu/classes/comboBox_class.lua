@@ -540,3 +540,24 @@ d(debugPrefix.."comboBoxClass:SelectItem -> AddItemToSelected")
 
     return true
 end
+
+-- a maxNumSelections of 0 or nil indicates no limit on selections
+--[[
+function comboBoxClass:SetMaxSelections(maxNumSelections)
+d(debugPrefix .. "comboBoxClass:SetMaxSelections:"  ..tos(maxNumSelections))
+    if not self.m_enableMultiSelect then
+        return false
+    end
+
+    if maxNumSelections == 0 then
+        maxNumSelections = nil
+    end
+
+    -- if the new limit is less than the current limit, clear all the selections
+    if maxNumSelections and (self.m_maxNumSelections == nil or maxNumSelections < self.m_maxNumSelections) then
+        self:ClearAllSelections()
+    end
+d(">self.m_maxNumSelections: " .. tos(maxNumSelections))
+    self.m_maxNumSelections = maxNumSelections
+end
+]]

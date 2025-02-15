@@ -279,7 +279,7 @@ Max error #: 2025_12
 
 [Fixed]
 -2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
--2025_7:	OPEN 20250210 - RETEST: OPEN! If multiselection is enabled: LSM test Maximum number of selectable entries (maxNumSelections) is not working (maybe after submenus were opened)
+-2025_7:	FIXED 20250215 - RETEST: DONE! If multiselection is enabled: LSM test Maximum number of selectable entries (maxNumSelections) is not working (maybe after submenus were opened)
 -2025_8:	Removed globally leaking variables
 -2025_9:	FIXED 20250210 - RETEST: DONE! If multiSelection is disabled: Entries opening a submenu, having a callback, do not select the submenu entry anymore
 -2025_12:   multiselection options added will properly pass in the whole options table as param to the callback function now

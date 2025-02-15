@@ -520,6 +520,46 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 constants.comboBox.mapping.LSMOptionsKeyToZO_ComboBoxOptionsKey = LSMOptionsKeyToZO_ComboBoxOptionsKey
 
 
+local function updateMultiSelectionOptions(comboBoxObject, isMultiSelectionEnabled, maxNumSelections, maxNumSelectionsErrorText, multiSelectionTextFormatter, noSelectionText, onSelectionBlockedCallback)
+--d("options->updateMultiSelectionOptions")
+		--options which should be considered/updated first if comboBoxObject:EnableMultiSelect is called
+		---maxNumSelections
+		---maxNumSelectionsErrorText
+		---noSelectionText
+		---multiSelectionTextFormatter
+		---onSelectionBlockedCallback
+	local options = comboBoxObject.options
+	local updatedOptions = comboBoxObject.updatedOptions
+
+	if isMultiSelectionEnabled == nil then
+		isMultiSelectionEnabled = updatedOptions.enableMultiSelect or 				getValueOrCallback(options.enableMultiSelect, options) or comboBoxDefaults.m_enableMultiSelect
+	end
+
+	if isMultiSelectionEnabled == false then
+		comboBoxObject:DisableMultiSelect() --sets comboBoxObject.m_enableMultiSelect = false
+		return
+	end
+
+	maxNumSelections = maxNumSelections or							updatedOptions.maxNumSelections or 				getValueOrCallback(options.maxNumSelections, options) or comboBoxDefaults.m_maxNumSelections
+--d(">maxNumSelections = " .. tos(maxNumSelections))
+	if maxNumSelections ~= nil and maxNumSelections < 0 then maxNumSelections = nil	end
+	maxNumSelectionsErrorText = maxNumSelectionsErrorText or		updatedOptions.maxNumSelectionsErrorText or 	getValueOrCallback(options.maxNumSelectionsErrorText, options) or comboBoxDefaults.m_maxNumSelectionsErrorText
+	noSelectionText = noSelectionText or 							updatedOptions.noSelectionText or 				getValueOrCallback(options.noSelectionText, options) or comboBoxDefaults.noSelectionText
+	multiSelectionTextFormatter = multiSelectionTextFormatter or 	updatedOptions.multiSelectionTextFormatter or 	getValueOrCallback(options.multiSelectionTextFormatter, options) or comboBoxDefaults.multiSelectionTextFormatter
+	onSelectionBlockedCallback = onSelectionBlockedCallback or		(updatedOptions.OnSelectionBlockedCallback or 	options.OnSelectionBlockedCallback) or comboBoxDefaults.onSelectionBlockedCallback
+
+	updatedOptions.maxNumSelections = maxNumSelections
+	updatedOptions.maxNumSelectionsErrorText = maxNumSelectionsErrorText
+	updatedOptions.noSelectionText = noSelectionText
+	updatedOptions.multiSelectionTextFormatter = multiSelectionTextFormatter
+	updatedOptions.OnSelectionBlockedCallback = onSelectionBlockedCallback
+
+	comboBoxObject:SetMaxSelections(maxNumSelections)
+	comboBoxObject:SetMaxSelectionsErrorText(maxNumSelectionsErrorText)
+	comboBoxObject:SetOnSelectionBlockedCallback(onSelectionBlockedCallback)
+	comboBoxObject:EnableMultiSelect(multiSelectionTextFormatter, noSelectionText) --sets comboBoxObject.m_enableMultiSelect = true
+end
+
 --The callback functions for the mapped LSM option -> ZO_ComboBox options (where any provided/needed)
 local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	--These callback functions will apply the options directly
@@ -528,41 +568,7 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	-->You can use these table entries to get the most up2date values of the currently processed options
 
 	["enableMultiSelect"] = function(comboBoxObject, isMultiSelectionEnabled)
-		--options which should be considered/updated first if comboBoxObject:EnableMultiSelect is called
-		---maxNumSelections
-		---maxNumSelectionsErrorText
-		---noSelectionText
-		---multiSelectionTextFormatter
-		---onSelectionBlockedCallback
-
-	--d(debugPrefix.."options.enableMultiSelect = " .. tos(isMultiSelectionEnabled))
-		if isMultiSelectionEnabled == false then
-			--todo 20250127 Clear the multiselect related variables at comboBoxObject? Vanilla code doesn't, but our
-			--objects (submenu e.g.) might need that? Allthoug all functions check for comboBoxObject.m_enableMultiSelect == true,
-			comboBoxObject:DisableMultiSelect() --sets comboBoxObject.m_enableMultiSelect = false
-			return
-		end
-
-		local options = comboBoxObject.options
-		local updatedOptions = comboBoxObject.updatedOptions
-
-		local maxNumSelections = 			updatedOptions.maxNumSelections or 				getValueOrCallback(options.maxNumSelections, options) or comboBoxDefaults.m_maxNumSelections
-		if maxNumSelections ~= nil and maxNumSelections < 0 then maxNumSelections = nil	end
-		local maxNumSelectionsErrorText = 	updatedOptions.maxNumSelectionsErrorText or 	getValueOrCallback(options.maxNumSelectionsErrorText, options) or comboBoxDefaults.m_maxNumSelectionsErrorText
-		local noSelectionText = 			updatedOptions.noSelectionText or 				getValueOrCallback(options.noSelectionText, options) or comboBoxDefaults.noSelectionText
-		local multiSelectionTextFormatter = updatedOptions.multiSelectionTextFormatter or 	getValueOrCallback(options.multiSelectionTextFormatter, options) or comboBoxDefaults.multiSelectionTextFormatter
-		local onSelectionBlockedCallback = 	(updatedOptions.OnSelectionBlockedCallback or 	options.OnSelectionBlockedCallback) or comboBoxDefaults.onSelectionBlockedCallback
-
-		updatedOptions.maxNumSelections = maxNumSelections
-		updatedOptions.maxNumSelectionsErrorText = maxNumSelectionsErrorText
-		updatedOptions.noSelectionText = noSelectionText
-		updatedOptions.multiSelectionTextFormatter = multiSelectionTextFormatter
-		updatedOptions.OnSelectionBlockedCallback = onSelectionBlockedCallback
-
-		comboBoxObject:SetMaxSelections(maxNumSelections)
-		comboBoxObject:SetMaxSelectionsErrorText(maxNumSelectionsErrorText)
-		comboBoxObject:SetOnSelectionBlockedCallback(onSelectionBlockedCallback)
-		comboBoxObject:EnableMultiSelect(multiSelectionTextFormatter, noSelectionText) --sets comboBoxObject.m_enableMultiSelect = true
+		updateMultiSelectionOptions(comboBoxObject, isMultiSelectionEnabled, nil, nil, nil, nil, nil)
 	end,
 	["font"] = function(comboBoxObject, font)
 		comboBoxObject:SetFont(font) --sets comboBoxObject.m_font
@@ -576,19 +582,19 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		comboBoxObject:UpdateWidth(comboBoxObject.m_dropdown)
 	end,
 	["maxNumSelections"] = function(comboBoxObject, maxNumSelections)
-		comboBoxObject:SetMaxSelections(maxNumSelections)
+		updateMultiSelectionOptions(comboBoxObject, nil, maxNumSelections, nil, nil, nil, nil)
 	end,
 	["maxNumSelectionsErrorText"] = function(comboBoxObject, maxNumSelectionsErrorText)
-		comboBoxObject:SetMaxSelectionsErrorText(maxNumSelectionsErrorText)
+		updateMultiSelectionOptions(comboBoxObject, nil, nil, maxNumSelectionsErrorText, nil, nil, nil)
 	end,
 	["multiSelectionTextFormatter"] = function(comboBoxObject, multiSelectionTextFormatter)
-		comboBoxObject:SetMultiSelectionTextFormatter(multiSelectionTextFormatter) --sets comboBoxObject.multiSelectionTextFormatter
+		updateMultiSelectionOptions(comboBoxObject, nil, nil, nil, multiSelectionTextFormatter, nil, nil)
 	end,
 	["noSelectionText"] = function(comboBoxObject, noSelectionText)
-		comboBoxObject:SetNoSelectionText(noSelectionText) --sets comboBoxObject.noSelectionText
+		updateMultiSelectionOptions(comboBoxObject, nil, nil, nil, nil, noSelectionText, nil)
 	end,
 	["OnSelectionBlockedCallback"] = function(comboBoxObject, OnSelectionBlockedCallbackFunc)
-		comboBoxObject:SetOnSelectionBlockedCallback(OnSelectionBlockedCallbackFunc)
+		updateMultiSelectionOptions(comboBoxObject, nil, nil, nil, nil, nil, OnSelectionBlockedCallbackFunc)
 	end,
 	["preshowDropdownFn"] = function(comboBoxObject, preshowDropdownCallbackFunc)
 		comboBoxObject:SetPreshowDropdownCallback(preshowDropdownCallbackFunc) --sets m_preshowDropdownFn
