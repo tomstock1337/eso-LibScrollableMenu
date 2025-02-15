@@ -546,11 +546,11 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 		local options = comboBoxObject.options
 		local updatedOptions = comboBoxObject.updatedOptions
 
-		local maxNumSelections = 			updatedOptions.maxNumSelections or 				getValueOrCallback(options.maxNumSelections) or comboBoxDefaults.m_maxNumSelections
+		local maxNumSelections = 			updatedOptions.maxNumSelections or 				getValueOrCallback(options.maxNumSelections, options) or comboBoxDefaults.m_maxNumSelections
 		if maxNumSelections ~= nil and maxNumSelections < 0 then maxNumSelections = nil	end
-		local maxNumSelectionsErrorText = 	updatedOptions.maxNumSelectionsErrorText or 	getValueOrCallback(options.maxNumSelectionsErrorText) or comboBoxDefaults.m_maxNumSelectionsErrorText
-		local noSelectionText = 			updatedOptions.noSelectionText or 				getValueOrCallback(options.noSelectionText) or comboBoxDefaults.noSelectionText
-		local multiSelectionTextFormatter = updatedOptions.multiSelectionTextFormatter or 	getValueOrCallback(options.multiSelectionTextFormatter) or comboBoxDefaults.multiSelectionTextFormatter
+		local maxNumSelectionsErrorText = 	updatedOptions.maxNumSelectionsErrorText or 	getValueOrCallback(options.maxNumSelectionsErrorText, options) or comboBoxDefaults.m_maxNumSelectionsErrorText
+		local noSelectionText = 			updatedOptions.noSelectionText or 				getValueOrCallback(options.noSelectionText, options) or comboBoxDefaults.noSelectionText
+		local multiSelectionTextFormatter = updatedOptions.multiSelectionTextFormatter or 	getValueOrCallback(options.multiSelectionTextFormatter, options) or comboBoxDefaults.multiSelectionTextFormatter
 		local onSelectionBlockedCallback = 	(updatedOptions.OnSelectionBlockedCallback or 	options.OnSelectionBlockedCallback) or comboBoxDefaults.onSelectionBlockedCallback
 
 		updatedOptions.maxNumSelections = maxNumSelections

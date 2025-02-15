@@ -98,7 +98,10 @@ local function test()
 			enableMultiSelect = true, --todo 20250127 test
 			maxNumSelections = 2,
 			maxNumSelectionsErrorText =		debugPrefix.."ERROR - Maximum items selected already",
-			multiSelectionTextFormatter = 	"<<1>> selected",
+			multiSelectionTextFormatter = 	function(options)
+				local numMaxSelections = options.maxNumSelections
+				return "<<1>>/".. tostring(numMaxSelections) .." selected"
+			end,
 			noSelectionText = 				"",
 			multiSelectSubmenuSelectedArrowColor = ZO_ColorDef:New("4dff85"), --green "rgba(77, 255, 133, 1.00)"
 			OnSelectionBlockedCallback = function() d(debugPrefix.."ERROR - Selection of entry was blocked!") end,
