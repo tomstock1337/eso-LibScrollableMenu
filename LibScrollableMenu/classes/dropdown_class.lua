@@ -143,6 +143,7 @@ end
 --------------------------------------------------------------------
 -- Dropdown (nested) submenu parsing functions
 --------------------------------------------------------------------
+--[[
 -- Add/Remove the isAnySubmenuEntrySelected status
 -- This works up from the mouse-over entry's submenu to the dropdown,
 -- but only on entries having (opening) a submenu
@@ -167,16 +168,15 @@ local function updateSubmenuIsAnyEntrySelectedStatus(selfVar, control, isMultiSe
 	-- down from here since we are working our way up until we find an entry.
 	for idx, subentry in ipairs(submenuEntries) do
 		if comboBox:IsItemSelected(subentry) then
-d(">submenu item is selected: " .. tos(idx))
-LSM_Debug = LSM_Debug or {}
-LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus = LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus or {}
-LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus[#LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus+1] = {
-	indexFound = idx,
-	comboBox = comboBox,
-	subentry = ZO_ShallowTableCopy(subentry),
-	submenuEntries = ZO_ShallowTableCopy(submenuEntries),
-}
-
+--d(">submenu item is selected: " .. tos(idx))
+--LSM_Debug = LSM_Debug or {}
+--LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus = LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus or {}
+--LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus[#LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus+1] = {
+	--indexFound = idx,
+	--comboBox = comboBox,
+	--subentry = ZO_ShallowTableCopy(subentry),
+	--submenuEntries = ZO_ShallowTableCopy(submenuEntries),
+--}
 			isAnySubmenuEntrySelected = true
 			break
 		end
@@ -194,6 +194,7 @@ LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus[#LSM_Debug.updateSubmenuIsAnyEnt
 		end
 	end
 end
+]]
 
 -- Add/Remove the new status of a dropdown entry,
 -- This works up from the mouse-over entry's submenu to the dropdown,
@@ -232,6 +233,7 @@ local function updateSubmenuNewStatus(selfVar, control)
 	end
 end
 
+--[[
 local function checkSubmenuOnMouseEnterTasks(selfVar, control, data)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 183) end
 	--local doRefresh = false
@@ -260,6 +262,7 @@ local function checkSubmenuOnMouseEnterTasks(selfVar, control, data)
 		end
 	--end
 end
+]]
 
 local function checkNormalOnMouseEnterTasks(selfVar, control, data)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 32) end
@@ -294,7 +297,7 @@ end
 --e.g.multiselection any item selected in submenus
 local function doSubmenuOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 182) end
-	checkSubmenuOnMouseEnterTasks(selfVar, control, data)
+	--checkSubmenuOnMouseEnterTasks(selfVar, control, data) --todo 20250212 Done in function libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate now!
 end
 
 --Run checks for submenus and nested submenus (upwards from the current item!) if you move the mouse above an entry
@@ -477,7 +480,7 @@ local handlerFunctions  = {
 			--d( debugPrefix .. 'onMouseEnter [entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU]')
 			local dropdown = onMouseEnter(control, data, has_submenu)
 			clearTimeout()
-			--doSubmenuOnMouseEnterNestedSubmenuChecks(selfVar, control, data) --todo 20250212 Done in function libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate
+			doSubmenuOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
 			--Show the submenu of the entry
 			dropdown:ShowSubmenu(control)
 			return false --not control.closeOnSelect
