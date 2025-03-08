@@ -9,7 +9,7 @@ local MAJOR = lib.name
 --------------------------------------------------------------------
 --Logging and debugging
 local libDebug = lib.Debug
---local debugPrefix = libDebug.prefix
+local debugPrefix = libDebug.prefix
 
 local dlog = libDebug.DebugLog
 
@@ -144,6 +144,7 @@ end
 
 function submenuClass:GetMaxRows()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 143, tos(self.visibleRowsSubmenu or dropdownDefaults.DEFAULT_VISIBLE_ROWS)) end
+--d(debugPrefix .. "submenuClass:GetMaxRows - visibleRowsSubmenu: " .. tos(visibleRowsSubmenu))
 	return self.visibleRowsSubmenu or dropdownDefaults.DEFAULT_VISIBLE_ROWS
 end
 

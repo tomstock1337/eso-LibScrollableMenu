@@ -9,7 +9,7 @@ local MAJOR = lib.name
 --------------------------------------------------------------------
 --Logging and debugging
 local libDebug = lib.Debug
---local debugPrefix = libDebug.prefix
+local debugPrefix = libDebug.prefix
 
 local dlog = libDebug.DebugLog
 
@@ -376,7 +376,7 @@ end
 function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 	updateContextMenuRef()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 167, tos(getControlName(comboBoxContainer)), tos(options)) end
---df(debugPrefix.."SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
+df(debugPrefix.."SetCustomScrollableMenuOptions - comboBoxContainer: %s, options: %s", tos(getControlName(comboBoxContainer)), tos(options))
 
 	--Use specified comboBoxContainer's dropdown to update the options to
 	if comboBoxContainer ~= nil then
@@ -386,11 +386,11 @@ function SetCustomScrollableMenuOptions(options, comboBoxContainer)
 		end
 		if comboBox ~= nil and comboBox.UpdateOptions then
 			comboBox.optionsChanged = options ~= comboBox.options
---d(">comboBox:UpdateOptions -> optionsChanged: " ..tos(comboBox.optionsChanged))
+d(">comboBox:UpdateOptions -> optionsChanged: " ..tos(comboBox.optionsChanged))
 			comboBox:UpdateOptions(options)
 		end
 	else
---d(">g_contextMenu:SetContextMenuOptions")
+d(">g_contextMenu:SetContextMenuOptions")
 		--Update options to default contextMenu
 		g_contextMenu:SetContextMenuOptions(options)
 	end
@@ -470,8 +470,8 @@ end
 function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	updateContextMenuRef()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 171, tos(getControlName(controlToAnchorTo)), tos(options)) end
---d("°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
---df(debugPrefix.."_-_-_-_-_ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+d("°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
+df(debugPrefix.."_-_-_-_-_ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
 
 	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table -> Here: For the contextMenu
 	local optionsForCallbackFire = options or {}
@@ -482,7 +482,7 @@ function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 172, tos(getControlName(g_contextMenu.m_container)), tos(options)) end
 
 	if options ~= nil then
---d(">>>>>calling SetCustomScrollableMenuOptions")
+d(">>>>>calling SetCustomScrollableMenuOptions")
 		setCustomScrollableMenuOptions(options)
 	end
 

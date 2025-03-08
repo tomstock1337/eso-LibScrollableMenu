@@ -9,7 +9,7 @@ local MAJOR = lib.name
 --------------------------------------------------------------------
 --Logging and debugging
 local libDebug = lib.Debug
---local debugPrefix = libDebug.prefix
+local debugPrefix = libDebug.prefix
 
 local dlog = libDebug.DebugLog
 
@@ -97,6 +97,8 @@ end
 function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 151) end
 	self:RefreshSortedItems()
+	--self:UpdateWidth()
+	--self:UpdateHeight() -->Should be called from self:Show -> self:ShowContextMenu -> self:UpdateHeader
 	self:Show()
 	self.m_dropdownObject:AnchorToMouse()
 end
@@ -160,10 +162,8 @@ end
 
 function contextMenuClass:ShowContextMenu(parentControl)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 157, tos(getControlName(parentControl))) end
---[[
-	d("///////////////////////////////")
-	d(debugPrefix .. "->->->->-> contextMenuClass:ShowContextMenu")
-]]
+	--d("///////////////////////////////")
+	--d(debugPrefix .. "->->->->-> contextMenuClass:ShowContextMenu")
 	--Cache last opening Control for the comparison with new openingControl and reset of filters etc. below
 	local openingControlOld = self.openingControl
 	self.openingControl = parentControl
@@ -179,7 +179,11 @@ function contextMenuClass:ShowContextMenu(parentControl)
 		self:HideDropdown()
 	end
 
+--d(">Before options: self.visibleRows = " .. tos(self.visibleRows))
+
 	self:UpdateOptions(self.contextMenuOptions, nil, true, nil) --Updates self.options
+
+--d(">After options: self.visibleRows = " .. tos(self.visibleRows))
 
 	self:HighlightOpeningControl()
 

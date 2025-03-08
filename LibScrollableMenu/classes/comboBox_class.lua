@@ -159,6 +159,7 @@ end
 -- [New functions]
 function comboBoxClass:GetMaxRows()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 128, tos(self.visibleRows or dropdownDefaults.DEFAULT_VISIBLE_ROWS)) end
+--d(debugPrefix .. "comboBoxClass:GetMaxRows - visibleRows: " ..tos(self.visibleRows))
 	return self.visibleRows or dropdownDefaults.DEFAULT_VISIBLE_ROWS
 end
 
@@ -244,13 +245,16 @@ function comboBoxClass:ResetToDefaults(initExistingComboBox)
 	--Attention: zo_mixin overwrites the existing varibales like self.m_enableMultiSelect!
 	--Do not do that if we come from API function AddCustomScrollableComboBoxDropdownMenu
 	if initExistingComboBox == true then
+--d(">mixing in self.visibleRows/defaults.visibleRows = " .. tos(self.visibleRows) .. "/" .. tos(defaults.visibleRows))
 		-- do NOT overwrite existing ZO_ComboBox values with LSM defaults, but keep comboBox values that already exist
 		-- (skip some values though, like "m_sortsItems", and use the default values of LSM here, if the current ZO_ComboBox value matches the "if" condition)
 		--> They will either way be overwritten by self:UpdateOptions later, if necessary
 		mixinTableAndSkipExisting(self, defaults, comboBoxDefaultsContextualInitValues, nil)
 	else
+--d(">overwriting! self.visibleRows/defaults.visibleRows = " .. tos(self.visibleRows) .. "/" .. tos(defaults.visibleRows))
 		zo_mixin(self, defaults) -- overwrite existing ZO_ComboBox (self) values with LSM defaults
 	end
+--d(">>self.visibleRows: " .. tos(self.visibleRows))
 	self:SetOptions(nil)
 end
 
@@ -293,13 +297,12 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu, initExistin
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 136, tos(options), tos(onInit), tos(optionsChanged)) end
 
-	--[[
+--[[
 	if isContextMenu then
 		d("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-		d(debugPrefix .. "comboBoxClass:UpdateOptions - options: " ..tos(options) .. ", onInit: " .. tos(onInit))
+		d(debugPrefix .. "comboBoxClass:UpdateOptions - options: " ..tos(options) .. ", onInit: " .. tos(onInit) .. ", optionsChanged: " ..tos(optionsChanged))
 	end
-	]]
-
+]]
 	--Called from Initialization of the object -> self:ResetToDefaults() was called in comboBoxClass:Initialize() already
 	-->And self:UpdateOptions() is then called via comboBox_base.Initialize(...), from where we get here
 	if onInit == true then
@@ -319,20 +322,20 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu, initExistin
 --d(">2 optionsChanged: " .. tos(optionsChanged))
 	end
 
-	--[[
+--[[
 	if isContextMenu then
 		d("> optionsChanged: " .. tos(optionsChanged))
 	end
-	]]
+]]
 	--(Did the options change: Yes / OR are we initializing a ZO_ComboBox ) / AND Are the new passed in options nil or empty: Yes
 	--> Reset to default ZO_ComboBox variables and just call AddCustomEntryTemplates()
 	if (optionsChanged == true or onInit == true) and ZO_IsTableEmpty(options) then
 		optionsChanged = false
-	--[[
+--[[
 		if isContextMenu then
 			d(">>resetting options to defaults!")
 		end
-	]]
+]]
 --d(">3 ResetToDefaults")
 		-- Reset comboBox internal variables of ZO_ComboBox, e.g. m_font, and LSM defaults like visibleRowsDropdown
 		--todo: 20250204 Check if this is needed -> initExistingComboBox: do not overwrite already existing variables of the ZO_ComboBox if the box was an existing one where LSM was only added to via AddCustomScrollableComboBoxDropdownMenu
@@ -372,11 +375,13 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu, initExistin
 		-- LibScrollableMenu custom options
 		if not ZO_IsTableEmpty(options) then
 			for key, _ in pairs(options) do
-	--[[
+--[[
 if isContextMenu then
 	d(">>setting option key: " ..tos(key))
 end
-]]				self:SetOption(key)
+]]
+
+				self:SetOption(key)
 			end
 		end
 
@@ -510,7 +515,7 @@ function comboBoxClass:SelectItem(item, ignoreCallback)
     local newSelectionStatus = not self:IsItemSelected(item)
     if newSelectionStatus then
         if self.m_maxNumSelections == nil or self:GetNumSelectedEntries() < self.m_maxNumSelections then
-d(debugPrefix.."comboBoxClass:SelectItem -> AddItemToSelected")
+--d(debugPrefix.."comboBoxClass:SelectItem -> AddItemToSelected")
             self:AddItemToSelected(item)
         else
             if not self.onSelectionBlockedCallback or self.onSelectionBlockedCallback(item) ~= true then

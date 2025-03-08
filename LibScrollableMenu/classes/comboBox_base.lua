@@ -9,7 +9,7 @@ local MAJOR = lib.name
 --------------------------------------------------------------------
 --Logging and debugging
 local libDebug = lib.Debug
---local debugPrefix = libDebug.prefix
+local debugPrefix = libDebug.prefix
 
 local dlog = libDebug.DebugLog
 
@@ -1287,7 +1287,7 @@ function comboBox_base:UpdateHeight(control)
 	if maxDropdownHeight ~= nil then
 		maxHeightInTotal = maxDropdownHeight
 	else
-		--Calculate maximum visible height based on visibleRowsDrodpdown or visibleRowsSubmenu
+		--Calculate maximum visible height based on options.visibleRowsDrodpdown or visibleRowsSubmenu
 		maxRows = self:GetMaxRows()
 		-- Add spacing to each row then subtract spacing for last row
 		maxHeightByEntries = ((baseEntryHeight + spacing) * maxRows) - spacing + (ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y * 2)

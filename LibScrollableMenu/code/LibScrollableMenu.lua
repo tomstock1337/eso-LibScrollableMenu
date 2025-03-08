@@ -270,12 +270,15 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.35 - Updated 2025-02-15
+	CHANGELOG Current version: 2.35 - Updated 2025-03-08
 ---------------------------------------------------------------
-Max error #: 2025_12
+Max error #: 2025_13
 
 
 [WORKING ON]
+-2025_13   Contextmenu: If multiselection is enabled the click on a context menu entry which is not above an LSM will close the contextMenu
+			--> See LSM test, "Submenu entry 6" -> "Normal entry 6 1:1 - context menu with divider tests" -> 3rd entry is not above the opening LSM anymore and will close the contextMenu
+
 
 [Fixed]
 -2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case

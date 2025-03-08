@@ -1397,6 +1397,7 @@ function dropdownClass:RunItemCallback(item, ignoreCallback)
 end
 
 function dropdownClass:UpdateHeight()
+--d(debugPrefix .. "dropdownClass:UpdateHeight")
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 77) end
 	if self.owner then
 		self.owner:UpdateHeight(self.control)

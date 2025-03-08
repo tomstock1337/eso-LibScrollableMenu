@@ -95,7 +95,8 @@ local function test()
 		-- Options for the main combobox menu
 		--==============================================================================================================
 		local options = {
-			enableMultiSelect = true, --todo 20250127 test
+			--submenuArrowColor = HEADER_TEXT_COLOR_RED,
+			enableMultiSelect = true,
 			maxNumSelections = 2,
 			maxNumSelectionsErrorText =		debugPrefix.."ERROR - Maximum items selected already",
 			multiSelectionTextFormatter = 	function(options)
@@ -1008,11 +1009,24 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 5", function() d("Normal context menu at submenu entry6 1:1 - 5") end)
 							AddCustomScrollableMenuEntry(nil, nil, nil, nil, { label = "test header in context menu", isHeader = true })
 							AddCustomScrollableMenuEntry("Normal context menu at submenu entry6 1:1 - 5", function() d("Normal context menu at submenu entry6 1:1 - 5") end)
+							AddCustomScrollableSubMenuEntry("Submenu context menu at submenu entry6 1:1 - 5", submenuEntries)
 
 							local optionsContextMenu = {
-								visibleRowsDropdown = 3,
-								visibleRowsSubmenu = 3,
-								maxDropdownHeight = 300,
+								submenuArrowColor = HEADER_TEXT_COLOR_RED,
+								enableMultiSelect = true,
+								maxNumSelections = 3,
+								maxNumSelectionsErrorText =		debugPrefix.."ERROR - Maximum items selected already",
+								multiSelectionTextFormatter = 	function(options)
+									local numMaxSelections = options.maxNumSelections
+									return "<<1>>/".. tostring(numMaxSelections) .." selected"
+								end,
+								noSelectionText = 				"",
+								multiSelectSubmenuSelectedArrowColor = ZO_ColorDef:New("4dff85"), --green "rgba(77, 255, 133, 1.00)"
+								OnSelectionBlockedCallback = function() d(debugPrefix.."ERROR - Selection of entry was blocked!") end,
+
+								visibleRowsDropdown = 6,
+								visibleRowsSubmenu = 5,
+								--maxDropdownHeight = 300, --overwrites visibleRowsDropdown!
 
 								--sortEntries=function() return false end,
 								disableFadeGradient = true,
