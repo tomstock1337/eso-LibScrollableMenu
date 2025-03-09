@@ -23,9 +23,11 @@ local tos = tostring
 --------------------------------------------------------------------
 local MAJOR = lib.name
 
-lib.suppressNextOnGlobalMouseUp = false
-lib.suppressNextOnEntryMouseUp = false
-
+--PreventerVariables
+lib.preventerVars = {
+	--suppressNextOnGlobalMouseUp = nil, --used in comboBox_base:OnGlobalMouseUp and comboBox_base:HiddenForReasons
+	--suppressNextOnEntryMouseUp = nil,  --used in comboBox_base:HiddenForReasons
+}
 
 --Library's XML functions and code
 lib.XML = {}

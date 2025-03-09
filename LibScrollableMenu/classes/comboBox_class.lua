@@ -56,6 +56,7 @@ local getSavedVariable = libUtil.getSavedVariable
 local updateSavedVariable = libUtil.updateSavedVariable
 
 local getControlName = libUtil.getControlName
+local getControlData = libUtil.getControlData
 local getValueOrCallback = libUtil.getValueOrCallback
 local mixinTableAndSkipExisting = libUtil.mixinTableAndSkipExisting
 local hideContextMenu = libUtil.hideContextMenu
@@ -63,7 +64,7 @@ local checkIfHiddenForReasons = libUtil.checkIfHiddenForReasons
 local getHeaderControl = libUtil.getHeaderControl
 local refreshDropdownHeader = libUtil.refreshDropdownHeader
 local recursiveMultiSelectSubmenuOpeningControlUpdate = libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate
-
+local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
 
 --------------------------------------------------------------------
 -- local helper functions
@@ -534,8 +535,9 @@ function comboBoxClass:SelectItem(item, ignoreCallback)
     else
         self:RemoveItemFromSelected(item)
     end
-	--todo 20250212 Replace sound with LSM selected sound
-    PlaySound(SOUNDS.COMBO_CLICK)
+	--20250309 Replace sound with LSM selected sound #2025_14
+    --PlaySound(SOUNDS.COMBO_CLICK)
+	playSelectedSoundCheck(self.m_dropdownObject, item.entryType)
 
     if item.callback and not ignoreCallback then
         item.callback(self, item.name, item)

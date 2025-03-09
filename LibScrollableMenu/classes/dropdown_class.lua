@@ -1310,8 +1310,8 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, 
 	--20240816 Suppress the next global mouseup event raised from a comboBox's dropdown (e.g. if a submenu entry outside of a context menu was clicked
 	--while a context menu was opened, and the context menu was closed then due to this click, but the global mouse up handler on the sbmenu entry runs
 	--afterwards)
-	lib.suppressNextOnGlobalMouseUp = nil
-	lib.suppressNextOnEntryMouseUp = false
+	lib.preventerVars.suppressNextOnGlobalMouseUp = nil
+	lib.preventerVars.suppressNextOnEntryMouseUp = nil --#2025_13
 
 	if upInside then
 
@@ -1335,8 +1335,8 @@ LSM_Debug = {
 		if data.enabled then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
-					lib.suppressNextOnGlobalMouseUp = true
---d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.suppressNextOnGlobalMouseUp))
+					lib.preventerVars.suppressNextOnGlobalMouseUp = true
+d("<ABORT -> [dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
 					return
 				end
 
@@ -1354,23 +1354,24 @@ LSM_Debug = {
 						self.owner.m_enableMultiSelect = true
 					end
 				end
---d(debugPrefix .. "OnEntryMouseUp-multiSelection/atParent: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(comboBox.isSubmenu))
---d(">self.owner.m_enableMultiSelect: " ..tos(self.owner.m_enableMultiSelect))
+d(debugPrefix .. "OnEntryMouseUp-multiSelection/atParent: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(comboBox.isSubmenu))
+d(">self.owner.m_enableMultiSelect: " ..tos(self.owner.m_enableMultiSelect))
 
 
 				--20250309 if the last comboBox_base:HiddenForReasons call closed an open contextMenu with multiSelect enabled, and we clicked on an LSM entry of another non-contextmenu
 				--to close it, then just exit here and do not select the clicked entry
---d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryMouseUp: " ..tos(lib.suppressNextOnEntryMouseUp))
-				if checkNextOnEntryMouseUpShouldExecute() then
+d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryMouseUp: " ..tos(lib.preventerVars.suppressNextOnEntryMouseUp))
+				if checkNextOnEntryMouseUpShouldExecute() then --#2025_13
+d("<<ABORTING")
 					return
 				end
 
 
 				if not ignoreHandler and runHandler(self, handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
---d(">>OnEntrySelected")
+d(">>OnEntrySelected")
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
---d(">>RunItemCallback")
+d(">>RunItemCallback")
 					self:RunItemCallback(data, data.ignoreCallback)
 				end
 

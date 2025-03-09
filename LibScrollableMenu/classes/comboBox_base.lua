@@ -569,14 +569,15 @@ end
 
 
 local function closeContextMenuAndSuppressClickCheck(checkOnlyMultiSelectionAtContextMenu)
-	lib.suppressNextOnEntryMouseUp = false
+	d(debugPrefix .. "closeContextMenuAndSuppressClickCheck - checkOnlyMultiSelectionAtContextMenu: " ..tos(checkOnlyMultiSelectionAtContextMenu))
+	lib.preventerVars.suppressNextOnEntryMouseUp = nil
 	if not g_contextMenu:IsDropdownVisible() then return end
 	--If multiselection is enabled and a contextMenu is currently shown, but we licked somewhere else: Close the contextMenu now
 	if not checkOnlyMultiSelectionAtContextMenu or (checkOnlyMultiSelectionAtContextMenu and g_contextMenu.m_enableMultiSelect == true) then
-		--d(">>context menu is opened and multiselect enabled -> Hide the contextMenu now")
+		d(">>context menu is opened and multiselect enabled -> Hide the contextMenu now")
 		ClearCustomScrollableMenu()
 		--todo 20250309 How to prevent the next dropdownClass:OnEntryMouseUp being fired if we clicked inside an LSM (only the contextMenu should close!)
-		lib.suppressNextOnEntryMouseUp = true
+		lib.preventerVars.suppressNextOnEntryMouseUp = true
 		return true --to not hide the LSM parent dropdown
 	end
 end
@@ -871,27 +872,27 @@ end
 
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
 function comboBox_base:OnGlobalMouseUp(eventId, button)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(lib.suppressNextOnGlobalMouseUp)) end
---d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
-	if lib.suppressNextOnGlobalMouseUp then
-		lib.suppressNextOnGlobalMouseUp = nil
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(lib.preventerVars.suppressNextOnGlobalMouseUp)) end
+d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
+	if lib.preventerVars.suppressNextOnGlobalMouseUp then
+		lib.preventerVars.suppressNextOnGlobalMouseUp = nil
 		return false
 	end
 
 	if self:IsDropdownVisible() then
 		if not self.m_dropdownObject:IsMouseOverControl() then
---d(">>dropdownVisible -> not IsMouseOverControl")
+d(">>dropdownVisible -> not IsMouseOverControl")
 			if self:HiddenForReasons(button) then
---d(">>>HiddenForReasons -> Hiding dropdown now")
+d(">>>HiddenForReasons -> Hiding dropdown now")
 				return self:HideDropdown()
 			end
 		end
 	else
 		if self.m_container:IsHidden() then
---d(">>>else - containerIsHidden -> Hiding dropdown now")
+d(">>>else - containerIsHidden -> Hiding dropdown now")
 			self:HideDropdown()
 		else
---d("<SHOW DROPDOWN OnMouseUp")
+d("<SHOW DROPDOWN OnMouseUp")
 			lib.openMenu = self
 			-- If shown in ShowDropdownInternal, the global mouseup will fire and immediately dismiss the combo box. We need to
 			-- delay showing it until the first one fires.
@@ -960,7 +961,9 @@ function comboBox_base:HiddenForReasons(button)
 	g_contextMenu = getContextMenuReference()
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 96, tos(button)) end
---d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
+
+	local doDebuNow = true -- todo disable after testing again
+	if doDebuNow then d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button)) end
 
 	--[[
 	LSM_debug = LSM_debug or {}
@@ -985,31 +988,31 @@ function comboBox_base:HiddenForReasons(button)
 	if isContextMenuVisible and not wasTextSearchContextMenuEntryClicked then
 		wasTextSearchContextMenuEntryClicked = g_contextMenu.m_dropdownObject:WasTextSearchContextMenuEntryClicked()
 	end
---d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked))
+	if doDebuNow then d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked)) end
 
 	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true then
-		--d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()))
+		if doDebuNow then  d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled())) end
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				--do not close or keep open based on clicked entry but do checks in contextMenuClass:GetHiddenForReasons instead
 				if isContextMenuVisible == true then
 					--Is the actual mocCtrl's owner the contextMenu? Or did we click some other non-context menu entry/control?
 					if owningWindow ~= g_contextMenu.m_container then
-						--d(">>>returing nothing because is or isOpened -> contextMenu. Going to GetHiddenForReasons")
+						if doDebuNow then d(">>>returing nothing because is or isOpened -> contextMenu. Going to GetHiddenForReasons") end
 						if wasTextSearchContextMenuEntryClicked == true then
-							--d(">>>returing false cuz textSearchEntry was selected")
+							if doDebuNow then d(">>>returing false cuz textSearchEntry was selected") end
 							return false
 						else
-							--d(">>got here!")
-							--If multiselection is enabled and a contextMenu is currently shown, but we licked somewhere else: Close the contextMenu now
+							if doDebuNow then d(">>got here!") end
+							--If contextMenu is currently shown, but we clicked somewhere else: Close the contextMenu now
 							if closeContextMenuAndSuppressClickCheck(false) then return false end
 						end
 					else
-						--d("<<returning contextmenu via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect))
+						if doDebuNow then d("<<returning contextmenu via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect)) end
 						return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 					end
 				else
-					--d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect))
+					if doDebuNow then d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect)) end
 					--Clicked entry should close after selection?
 					return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 				end
@@ -1022,22 +1025,22 @@ function comboBox_base:HiddenForReasons(button)
 		end
 	else
 		if button == MOUSE_BUTTON_INDEX_LEFT then
-			--If multiselection is enabled and a contextMenu is currently shown, but we licked somewhere else: Close the contextMenu now
-			if closeContextMenuAndSuppressClickCheck(false) then return false end
+			--If multiselection is enabled and a contextMenu is currently shown, but we clicked somewhere else: Close the contextMenu now
+			if closeContextMenuAndSuppressClickCheck(true) then return false end
 		end
 	end
 
 	local hiddenForReasons
 	if not self.GetHiddenForReasons then
---d("<<self:GetHiddenForReasons is NIL! isContextMenuVisible: " .. tos(isContextMenuVisible))
---LSM_debug.HiddenForReasons[tabEntryName]._GetHiddenForReasonsMissing = true
+		if doDebuNow then d("<<self:GetHiddenForReasons is NIL! isContextMenuVisible: " .. tos(isContextMenuVisible)) end
+		--LSM_debug.HiddenForReasons[tabEntryName]._GetHiddenForReasonsMissing = true
 		return false
 	end
 	hiddenForReasons = self:GetHiddenForReasons(button) --call e.g. contextMenuClass:GetHiddenForReasons()
 
 	if hiddenForReasons == nil then return false end
 	local isHiddenForReasons = hiddenForReasons(owningWindow, mocCtrl, comboBox, mocEntry)
---d("<<hiddenForReasons: " .. tos(isHiddenForReasons))
+	if doDebuNow then d("<<hiddenForReasons: " .. tos(isHiddenForReasons)) end
 	return isHiddenForReasons
 end
 
