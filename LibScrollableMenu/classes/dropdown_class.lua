@@ -91,6 +91,7 @@ local recursiveOverEntries = libUtil.recursiveOverEntries
 local getIsNew = libUtil.getIsNew
 local updateDataByFunctions = libUtil.updateDataByFunctions
 local compareDropdownDataList = libUtil.compareDropdownDataList
+local checkNextOnEntryMouseUpShouldExecute = libUtil.checkNextOnEntryMouseUpShouldExecute
 
 
 --locals
@@ -1335,7 +1336,7 @@ LSM_Debug = {
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
 					lib.suppressNextOnGlobalMouseUp = true
-d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.suppressNextOnGlobalMouseUp))
+--d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.suppressNextOnGlobalMouseUp))
 					return
 				end
 
@@ -1360,8 +1361,7 @@ d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobal
 				--20250309 if the last comboBox_base:HiddenForReasons call closed an open contextMenu with multiSelect enabled, and we clicked on an LSM entry of another non-contextmenu
 				--to close it, then just exit here and do not select the clicked entry
 --d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryMouseUp: " ..tos(lib.suppressNextOnEntryMouseUp))
-				if lib.suppressNextOnEntryMouseUp then
-					lib.suppressNextOnEntryMouseUp = nil
+				if checkNextOnEntryMouseUpShouldExecute() then
 					return
 				end
 

@@ -854,6 +854,17 @@ end
 --------------------------------------------------------------------
 -- Dropdown / combobox hidden checks
 --------------------------------------------------------------------
+--20250309 if the last comboBox_base:HiddenForReasons call closed an open contextMenu with multiSelect enabled, and we clicked on an LSM entry of another non-contextmenu
+--to close it, then just exit here and do not select the clicked entry
+function libUtil.checkNextOnEntryMouseUpShouldExecute()
+--d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryMouseUp: " ..tos(lib.suppressNextOnEntryMouseUp))
+	if lib.suppressNextOnEntryMouseUp then
+		lib.suppressNextOnEntryMouseUp = nil
+		return true
+	end
+	return false
+end
+
 --20240727 Prevent selection of entries if a context menu was opened and a left click was done "outside of the context menu"
 --Param isContextMenu will be true if coming from contextMenuClass:GetHiddenForReasons function or it will change to true if
 --any contextMenu is curently shown as this function runs

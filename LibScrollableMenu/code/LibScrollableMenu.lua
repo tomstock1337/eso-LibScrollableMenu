@@ -25,6 +25,7 @@ local getControlData = libUtil.getControlData
 local getValueOrCallback = libUtil.getValueOrCallback
 local getContextMenuReference = libUtil.getContextMenuReference
 local checkIfContextMenuOpenedButOtherControlWasClicked = libUtil.checkIfContextMenuOpenedButOtherControlWasClicked
+local checkNextOnEntryMouseUpShouldExecute = libUtil.checkNextOnEntryMouseUpShouldExecute
 local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
 
 local g_contextMenu
@@ -144,6 +145,8 @@ function lib.XML.XMLButtonOnInitialize(control, entryType)
 		if upInside then
 			if checkIfContextMenuOpenedButOtherControlWasClicked(control, parent.m_owner, buttonId) == true then return end
 			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
+				if checkNextOnEntryMouseUpShouldExecute() then return end
+
 				local data = getControlData(parent)
 				playSelectedSoundCheck(parent.m_dropdownObject, data.entryType)
 
@@ -175,6 +178,7 @@ function lib.XML.XMLButtonOnInitialize(control, entryType)
 				local comboBox = parent.m_owner
 				if checkIfContextMenuOpenedButOtherControlWasClicked(p_control, comboBox, buttonId) == true then return end
 			end
+			if checkNextOnEntryMouseUpShouldExecute() then return end
 
 			if originalClicked then
 				originalClicked(p_control, buttonId, ignoreCallback, ...)
@@ -277,7 +281,8 @@ Max error #: 2025_14
 
 [WORKING ON]
 -2025_14   comboBoxClass:SelectItem(item, ignoreCallback) -> Replace PlaySound with LSM sound handler for selected entry
-
+-2025_15   ContextMenu: If one opens a nested submenu of a nested submenu, the total context menu closes all of sudden? LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
+-2025_16   ContextMenu: Clicking a checkbox in a context menu's submenu will close the contextmenu. LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
 
 [Fixed]
 -2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
