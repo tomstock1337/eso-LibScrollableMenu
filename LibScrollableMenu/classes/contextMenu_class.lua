@@ -129,7 +129,7 @@ end
 
 function contextMenuClass:GetHiddenForReasons(button)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 154, tos(button)) end
---d("3333333333333333 contextMenuClass:GetHiddenForReasons - button: " ..tos(button))
+--d(debugPrefix.."3333333333333333 contextMenuClass:GetHiddenForReasons - button: " ..tos(button))
 	local selfVar = self
 	return function(owningWindow, mocCtrl, comboBox, entry) return checkIfHiddenForReasons(selfVar, button, true, owningWindow, mocCtrl, comboBox, entry) end
 end
@@ -137,6 +137,7 @@ end
 function contextMenuClass:HideDropdown()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 155) end
 	-- Recursive through all open submenus and close them starting from last.
+--d(debugPrefix .. "contextMenuClass:HideDropdown")
 
 	return comboBox_base.HideDropdown(self)
 end

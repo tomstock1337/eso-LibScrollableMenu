@@ -46,7 +46,6 @@ local zo_comboBox_setItemEntryCustomTemplate = ZO_ComboBox.SetItemEntryCustomTem
 --------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
-local suppressNextOnGlobalMouseUp = lib.suppressNextOnGlobalMouseUp
 local buttonGroupDefaultContextMenu = lib.ButtonGroupDefaultContextMenu --Is loaded from API file. Will be updated later inside functions where used
 
 local constants = lib.constants
@@ -569,6 +568,18 @@ d(">submenu is open -> use it for owner check")
 end
 
 
+local function closeContextMenuAndSuppressClickCheck(checkOnlyMultiSelectionAtContextMenu)
+	lib.suppressNextOnEntryMouseUp = false
+	if not g_contextMenu:IsDropdownVisible() then return end
+	--If multiselection is enabled and a contextMenu is currently shown, but we licked somewhere else: Close the contextMenu now
+	if not checkOnlyMultiSelectionAtContextMenu or (checkOnlyMultiSelectionAtContextMenu and g_contextMenu.m_enableMultiSelect == true) then
+		--d(">>context menu is opened and multiselect enabled -> Hide the contextMenu now")
+		ClearCustomScrollableMenu()
+		--todo 20250309 How to prevent the next dropdownClass:OnEntryMouseUp being fired if we clicked inside an LSM (only the contextMenu should close!)
+		lib.suppressNextOnEntryMouseUp = true
+		return true --to not hide the LSM parent dropdown
+	end
+end
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -860,10 +871,10 @@ end
 
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
 function comboBox_base:OnGlobalMouseUp(eventId, button)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(suppressNextOnGlobalMouseUp)) end
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(lib.suppressNextOnGlobalMouseUp)) end
 --d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(suppressNextOnGlobalMouseUp))
-	if suppressNextOnGlobalMouseUp then
-		suppressNextOnGlobalMouseUp = nil
+	if lib.suppressNextOnGlobalMouseUp then
+		lib.suppressNextOnGlobalMouseUp = nil
 		return false
 	end
 
@@ -942,11 +953,14 @@ function comboBox_base:GetSubmenu()
 	return self.m_submenu
 end
 
+--Check if the comboBox should be hidden (after an entry was clicked e.g.)
+--return false:	Do not hide the combobox
+--return true: Hide the comboBox
 function comboBox_base:HiddenForReasons(button)
 	g_contextMenu = getContextMenuReference()
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 96, tos(button)) end
---d("comboBox_base:HiddenForReasons - button: " .. tos(button))
+--d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button))
 
 	--[[
 	LSM_debug = LSM_debug or {}
@@ -974,32 +988,42 @@ function comboBox_base:HiddenForReasons(button)
 --d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked))
 
 	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true then
---d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()))
+		--d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()))
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				--do not close or keep open based on clicked entry but do checks in contextMenuClass:GetHiddenForReasons instead
 				if isContextMenuVisible == true then
 					--Is the actual mocCtrl's owner the contextMenu? Or did we click some other non-context menu entry/control?
 					if owningWindow ~= g_contextMenu.m_container then
---d(">>>returing nothing because is or isOpened -> contextMenu. Going to GetHiddenForReasons")
+						--d(">>>returing nothing because is or isOpened -> contextMenu. Going to GetHiddenForReasons")
 						if wasTextSearchContextMenuEntryClicked == true then
---d(">>>returing false cuz textSearchEntry was selected")
+							--d(">>>returing false cuz textSearchEntry was selected")
 							return false
+						else
+							--d(">>got here!")
+							--If multiselection is enabled and a contextMenu is currently shown, but we licked somewhere else: Close the contextMenu now
+							if closeContextMenuAndSuppressClickCheck(false) then return false end
 						end
 					else
---d("<<returning contextmenu via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+						--d("<<returning contextmenu via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect))
 						return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 					end
 				else
---d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+					--d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect))
 					--Clicked entry should close after selection?
 					return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 				end
+
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 				-- bypass right-clicks on the entries. Context menus will be checked and opened at the OnMouseUp handler
 				-->See local function onMouseUp called via runHandler -> from dropdownClass:OnEntrySelected
 				return false
 			end
+		end
+	else
+		if button == MOUSE_BUTTON_INDEX_LEFT then
+			--If multiselection is enabled and a contextMenu is currently shown, but we licked somewhere else: Close the contextMenu now
+			if closeContextMenuAndSuppressClickCheck(false) then return false end
 		end
 	end
 
@@ -1012,7 +1036,9 @@ function comboBox_base:HiddenForReasons(button)
 	hiddenForReasons = self:GetHiddenForReasons(button) --call e.g. contextMenuClass:GetHiddenForReasons()
 
 	if hiddenForReasons == nil then return false end
-	return hiddenForReasons(owningWindow, mocCtrl, comboBox, mocEntry)
+	local isHiddenForReasons = hiddenForReasons(owningWindow, mocCtrl, comboBox, mocEntry)
+--d("<<hiddenForReasons: " .. tos(isHiddenForReasons))
+	return isHiddenForReasons
 end
 
 --Get the highlight XML template for the entry
@@ -1244,8 +1270,11 @@ end
 function comboBox_base:ShowSubmenu(parentControl)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 106, tos(getControlName(parentControl))) end
 	-- We don't want a submenu to open under the context menu or it's submenus.
-	--TODO: see if this acts negatively in contextmenu submenus
-	hideContextMenu()
+
+	g_contextMenu = getContextMenuReference()
+	if not g_contextMenu:IsDropdownVisible() then
+		hideContextMenu()	--TODO: see if this acts negatively in contextmenu submenus -> 20250309 YES! ;-) It closes the context menu
+	end
 
 	local submenu = self:GetSubmenu()
 	submenu:ShowDropdownOnMouseAction(parentControl)

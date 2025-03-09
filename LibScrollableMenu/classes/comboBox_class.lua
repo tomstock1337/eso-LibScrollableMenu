@@ -502,10 +502,13 @@ end
 
 --ZO_ComboBoxDropdown_Keyboard:OnEntrySelected(control) -> self.owner (comboboxClass) :SetSelected -> self (comboboxClass) :SelectItem
 function comboBoxClass:SelectItem(item, ignoreCallback)
+--d(debugPrefix .. "comboBoxClass:SelectItem - item: " .. tos(item) ..", ignoreCallback: " .. tos(ignoreCallback))
     --No multiselection
 	if not self.m_enableMultiSelect then
+--d(">multiSelection is OFF")
         return zo_comboBox_base_selectItem(self, item, ignoreCallback)
     end
+--d(">multiSelection is ON")
 
     if item.enabled == false then
         return false

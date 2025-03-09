@@ -49,7 +49,6 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 --LSM library locals
 --------------------------------------------------------------------
 local g_contextMenu
-local suppressNextOnGlobalMouseUp = lib.suppressNextOnGlobalMouseUp
 local refreshDropdownHeader
 
 local has_submenu = true
@@ -1310,9 +1309,11 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, 
 	--20240816 Suppress the next global mouseup event raised from a comboBox's dropdown (e.g. if a submenu entry outside of a context menu was clicked
 	--while a context menu was opened, and the context menu was closed then due to this click, but the global mouse up handler on the sbmenu entry runs
 	--afterwards)
-	suppressNextOnGlobalMouseUp = nil
+	lib.suppressNextOnGlobalMouseUp = nil
+	lib.suppressNextOnEntryMouseUp = false
 
 	if upInside then
+
 		local data = getControlData(control)
 	--	local comboBox = getComboBox(control, true)
 		local comboBox = control.m_owner
@@ -1333,29 +1334,43 @@ LSM_Debug = {
 		if data.enabled then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
-					suppressNextOnGlobalMouseUp = true
---d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(suppressNextOnGlobalMouseUp))
+					lib.suppressNextOnGlobalMouseUp = true
+d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.suppressNextOnGlobalMouseUp))
 					return
 				end
 
 				--Multiselection enabled?
+				local isMultiSelectionEnabledAtParentMenu = comboBox.m_parentMenu and comboBox.m_parentMenu.m_enableMultiSelect
+				local isMultiSelectionEnabled = comboBox.m_enableMultiSelect
+
 				--20250129 isMultiSelectionEnabled is false, so that means the main LSM menu's options are passed to the main menu combobox, but the access here to submenu combobox.m_enableMultiSelect
 				--does not respect the metatables setup in submenuClass:New? It does not read it from the parent/main menu!
 				local isSubmenu = comboBox.isSubmenu
 				if isSubmenu then
-					local isMultiSelectionEnabledAtParentMenu = comboBox.m_parentMenu and comboBox.m_parentMenu.m_enableMultiSelect
-					local isMultiSelectionEnabled = comboBox.m_enableMultiSelect
 					-->So this here is a workaround to update the submenu's combobox m_enableMultiSelect from the m_parentMenu, if it's missing in the submenu
 					if isMultiSelectionEnabledAtParentMenu == true and isMultiSelectionEnabled == false then
 						--d(">multiSelection taken from parentMenu")
 						self.owner.m_enableMultiSelect = true
 					end
 				end
---d(debugPrefix .. "OnEntryMouseUp-multiSelection: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(comboBox.isSubmenu))
+--d(debugPrefix .. "OnEntryMouseUp-multiSelection/atParent: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(comboBox.isSubmenu))
+--d(">self.owner.m_enableMultiSelect: " ..tos(self.owner.m_enableMultiSelect))
+
+
+				--20250309 if the last comboBox_base:HiddenForReasons call closed an open contextMenu with multiSelect enabled, and we clicked on an LSM entry of another non-contextmenu
+				--to close it, then just exit here and do not select the clicked entry
+--d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryMouseUp: " ..tos(lib.suppressNextOnEntryMouseUp))
+				if lib.suppressNextOnEntryMouseUp then
+					lib.suppressNextOnEntryMouseUp = nil
+					return
+				end
+
 
 				if not ignoreHandler and runHandler(self, handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
+--d(">>OnEntrySelected")
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
+--d(">>RunItemCallback")
 					self:RunItemCallback(data, data.ignoreCallback)
 				end
 

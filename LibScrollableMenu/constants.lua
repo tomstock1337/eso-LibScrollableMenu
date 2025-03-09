@@ -24,6 +24,7 @@ local tos = tostring
 local MAJOR = lib.name
 
 lib.suppressNextOnGlobalMouseUp = false
+lib.suppressNextOnEntryMouseUp = false
 
 
 --Library's XML functions and code

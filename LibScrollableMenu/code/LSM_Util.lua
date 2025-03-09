@@ -50,7 +50,6 @@ local libUtil = lib.Util
 local libDivider = lib.DIVIDER
 local NIL_CHECK_TABLE = constants.NIL_CHECK_TABLE
 
-local suppressNextOnGlobalMouseUp = lib.suppressNextOnGlobalMouseUp
 local additionalDataKeyToLSMEntryType = entryTypeConstants.additionalDataKeyToLSMEntryType
 
 --local sv
@@ -864,6 +863,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 	isContextMenu = isContextMenu or false
 
 	local returnValue = false
+	local clickedNoEntry = false
 
 	--Check if context menu is currently shown
 	local isContextMenuVisible = isContextMenu or g_contextMenu:IsDropdownVisible()
@@ -873,7 +873,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 	local contextMenuDropdownObject = g_contextMenu.m_dropdownObject
 	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
 	local isCntxtMenOwnedByComboBox = contextMenuDropdownObject:IsOwnedByComboBox(comboBox)
---d("[checkIfHiddenForReasons]isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu))
+--d(debugPrefix .. "[checkIfHiddenForReasons]isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu))
 
 
 	if not isContextMenu then
@@ -911,7 +911,8 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 					end
 				end
 			elseif isCntxtMenOwnedByComboBox ~= nil then
-				--20240807 Works for context menu clicks rasied from a subenu but not if context menu go a submenu itsself....
+				--20240807 Works for context menu clicks raised from a submenu but not if context menu go a submenu itsself....
+--d(">isCntxtMenOwnedByComboBox: " .. tos(isCntxtMenOwnedByComboBox))
 				return not isCntxtMenOwnedByComboBox
 			else
 				returnValue = true
@@ -922,74 +923,91 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 		end
 
 	else
+--d(">isContextMenu -> TRUE")
 		local doNotHideContextMenu = false
 		--Context menu is currently shown
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 			--Is there no LSM comboBox available? Close the context menu
 			if not comboBox then
-				--d("<2not comboBox -> true")
+--d("<2 not comboBox -> true")
 				returnValue = true
+				clickedNoEntry = true
 			else
 				--Is the mocEntry an empty table (something else was clicked than a LSM entry)
 				if ZO_IsTableEmpty(entry) then
-					--d("<2ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown))
+--d("<2 ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown))
 					-- Was e.g. a context menu's submenu search header's editBox or the refresh button left clicked?
 					if mocCtrl then
-						if (contextMenuDropdownObject == mocCtrl.m_dropdownObject or (mocCtrl.GetOwningWindow and mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown)) then
---d(">>2 - submenu search header editBox or refresh button clicked")
-							returnValue = false
-							doNotHideContextMenu = true
+						if mocCtrl == GuiRoot then
+							returnValue = true
+							clickedNoEntry = true
 						else
-							-- or was a checkbox's [ ] box control in a contextMenu's submenu clicked directly?
-							if mocCtrl.m_owner == nil then
-								local parent = mocCtrl:GetParent()
-								mocCtrl = parent
-							end
-							local owner = mocCtrl.m_owner
---d(">>2 - isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
-							if owner and (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
---d(">>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
-								returnValue = not mocCtrl.closeOnSelect
+							if (contextMenuDropdownObject == mocCtrl.m_dropdownObject or (mocCtrl.GetOwningWindow and mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown)) then
+	--d(">>2 - submenu search header editBox or refresh button clicked")
+								returnValue = false
+								doNotHideContextMenu = true
 							else
-								returnValue = true
+								-- or was a checkbox's [ ] box control in a contextMenu's submenu clicked directly?
+								if mocCtrl.m_owner == nil then
+									local parent = mocCtrl:GetParent()
+									mocCtrl = parent
+								end
+								local owner = mocCtrl.m_owner
+	--d(">>2 - isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
+								if owner and (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
+	--d(">>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect) .. ", multiSelect: " .. tos(selfVar.m_enableMultiSelect) .. ", result: " .. tos(not mocCtrl.closeOnSelect or selfVar.m_enableMultiSelect))
+									returnValue = not mocCtrl.closeOnSelect or selfVar.m_enableMultiSelect
+								else
+	--d(">>2 owner and no submenu -> return true")
+									returnValue = true
+								end
 							end
 						end
 					else
+--d(">>2 no mocCtrl -> return true")
 						returnValue = true
+						clickedNoEntry = true
 					end
 				else
 
 					if mocCtrl then
-						local owner = mocCtrl.m_owner or mocCtrl:GetParent().m_owner
-						if owner then
-							--d(">>2_1owner found")
-							--Does moc entry belong to a LSM menu and it IS the current contextMenu?
-							if owner == g_contextMenu then --comboBox then
-								--d(">>2_1 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
-								returnValue = mocCtrl.closeOnSelect
-							else
-								--d(">>2_1 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
-								--Does moc entry belong to a LSM menu but it's not the current contextMenu?
-								--Is it a submenu entry of the context menu?
-								if (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
-									--d(">>>2_1 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
-									returnValue = not mocCtrl.closeOnSelect
-								else
-									--d(">>>2_1 - true")
-									returnValue = true
-								end
-							end
+						if mocCtrl == GuiRoot then
+							returnValue = true
+							clickedNoEntry = true
 						else
-							--d(">>2_1 - owner not found")
+							local owner = mocCtrl.m_owner or mocCtrl:GetParent().m_owner
+							if owner then
+								--d(">>2_1owner found")
+								--Does moc entry belong to a LSM menu and it IS the current contextMenu?
+								if owner == g_contextMenu then --comboBox then
+									--d(">>2_1 - closeOnSelect: " ..tos(mocCtrl.closeOnSelect))
+									returnValue = mocCtrl.closeOnSelect
+								else
+									--d(">>2_1 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect))
+									--Does moc entry belong to a LSM menu but it's not the current contextMenu?
+									--Is it a submenu entry of the context menu?
+									if (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
+										--d(">>>2_1 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect))
+										returnValue = not mocCtrl.closeOnSelect or selfVar.m_enableMultiSelect
+									else
+										--d(">>>2_1 - true")
+										returnValue = true
+									end
+								end
+							else
+								--d(">>2_1 - owner not found")
+								clickedNoEntry = true
+							end
 						end
 					end
 				end
 			end
-			--Do not hide the contextMenu if the mocCtrl clicked should keep the menu opened
-			if mocCtrl and mocCtrl.closeOnSelect == false then
+
+			--Do not hide the contextMenu if the mocCtrl clicked should keep the menu opened, or if multiselection is enabled (and one clicked a combobox entry)
+			if not clickedNoEntry and ((mocCtrl and mocCtrl.closeOnSelect == false) or selfVar.m_enableMultiSelect) then
 				doNotHideContextMenu = true
-				suppressNextOnGlobalMouseUp = true
---d(">suppressNextOnGlobalMouseUp: " ..tos(suppressNextOnGlobalMouseUp))
+				lib.suppressNextOnGlobalMouseUp = true
+--d(">suppressNextOnGlobalMouseUp: " ..tos(lib.suppressNextOnGlobalMouseUp))
 				returnValue = false
 			end
 
