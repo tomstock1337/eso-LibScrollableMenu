@@ -274,15 +274,17 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.35 - Updated 2025-03-09
+	CHANGELOG Current version: 2.35 - Updated 2025-03-19
 ---------------------------------------------------------------
-Max error #: 2025_14
+Max error #: 2025_17
 
 
 [WORKING ON]
--2025_14   comboBoxClass:SelectItem(item, ignoreCallback) -> Replace PlaySound with LSM sound handler for selected entry
--2025_15   ContextMenu: If one opens a nested submenu of a nested submenu, the total context menu closes all of sudden? LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
--2025_16   ContextMenu: Clicking a checkbox in a context menu's submenu will close the contextmenu. LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
+-2025_14   [Implemented - TEST NEEDED]comboBoxClass:SelectItem(item, ignoreCallback) -> Replace PlaySound with LSM sound handler for selected entry
+-2025_15   [REBUILD bug and analyse]ContextMenu: If one opens a nested submenu of a nested submenu, the total context menu closes all of sudden? LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
+-2025_16   [REBUILD bug and analyse]ContextMenu: Clicking a checkbox in a context menu's submenu will close the contextmenu. LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
+-2025_17   [REBUILD bug and analyse]Clicking a button plays the click sound even if options.selectedSoundDisabled was set to true
+			-->The normal Click sound is muted then but it still plays a sound -> coming from XML template ZO_ButtonBehaviorClickSound -> clickSound="Click" -> Which does not use SOUNDS["CLick"] then as it seems
 
 [Fixed]
 -2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case

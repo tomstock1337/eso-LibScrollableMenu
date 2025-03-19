@@ -107,6 +107,8 @@ local function test()
 			multiSelectSubmenuSelectedArrowColor = ZO_ColorDef:New("4dff85"), --green "rgba(77, 255, 133, 1.00)"
 			OnSelectionBlockedCallback = function() d(debugPrefix.."ERROR - Selection of entry was blocked!") end,
 
+			selectedSoundDisabled = false,
+
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
 			maxDropdownHeight = 450,

@@ -123,6 +123,20 @@
 			</Controls>
 		</Control>
 
+		<!-- Button without clickSound="Click" in XML-->
+		<Button name="LibScrollableMenu_DefaultTextButton" font="ZoFontGame" verticalAlignment="CENTER" virtual="true">
+            <Dimensions x="128" y="26" />
+            <PressedOffset x="1" y="1" />
+
+            <FontColors
+                normalColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_NORMAL"
+                pressedColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED"
+                mouseOverColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_HIGHLIGHT"
+                disabledColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_DISABLED"
+            />
+        </Button>
+
+
 		<!-- Checkbox -->
 		<Control name="LibScrollableMenu_ComboBoxCheckboxEntry" inherits="LibScrollableMenu_ComboBoxEntry" mouseEnabled="true" virtual="true">
 			<Dimensions y="25" />
@@ -213,7 +227,7 @@
 		</Control>
 
 		<!-- Button entry -->
-		<Button name="LibScrollableMenu_ComboBoxButtonEntry" inherits="LibScrollableMenu_ComboBoxEntry ZO_DefaultTextButton" mouseEnabled="true" virtual="true">
+		<Button name="LibScrollableMenu_ComboBoxButtonEntry" inherits="LibScrollableMenu_ComboBoxEntry LibScrollableMenu_DefaultTextButton" mouseEnabled="true" virtual="true">
 			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
 			<OnInitialized>
 				self.isButton = true

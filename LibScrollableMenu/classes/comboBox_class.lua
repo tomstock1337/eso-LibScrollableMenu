@@ -535,7 +535,7 @@ function comboBoxClass:SelectItem(item, ignoreCallback)
     else
         self:RemoveItemFromSelected(item)
     end
-	--20250309 Replace sound with LSM selected sound #2025_14
+	--20250309 Replace sound with LSM selected sound #2025_14 -> For multiselection
     --PlaySound(SOUNDS.COMBO_CLICK)
 	playSelectedSoundCheck(self.m_dropdownObject, item.entryType)
 

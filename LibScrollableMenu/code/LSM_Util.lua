@@ -811,11 +811,13 @@ end
 --------------------------------------------------------------------
 --(Un)Silence the OnClicked sound of a selected dropdown entry
 function libUtil.silenceEntryClickedSound(doSilence, entryType)
+d(debugPrefix .. "libUtil.silenceEntryClickedSound - doSilence: " .. tos(doSilence) .. "; entryType: " .. tos(entryType))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 20, tos(doSilence), tos(entryType)) end
 	local soundNameForSilence = soundConstants.entryTypeToSilenceSoundName[entryType]
 	if soundNameForSilence == nil then return end
 	if doSilence == true then
 		SOUNDS[soundNameForSilence] = soundConstants.soundClickedSilenced
+d(">sound is now: " .. tos(SOUNDS[soundNameForSilence]))
 	else
 		local origSound = soundConstants.entryTypeToOriginalSelectedSound[entryType]
 		SOUNDS[soundNameForSilence] = origSound
@@ -825,6 +827,7 @@ local silenceEntryClickedSound = libUtil.silenceEntryClickedSound
 
 --Check if a sound should be played if a dropdown entry was selected
 function libUtil.playSelectedSoundCheck(dropdown, entryType)
+--d(debugPrefix .. "playSelectedSoundCheck - dropdown: " .. tos(dropdown) .. "; entryType: " .. tos(entryType))
 	entryType = entryType or entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 22, tos(entryType)) end
 
@@ -837,7 +840,9 @@ function libUtil.playSelectedSoundCheck(dropdown, entryType)
 	if options ~= nil then
 		--Chosen at options to play no selected sound?
 		if getValueOrCallback(options.selectedSoundDisabled, options) == true then
+d(">selectedSoundDisabled -> true, soundToPlayOrig: " .. tos(soundToPlayOrig))
 			silenceEntryClickedSound(true, entryType)
+d(">soundToPlayNow: " .. tos(soundToPlayOrig))
 			return
 		else
 			--Custom selected sound passed in?
@@ -848,9 +853,9 @@ function libUtil.playSelectedSoundCheck(dropdown, entryType)
 	else
 		soundToPlay = soundToPlayOrig
 	end
+d(">>playing sound: " .. tos(soundToPlay))
 	PlaySound(soundToPlay)
 end
-
 
 --------------------------------------------------------------------
 -- Dropdown / combobox hidden checks
