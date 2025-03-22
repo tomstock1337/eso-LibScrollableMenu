@@ -1354,7 +1354,7 @@ d("<ABORT -> [dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNe
 						self.owner.m_enableMultiSelect = true
 					end
 				end
-d(debugPrefix .. "OnEntryMouseUp-multiSelection/atParent: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(comboBox.isSubmenu))
+d(debugPrefix .. "OnEntryMouseUp-multiSelection/atParent: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(isSubmenu))
 d(">self.owner.m_enableMultiSelect: " ..tos(self.owner.m_enableMultiSelect))
 
 
@@ -1362,6 +1362,13 @@ d(">self.owner.m_enableMultiSelect: " ..tos(self.owner.m_enableMultiSelect))
 				--to close it, then just exit here and do not select the clicked entry
 d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryMouseUp: " ..tos(lib.preventerVars.suppressNextOnEntryMouseUp))
 				if checkNextOnEntryMouseUpShouldExecute() then --#2025_13
+					--#2025_18 Clicking a non-context menu submenu entry, while a context menu is opeed above, close the context nmenu BUT also selects that submenu entry and closes the whole  dropdown then
+					-->That's because of evet_global_mouse_up fires on the submenu entry (if multiselection is disabled) and selects the entry. Trying to suppress it here
+					if isSubmenu and not isMultiSelectionEnabled and lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed then
+d(">>preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed: true -> Setting suppressNextOnGlobalMouseUp = true")
+						lib.preventerVars.suppressNextOnGlobalMouseUp = true
+					end
+					lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = nil
 d("<<ABORTING")
 					return
 				end

@@ -26,7 +26,8 @@ local MAJOR = lib.name
 --PreventerVariables
 lib.preventerVars = {
 	--suppressNextOnGlobalMouseUp = nil, --used in comboBox_base:OnGlobalMouseUp and comboBox_base:HiddenForReasons
-	--suppressNextOnEntryMouseUp = nil,  --used in comboBox_base:HiddenForReasons
+	--suppressNextOnEntryMouseUp = nil,  --used in comboBox_base:HiddenForReasons and dropdownClass:OnEntryMouseUp
+	--wasContextMenuOpenedAsOnMouseUpWasSuppressed = nil, --used in comboBox_base closeContextMenuAndSuppressClickCheck, and dropdownClass:OnEntryMouseUp
 }
 
 --Library's XML functions and code

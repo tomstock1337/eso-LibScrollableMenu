@@ -1,4 +1,4 @@
--v- ---------------LSM v2.35 - 2025-03-09--------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.35 - 2025-03-20--------------------------------------------------------------------------- -v-
 [Fixed]
 -2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
 -2025_7:	FIXED 20250215 - RETEST: DONE! If multiselection is enabled: LSM test Maximum number of selectable entries (maxNumSelections) is not working (maybe after submenus were opened)
@@ -6,6 +6,8 @@
 -2025_9:	FIXED 20250210 - RETEST: DONE! If multiSelection is disabled: Entries opening a submenu, having a callback, do not select the submenu entry anymore
 -2025_12:   multiselection options added will properly pass in the whole options table as param to the callback function now
 -2025_13:	ContextMenus: Clicked outside will close the contextmenu now first and leave the other LSM menus opened
+-2025_14:   For multiselect: Replace PlaySound with LSM sound handler for selected entry
+-2025_17:   Clicking a button still plays the click sound even if options.selectedSoundDisabled was set to true
 
 [Added]
 -2025_10:	If multiselection is enabled: Submenus with a selection can show the submenu arrow colored differently. option.multiSelectSubmenuSelectedArrowColor defines the color to use (default is white)

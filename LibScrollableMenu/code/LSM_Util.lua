@@ -63,6 +63,8 @@ local throttledCallDelay = constants.throttledCallDelay
 
 --Context menus
 local g_contextMenu
+local contextMenuContainer
+
 local getValueOrCallback = libUtil.getValueOrCallback
 local getControlName
 local getControlData
@@ -602,6 +604,16 @@ function libUtil.getContextMenuReference()
 	return g_contextMenu
 end
 local getContextMenuReference = libUtil.getContextMenuReference
+function libUtil.belongsToContextMenuCheck(ctrl)
+	g_contextMenu = getContextMenuReference()
+	contextMenuContainer = contextMenuContainer or g_contextMenu.m_container
+
+	local dropdownObject = (ctrl ~= nil and ctrl.m_dropdownObject) or nil
+	if dropdownObject then
+		return contextMenuContainer == dropdownObject.m_container
+	end
+	return false
+end
 
 function libUtil.hideContextMenu()
 	--d(debugPrefix .. "hideContextMenu")
@@ -976,7 +988,7 @@ LSM_Debug.checkIfHiddenForReasons = LSM_Debug.checkIfHiddenForReasons or {}
 getControlName = getControlName or libUtil.getControlName
 local mocCtrlName = getControlName(mocCtrl)
 LSM_Debug.checkIfHiddenForReasons[mocCtrlName] = {
-	mocCtrl = ZO_ShallowTableCopy(mocCtrl),
+	mocCtrl = type(mocCtrl) == "table" and ZO_ShallowTableCopy(mocCtrl) or nil,
 	closeOnSelect = mocCtrl.closeOnSelect,
 	isCntxtMenOwnedByComboBox = isCntxtMenOwnedByComboBox,
 	enableMultiSelect = selfVar.m_enableMultiSelect,

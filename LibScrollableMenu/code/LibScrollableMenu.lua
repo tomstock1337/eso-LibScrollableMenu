@@ -274,17 +274,17 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.35 - Updated 2025-03-19
+	CHANGELOG Current version: 2.35 - Updated 2025-03-20
 ---------------------------------------------------------------
-Max error #: 2025_17
+Max error #: 2025_20
 
 
 [WORKING ON]
--2025_14   [Implemented - TEST NEEDED]comboBoxClass:SelectItem(item, ignoreCallback) -> Replace PlaySound with LSM sound handler for selected entry
 -2025_15   [REBUILD bug and analyse]ContextMenu: If one opens a nested submenu of a nested submenu, the total context menu closes all of sudden? LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
--2025_16   [REBUILD bug and analyse]ContextMenu: Clicking a checkbox in a context menu's submenu will close the contextmenu. LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
--2025_17   [REBUILD bug and analyse]Clicking a button plays the click sound even if options.selectedSoundDisabled was set to true
-			-->The normal Click sound is muted then but it still plays a sound -> coming from XML template ZO_ButtonBehaviorClickSound -> clickSound="Click" -> Which does not use SOUNDS["CLick"] then as it seems
+-2025_16   [REBUILD bug and analyse]ContextMenu: Clicking a checkbox in a context menu's submenu will close the contextmenu. LSM test, entry "Submenu entry 6" -> nested submenus -> Checkbox
+-2025_18   [REBUILD bug and analyse]ContextMenu: Clicking any non-contextmenu submenu entry (multiselection disabled at the submenu but enabled at the context menu, if that matters) below the context menu, will select the submenu entry and close the submenu (but it should only close the contextmenu)
+-2025_19   [REBUILD bug and analyse]ContextMenu: Clicking a context menu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
+-2025_20   [REBUILD bug and analyse]ContextMenu: Clicking a context menu's submenu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
 
 [Fixed]
 -2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
@@ -293,6 +293,8 @@ Max error #: 2025_17
 -2025_9:	FIXED 20250210 - RETEST: DONE! If multiSelection is disabled: Entries opening a submenu, having a callback, do not select the submenu entry anymore
 -2025_12:   multiselection options added will properly pass in the whole options table as param to the callback function now
 -2025_13:	ContextMenus: Clicked outside will close the contextmenu now first and leave the other LSM menus opened
+-2025_14:   For multiselect: Replace PlaySound with LSM sound handler for selected entry
+-2025_17:   Clicking a button still plays the click sound even if options.selectedSoundDisabled was set to true
 
 [Added]
 -2025_10:	If multiselection is enabled: Submenus with a selection can show the submenu arrow colored differently. option.multiSelectSubmenuSelectedArrowColor defines the color to use (default is white)
