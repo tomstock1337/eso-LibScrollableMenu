@@ -47,7 +47,10 @@ local getControlData = libUtil.getControlData
 local getValueOrCallback = libUtil.getValueOrCallback
 local SubOrContextMenu_highlightControl = libUtil.SubOrContextMenu_highlightControl
 local checkIfHiddenForReasons = libUtil.checkIfHiddenForReasons
+local getContextMenuReference = libUtil.getContextMenuReference
+local libUtil_BelongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 
+local g_contextMenu
 
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
@@ -198,7 +201,37 @@ function submenuClass:HideOnMouseExit(mocCtrl)
 end
 
 function submenuClass:ShouldHideDropdown()
-	return self:IsDropdownVisible() and (not self:IsMouseOverControl() and not self:IsMouseOverOpeningControl())
+	d(debugPrefix .. "submenuClass:ShouldHideDropdown - self: " .. tos(self) ..", dropdownVisible: " .. tos(self:IsDropdownVisible()) .. ", mouseOverCombobox: " ..tos(self:IsMouseOverControl()) .. ", mouseOverOpeningCOntrol: " .. tos(self:IsMouseOverOpeningControl()))
+LSM_Debug = LSM_Debug or {}
+LSM_Debug["submenuClass:ShouldHideDropdown"] = LSM_Debug["submenuClass:ShouldHideDropdown"] or {}
+
+LSM_Debug["submenuClass:ShouldHideDropdown"][self] = {
+	self = self,
+	isDropdownVisible = self:IsDropdownVisible(),
+	isMouseOverOpeningControl = self:IsMouseOverOpeningControl(),
+	moc = moc(),
+}
+
+	local isMouseOverAnyRelevantControl = false
+	g_contextMenu = g_contextMenu or getContextMenuReference() --#2025_15 ContextMenus' (nested) submenu (if opened near the screen edge e.g.) somehow does close if we move the mouse from one submenu to the next nested submenu entry. Trying to circumvent this by checking of contextMenu is shown and the moc() ctrl we moved the mouse on is still belonging to the contextMenu
+	if g_contextMenu:IsDropdownVisible() and g_contextMenu.m_container == self.m_container then
+d(">comboBox's submenu container is the contextMenu container")
+		isMouseOverAnyRelevantControl = (self:IsMouseOverControl() or self:IsMouseOverOpeningControl())
+--[[
+		--todo 20250323 If we leave this code uncomment every opened contextMenu supresses proper closing of all submenus...
+		--So the actual question here is: Why is the OnMouseExit fired for the nested contextMenu's submenus allthough we move the mopuse just from openingControl of the submenu to the nested 1st submenu entry?
+		if not isMouseOverAnyRelevantControl then
+			local mocCtrl = moc()
+d(">mocCtrl: " ..tos(mocCtrl and mocCtrl:GetName() or "n/a") .. ", belongsToContextMenu: " .. tos(mocCtrl and libUtil_BelongsToContextMenuCheck(mocCtrl:GetOwningWindow()) or false))
+			if mocCtrl and libUtil_BelongsToContextMenuCheck(mocCtrl:GetOwningWindow()) then
+				isMouseOverAnyRelevantControl = true
+			end
+		end
+]]
+	else
+		isMouseOverAnyRelevantControl = (self:IsMouseOverControl() or self:IsMouseOverOpeningControl())
+	end
+	return self:IsDropdownVisible() and isMouseOverAnyRelevantControl == false
 end
 
 function submenuClass:IsMouseOverOpeningControl()

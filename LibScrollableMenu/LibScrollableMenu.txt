@@ -18,6 +18,7 @@ lang/en.lua
 lang/$(language).lua
 
 ##Constants
+lsm_pc.lua
 constants.lua
 
 ##Debugging

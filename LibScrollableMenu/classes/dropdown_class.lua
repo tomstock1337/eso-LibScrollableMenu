@@ -1640,11 +1640,13 @@ end
 --------------------------------------------------------------------
 
 local function setTextSearchEditBoxText(selfVar, filterBox, newText)
+d(debugPrefix .. "setTextSearchEditBoxText - wasTextSearchContextMenuEntryClicked = true")
 	selfVar.wasTextSearchContextMenuEntryClicked = true
 	filterBox:SetText(newText) --will call dropdownClass:SetFilterString() then
 end
 
 local function clearTextSearchHistory(self, comboBoxContainerName)
+d(debugPrefix .. "clearTextSearchHistory - wasTextSearchContextMenuEntryClicked = true")
 	self.wasTextSearchContextMenuEntryClicked = true
 	if comboBoxContainerName == nil or comboBoxContainerName == "" then return end
 	if ZO_IsTableEmpty(lib.SV.textSearchHistory[comboBoxContainerName]) then return end
@@ -1672,8 +1674,8 @@ local function addTextSearchEditBoxTextToHistory(comboBox, filterBox, historyTex
 end
 
 function dropdownClass:WasTextSearchContextMenuEntryClicked(mocCtrl)
---d("dropdownClass:WasTextSearchContextMenuEntryClicked - wasTextSearchContextMenuEntryClicked: " ..tos(self.wasTextSearchContextMenuEntryClicked))
-	--Internal variable was set as we selected a ZO_Menu entry?
+d("dropdownClass:WasTextSearchContextMenuEntryClicked - wasTextSearchContextMenuEntryClicked: " ..tos(self.wasTextSearchContextMenuEntryClicked))
+	--Internal variable was set as we selected a ZO_Menu entry at the header's editBox right click contextMenu?
 	if self.wasTextSearchContextMenuEntryClicked then
 		self.wasTextSearchContextMenuEntryClicked = nil
 --d(">wasTextSearchContextMenuEntryClicked was TRUE")
@@ -1754,7 +1756,7 @@ function dropdownClass:ResetFilters(owningWindow)
 --d(debugPrefix .. "dropdownClass:ResetFilters")
 	--If not showing the filters at a contextmenu
 	-->Close any opened contextmenu
-	if self.m_comboBox ~= nil and not self.m_comboBox.isContextMenu then --self.m_comboBox.openingControl == nil then
+	if self.m_comboBox ~= nil and not self.m_comboBox.isContextMenu then --#2025_23 replaced by self.m_comboBox.isContextMenu -> self.m_comboBox.openingControl == nil then
 --d(">>calling ClearCustomScrollableMenu")
 		ClearCustomScrollableMenu()
 	end

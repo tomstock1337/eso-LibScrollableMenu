@@ -275,27 +275,30 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 ---------------------------------------------------------------
 	CHANGELOG Current version: 2.35 - Updated 2025-03-23
 ---------------------------------------------------------------
-Max error #: 2025_22
+Max error #: 2025_25
 
 
 [WORKING ON]
 -2025_15   [REBUILD bug and analyse]ContextMenu: If one opens a nested submenu of a nested submenu, the total context menu closes all of sudden? LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
+-2025_24   [REBUILD bug and analyse]ContextMenu: If one opens a nested submenu of a nested submenu, and then onMouseEnter another context menu entry, the submenu stays opened
+-2025_25   [REBUILD bug and analyse]If multiselection is enabled: Selecting a ZO_Menu context menu entry at the filter header context menu sets cntxTxtSearchEntryClicked = true, and if you directly click outside the combobox/dropdown, or at the dropdown's open/close main control afterwards, the dropdown does not close anymore
 
 [Fixed]
--2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
--2025_7:	FIXED 20250215 - RETEST: DONE! If multiselection is enabled: LSM test Maximum number of selectable entries (maxNumSelections) is not working (maybe after submenus were opened)
+-2025_6:	If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
+-2025_7:	If multiselection is enabled: LSM test Maximum number of selectable entries (maxNumSelections) is not working (maybe after submenus were opened)
 -2025_8:	Removed globally leaking variables
--2025_9:	FIXED 20250210 - RETEST: DONE! If multiSelection is disabled: Entries opening a submenu, having a callback, do not select the submenu entry anymore
+-2025_9:	If multiSelection is disabled: Entries opening a submenu, having a callback, do not select the submenu entry anymore
 -2025_12:   multiselection options added will properly pass in the whole options table as param to the callback function now
--2025_13:	ContextMenus: Clicked outside will close the contextmenu now first and leave the other LSM menus opened
+-2025_13:	ContextMenu: Clicked outside will close the contextmenu now first and leave the other LSM menus opened
 -2025_14:   For multiselect: Replace PlaySound with LSM sound handler for selected entry
 -2025_16:   ContextMenu: Clicking a checkbox in a context menu's submenu will close the contextmenu. LSM test, entry "Submenu entry 6" -> nested submenus -> Checkbox
 -2025_17:   Clicking a button still plays the click sound even if options.selectedSoundDisabled was set to true
 -2025_18:   ContextMenu: Clicking any non-contextmenu submenu entry below the context menu, will select the submenu entry and close the submenu (but it should only close the contextmenu)
 -2025_19:   ContextMenu: Clicking a context menu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
 -2025_20:   ContextMenu: Clicking a context menu's submenu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
--2025_21:   If multiSelection is disabled in a contextmenu by default the list of the menu was always empty
--2025_22:   Trying to show a context menu on another context menu will just clear and hide the contextmenu now
+-2025_21:   ContextMenu: If multiSelection is disabled in a contextmenu by default the list of the menu was always empty
+-2025_22:   ContextMenu: Trying to show a context menu on another context menu will just clear and hide the contextmenu now
+-2025_23:   ContextMenu: Clicking the reset button closes the contextmenu
 
 
 [Added]
