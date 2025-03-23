@@ -61,7 +61,7 @@ local narrationConstants = constants.narration
 local entryTypeDefaults = entryTypeConstants.defaults
 local entryTypeDefaultsHighlights = entryTypeDefaults.highlights
 local dropdownDefaults = dropdownConstants.defaults
-
+local isEntryTypeWithParentMocCtrl = entryTypeConstants.isEntryTypeWithParentMocCtrl
 
 local libraryAllowedEntryTypes = entryTypeConstants.libraryAllowedEntryTypes
 local noEntriesSubmenuResults = searchFilterConstants.noEntriesSubmenuResults
@@ -893,7 +893,7 @@ d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", su
 		if not isMouseOverOwningDropdown then
 d(">>dropdownVisible -> not IsMouseOverControl") --#2025_19 Closes a context menu if the clicked entry of the contextmenu was not above the LSM anymore -> Should not directly close if multiselection is enabled in the context menu!
 			if self:HiddenForReasons(button, isMouseOverOwningDropdown) then
-d(">>>HiddenForReasons -> Hiding dropdown now")
+				d(">>>HiddenForReasons -> Hiding dropdown now")
 				return self:HideDropdown()
 			end
 		end
@@ -968,11 +968,6 @@ end
 --Check if the comboBox should be hidden (after an entry was clicked e.g.)
 --return false:	Do not hide the combobox
 --return true: Hide the comboBox
-local isEntryTypeWithParentMocCtrl = {
-	[LSM_ENTRY_TYPE_CHECKBOX] = true,
-	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
-}
-
 function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	g_contextMenu = getContextMenuReference()
 	local owningWindow, mocCtrl, comboBox, mocEntry = getMouseOver_HiddenFor_Info()
@@ -1015,12 +1010,13 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	local wasTextSearchContextMenuEntryClicked = dropdownObject:WasTextSearchContextMenuEntryClicked()
 	if isContextMenuVisible and not wasTextSearchContextMenuEntryClicked then
 		wasTextSearchContextMenuEntryClicked = g_contextMenu.m_dropdownObject:WasTextSearchContextMenuEntryClicked()
+		if doDebugNow then d(">wasTextSearchContextMenuEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked)) end
 		if not wasTextSearchContextMenuEntryClicked then
 			--Did we click the "reset" button at the header, or any other control at the context menu's header
 			if mocCtrl then
 				local owningWindowOfMocCtrl = mocCtrl:GetOwningWindow()
 				if owningWindowOfMocCtrl and owningWindowOfMocCtrl.header and belongsToContextMenuCheck(owningWindowOfMocCtrl) then
---d(">clicked header's child control at the contextMenu")
+					if doDebugNow then d(">clicked header's child control at the contextMenu") end
 					--Clicked a header's child control at the context menu
 					wasTextSearchContextMenuEntryClicked = true
 				end
@@ -1184,6 +1180,7 @@ end
 -- Changed to hide tooltip and, if available, it's submenu
 -- We hide the tooltip here so it is hidden if the dropdown is hidden OnGlobalMouseUp
 function comboBox_base:HideDropdown()
+d(debugPrefix .. "comboBox_base:HideDropdown")
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 97) end
 	-- Recursive through all open submenus and close them starting from last.
 

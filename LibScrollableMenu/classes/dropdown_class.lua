@@ -92,7 +92,7 @@ local getIsNew = libUtil.getIsNew
 local updateDataByFunctions = libUtil.updateDataByFunctions
 local compareDropdownDataList = libUtil.compareDropdownDataList
 local checkNextOnEntryMouseUpShouldExecute = libUtil.checkNextOnEntryMouseUpShouldExecute
-
+local libUtil_BelongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 
 --locals
 --Filtering
@@ -1382,11 +1382,17 @@ d(">>RunItemCallback")
 					self:RunItemCallback(data, data.ignoreCallback)
 				end
 
-				--Show context menu at the entry?
+			--Show context menu at the entry?
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 				g_contextMenu = getContextMenuReference()
 				local rightClickCallback = data.contextMenuCallback or data.rightClickCallback
 				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
+					--#2025_22 Check if the openingControl is another contextMenu -> We cannot show a contextMenu on a contextMenu
+					if libUtil_BelongsToContextMenuCheck(control:GetOwningWindow()) then
+d("<ABOER: contextMenu opening at a contextMenu entry -> Not allowed!")
+						return
+					end
+
 					if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 72) end
 					rightClickCallback(comboBox, control, data)
 				end
@@ -1748,7 +1754,7 @@ function dropdownClass:ResetFilters(owningWindow)
 --d(debugPrefix .. "dropdownClass:ResetFilters")
 	--If not showing the filters at a contextmenu
 	-->Close any opened contextmenu
-	if self.m_comboBox ~= nil and self.m_comboBox.openingControl == nil then
+	if self.m_comboBox ~= nil and not self.m_comboBox.isContextMenu then --self.m_comboBox.openingControl == nil then
 --d(">>calling ClearCustomScrollableMenu")
 		ClearCustomScrollableMenu()
 	end

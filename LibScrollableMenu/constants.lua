@@ -248,6 +248,12 @@ local entryTypeToButtonChildName = {
 }
 constants.entryTypes.entryTypeToButtonChildName = entryTypeToButtonChildName
 
+local isEntryTypeWithParentMocCtrl = {
+	[LSM_ENTRY_TYPE_CHECKBOX] = true,
+	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
+}
+constants.entryTypes.isEntryTypeWithParentMocCtrl = isEntryTypeWithParentMocCtrl
+
 --Used in API RunCustomScrollableMenuItemsCallback and comboBox_base:AddCustomEntryTemplates to validate passed in entryTypes
 local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_NORMAL] = 		true,

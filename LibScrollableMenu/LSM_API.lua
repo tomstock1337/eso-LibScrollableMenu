@@ -473,7 +473,8 @@ function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	--d("°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
 	--df(debugPrefix.."_-_-_-_-_ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
 
-	--Check if the openingControl is another contextMenu -> We cannot show a contextMenu on a contextMenu
+	--[[
+	--#2025_22 Check if the openingControl is another contextMenu -> We cannot show a contextMenu on a contextMenu
 	controlToAnchorTo = controlToAnchorTo or moc()
 LSM_Debug = LSM_Debug or {}
 LSM_Debug.cntxtMenuControlToAnchorTo = controlToAnchorTo
@@ -481,6 +482,7 @@ LSM_Debug.cntxtMenuControlToAnchorTo = controlToAnchorTo
 		clearCustomScrollableMenu()
 		return
 	end
+	]]
 
 	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table -> Here: For the contextMenu
 	local optionsForCallbackFire = options or {}

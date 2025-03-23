@@ -615,6 +615,7 @@ function libUtil.belongsToContextMenuCheck(ctrl)
 	end
 	return false
 end
+local libUtil_BelongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 
 function libUtil.hideContextMenu()
 	--d(debugPrefix .. "hideContextMenu")
@@ -1067,12 +1068,21 @@ if doDebugNow then d("<!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			end
 
 		elseif button == MOUSE_BUTTON_INDEX_RIGHT then
+--d("-RIGHT MOUSE CLICK-")
 			-- Was e.g. the search header's editBox right clicked?
 			if mocCtrl and contextMenuDropdownObject == mocCtrl.m_dropdownObject then
 				returnValue = false
 				doNotHideContextMenu = true
+--d("->header right clicked")
 			else
-				returnValue = true --close context menu
+				if mocCtrl and libUtil_BelongsToContextMenuCheck(mocCtrl) then
+--d("->context menu belonging entry right clicked")
+					returnValue = false
+					doNotHideContextMenu = true
+				else
+--d("->other right clicked")
+					returnValue = true --close context menu
+				end
 			end
 		end
 

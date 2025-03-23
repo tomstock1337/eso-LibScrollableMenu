@@ -118,7 +118,6 @@ libUtil.MapEntries = mapEntries
 --Used for event handlers like OnMouseUp and OnChanged etc.
 function lib.XML.OnXMLControlEventHandler(owningWindowFunctionName, refVar, ...)
 	--d(debugPrefix .. "lib.XML.OnXMLControlEventHandler - owningWindowFunctionName: " .. tos(owningWindowFunctionName))
-
 	if refVar == nil or owningWindowFunctionName == nil then return end
 
 	local owningWindow = refVar:GetOwningWindow()
@@ -141,7 +140,7 @@ function lib.XML.XMLButtonOnInitialize(control, entryType)
 	local isRadioButton = not isCheckbox and entryType == entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON
 
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
-d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
+--d(debugPrefix .. "OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
 		if upInside then
 			if checkIfContextMenuOpenedButOtherControlWasClicked(control, parent.m_owner, buttonId) == true then return end
 			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
@@ -276,18 +275,11 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 ---------------------------------------------------------------
 	CHANGELOG Current version: 2.35 - Updated 2025-03-23
 ---------------------------------------------------------------
-Max error #: 2025_21
+Max error #: 2025_22
 
 
 [WORKING ON]
 -2025_15   [REBUILD bug and analyse]ContextMenu: If one opens a nested submenu of a nested submenu, the total context menu closes all of sudden? LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
--2025_16   [REBUILD bug and analyse]ContextMenu: Clicking a checkbox in a context menu's submenu will close the contextmenu. LSM test, entry "Submenu entry 6" -> nested submenus -> Checkbox
--2025_18   [REBUILD bug and analyse]ContextMenu: Clicking any non-contextmenu submenu entry (multiselection disabled at the submenu but enabled at the context menu, if that matters) below the context menu, will select the submenu entry and close the submenu (but it should only close the contextmenu)
--2025_19   [REBUILD bug and analyse]ContextMenu: Clicking a context menu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
--2025_20   [REBUILD bug and analyse]ContextMenu: Clicking a context menu's submenu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
--2025_21   todo 20250323 if multiSelection is disabled in a contextmenu -> Then updatedOptions and options are nil here and somehow ALL entries in the resulting context menua re missing at the end
------>Reason: see constants.lua, function updateMultiSelectionOptions -> If any contextmenu option is using a multiSelection related setting it calls function updateMultiSelectionOptions and that invalidates the options table somehow (changes the original!!! passed in options table)
-------->ZO_ComboBox:DisableMultiSelect is called and that calls ClearMenu and resets the list entries and the options -> if options are missing enableMultiSelect or it is set to false it must not call ZO_ComboBox:DisableMultiSelect
 
 [Fixed]
 -2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
@@ -297,7 +289,14 @@ Max error #: 2025_21
 -2025_12:   multiselection options added will properly pass in the whole options table as param to the callback function now
 -2025_13:	ContextMenus: Clicked outside will close the contextmenu now first and leave the other LSM menus opened
 -2025_14:   For multiselect: Replace PlaySound with LSM sound handler for selected entry
+-2025_16:   ContextMenu: Clicking a checkbox in a context menu's submenu will close the contextmenu. LSM test, entry "Submenu entry 6" -> nested submenus -> Checkbox
 -2025_17:   Clicking a button still plays the click sound even if options.selectedSoundDisabled was set to true
+-2025_18:   ContextMenu: Clicking any non-contextmenu submenu entry below the context menu, will select the submenu entry and close the submenu (but it should only close the contextmenu)
+-2025_19:   ContextMenu: Clicking a context menu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
+-2025_20:   ContextMenu: Clicking a context menu's submenu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
+-2025_21:   If multiSelection is disabled in a contextmenu by default the list of the menu was always empty
+-2025_22:   Trying to show a context menu on another context menu will just clear and hide the contextmenu now
+
 
 [Added]
 -2025_10:	If multiselection is enabled: Submenus with a selection can show the submenu arrow colored differently. option.multiSelectSubmenuSelectedArrowColor defines the color to use (default is white)
