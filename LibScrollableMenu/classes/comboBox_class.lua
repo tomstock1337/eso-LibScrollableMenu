@@ -271,10 +271,18 @@ function comboBoxClass:SetOption(LSMOptionsKey)
 
 	--Get new value via options passed in
 	local options = self:GetOptions()
-	local newValue = options and getValueOrCallback(options[LSMOptionsKey], options) --read new value from the options (run function there or get the value)
+--[[
+LSM_Debug["SetOption"][LSMOptionsKey] = {
+	selfBefore = ZO_ShallowTableCopy(self),
+	before = ZO_ShallowTableCopy(options),
+	after = ZO_ShallowTableCopy(options),
+}
+]]
+	local newValue = (options ~= nil and getValueOrCallback(options[LSMOptionsKey], options)) or nil --read new value from the options (run function there or get the value)
+--d(">options: " .. tos(options) .. "; newValue: " .. tos(newValue))
 	if newValue == nil then
---d(">LSMOptionsKey: " .. tos(LSMOptionsKey) .. " -> Is nil in options")
 		newValue = currentValue
+--d(">LSMOptionsKey: " .. tos(LSMOptionsKey) .. " -> Is nil in options. newValue = currentValue: " .. tos(newValue))
 	end
 	if newValue == nil then return end
 
@@ -290,6 +298,9 @@ function comboBoxClass:SetOption(LSMOptionsKey)
 	else
 		self[currentZO_ComboBoxValueKey] = newValue
 	end
+
+--LSM_Debug["SetOption"][LSMOptionsKey].after = ZO_ShallowTableCopy(options)
+--LSM_Debug["SetOption"][LSMOptionsKey].selfAfter = ZO_ShallowTableCopy(self)
 end
 
 function comboBoxClass:UpdateOptions(options, onInit, isContextMenu, initExistingComboBox)
@@ -297,7 +308,6 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu, initExistin
 	local optionsChanged = self.optionsChanged
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 136, tos(options), tos(onInit), tos(optionsChanged)) end
-
 --[[
 	if isContextMenu then
 		d("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -332,11 +342,11 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu, initExistin
 	--> Reset to default ZO_ComboBox variables and just call AddCustomEntryTemplates()
 	if (optionsChanged == true or onInit == true) and ZO_IsTableEmpty(options) then
 		optionsChanged = false
---[[
+		--[[
 		if isContextMenu then
 			d(">>resetting options to defaults!")
 		end
-]]
+		]]
 --d(">3 ResetToDefaults")
 		-- Reset comboBox internal variables of ZO_ComboBox, e.g. m_font, and LSM defaults like visibleRowsDropdown
 		--todo: 20250204 Check if this is needed -> initExistingComboBox: do not overwrite already existing variables of the ZO_ComboBox if the box was an existing one where LSM was only added to via AddCustomScrollableComboBoxDropdownMenu
@@ -373,6 +383,9 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu, initExistin
 
 --d(">5 Loop options")
 
+		--LSM_Debug = LSM_Debug or {}
+		--LSM_Debug["SetOption"] = {}
+
 		-- LibScrollableMenu custom options
 		if not ZO_IsTableEmpty(options) then
 			for key, _ in pairs(options) do
@@ -381,7 +394,6 @@ if isContextMenu then
 	d(">>setting option key: " ..tos(key))
 end
 ]]
-
 				self:SetOption(key)
 			end
 		end
@@ -390,11 +402,9 @@ end
 		---> See table LSMOptionsToZO_ComboBoxOptionsCallbacks
 		self.updatedOptions = nil
 
-	--[[
 		if isContextMenu then
 			d("> SetOption and for ... do SetOptions looped ")
 		end
-	]]
 	end
 
 	-- this will add custom and default templates to self.XMLRowTemplates the same way dataTypes were created before.

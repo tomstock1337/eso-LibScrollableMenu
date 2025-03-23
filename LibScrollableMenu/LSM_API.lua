@@ -54,7 +54,7 @@ local hideContextMenu = libUtil.hideContextMenu
 local getComboBoxsSortedItems = libUtil.getComboBoxsSortedItems
 local validateContextMenuSubmenuEntries = libUtil.validateContextMenuSubmenuEntries
 local checkEntryType = libUtil.checkEntryType
-
+local libUtil_BelongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 
 local g_contextMenu
 local buttonGroupDefaultContextMenu
@@ -470,8 +470,17 @@ end
 function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	updateContextMenuRef()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 171, tos(getControlName(controlToAnchorTo)), tos(options)) end
---d("°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
---df(debugPrefix.."_-_-_-_-_ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+	--d("°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
+	--df(debugPrefix.."_-_-_-_-_ShowCustomScrollableMenu - controlToAnchorTo: %s, options: %s", tos(getControlName(controlToAnchorTo)), tos(options))
+
+	--Check if the openingControl is another contextMenu -> We cannot show a contextMenu on a contextMenu
+	controlToAnchorTo = controlToAnchorTo or moc()
+LSM_Debug = LSM_Debug or {}
+LSM_Debug.cntxtMenuControlToAnchorTo = controlToAnchorTo
+	if controlToAnchorTo ~= nil and libUtil_BelongsToContextMenuCheck(controlToAnchorTo:GetOwningWindow()) then
+		clearCustomScrollableMenu()
+		return
+	end
 
 	--Fire the OnDropdownMenuAdded callback where one can replace options in the options table -> Here: For the contextMenu
 	local optionsForCallbackFire = options or {}
@@ -482,11 +491,10 @@ function ShowCustomScrollableMenu(controlToAnchorTo, options)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 172, tos(getControlName(g_contextMenu.m_container)), tos(options)) end
 
 	if options ~= nil then
---d(">>>>>calling SetCustomScrollableMenuOptions")
+		--d(">>>>>calling SetCustomScrollableMenuOptions")
 		setCustomScrollableMenuOptions(options)
 	end
 
-	controlToAnchorTo = controlToAnchorTo or moc()
 	g_contextMenu:ShowContextMenu(controlToAnchorTo)
 	return true
 end

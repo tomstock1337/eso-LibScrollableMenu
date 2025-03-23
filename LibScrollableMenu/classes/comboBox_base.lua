@@ -951,6 +951,7 @@ end
 
 -- Create the m_dropdownObject on initialize.
 function comboBox_base:GetOptions()
+--d(debugPrefix .. "comboBox_base:GetOptions")
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 94) end
 	return self.options or {}
 end
@@ -1019,7 +1020,7 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 			if mocCtrl then
 				local owningWindowOfMocCtrl = mocCtrl:GetOwningWindow()
 				if owningWindowOfMocCtrl and owningWindowOfMocCtrl.header and belongsToContextMenuCheck(owningWindowOfMocCtrl) then
-d(">clicked header's child control at the contextMenu")
+--d(">clicked header's child control at the contextMenu")
 					--Clicked a header's child control at the context menu
 					wasTextSearchContextMenuEntryClicked = true
 				end
@@ -1291,6 +1292,7 @@ function comboBox_base:RunItemCallback(item, ignoreCallback, ...)
 end
 
 function comboBox_base:SetOptions(options)
+--d(debugPrefix .. "comboBox_base:SetOptions - options: " .. tos(options))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 103) end
 	self.options = options
 end

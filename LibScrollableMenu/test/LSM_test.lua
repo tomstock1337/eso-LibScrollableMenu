@@ -1015,7 +1015,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 
 							local optionsContextMenu = {
 								submenuArrowColor = HEADER_TEXT_COLOR_RED,
-								enableMultiSelect = true,
+								enableMultiSelect = false,
 								maxNumSelections = 3,
 								maxNumSelectionsErrorText =		debugPrefix.."ERROR - Maximum items selected already",
 								multiSelectionTextFormatter = 	function(options)

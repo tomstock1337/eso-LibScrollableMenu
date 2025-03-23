@@ -604,6 +604,7 @@ function libUtil.getContextMenuReference()
 	return g_contextMenu
 end
 local getContextMenuReference = libUtil.getContextMenuReference
+
 function libUtil.belongsToContextMenuCheck(ctrl)
 	g_contextMenu = getContextMenuReference()
 	contextMenuContainer = contextMenuContainer or g_contextMenu.m_container
@@ -1000,9 +1001,11 @@ LSM_Debug.checkIfHiddenForReasons[mocCtrlName] = {
 LSM_Debug.checkIfHiddenForReasons[mocCtrlName].parent = parent
 								end
 								local owner = mocCtrl.m_owner
-								if doDebugNow then d(">>2 - isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect)) end
-LSM_Debug.checkIfHiddenForReasons[mocCtrlName].owner = owner
-LSM_Debug.checkIfHiddenForReasons[mocCtrlName].isSubmenu = isSubmenu or owner.isSubmenu
+								if doDebugNow then d(">>2 - isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner and owner.isSubmenu or nil) .. "; closeOnSelect: " .. tos(mocCtrl and mocCtrl.closeOnSelect or nil)) end
+if owner then
+	LSM_Debug.checkIfHiddenForReasons[mocCtrlName].owner = owner
+	LSM_Debug.checkIfHiddenForReasons[mocCtrlName].isSubmenu = isSubmenu or owner.isSubmenu
+end
 								if owner and (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
 									if doDebugNow then d(">>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect) .. ", multiSelect: " .. tos(selfVar.m_enableMultiSelect) .. ", result: " .. tos(not mocCtrl.closeOnSelect or selfVar.m_enableMultiSelect)) end
 									returnValue = not mocCtrl.closeOnSelect or selfVar.m_enableMultiSelect

@@ -274,9 +274,9 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.35 - Updated 2025-03-20
+	CHANGELOG Current version: 2.35 - Updated 2025-03-23
 ---------------------------------------------------------------
-Max error #: 2025_20
+Max error #: 2025_21
 
 
 [WORKING ON]
@@ -285,6 +285,9 @@ Max error #: 2025_20
 -2025_18   [REBUILD bug and analyse]ContextMenu: Clicking any non-contextmenu submenu entry (multiselection disabled at the submenu but enabled at the context menu, if that matters) below the context menu, will select the submenu entry and close the submenu (but it should only close the contextmenu)
 -2025_19   [REBUILD bug and analyse]ContextMenu: Clicking a context menu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
 -2025_20   [REBUILD bug and analyse]ContextMenu: Clicking a context menu's submenu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
+-2025_21   todo 20250323 if multiSelection is disabled in a contextmenu -> Then updatedOptions and options are nil here and somehow ALL entries in the resulting context menua re missing at the end
+----->Reason: see constants.lua, function updateMultiSelectionOptions -> If any contextmenu option is using a multiSelection related setting it calls function updateMultiSelectionOptions and that invalidates the options table somehow (changes the original!!! passed in options table)
+------->ZO_ComboBox:DisableMultiSelect is called and that calls ClearMenu and resets the list entries and the options -> if options are missing enableMultiSelect or it is set to false it must not call ZO_ComboBox:DisableMultiSelect
 
 [Fixed]
 -2025_6:	FIXED 20250210 - RETEST: DONE! If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case

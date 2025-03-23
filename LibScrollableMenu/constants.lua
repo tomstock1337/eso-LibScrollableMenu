@@ -525,27 +525,37 @@ constants.comboBox.mapping.LSMOptionsKeyToZO_ComboBoxOptionsKey = LSMOptionsKeyT
 
 
 local function updateMultiSelectionOptions(comboBoxObject, isMultiSelectionEnabled, maxNumSelections, maxNumSelectionsErrorText, multiSelectionTextFormatter, noSelectionText, onSelectionBlockedCallback)
---d("options->updateMultiSelectionOptions")
+d("============================ options->updateMultiSelectionOptions")
 		--options which should be considered/updated first if comboBoxObject:EnableMultiSelect is called
-		---maxNumSelections
-		---maxNumSelectionsErrorText
-		---noSelectionText
-		---multiSelectionTextFormatter
-		---onSelectionBlockedCallback
-	local options = comboBoxObject.options
+	---maxNumSelections
+	---maxNumSelectionsErrorText
+	---noSelectionText
+	---multiSelectionTextFormatter
+	---onSelectionBlockedCallback
+d(">isMultiSelectionEnabled = " .. tos(isMultiSelectionEnabled))
+d(">maxNumSelections = " .. tos(maxNumSelections))
+d(">maxNumSelectionsErrorText = " .. tos(maxNumSelectionsErrorText))
+d(">noSelectionText = " .. tos(noSelectionText))
+d(">multiSelectionTextFormatter = " .. tos(multiSelectionTextFormatter))
+d(">onSelectionBlockedCallback = " .. tos(onSelectionBlockedCallback))
+d("comboBoxObject.isContextMenu: " .. tos(comboBoxObject.isContextMenu) ..", contextMenuOptions: " .. tos(comboBoxObject.contextMenuOptions) .. ", options: " .. tos(comboBoxObject.options))
+--todo #2025_21 20250323 if multiSelection is disabled in a contextmenu options (explicitly) -> Then updatedOptions and options are nil here and somehow ALL entries in the resulting context menua re missing at the end
+	local options = comboBoxObject:GetOptions()
 	local updatedOptions = comboBoxObject.updatedOptions
 
-	if isMultiSelectionEnabled == nil then
-		isMultiSelectionEnabled = updatedOptions.enableMultiSelect or 				getValueOrCallback(options.enableMultiSelect, options) or comboBoxDefaults.m_enableMultiSelect
-	end
+	local isMultiSelectionEnabledPassedIn = isMultiSelectionEnabled
 
-	if isMultiSelectionEnabled == false then
-		comboBoxObject:DisableMultiSelect() --sets comboBoxObject.m_enableMultiSelect = false
-		return
+	if isMultiSelectionEnabled == nil then
+		isMultiSelectionEnabled = (updatedOptions ~= nil and updatedOptions.enableMultiSelect) or nil
+		if isMultiSelectionEnabled == nil then
+			isMultiSelectionEnabled = (options ~= nil and getValueOrCallback(options.enableMultiSelect, options)) or nil
+		end
+		if isMultiSelectionEnabled == nil then
+			isMultiSelectionEnabled = comboBoxDefaults.m_enableMultiSelect
+		end
 	end
 
 	maxNumSelections = maxNumSelections or							updatedOptions.maxNumSelections or 				getValueOrCallback(options.maxNumSelections, options) or comboBoxDefaults.m_maxNumSelections
---d(">maxNumSelections = " .. tos(maxNumSelections))
 	if maxNumSelections ~= nil and maxNumSelections < 0 then maxNumSelections = nil	end
 	maxNumSelectionsErrorText = maxNumSelectionsErrorText or		updatedOptions.maxNumSelectionsErrorText or 	getValueOrCallback(options.maxNumSelectionsErrorText, options) or comboBoxDefaults.m_maxNumSelectionsErrorText
 	noSelectionText = noSelectionText or 							updatedOptions.noSelectionText or 				getValueOrCallback(options.noSelectionText, options) or comboBoxDefaults.noSelectionText
@@ -557,6 +567,15 @@ local function updateMultiSelectionOptions(comboBoxObject, isMultiSelectionEnabl
 	updatedOptions.noSelectionText = noSelectionText
 	updatedOptions.multiSelectionTextFormatter = multiSelectionTextFormatter
 	updatedOptions.OnSelectionBlockedCallback = onSelectionBlockedCallback
+
+	if isMultiSelectionEnabled == false then
+		if isMultiSelectionEnabledPassedIn == false and not comboBoxObject.isContextMenu then
+			comboBoxObject:DisableMultiSelect() --sets comboBoxObject.m_enableMultiSelect = false AND attention: Calls comboBoxObject:ClaerItems, so do not call that here for e.g. contextMenus or the list will be empty
+		end
+d("<multiSelect disabled")
+		return
+	end
+d(">multiSelect enabled")
 
 	comboBoxObject:SetMaxSelections(maxNumSelections)
 	comboBoxObject:SetMaxSelectionsErrorText(maxNumSelectionsErrorText)
