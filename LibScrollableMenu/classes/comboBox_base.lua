@@ -62,6 +62,8 @@ local entryTypeDefaults = entryTypeConstants.defaults
 local entryTypeDefaultsHighlights = entryTypeDefaults.highlights
 local dropdownDefaults = dropdownConstants.defaults
 local isEntryTypeWithParentMocCtrl = entryTypeConstants.isEntryTypeWithParentMocCtrl
+local entryTypeToButtonChildName = constants.entryTypes.entryTypeToButtonChildName
+
 
 local libraryAllowedEntryTypes = entryTypeConstants.libraryAllowedEntryTypes
 local noEntriesSubmenuResults = searchFilterConstants.noEntriesSubmenuResults
@@ -580,6 +582,7 @@ local function closeContextMenuAndSuppressClickCheck(checkOnlyMultiSelectionAtCo
 			d(">>context menu is opened and clicked somewhere else -> Hide the contextMenu now")
 			ClearCustomScrollableMenu()
 			--20250309 Prevent the next dropdownClass:OnEntryMouseUp being fired if we clicked inside an LSM (only the contextMenu should close!)
+			d("1!!! Setting suppressNextOnEntryMouseUp = true !!!")
 			lib.preventerVars.suppressNextOnEntryMouseUp = true
 
 			if checkOnlyMultiSelectionAtContextMenu == true and isMouseOverOwningDropdown == nil and clickedEntryBelongsToContextMenu == false then
@@ -595,6 +598,7 @@ local function closeContextMenuAndSuppressClickCheck(checkOnlyMultiSelectionAtCo
 			d(">>context menu is opened and clicked somewhere else, e.g. submenu -> Hide the contextMenu now")
 			ClearCustomScrollableMenu()
 			--20250309 Prevent the next dropdownClass:OnEntryMouseUp being fired if we clicked inside an LSM (only the contextMenu should close!)
+			d("2!!! Setting suppressNextOnEntryMouseUp = true !!!")
 			lib.preventerVars.suppressNextOnEntryMouseUp = true
 
 			if checkOnlyMultiSelectionAtContextMenu == true and isMouseOverOwningDropdown == nil and clickedEntryBelongsToContextMenu == false then
@@ -980,30 +984,62 @@ function comboBox_base:GetSubmenu()
 	return self.m_submenu
 end
 
-
+--20250323 #2025_25 How to detect (even if multiselection is enabled and our last click was a ZO_Menu selection at the filter header) if we clicked GuiRoot or any other non LSM control (or the main opening/closing LSM control)
+--and close the LSM then in total? Currently wasTextSearchContextMenuEntryClicked = true prevents this here if multiselection is enabled
 local function wasTextSearchContextMenuEntryClickedCheck(selfVar, mocCtrl, wasTextSearchContextMenuEntryClicked, isContextMenu)
 	if wasTextSearchContextMenuEntryClicked == true then
+d("~~~ Resetting lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter to nil ~~~")
+		lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = nil
+
 d(">we clicked somwhere after selecting a filterHeader's contextMenu - isContextMenu: " .. tos(isContextMenu))
 		if mocCtrl == nil or mocCtrl.closeOnSelect == nil then
 			--But that will close the total dropdown if we select a ZO_Menu contextMenu entry which is not above the LSM controls -> as we clicked outside the LSM then
 			-->So how do we detect this as it will happen the same way if m_enableMultiSelect is false: Check if mocCtrl belongs to ZO_Menu
 			if mocCtrl then
-d(">mocCtrl: " .. tos(mocCtrl:GetName()) .. ", parent: " .. tos(mocCtrl:GetParent():GetName()))
+				d(">mocCtrl: " .. tos(mocCtrl:GetName()) .. ", parent: " .. tos(mocCtrl:GetParent():GetName()))
 			end
+			--We clicked no ZO_MenuItem at the contextMenu of the LSM header editBox? Close the LSM menu then
 			if mocCtrl and mocCtrl:GetParent() ~= ZO_Menu then
 				if isContextMenu then
-d(">>setting preventerVars.suppressNextOnEntryMouseUp = true")
+					--Prevent close of the LSM, and selection of any other item we clicked below the ZO_Menu context menu (e.g. an opened submenu below)
+					d(">>ContextMenu was opened: setting preventerVars.suppressNextOnEntryMouseUp = true")
+					d("3!!! Setting suppressNextOnEntryMouseUp = true !!!")
 					lib.preventerVars.suppressNextOnEntryMouseUp = true
 				end
 				return true
 			end
+		elseif mocCtrl ~= nil and mocCtrl.closeOnSelect ~= nil then
+			--Clicked an LSM entry?
+			if isContextMenu and wasTextSearchContextMenuEntryClicked then
+				--Prevent selection of any other LSM item we clicked below the ZO_Menu context menu (e.g. an opened submenu below)
+				d(">>ContextMenu was opened & LSM entry clicked: setting preventerVars.suppressNextOnEntryMouseUp = true")
+				d("4!!! Setting suppressNextOnEntryMouseUp = true !!!")
+				lib.preventerVars.suppressNextOnEntryMouseUp = true
+
+				--Is the moc's entryType we clicked a LSM radioButton or checkbox?
+				if mocCtrl.entryType then
+					local buttonChildName = entryTypeToButtonChildName[mocCtrl.entryType]
+					if buttonChildName ~= nil then
+d("°°°LSM radioButton or checkBox clicked, while contextMenu was opened. Setting suppressNextOnEntryMouseUpDisableCounter to 2°°°")
+						lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = 2 --Only allow suppressNextOnEntryMouseUp to be used once, then reset it to false on the 2nd try
+					end
+				end
+			end
 		end
 	end
 
+	--If the contextMenu was currently shown, as we clicked: Do not close as we just clicked a ZO_Menu's item e.g.
 	if isContextMenu then
+d(">>contextMenu is open: Return false")
+		if wasTextSearchContextMenuEntryClicked then
+d(">>suppressing next OnGlobalMouseUp, cuz mouse was not over combobox ctrl")
+			d("2??? Setting suppressNextOnGlobalMouseUp = true ???")
+			lib.preventerVars.suppressNextOnGlobalMouseUp = true
+		end
 		return false
 	else
-		--Clicked entry should close after selection?
+		--Clicked entry should close after selection? Or not close because multiSelect is enabled?
+d(">>Return: " .. tos(((mocCtrl and mocCtrl.closeOnSelect) or nil) and not selfVar.m_enableMultiSelect))
 		return ((mocCtrl and mocCtrl.closeOnSelect) or nil) and not selfVar.m_enableMultiSelect
 	end
 end
@@ -1052,6 +1088,7 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	local isContextMenuVisible = g_contextMenu:IsDropdownVisible()
 	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
 	local wasTextSearchContextMenuEntryClicked = dropdownObject:WasTextSearchContextMenuEntryClicked() --todo: 20250323 #2025_25 Fix this
+	local wasFilterHeaderClicked = false
 	if isContextMenuVisible and not wasTextSearchContextMenuEntryClicked then
 		wasTextSearchContextMenuEntryClicked = g_contextMenu.m_dropdownObject:WasTextSearchContextMenuEntryClicked()
 		if doDebugNow then d(">wasTextSearchContextMenuEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked)) end
@@ -1062,14 +1099,14 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 				if owningWindowOfMocCtrl and owningWindowOfMocCtrl.header and belongsToContextMenuCheck(owningWindowOfMocCtrl) then
 					if doDebugNow then d(">clicked header's child control at the contextMenu") end
 					--Clicked a header's child control at the context menu
-					wasTextSearchContextMenuEntryClicked = true
+					wasFilterHeaderClicked = true
 				end
 			end
 		end
 	end
 	if doDebugNow then d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked)) end
 
-	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true then
+	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true or wasFilterHeaderClicked == true then
 		if doDebugNow then  d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled())) end
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
@@ -1079,17 +1116,17 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 					if owningWindow ~= g_contextMenu.m_container then
 						if doDebugNow then d(">>>owningWindow ~= g_contextMenu.m_container") end
 						if wasTextSearchContextMenuEntryClicked == true then
-							if doDebugNow then d(">>>returning false cuz textSearchEntry was selected") end
-
-							--20250323 #2025_25 How to detect (even if multiselection is enabled and our last click was a ZO_Menu selection at the filter header) if we clicked GuiRoot or any other non LSM control (or the main opening/closing LSM control)
-							--and close the LSM then in total? Currently wasTextSearchContextMenuEntryClicked = true prevents this here if multiselection is enabled
-							return wasTextSearchContextMenuEntryClickedCheck(self, mocCtrl, wasTextSearchContextMenuEntryClicked, isContextMenuVisible)
+							if doDebugNow then d("<<<returning, textSearchEntry was selected") end
+							return wasTextSearchContextMenuEntryClickedCheck(self, mocCtrl, wasTextSearchContextMenuEntryClicked, isContextMenuVisible) --#2025_25
 							--return false
+						elseif wasFilterHeaderClicked then
+							if doDebugNow then d("<<<returning, wasFilterHeaderClicked = true (owningWindow ~= contextMenu)") end
+							return false
 						else
 							--todo: #2025_20 Did we click a mocCtrl which's owner is the contextMenu or a contextMenu's submenu?
 							if mocCtrl then
 								if mocCtrl.m_owner and mocCtrl.m_owner.m_parentMenu and mocCtrl.m_owner.m_parentMenu.m_dropdownObject and mocCtrl.m_owner.m_parentMenu.m_dropdownObject == self.m_dropdownObject then
-		d(">we clicked a contextMenu submenu entry: " ..tos(mocCtrl:GetName()) .. ", closeOnSelect: " .. tos(mocCtrl.closeOnSelect) .. ", multiSelect: " ..tos(self.m_enableMultiSelect))
+									if doDebugNow then d(">we clicked a contextMenu submenu entry: " ..tos(mocCtrl:GetName()) .. ", closeOnSelect: " .. tos(mocCtrl.closeOnSelect) .. ", multiSelect: " ..tos(self.m_enableMultiSelect)) end
 									return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 								end
 							end
@@ -1099,14 +1136,18 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 							if closeContextMenuAndSuppressClickCheck(false, nil, nil) then return false end
 						end
 					else
+						if wasFilterHeaderClicked then
+							if doDebugNow then d("<<<returning, wasFilterHeaderClicked = true (owningWindow == contextMenu)") end
+							return false
+						end
+
 						if doDebugNow then d("<<returning contextmenu via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect)) end
 						return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 					end
 				else
 					if doDebugNow then d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect)) end
-					--20250323 #2025_25 How to detect (even if multiselection is enabled and our last click was a ZO_Menu selection at the filter header) if we clicked GuiRoot or any other non LSM control (or the main opening/closing LSM control)
-					--and close the LSM then in total? Currently wasTextSearchContextMenuEntryClicked = true prevents this here if multiselection is enabled
-					return wasTextSearchContextMenuEntryClickedCheck(self, mocCtrl, wasTextSearchContextMenuEntryClicked, isContextMenuVisible)
+					return wasTextSearchContextMenuEntryClickedCheck(self, mocCtrl, wasTextSearchContextMenuEntryClicked, isContextMenuVisible) --#2025_25
+					--return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 				end
 
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
@@ -1121,7 +1162,7 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 			----#2025_20 clickedEntryBelongsToContextMenu does not work for submeu entries clicked at the contextMenu!
 			local clickedEntryBelongsToContextMenu = isContextMenuVisible and belongsToContextMenuCheck(mocCtrl)
 			if doDebugNow and mocCtrl then
-				d(">" .. tos(mocCtrl:GetName()) .. " - clickedEntryBelongsToContextMenu: " .. tos(clickedEntryBelongsToContextMenu))
+				d(">" .. tos(mocCtrl:GetName()) .. " - clickedEntryBelongsToContextMenu: " .. tos(clickedEntryBelongsToContextMenu) ..", isContextMenuVisible: " .. tos(isContextMenuVisible))
 			end
 			if closeContextMenuAndSuppressClickCheck(true, isMouseOverOwningDropdown, clickedEntryBelongsToContextMenu) then return false end
 		end

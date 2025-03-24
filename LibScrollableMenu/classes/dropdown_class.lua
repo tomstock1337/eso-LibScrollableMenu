@@ -1335,6 +1335,7 @@ LSM_Debug = {
 		if data.enabled then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
+					d("3??? Setting suppressNextOnGlobalMouseUp = true ???")
 					lib.preventerVars.suppressNextOnGlobalMouseUp = true
 d("<ABORT -> [dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
 					return
@@ -1366,6 +1367,7 @@ d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryM
 					-->That's because of evet_global_mouse_up fires on the submenu entry (if multiselection is disabled) and selects the entry. Trying to suppress it here
 					if isSubmenu and not isMultiSelectionEnabled and lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed then
 d(">>preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed: true -> Setting suppressNextOnGlobalMouseUp = true")
+						d("4??? Setting suppressNextOnGlobalMouseUp = true ???")
 						lib.preventerVars.suppressNextOnGlobalMouseUp = true
 					end
 					lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = nil

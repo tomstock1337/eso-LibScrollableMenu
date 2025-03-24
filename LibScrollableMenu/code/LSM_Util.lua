@@ -877,8 +877,21 @@ end
 --20250309 #2025_13 If the last comboBox_base:HiddenForReasons call closed an open contextMenu with multiSelect enabled, and we clicked on an LSM entry of another non-contextmenu
 --to close it, then just exit here and do not select the clicked entry
 function libUtil.checkNextOnEntryMouseUpShouldExecute()
-d(debugPrefix.."libUtil.checkNextOnEntryMouseUpShouldExecute: " ..tos(lib.preventerVars.suppressNextOnEntryMouseUp))
-	if lib.preventerVars.suppressNextOnEntryMouseUp then
+d(debugPrefix.."libUtil.checkNextOnEntryMouseUpShouldExecute - suppressNextOnEntryMouseUp:" ..tos(lib.preventerVars.suppressNextOnEntryMouseUp))
+	if lib.preventerVars.suppressNextOnEntryMouseUp == true then
+		--Was any special handling for the checkboxes/radiobuttons (clicked while an opened LSM contextMenu was on top of them) enabled. Disable the "skip" of next OnMouseUp so it not skipping it twice
+		if lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter ~= nil then
+			lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter - 1
+			if lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter <= 0 then
+				lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = 0
+			end
+			if lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter == 0 then
+d("<°°°suppressNextOnEntryMouseUpDisableCounter reached 0 -> Returning false -> Not skipping next OnMouseUp! °°°")
+				lib.preventerVars.suppressNextOnEntryMouseUp = nil
+				return false
+			end
+		end
+d("<!!! OnMosueup on LSM entry suppressed !!!")
 		lib.preventerVars.suppressNextOnEntryMouseUp = nil
 		return true
 	end
@@ -1062,6 +1075,7 @@ if doDebugNow then d("<!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			--Do not hide the contextMenu if the mocCtrl clicked should keep the menu opened, or if multiselection is enabled (and one clicked a combobox entry)
 			if not clickedNoEntry and ((mocCtrl and mocCtrl.closeOnSelect == false) or selfVar.m_enableMultiSelect) then
 				doNotHideContextMenu = true
+				d("1??? Setting suppressNextOnGlobalMouseUp = true ???")
 				lib.preventerVars.suppressNextOnGlobalMouseUp = true
 				if doDebugNow then d(">suppressNextOnGlobalMouseUp: " ..tos(lib.preventerVars.suppressNextOnGlobalMouseUp)) end
 				returnValue = false
