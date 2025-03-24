@@ -546,7 +546,7 @@ local handlerFunctions  = {
 	-- return true to "select" entry via described way in ZO_ComboBox handler (see above) / return false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback
 	["onMouseUp"] = {
 		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
---d(debugPrefix .. 'onMouseUp [entryTypeConstants.LSM_ENTRY_TYPE_NORMAL]')
+d(debugPrefix .. 'onMouseUp [entryTypeConstants.LSM_ENTRY_TYPE_NORMAL]')
 			onMouseUp(control, data, no_submenu)
 			return true
 		end,
@@ -1380,7 +1380,7 @@ d("<<ABORTING")
 d(">>OnEntrySelected")
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
-d(">>RunItemCallback")
+d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
 					self:RunItemCallback(data, data.ignoreCallback)
 				end
 
@@ -1711,6 +1711,8 @@ function dropdownClass:SetFilterString(filterBox)
 end
 
 function dropdownClass:ShowFilterEditBoxHistory(filterBox)
+	lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = nil
+
 	local selfVar = self
 	local comboBox = self.m_comboBox
 	if comboBox ~= nil then

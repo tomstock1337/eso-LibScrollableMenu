@@ -273,15 +273,13 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.35 - Updated 2025-03-23
+	CHANGELOG Current version: 2.35 - Updated 2025-03-25
 ---------------------------------------------------------------
-Max error #: 2025_25
+Max error #: 2025_26
 
 
 [WORKING ON]
--2025_15   [REBUILD bug and analyse]ContextMenu: If one opens a nested submenu of a nested submenu, the total context menu closes all of sudden? LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
--2025_24   [REBUILD bug and analyse]ContextMenu: If one opens a nested submenu of a nested submenu, and then onMouseEnter another context menu entry, the submenu stays opened
--2025_25   [REBUILD bug and analyse]If multiselection is enabled: Selecting a ZO_Menu context menu entry at the filter header context menu sets cntxTxtSearchEntryClicked = true, and if you directly click outside the combobox/dropdown, or at the dropdown's open/close main control afterwards, the dropdown does not close anymore
+-2025_26   Filter header: If the filter header filtered all items and we left click the "No search results" entry it will call the callback of another LSM control all of sudden, and close the filter header?
 
 [Fixed]
 -2025_6:	If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
@@ -292,6 +290,7 @@ Max error #: 2025_25
 -2025_13:	ContextMenu: Clicked outside will close the contextmenu now first and leave the other LSM menus opened
 -2025_14:   For multiselect: Replace PlaySound with LSM sound handler for selected entry
 -2025_16:   ContextMenu: Clicking a checkbox in a context menu's submenu will close the contextmenu. LSM test, entry "Submenu entry 6" -> nested submenus -> Checkbox
+-2025_15:   ContextMenu: If one opens a nested submenu of a nested submenu, the total context menu closes all of sudden? LSM test, entry "Submenu entry 6" -> nested submenus -> OnMouseEnter of the 2nd depth submenu closes all
 -2025_17:   Clicking a button still plays the click sound even if options.selectedSoundDisabled was set to true
 -2025_18:   ContextMenu: Clicking any non-contextmenu submenu entry below the context menu, will select the submenu entry and close the submenu (but it should only close the contextmenu)
 -2025_19:   ContextMenu: Clicking a context menu entry where multiselection is enabled, but the clicked entry of the context menu is not above the LSM (in background) anymore, the context menu closes even though an entry was clicked
@@ -299,6 +298,8 @@ Max error #: 2025_25
 -2025_21:   ContextMenu: If multiSelection is disabled in a contextmenu by default the list of the menu was always empty
 -2025_22:   ContextMenu: Trying to show a context menu on another context menu will just clear and hide the contextmenu now
 -2025_23:   ContextMenu: Clicking the reset button closes the contextmenu
+-2025_24:   ContextMenu: If one opens a nested submenu of a nested submenu, and then onMouseEnter another context menu entry, the submenu stays opened
+-2025_25:   If multiselection is enabled: Selecting a ZO_Menu context menu entry at the filter header context menu sets cntxTxtSearchEntryClicked = true, and if you directly click outside the combobox/dropdown, or at the dropdown's open/close main control afterwards, the dropdown does not close anymore
 
 
 [Added]

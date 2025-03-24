@@ -996,7 +996,7 @@ d(">we clicked somwhere after selecting a filterHeader's contextMenu - isContext
 			--But that will close the total dropdown if we select a ZO_Menu contextMenu entry which is not above the LSM controls -> as we clicked outside the LSM then
 			-->So how do we detect this as it will happen the same way if m_enableMultiSelect is false: Check if mocCtrl belongs to ZO_Menu
 			if mocCtrl then
-				d(">mocCtrl: " .. tos(mocCtrl:GetName()) .. ", parent: " .. tos(mocCtrl:GetParent():GetName()))
+				d(">mocCtrl: " .. tos((mocCtrl.GetName and mocCtrl:GetName()) or "n/a") .. ", parent: " .. tos((mocCtrl.GetParent and mocCtrl:GetParent() ~= nil and mocCtrl:GetParent():GetName()) or "n/a"))
 			end
 			--We clicked no ZO_MenuItem at the contextMenu of the LSM header editBox? Close the LSM menu then
 			if mocCtrl and mocCtrl:GetParent() ~= ZO_Menu then
@@ -1017,8 +1017,9 @@ d(">we clicked somwhere after selecting a filterHeader's contextMenu - isContext
 				lib.preventerVars.suppressNextOnEntryMouseUp = true
 
 				--Is the moc's entryType we clicked a LSM radioButton or checkbox?
-				if mocCtrl.entryType then
-					local buttonChildName = entryTypeToButtonChildName[mocCtrl.entryType]
+				local data = getControlData(mocCtrl)
+				if data and data.entryType then
+					local buttonChildName = entryTypeToButtonChildName[data.entryType]
 					if buttonChildName ~= nil then
 d("°°°LSM radioButton or checkBox clicked, while contextMenu was opened. Setting suppressNextOnEntryMouseUpDisableCounter to 2°°°")
 						lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = 2 --Only allow suppressNextOnEntryMouseUp to be used once, then reset it to false on the 2nd try
@@ -1027,6 +1028,7 @@ d("°°°LSM radioButton or checkBox clicked, while contextMenu was opened. Sett
 			end
 		end
 	end
+
 
 	--If the contextMenu was currently shown, as we clicked: Do not close as we just clicked a ZO_Menu's item e.g.
 	if isContextMenu then
