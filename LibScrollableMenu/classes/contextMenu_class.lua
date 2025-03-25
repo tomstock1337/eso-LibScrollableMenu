@@ -164,9 +164,9 @@ end
 function contextMenuClass:ShowContextMenu(parentControl)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 157, tos(getControlName(parentControl))) end
 	--Resetting some preventer variables
-	d("///////////////////////////////")
-	d(debugPrefix .. "->->->->-> contextMenuClass:ShowContextMenu")
-	d(">resetting some lib.preventerVars")
+	--d("///////////////////////////////")
+	--d(debugPrefix .. "->->->->-> contextMenuClass:ShowContextMenu")
+	--d(">resetting some lib.preventerVars")
 	lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = nil
 	lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = nil
 

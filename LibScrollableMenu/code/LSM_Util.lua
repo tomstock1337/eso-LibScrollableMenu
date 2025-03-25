@@ -649,16 +649,16 @@ end
 --Returns boolean true if that was the case -> Prevent selection of entries or changes of radioButtons/checkboxes
 --while a context menu was opened and one directly clicks on that other entry
 function libUtil.checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, buttonId)
-d(debugPrefix .. "checkIfContextMenuOpenedButOtherControlWasClicked")
+--d(debugPrefix .. "checkIfContextMenuOpenedButOtherControlWasClicked")
 	getContextMenuReference()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 29, tos(comboBox == g_contextMenu), tos(g_contextMenu:IsDropdownVisible())) end
 	if comboBox ~= g_contextMenu and g_contextMenu:IsDropdownVisible() then
 		if comboBox ~= nil then
-d(">!!!!ContextMenu - check if OPENED!!!!! comboBox: " ..tos(comboBox))
+--d(">!!!!ContextMenu - check if OPENED!!!!! comboBox: " ..tos(comboBox))
 			return comboBox:HiddenForReasons(buttonId)
 		end
 	end
-d("<<combobox not hidden for reasons")
+--d("<<combobox not hidden for reasons")
 	return false
 end
 
@@ -825,13 +825,13 @@ end
 --------------------------------------------------------------------
 --(Un)Silence the OnClicked sound of a selected dropdown entry
 function libUtil.silenceEntryClickedSound(doSilence, entryType)
-d(debugPrefix .. "libUtil.silenceEntryClickedSound - doSilence: " .. tos(doSilence) .. "; entryType: " .. tos(entryType))
+--d(debugPrefix .. "libUtil.silenceEntryClickedSound - doSilence: " .. tos(doSilence) .. "; entryType: " .. tos(entryType))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 20, tos(doSilence), tos(entryType)) end
 	local soundNameForSilence = soundConstants.entryTypeToSilenceSoundName[entryType]
 	if soundNameForSilence == nil then return end
 	if doSilence == true then
 		SOUNDS[soundNameForSilence] = soundConstants.soundClickedSilenced
-d(">sound is now: " .. tos(SOUNDS[soundNameForSilence]))
+--d(">sound is now: " .. tos(SOUNDS[soundNameForSilence]))
 	else
 		local origSound = soundConstants.entryTypeToOriginalSelectedSound[entryType]
 		SOUNDS[soundNameForSilence] = origSound
@@ -854,9 +854,9 @@ function libUtil.playSelectedSoundCheck(dropdown, entryType)
 	if options ~= nil then
 		--Chosen at options to play no selected sound?
 		if getValueOrCallback(options.selectedSoundDisabled, options) == true then
-d(">selectedSoundDisabled -> true, soundToPlayOrig: " .. tos(soundToPlayOrig))
+--d(">selectedSoundDisabled -> true, soundToPlayOrig: " .. tos(soundToPlayOrig))
 			silenceEntryClickedSound(true, entryType)
-d(">soundToPlayNow: " .. tos(soundToPlayOrig))
+--d(">soundToPlayNow: " .. tos(soundToPlayOrig))
 			return
 		else
 			--Custom selected sound passed in?
@@ -867,7 +867,7 @@ d(">soundToPlayNow: " .. tos(soundToPlayOrig))
 	else
 		soundToPlay = soundToPlayOrig
 	end
-d(">>playing sound: " .. tos(soundToPlay))
+--d(">>playing sound: " .. tos(soundToPlay))
 	PlaySound(soundToPlay)
 end
 
@@ -877,7 +877,7 @@ end
 --20250309 #2025_13 If the last comboBox_base:HiddenForReasons call closed an open contextMenu with multiSelect enabled, and we clicked on an LSM entry of another non-contextmenu
 --to close it, then just exit here and do not select the clicked entry
 function libUtil.checkNextOnEntryMouseUpShouldExecute()
-d(debugPrefix.."libUtil.checkNextOnEntryMouseUpShouldExecute - suppressNextOnEntryMouseUp:" ..tos(lib.preventerVars.suppressNextOnEntryMouseUp))
+--d(debugPrefix.."libUtil.checkNextOnEntryMouseUpShouldExecute - suppressNextOnEntryMouseUp:" ..tos(lib.preventerVars.suppressNextOnEntryMouseUp))
 	if lib.preventerVars.suppressNextOnEntryMouseUp == true then
 		--Was any special handling for the checkboxes/radiobuttons (clicked while an opened LSM contextMenu was on top of them) enabled. Disable the "skip" of next OnMouseUp so it not skipping it twice
 		if lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter ~= nil then
@@ -886,12 +886,12 @@ d(debugPrefix.."libUtil.checkNextOnEntryMouseUpShouldExecute - suppressNextOnEnt
 				lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = 0
 			end
 			if lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter == 0 then
-d("<°°°suppressNextOnEntryMouseUpDisableCounter reached 0 -> Returning false -> Not skipping next OnMouseUp! °°°")
+--d("<°°°suppressNextOnEntryMouseUpDisableCounter reached 0 -> Returning false -> Not skipping next OnMouseUp! °°°")
 				lib.preventerVars.suppressNextOnEntryMouseUp = nil
 				return false
 			end
 		end
-d("<!!! OnMosueup on LSM entry suppressed !!!")
+--d("<!!! OnMosueup on LSM entry suppressed !!!")
 		lib.preventerVars.suppressNextOnEntryMouseUp = nil
 		return true
 	end
@@ -919,7 +919,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 	local isCntxtMenOwnedByComboBox = contextMenuDropdownObject:IsOwnedByComboBox(comboBox)
 
 
-	local doDebugNow = true --todo disable again after testing
+	local doDebugNow = false --todo disable again after testing
 	if doDebugNow then d(debugPrefix .. "[checkIfHiddenForReasons]isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu)) end
 
 	if not isContextMenu then
@@ -972,6 +972,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 		--Context menu is currently shown
 		if doDebugNow then d(">isContextMenu -> TRUE") end
 		local doNotHideContextMenu = false
+		local mocCtrlName
 
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 			--Is there no LSM comboBox's control (entry, or header etc.) clicked? Close the context menu
@@ -996,30 +997,33 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 								returnValue = false
 								doNotHideContextMenu = true
 							else
-if doDebugNow then d(">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!") end
-LSM_Debug = LSM_Debug or {}
-LSM_Debug.checkIfHiddenForReasons = LSM_Debug.checkIfHiddenForReasons or {}
+								if doDebugNow then d(">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+									LSM_Debug = LSM_Debug or {}
+									LSM_Debug.checkIfHiddenForReasons = LSM_Debug.checkIfHiddenForReasons or {}
 
-getControlName = getControlName or libUtil.getControlName
-local mocCtrlName = getControlName(mocCtrl)
-LSM_Debug.checkIfHiddenForReasons[mocCtrlName] = {
-	mocCtrl = type(mocCtrl) == "table" and ZO_ShallowTableCopy(mocCtrl) or nil,
-	closeOnSelect = mocCtrl.closeOnSelect,
-	isCntxtMenOwnedByComboBox = isCntxtMenOwnedByComboBox,
-	enableMultiSelect = selfVar.m_enableMultiSelect,
-}
+									getControlName = getControlName or libUtil.getControlName
+									mocCtrlName = getControlName(mocCtrl)
+									LSM_Debug.checkIfHiddenForReasons[mocCtrlName] = {
+										mocCtrl = type(mocCtrl) == "table" and ZO_ShallowTableCopy(mocCtrl) or nil,
+										closeOnSelect = mocCtrl.closeOnSelect,
+										isCntxtMenOwnedByComboBox = isCntxtMenOwnedByComboBox,
+										enableMultiSelect = selfVar.m_enableMultiSelect,
+									}
+								end
 								-- or was a checkbox's [ ] box control in a contextMenu's submenu clicked directly?
 								if mocCtrl.m_owner == nil then
 									local parent = mocCtrl:GetParent()
 									mocCtrl = parent
-LSM_Debug.checkIfHiddenForReasons[mocCtrlName].parent = parent
+									if doDebugNow then LSM_Debug.checkIfHiddenForReasons[mocCtrlName].parent = parent end
 								end
 								local owner = mocCtrl.m_owner
-								if doDebugNow then d(">>2 - isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner and owner.isSubmenu or nil) .. "; closeOnSelect: " .. tos(mocCtrl and mocCtrl.closeOnSelect or nil)) end
-if owner then
-	LSM_Debug.checkIfHiddenForReasons[mocCtrlName].owner = owner
-	LSM_Debug.checkIfHiddenForReasons[mocCtrlName].isSubmenu = isSubmenu or owner.isSubmenu
-end
+								if doDebugNow then
+									d(">>2 - isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner and owner.isSubmenu or nil) .. "; closeOnSelect: " .. tos(mocCtrl and mocCtrl.closeOnSelect or nil))
+									if owner then
+										LSM_Debug.checkIfHiddenForReasons[mocCtrlName].owner = owner
+										LSM_Debug.checkIfHiddenForReasons[mocCtrlName].isSubmenu = isSubmenu or owner.isSubmenu
+									end
+								end
 								if owner and (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
 									if doDebugNow then d(">>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect) .. ", multiSelect: " .. tos(selfVar.m_enableMultiSelect) .. ", result: " .. tos(not mocCtrl.closeOnSelect or selfVar.m_enableMultiSelect)) end
 									returnValue = not mocCtrl.closeOnSelect or selfVar.m_enableMultiSelect
@@ -1027,8 +1031,10 @@ end
 									if doDebugNow then d(">>2 owner and no submenu -> return true") end
 									returnValue = true
 								end
-LSM_Debug.checkIfHiddenForReasons[mocCtrlName].returnValue = returnValue
-if doDebugNow then d("<!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!") end
+								if doDebugNow then
+									LSM_Debug.checkIfHiddenForReasons[mocCtrlName].returnValue = returnValue
+									d("<!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+								end
 							end
 						end
 					else
@@ -1075,7 +1081,7 @@ if doDebugNow then d("<!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			--Do not hide the contextMenu if the mocCtrl clicked should keep the menu opened, or if multiselection is enabled (and one clicked a combobox entry)
 			if not clickedNoEntry and ((mocCtrl and mocCtrl.closeOnSelect == false) or selfVar.m_enableMultiSelect) then
 				doNotHideContextMenu = true
-				d("1??? Setting suppressNextOnGlobalMouseUp = true ???")
+				if doDebugNow then d("1??? Setting suppressNextOnGlobalMouseUp = true ???") end
 				lib.preventerVars.suppressNextOnGlobalMouseUp = true
 				if doDebugNow then d(">suppressNextOnGlobalMouseUp: " ..tos(lib.preventerVars.suppressNextOnGlobalMouseUp)) end
 				returnValue = false

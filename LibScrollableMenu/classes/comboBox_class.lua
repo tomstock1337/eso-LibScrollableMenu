@@ -186,19 +186,19 @@ function comboBoxClass:HideDropdown()
 end
 
 function comboBoxClass:HideOnMouseEnter()
-d(debugPrefix .. "comboBoxClass:HideOnMouseEnter - ctrl: " .. tos(moc() and moc():GetName() or "n/a"))
+--d(debugPrefix .. "comboBoxClass:HideOnMouseEnter - ctrl: " .. tos(moc() and moc():GetName() or "n/a"))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 132) end
-d(">isContextMenu: " ..tos(self.isContextMenu) ..", submenu found: " .. tos(self.m_submenu ~= nil) ..", isMoOuseOverSubmenu: ".. tos(self.m_submenu:IsMouseOverControl()) .. ", isMouseOverCombobBox: " .. tos(self:IsMouseOverControl()))
+--d(">isContextMenu: " ..tos(self.isContextMenu) ..", submenu found: " .. tos(self.m_submenu ~= nil) ..", isMoOuseOverSubmenu: ".. tos(self.m_submenu:IsMouseOverControl()) .. ", isMouseOverCombobBox: " .. tos(self:IsMouseOverControl()))
 	if self.m_submenu and not self.m_submenu:IsMouseOverControl() and not self:IsMouseOverControl() then
 		self.m_submenu:HideDropdown()
 	end
 end
 
 function comboBoxClass:HideOnMouseExit(mocCtrl)
-d(debugPrefix .. "comboBoxClass:HideOnMouseExit - ctrl: " .. tos(mocCtrl and mocCtrl:GetName() or "n/a"))
+--d(debugPrefix .. "comboBoxClass:HideOnMouseExit - ctrl: " .. tos(mocCtrl and mocCtrl:GetName() or "n/a"))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 133) end
 	if self.m_submenu and self.m_submenu:ShouldHideDropdown() then
-d(">isContextMenu: " ..tos(self.isContextMenu) ..", submenu found, ShouldHideDropdown = true -> HideDropdown")
+--d(">isContextMenu: " ..tos(self.isContextMenu) ..", submenu found, ShouldHideDropdown = true -> HideDropdown")
 		self.m_submenu:HideDropdown()
 		return true
 	end
@@ -405,9 +405,11 @@ end
 		---> See table LSMOptionsToZO_ComboBoxOptionsCallbacks
 		self.updatedOptions = nil
 
+		--[[
 		if isContextMenu then
 			d("> SetOption and for ... do SetOptions looped ")
 		end
+		]]
 	end
 
 	-- this will add custom and default templates to self.XMLRowTemplates the same way dataTypes were created before.

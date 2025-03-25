@@ -572,21 +572,21 @@ end
 
 
 local function closeContextMenuAndSuppressClickCheck(checkOnlyMultiSelectionAtContextMenu, isMouseOverOwningDropdown, clickedEntryBelongsToContextMenu)
-	d(debugPrefix .. "closeContextMenuAndSuppressClickCheck - checkOnlyMultiSelectionAtContextMenu: " ..tos(checkOnlyMultiSelectionAtContextMenu) .. ", isMouseOverOwningDropdown: " ..tos(isMouseOverOwningDropdown) .. ", clickedEntryBelongsToContextMenu: " ..tos(clickedEntryBelongsToContextMenu))
+	--d(debugPrefix .. "closeContextMenuAndSuppressClickCheck - checkOnlyMultiSelectionAtContextMenu: " ..tos(checkOnlyMultiSelectionAtContextMenu) .. ", isMouseOverOwningDropdown: " ..tos(isMouseOverOwningDropdown) .. ", clickedEntryBelongsToContextMenu: " ..tos(clickedEntryBelongsToContextMenu))
 	lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = nil
 	lib.preventerVars.suppressNextOnEntryMouseUp = nil
 	if not g_contextMenu:IsDropdownVisible() then return end
 	--If multiselection is enabled and a contextMenu is currently shown, but we clicked somewhere else: Close the contextMenu now
 	if not checkOnlyMultiSelectionAtContextMenu or (checkOnlyMultiSelectionAtContextMenu and g_contextMenu.m_enableMultiSelect == true) then
 		if not isMouseOverOwningDropdown and not clickedEntryBelongsToContextMenu then --#2025_19 How to prevent context menu close if multiselection is enabled and we clicked an entry which is not above any LSM combobox, but belongs to the actual contextmenu?
-			d(">>context menu is opened and clicked somewhere else -> Hide the contextMenu now")
+			--d(">>context menu is opened and clicked somewhere else -> Hide the contextMenu now")
 			ClearCustomScrollableMenu()
 			--20250309 Prevent the next dropdownClass:OnEntryMouseUp being fired if we clicked inside an LSM (only the contextMenu should close!)
-			d("1!!! Setting suppressNextOnEntryMouseUp = true !!!")
+			--d("1!!! Setting suppressNextOnEntryMouseUp = true !!!")
 			lib.preventerVars.suppressNextOnEntryMouseUp = true
 
 			if checkOnlyMultiSelectionAtContextMenu == true and isMouseOverOwningDropdown == nil and clickedEntryBelongsToContextMenu == false then
-				d(">>>1setting preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = true")
+				--d(">>>1setting preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = true")
 				lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = true
 			end
 		end
@@ -595,14 +595,14 @@ local function closeContextMenuAndSuppressClickCheck(checkOnlyMultiSelectionAtCo
 		--Clicked entry does not belong to the contextMenu -> Close the contextMenu and supress next global mouse click so we do not select any other control clicked otuside the contextmenu
 		-->E.g. a submenu entry of a LSM
 		if not isMouseOverOwningDropdown and not clickedEntryBelongsToContextMenu then
-			d(">>context menu is opened and clicked somewhere else, e.g. submenu -> Hide the contextMenu now")
+			--d(">>context menu is opened and clicked somewhere else, e.g. submenu -> Hide the contextMenu now")
 			ClearCustomScrollableMenu()
 			--20250309 Prevent the next dropdownClass:OnEntryMouseUp being fired if we clicked inside an LSM (only the contextMenu should close!)
-			d("2!!! Setting suppressNextOnEntryMouseUp = true !!!")
+			--d("2!!! Setting suppressNextOnEntryMouseUp = true !!!")
 			lib.preventerVars.suppressNextOnEntryMouseUp = true
 
 			if checkOnlyMultiSelectionAtContextMenu == true and isMouseOverOwningDropdown == nil and clickedEntryBelongsToContextMenu == false then
-				d(">>>2setting preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = true")
+				--d(">>>2setting preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = true")
 				lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = true
 			end
 			return true --to not hide the LSM parent dropdown
@@ -901,7 +901,7 @@ end
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
 function comboBox_base:OnGlobalMouseUp(eventId, button)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(lib.preventerVars.suppressNextOnGlobalMouseUp)) end
-d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
+--d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
 	if lib.preventerVars.suppressNextOnGlobalMouseUp then
 		lib.preventerVars.suppressNextOnGlobalMouseUp = nil
 		return false
@@ -910,18 +910,18 @@ d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", su
 	if self:IsDropdownVisible() then
 		local isMouseOverOwningDropdown = self.m_dropdownObject:IsMouseOverControl()
 		if not isMouseOverOwningDropdown then
-d(">>dropdownVisible -> not IsMouseOverControl") --#2025_19 Closes a context menu if the clicked entry of the contextmenu was not above the LSM anymore -> Should not directly close if multiselection is enabled in the context menu!
+--d(">>dropdownVisible -> not IsMouseOverControl") --#2025_19 Closes a context menu if the clicked entry of the contextmenu was not above the LSM anymore -> Should not directly close if multiselection is enabled in the context menu!
 			if self:HiddenForReasons(button, isMouseOverOwningDropdown) then
-				d(">>>HiddenForReasons -> Hiding dropdown now")
+				--d(">>>HiddenForReasons -> Hiding dropdown now")
 				return self:HideDropdown()
 			end
 		end
 	else
 		if self.m_container:IsHidden() then
-d(">>>else - containerIsHidden -> Hiding dropdown now")
+--d(">>>else - containerIsHidden -> Hiding dropdown now")
 			self:HideDropdown()
 		else
-d("<SHOW DROPDOWN OnMouseUp")
+--d("<SHOW DROPDOWN OnMouseUp")
 			lib.openMenu = self
 			-- If shown in ShowDropdownInternal, the global mouseup will fire and immediately dismiss the combo box. We need to
 			-- delay showing it until the first one fires.
@@ -988,22 +988,24 @@ end
 --and close the LSM then in total? Currently wasTextSearchContextMenuEntryClicked = true prevents this here if multiselection is enabled
 local function wasTextSearchContextMenuEntryClickedCheck(selfVar, mocCtrl, wasTextSearchContextMenuEntryClicked, isContextMenu)
 	if wasTextSearchContextMenuEntryClicked == true then
-d("~~~ Resetting lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter to nil ~~~")
+--d("~~~ Resetting lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter to nil ~~~")
 		lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = nil
 
-d(">we clicked somwhere after selecting a filterHeader's contextMenu - isContextMenu: " .. tos(isContextMenu))
+--d(">we clicked somwhere after selecting a filterHeader's contextMenu - isContextMenu: " .. tos(isContextMenu))
 		if mocCtrl == nil or mocCtrl.closeOnSelect == nil then
 			--But that will close the total dropdown if we select a ZO_Menu contextMenu entry which is not above the LSM controls -> as we clicked outside the LSM then
 			-->So how do we detect this as it will happen the same way if m_enableMultiSelect is false: Check if mocCtrl belongs to ZO_Menu
+			--[[
 			if mocCtrl then
 				d(">mocCtrl: " .. tos((mocCtrl.GetName and mocCtrl:GetName()) or "n/a") .. ", parent: " .. tos((mocCtrl.GetParent and mocCtrl:GetParent() ~= nil and mocCtrl:GetParent():GetName()) or "n/a"))
 			end
+			]]
 			--We clicked no ZO_MenuItem at the contextMenu of the LSM header editBox? Close the LSM menu then
 			if mocCtrl and mocCtrl:GetParent() ~= ZO_Menu then
 				if isContextMenu then
 					--Prevent close of the LSM, and selection of any other item we clicked below the ZO_Menu context menu (e.g. an opened submenu below)
-					d(">>ContextMenu was opened: setting preventerVars.suppressNextOnEntryMouseUp = true")
-					d("3!!! Setting suppressNextOnEntryMouseUp = true !!!")
+					--d(">>ContextMenu was opened: setting preventerVars.suppressNextOnEntryMouseUp = true")
+					--d("3!!! Setting suppressNextOnEntryMouseUp = true !!!")
 					lib.preventerVars.suppressNextOnEntryMouseUp = true
 				end
 				return true
@@ -1012,8 +1014,8 @@ d(">we clicked somwhere after selecting a filterHeader's contextMenu - isContext
 			--Clicked an LSM entry?
 			if isContextMenu and wasTextSearchContextMenuEntryClicked then
 				--Prevent selection of any other LSM item we clicked below the ZO_Menu context menu (e.g. an opened submenu below)
-				d(">>ContextMenu was opened & LSM entry clicked: setting preventerVars.suppressNextOnEntryMouseUp = true")
-				d("4!!! Setting suppressNextOnEntryMouseUp = true !!!")
+				--d(">>ContextMenu was opened & LSM entry clicked: setting preventerVars.suppressNextOnEntryMouseUp = true")
+				--d("4!!! Setting suppressNextOnEntryMouseUp = true !!!")
 				lib.preventerVars.suppressNextOnEntryMouseUp = true
 
 				--Is the moc's entryType we clicked a LSM radioButton or checkbox?
@@ -1021,7 +1023,7 @@ d(">we clicked somwhere after selecting a filterHeader's contextMenu - isContext
 				if data and data.entryType then
 					local buttonChildName = entryTypeToButtonChildName[data.entryType]
 					if buttonChildName ~= nil then
-d("°°°LSM radioButton or checkBox clicked, while contextMenu was opened. Setting suppressNextOnEntryMouseUpDisableCounter to 2°°°")
+--d("°°°LSM radioButton or checkBox clicked, while contextMenu was opened. Setting suppressNextOnEntryMouseUpDisableCounter to 2°°°")
 						lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = 2 --Only allow suppressNextOnEntryMouseUp to be used once, then reset it to false on the 2nd try
 					end
 				end
@@ -1032,16 +1034,16 @@ d("°°°LSM radioButton or checkBox clicked, while contextMenu was opened. Sett
 
 	--If the contextMenu was currently shown, as we clicked: Do not close as we just clicked a ZO_Menu's item e.g.
 	if isContextMenu then
-d(">>contextMenu is open: Return false")
+--d(">>contextMenu is open: Return false")
 		if wasTextSearchContextMenuEntryClicked then
-d(">>suppressing next OnGlobalMouseUp, cuz mouse was not over combobox ctrl")
-			d("2??? Setting suppressNextOnGlobalMouseUp = true ???")
+--d(">>suppressing next OnGlobalMouseUp, cuz mouse was not over combobox ctrl")
+			--d("2??? Setting suppressNextOnGlobalMouseUp = true ???")
 			lib.preventerVars.suppressNextOnGlobalMouseUp = true
 		end
 		return false
 	else
 		--Clicked entry should close after selection? Or not close because multiSelect is enabled?
-d(">>Return: " .. tos(((mocCtrl and mocCtrl.closeOnSelect) or nil) and not selfVar.m_enableMultiSelect))
+--d(">>Return: " .. tos(((mocCtrl and mocCtrl.closeOnSelect) or nil) and not selfVar.m_enableMultiSelect))
 		return ((mocCtrl and mocCtrl.closeOnSelect) or nil) and not selfVar.m_enableMultiSelect
 	end
 end
@@ -1067,7 +1069,7 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	end
 
 
-	local doDebugNow = true -- todo disable after testing again
+	local doDebugNow = false -- todo disable after testing again
 	if doDebugNow then
 		local tabEntryName = getControlName(mocCtrl) or "n/a"
 		d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button) .. ", tabEntryName: " .. tos(tabEntryName))
@@ -1272,7 +1274,7 @@ end
 -- Changed to hide tooltip and, if available, it's submenu
 -- We hide the tooltip here so it is hidden if the dropdown is hidden OnGlobalMouseUp
 function comboBox_base:HideDropdown()
-d(debugPrefix .. "comboBox_base:HideDropdown")
+--d(debugPrefix .. "comboBox_base:HideDropdown")
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 97) end
 	-- Recursive through all open submenus and close them starting from last.
 

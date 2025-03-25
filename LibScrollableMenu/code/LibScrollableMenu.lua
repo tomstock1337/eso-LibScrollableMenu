@@ -140,7 +140,7 @@ function lib.XML.XMLButtonOnInitialize(control, entryType)
 	local isRadioButton = not isCheckbox and entryType == entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON
 
 	control:GetParent():SetHandler('OnMouseUp', function(parent, buttonId, upInside, ...)
-d(debugPrefix .. "XML-OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
+--d(debugPrefix .. "XML-OnMouseUp of parent-upInside: " ..tos(upInside) .. ", buttonId: " .. tos(buttonId))
 		if upInside then
 			if checkIfContextMenuOpenedButOtherControlWasClicked(control, parent.m_owner, buttonId) == true then return end
 			if buttonId == MOUSE_BUTTON_INDEX_LEFT then
@@ -280,6 +280,24 @@ Max error #: 2025_26
 
 [WORKING ON]
 -2025_26   Filter header: If the filter header filtered all items and we left click the "No search results" entry it will call the callback of another LSM control all of sudden, and close the filter header?
+-->Reason: It is calling
+/EsoUI/Libraries/Globals/DebugUtils.lua:43: in function 'd'
+|caaaaaa<Locals> i = 1, value = "Context menu Normal entry 5" </Locals>|r
+[C]: in function 'PostHookFunction'
+user:/AddOns/LibScrollableMenu/test/LSM_test.lua:748: in function 'callback'
+/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox_Base.lua:245: in function 'ZO_ComboBox_Base:ItemSelectedClickHelper'
+|caaaaaa<Locals> self = [table:2]{horizontalAlignment = 0, noSelectionText = "Keine Einträge ausgewählt", m_enableMultiSelect = F, visibleRowsSubmenu = 4, m_name = "LibScrollableMenu_ContextMenu...", filterString = "dftd", m_highlightTemplate = "ZO_SelectionHighlight", breadcrumbName = "ContextmenuBreadcrumb", enableFilter = T, m_font = "ZoFontGame", isContextMenu = T, m_maxNumSelectionsErrorText = "Maximale Auswahl erreicht.", currentSelectedItemText = "Context menu Normal entry 5", optionsChanged = T, disableFadeGradient = F, visibleRows = 5, m_sortOrder = T, m_isDropdownVisible = T, containerMinWidth = 493.96606445312, headerCollapsed = F, m_nextFree = 2, m_height = 187, m_containerWidth = 493.96606445312, headerFont = "ZoFontGame", m_sortsItems = F, multiSelectionTextFormatter = 811, baseEntryHeight = 25, m_spacing = 0, itemYPad = 0}, item = [table:3]{isNew = F, name = "Context menu Normal entry 5", isRadioButton = F, entryType = 1, customEntryTemplate = "LibScrollableMenu_ComboBoxEntr...", isCheckbox = F, hasSubmenu = F, isHeader = F, isDivider = F, isButton = F, enabled = T}, selectionChanged = T </Locals>|r
+(tail call): ?
+(tail call): ?
+/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:149: in function 'ZO_ComboBox:SetSelected'
+|caaaaaa<Locals> self = [table:2], index = 7, item = [table:3] </Locals>|r
+/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:629: in function 'ZO_ComboBoxDropdown_Keyboard:OnEntrySelected'
+|caaaaaa<Locals> self = [table:4]{spacing = 0, nextScrollTypeId = 17, wasTextSearchContextMenuEntryClicked = T}, control = ud </Locals>|r
+/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:658: in function 'ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp'
+|caaaaaa<Locals> control = ud, button = 1, upInside = T, dropdown = [table:4] </Locals>|r
+LibScrollableMenu_ContextMenu1Scroll2Row1_MouseUp:3: in function '(main chunk)'
+|caaaaaa<Locals> self = ud, button = 1, upInside = T, ctrl = F, alt = F, shift = F, command = F </Locals>|r
+
 
 [Fixed]
 -2025_6:	If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case

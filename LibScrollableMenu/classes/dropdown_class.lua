@@ -546,7 +546,7 @@ local handlerFunctions  = {
 	-- return true to "select" entry via described way in ZO_ComboBox handler (see above) / return false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback
 	["onMouseUp"] = {
 		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
-d(debugPrefix .. 'onMouseUp [entryTypeConstants.LSM_ENTRY_TYPE_NORMAL]')
+--d(debugPrefix .. 'onMouseUp [entryTypeConstants.LSM_ENTRY_TYPE_NORMAL]')
 			onMouseUp(control, data, no_submenu)
 			return true
 		end,
@@ -1335,9 +1335,9 @@ LSM_Debug = {
 		if data.enabled then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
-					d("3??? Setting suppressNextOnGlobalMouseUp = true ???")
+					--d("3??? Setting suppressNextOnGlobalMouseUp = true ???")
 					lib.preventerVars.suppressNextOnGlobalMouseUp = true
-d("<ABORT -> [dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
+--d("<ABORT -> [dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
 					return
 				end
 
@@ -1355,32 +1355,32 @@ d("<ABORT -> [dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNe
 						self.owner.m_enableMultiSelect = true
 					end
 				end
-d(debugPrefix .. "OnEntryMouseUp-multiSelection/atParent: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(isSubmenu))
-d(">self.owner.m_enableMultiSelect: " ..tos(self.owner.m_enableMultiSelect))
+--d(debugPrefix .. "OnEntryMouseUp-multiSelection/atParent: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(isSubmenu))
+--d(">self.owner.m_enableMultiSelect: " ..tos(self.owner.m_enableMultiSelect))
 
 
 				--20250309 if the last comboBox_base:HiddenForReasons call closed an open contextMenu with multiSelect enabled, and we clicked on an LSM entry of another non-contextmenu
 				--to close it, then just exit here and do not select the clicked entry
-d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryMouseUp: " ..tos(lib.preventerVars.suppressNextOnEntryMouseUp))
+--d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryMouseUp: " ..tos(lib.preventerVars.suppressNextOnEntryMouseUp))
 				if checkNextOnEntryMouseUpShouldExecute() then --#2025_13
 					--#2025_18 Clicking a non-context menu submenu entry, while a context menu is opeed above, close the context nmenu BUT also selects that submenu entry and closes the whole  dropdown then
 					-->That's because of evet_global_mouse_up fires on the submenu entry (if multiselection is disabled) and selects the entry. Trying to suppress it here
 					if isSubmenu and not isMultiSelectionEnabled and lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed then
-d(">>preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed: true -> Setting suppressNextOnGlobalMouseUp = true")
-						d("4??? Setting suppressNextOnGlobalMouseUp = true ???")
+--d(">>preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed: true -> Setting suppressNextOnGlobalMouseUp = true")
+						--d("4??? Setting suppressNextOnGlobalMouseUp = true ???")
 						lib.preventerVars.suppressNextOnGlobalMouseUp = true
 					end
 					lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = nil
-d("<<ABORTING")
+--d("<<ABORTING")
 					return
 				end
 
 
 				if not ignoreHandler and runHandler(self, handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
-d(">>OnEntrySelected")
+--d(">>OnEntrySelected")
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
-d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
+--d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
 					self:RunItemCallback(data, data.ignoreCallback)
 				end
 
@@ -1391,7 +1391,7 @@ d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
 				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
 					--#2025_22 Check if the openingControl is another contextMenu -> We cannot show a contextMenu on a contextMenu
 					if libUtil_BelongsToContextMenuCheck(control:GetOwningWindow()) then
-d("<ABOER: contextMenu opening at a contextMenu entry -> Not allowed!")
+--d("<ABOER: contextMenu opening at a contextMenu entry -> Not allowed!")
 						return
 					end
 
@@ -1642,13 +1642,13 @@ end
 --------------------------------------------------------------------
 
 local function setTextSearchEditBoxText(selfVar, filterBox, newText)
-d(debugPrefix .. "setTextSearchEditBoxText - wasTextSearchContextMenuEntryClicked = true")
+--d(debugPrefix .. "setTextSearchEditBoxText - wasTextSearchContextMenuEntryClicked = true")
 	selfVar.wasTextSearchContextMenuEntryClicked = true
 	filterBox:SetText(newText) --will call dropdownClass:SetFilterString() then
 end
 
 local function clearTextSearchHistory(self, comboBoxContainerName)
-d(debugPrefix .. "clearTextSearchHistory - wasTextSearchContextMenuEntryClicked = true")
+--d(debugPrefix .. "clearTextSearchHistory - wasTextSearchContextMenuEntryClicked = true")
 	self.wasTextSearchContextMenuEntryClicked = true
 	if comboBoxContainerName == nil or comboBoxContainerName == "" then return end
 	if ZO_IsTableEmpty(lib.SV.textSearchHistory[comboBoxContainerName]) then return end
@@ -1676,7 +1676,7 @@ local function addTextSearchEditBoxTextToHistory(comboBox, filterBox, historyTex
 end
 
 function dropdownClass:WasTextSearchContextMenuEntryClicked(mocCtrl)
-d("dropdownClass:WasTextSearchContextMenuEntryClicked - wasTextSearchContextMenuEntryClicked: " ..tos(self.wasTextSearchContextMenuEntryClicked))
+--d("dropdownClass:WasTextSearchContextMenuEntryClicked - wasTextSearchContextMenuEntryClicked: " ..tos(self.wasTextSearchContextMenuEntryClicked))
 	--Internal variable was set as we selected a ZO_Menu entry at the header's editBox right click contextMenu?
 	if self.wasTextSearchContextMenuEntryClicked then
 		self.wasTextSearchContextMenuEntryClicked = nil

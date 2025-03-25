@@ -201,8 +201,9 @@ function submenuClass:HideOnMouseExit(mocCtrl)
 end
 
 function submenuClass:ShouldHideDropdown()
-	d(debugPrefix .. "submenuClass:ShouldHideDropdown - self: " .. tos(self) ..", dropdownVisible: " .. tos(self:IsDropdownVisible()) .. ", mouseOverCombobox: " ..tos(self:IsMouseOverControl()) .. ", mouseOverOpeningCOntrol: " .. tos(self:IsMouseOverOpeningControl()))
-LSM_Debug = LSM_Debug or {}
+	--d(debugPrefix .. "submenuClass:ShouldHideDropdown - self: " .. tos(self) ..", dropdownVisible: " .. tos(self:IsDropdownVisible()) .. ", mouseOverCombobox: " ..tos(self:IsMouseOverControl()) .. ", mouseOverOpeningCOntrol: " .. tos(self:IsMouseOverOpeningControl()))
+--[[
+	LSM_Debug = LSM_Debug or {}
 LSM_Debug["submenuClass:ShouldHideDropdown"] = LSM_Debug["submenuClass:ShouldHideDropdown"] or {}
 
 LSM_Debug["submenuClass:ShouldHideDropdown"][self] = {
@@ -211,11 +212,12 @@ LSM_Debug["submenuClass:ShouldHideDropdown"][self] = {
 	isMouseOverOpeningControl = self:IsMouseOverOpeningControl(),
 	moc = moc(),
 }
+]]
 
 	local isMouseOverAnyRelevantControl = false
 	g_contextMenu = g_contextMenu or getContextMenuReference() --#2025_15 ContextMenus' (nested) submenu (if opened near the screen edge e.g.) somehow does close if we move the mouse from one submenu to the next nested submenu entry. Trying to circumvent this by checking of contextMenu is shown and the moc() ctrl we moved the mouse on is still belonging to the contextMenu
 	if g_contextMenu:IsDropdownVisible() and g_contextMenu.m_container == self.m_container then
-d(">comboBox's submenu container is the contextMenu container")
+--d(">comboBox's submenu container is the contextMenu container")
 		isMouseOverAnyRelevantControl = (self:IsMouseOverControl() or self:IsMouseOverOpeningControl())
 --[[
 		--todo 20250323 If we leave this code uncomment every opened contextMenu supresses proper closing of all submenus...
