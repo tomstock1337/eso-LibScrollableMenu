@@ -273,9 +273,9 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.35 - Updated 2025-03-25
+	CHANGELOG Current version: 2.35 - Updated 2025-03-26
 ---------------------------------------------------------------
-Max error #: 2025_26
+Max error #: 2025_27
 
 
 [WORKING ON]
@@ -299,6 +299,7 @@ LibScrollableMenu_ContextMenu1Scroll2Row1_MouseUp:3: in function '(main chunk)'
 |caaaaaa<Locals> self = ud, button = 1, upInside = T, ctrl = F, alt = F, shift = F, command = F </Locals>|r
 
 
+
 [Fixed]
 -2025_6:	If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
 -2025_7:	If multiselection is enabled: LSM test Maximum number of selectable entries (maxNumSelections) is not working (maybe after submenus were opened)
@@ -318,6 +319,7 @@ LibScrollableMenu_ContextMenu1Scroll2Row1_MouseUp:3: in function '(main chunk)'
 -2025_23:   ContextMenu: Clicking the reset button closes the contextmenu
 -2025_24:   ContextMenu: If one opens a nested submenu of a nested submenu, and then onMouseEnter another context menu entry, the submenu stays opened
 -2025_25:   If multiselection is enabled: Selecting a ZO_Menu context menu entry at the filter header context menu sets cntxTxtSearchEntryClicked = true, and if you directly click outside the combobox/dropdown, or at the dropdown's open/close main control afterwards, the dropdown does not close anymore
+-2025_27 	ContextMenu: Opening an LSM contextMenu, after another was used before, does use some options of the before opened LSM contextMenu then (e.g. the filter header) -> Reset of all options on each contextMenu open
 
 
 [Added]

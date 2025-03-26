@@ -38,6 +38,7 @@ local constants = lib.constants
 local entryTypeConstants = constants.entryTypes
 local comboBoxConstants = constants.comboBox
 local defaultComboBoxOptions = comboBoxConstants.defaultComboBoxOptions
+local comboBoxDefaults = comboBoxConstants.defaults
 
 local libDivider = lib.DIVIDER
 

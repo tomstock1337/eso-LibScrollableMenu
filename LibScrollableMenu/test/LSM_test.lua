@@ -665,7 +665,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				end,
 				buttonGroup = 3,
 				contextMenuCallback = function(...)
-					LibScrollableMenu.SetButtonGroupState(...)
+					LibScrollableMenu.ButtonGroupDefaultContextMenu(...)
 				end,
 			},
 			{
@@ -680,7 +680,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				buttonGroup = function() return 3 end,
 				buttonGroupOnSelectionChangedCallback = function(control, previousControl) d("checkbox group 3 selection changed callback!")  end,
 				rightClickCallback = function(...)
-					LibScrollableMenu.SetButtonGroupState(...)
+					LibScrollableMenu.ButtonGroupDefaultContextMenu(...)
 				end,
 			},
 			{

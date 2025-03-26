@@ -406,7 +406,9 @@ constants.comboBox.mapping.possibleEntryDataWithFunction = possibleEntryDataWith
 
 --ZO_ComboBox default settings: Will be copied over as default attributes to comboBoxClass and inherited to the scrollable
 --dropdown helper classes, but only if they were not set in an existing ZO_ComboBox already (e.g. multiselection, etc.)
---befopre LSM was added
+--before LSM was added
+-->For LSM contextMenus these options will be used as defaultValues on each open! If you want to change them make sure to
+-->pass in your own options at API functions of contextMenu's "Show"
 local comboBoxDefaults = {
 	--From ZO_ComboBox
 	---member data with m_
@@ -438,6 +440,7 @@ local comboBoxDefaults = {
 	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 	containerMinWidth = 			dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER,
 	disableFadeGradient = 			false,
+	enableFilter = 					false, --#2025_27
 	headerFont =					fonts.DEFAULT_FONT,
 	headerColor = 					colors.HEADER_TEXT_COLOR,
 	headerCollapsed = 				false,
@@ -464,6 +467,7 @@ constants.entryTypes.defaults.highlights.defaultHighlightColor = comboBoxDefault
 
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
 local defaultComboBoxOptions  = {
+	["enableFilter"] = 				false,
 	["disableFadeGradient"] = 		false,
 	["font"] = 						fonts.DEFAULT_FONT,
 	["headerCollapsed"] =			false,

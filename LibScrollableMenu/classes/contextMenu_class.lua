@@ -33,7 +33,7 @@ local comboBoxClass = classes.comboBoxClass
 --------------------------------------------------------------------
 --LSM library locals
 --------------------------------------------------------------------
-local constants = lib.constants
+--local constants = lib.constants
 
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
@@ -58,6 +58,17 @@ local g_contextMenu
 --------------------------------------------------------------------
 local contextMenuClass = comboBoxClass:Subclass()
 classes.contextMenuClass = contextMenuClass
+
+
+--Create the local context menu object for the library's context menu API functions
+local function createContextMenuObject()
+	local comboBoxContainer = CreateControlFromVirtual(MAJOR .. "_ContextMenu", GuiRoot, "ZO_ComboBox")
+	g_contextMenu = contextMenuClass:New(comboBoxContainer)
+	lib.contextMenu = g_contextMenu
+
+	lib.CreateContextMenuObject = nil --remove globally accessible function after first call, so noone ever calls it twice
+end
+lib.CreateContextMenuObject = createContextMenuObject --Called once from initialization of LibScrollableMenu -> EVENT_ADD_ON_LOADED
 
 
 --------------------------------------------------------------------
@@ -94,6 +105,42 @@ function contextMenuClass:AddContextMenuItem(itemEntry)
 --	m_unsortedItems
 end
 
+function contextMenuClass:GetEntries()
+	return self.data
+end
+
+function contextMenuClass:GetMenuPrefix()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 153) end
+	return 'ContextMenu'
+end
+
+function contextMenuClass:HighlightOpeningControl()
+	local openingControl = self.openingControl
+	if openingControl then
+		local highlightContextMenuOpeningControl = (self.options ~= nil and self.options.highlightContextMenuOpeningControl) or false
+--d(debugPrefix .. "ctxMen-highlightCntxtMenOpeningControl-name: " .. tos(getControlName(openingControl)) ..", highlightIt: " .. tos(highlightContextMenuOpeningControl))
+		--Options tell us to highlight the openingControl?
+		if highlightContextMenuOpeningControl == true then
+			--Apply the highlightOpeningControl XML template to the openingControl and highlight it than via the animation
+			SubOrContextMenu_highlightControl(self, openingControl) --context menu
+		end
+	end
+end
+
+function contextMenuClass:SetContextMenuOptions(options)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 158, tos(options)) end
+
+	-- self.contextMenuOptions is only a temporary table used to check for changes in comboBox_class:UpdateOptions
+	-- so we can check here if anything changed within the passed in options paramter (compared to previous options)
+	-- It will be set to self.options in the end, via self:UpdateOptions -> called from contextMenuClass:ShowContextMenu
+	self.optionsChanged = self.contextMenuOptions ~= options
+
+--d(debugPrefix .. "SetContextMenuOptions - changed: " .. tos(self.optionsChanged) .. ", before: " .. tos(self.contextMenuOptions))
+	--Wil be used in contextMenuClass:ShowContextMenu -> self:UpdateOptions(self.contextMenuOptions)
+	self.contextMenuOptions = options
+--d(debugPrefix .. ">after: " .. tos(self.contextMenuOptions))
+end
+
 function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 151) end
 	self:RefreshSortedItems()
@@ -103,11 +150,12 @@ function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
 	self.m_dropdownObject:AnchorToMouse()
 end
 
+--Called from ClearCustomScrollableMenu -> libUtil.hideContextMenu
 function contextMenuClass:ClearItems()
 --d(debugPrefix .. 'contextMenuClass:ClearItems()')
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 152) end
 	self:SetContextMenuOptions(nil)
-	self:ResetToDefaults()
+	self:ResetToDefaults(nil) --comboBox_class
 
 --	ZO_ComboBox_HideDropdown(self:GetContainer())
 	ZO_ComboBox_HideDropdown(self)
@@ -116,15 +164,6 @@ function contextMenuClass:ClearItems()
 	self:SetSelectedItemText("")
 	self.m_selectedItemData = nil
 	self:OnClearItems()
-end
-
-function contextMenuClass:GetEntries()
-	return self.data
-end
-
-function contextMenuClass:GetMenuPrefix()
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 153) end
-	return 'ContextMenu'
 end
 
 function contextMenuClass:GetHiddenForReasons(button)
@@ -146,19 +185,6 @@ function contextMenuClass:ShowSubmenu(parentControl)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 156, tos(getControlName(parentControl))) end
 	local submenu = self:GetSubmenu()
 	submenu:ShowDropdownOnMouseAction(parentControl)
-end
-
-function contextMenuClass:HighlightOpeningControl()
-	local openingControl = self.openingControl
-	if openingControl then
-		local highlightContextMenuOpeningControl = (self.options ~= nil and self.options.highlightContextMenuOpeningControl) or false
---d(debugPrefix .. "ctxMen-highlightCntxtMenOpeningControl-name: " .. tos(getControlName(openingControl)) ..", highlightIt: " .. tos(highlightContextMenuOpeningControl))
-		--Options tell us to highlight the openingControl?
-		if highlightContextMenuOpeningControl == true then
-			--Apply the highlightOpeningControl XML template to the openingControl and highlight it than via the animation
-			SubOrContextMenu_highlightControl(self, openingControl) --context menu
-		end
-	end
 end
 
 function contextMenuClass:ShowContextMenu(parentControl)
@@ -184,12 +210,24 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	if self:IsDropdownVisible() then
 		self:HideDropdown()
 	end
-
---d(">Before options: self.visibleRows = " .. tos(self.visibleRows))
-
+--[[
+d(">Before options: self.enableFilter = " .. tos(self.enableFilter))
+LSM_Debug = LSM_Debug or {}
+LSM_Debug.contextMenusOpened = LSM_Debug.contextMenusOpened or {}
+local newIndex = #LSM_Debug.contextMenusOpened+1
+LSM_Debug.contextMenusOpened[newIndex] = {
+	optionsBefore = self.options ~= nil and ZO_ShallowTableCopy(self.options) or nil,
+	contextMenuOptionsBefore = self.contextMenuOptions ~= nil and ZO_ShallowTableCopy(self.contextMenuOptions) or nil,
+	enableFilterBefore = self.contextMenuOptionsBefore ~= nil and self.contextMenuOptionsBefore.enableFilter or nil,
+}
+]]
 	self:UpdateOptions(self.contextMenuOptions, nil, true, nil) --Updates self.options
-
---d(">After options: self.visibleRows = " .. tos(self.visibleRows))
+--[[
+LSM_Debug.contextMenusOpened[newIndex].optionsAfter = self.options ~= nil and ZO_ShallowTableCopy(self.options) or nil
+LSM_Debug.contextMenusOpened[newIndex].contextMenuOptionsAfter = self.contextMenuOptions ~= nil and ZO_ShallowTableCopy(self.contextMenuOptions) or nil
+LSM_Debug.contextMenusOpened[newIndex].enableFilterAfter = self.contextMenuOptions ~= nil and self.contextMenuOptions.enableFilter or nil,
+d(">After options: self.enableFilter = " .. tos(self.enableFilter))
+]]
 
 	self:HighlightOpeningControl()
 
@@ -210,25 +248,3 @@ function contextMenuClass:ShowContextMenu(parentControl)
 		end
   	end, 10, "_ContextMenuClass_ShowContextMenu")
 end
-
-function contextMenuClass:SetContextMenuOptions(options)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 158, tos(options)) end
-
-	-- self.contextMenuOptions is only a temporary table used to check for changes and to send to UpdateOptions
-	-- so we can check here if anything changed within the passed in options paramter (compared to previous options)
-	self.optionsChanged = self.contextMenuOptions ~= options
-
---d(debugPrefix .. "contextMenuClass:SetContextMenuOptions - optionsChanged: " .. tos(self.optionsChanged))
-	--Wil be used in contextMenuClass:ShowContextMenu -> self:UpdateOptions(self.contextMenuOptions)
-	self.contextMenuOptions = options
-end
-
---Create the local context menu object for the library's context menu API functions
-local function createContextMenuObject()
-	local comboBoxContainer = CreateControlFromVirtual(MAJOR .. "_ContextMenu", GuiRoot, "ZO_ComboBox")
-	g_contextMenu = contextMenuClass:New(comboBoxContainer)
-	lib.contextMenu = g_contextMenu
-
-	lib.CreateContextMenuObject = nil --remove globally accessible function after first call
-end
-lib.CreateContextMenuObject = createContextMenuObject
