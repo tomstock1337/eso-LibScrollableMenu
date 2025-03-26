@@ -275,7 +275,7 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 ---------------------------------------------------------------
 	CHANGELOG Current version: 2.35 - Updated 2025-03-26
 ---------------------------------------------------------------
-Max error #: 2025_27
+Max error #: 2025_28
 
 
 [WORKING ON]
@@ -320,6 +320,7 @@ LibScrollableMenu_ContextMenu1Scroll2Row1_MouseUp:3: in function '(main chunk)'
 -2025_24:   ContextMenu: If one opens a nested submenu of a nested submenu, and then onMouseEnter another context menu entry, the submenu stays opened
 -2025_25:   If multiselection is enabled: Selecting a ZO_Menu context menu entry at the filter header context menu sets cntxTxtSearchEntryClicked = true, and if you directly click outside the combobox/dropdown, or at the dropdown's open/close main control afterwards, the dropdown does not close anymore
 -2025_27 	ContextMenu: Opening an LSM contextMenu, after another was used before, does use some options of the before opened LSM contextMenu then (e.g. the filter header) -> Reset of all options on each contextMenu open
+-2025_28 	ContextMenu: API function RunCustomScrollableMenuItemsCallback is not respecting the parameter fromParentMenu
 
 
 [Added]

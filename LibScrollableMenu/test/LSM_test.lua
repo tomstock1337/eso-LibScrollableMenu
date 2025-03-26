@@ -309,21 +309,21 @@ local function test()
 
 					AddCustomScrollableSubMenuEntry("Context Submenu entry 1 (function)", submenuEntriesForContextMenu) -- function() return subEntries end --todo: ERROR both do not remove the isNew onMouseEnter at a contextmenu
 
-					AddCustomScrollableMenuEntry("Context RunCustomScrollableMenuItemsCallback (Parent, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
+					AddCustomScrollableMenuEntry("Context RunCustomScrollableMenuItemsCallback (Parent, Checkboxes)", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Custom menu Normal entry 1')
 
-						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
+						local function myAddonCallbackFuncSubmenuParent(p_comboBox, p_item, entriesFound) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
 d(debugPrefix .. "Context menu submenu - Custom menu Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
 							for _, v in ipairs(entriesFound) do
 								local name = v.label or v.name
-								d(">name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
+								d(">[Parent menu]name of entry: " .. tostring(name).. ", checked: " .. tostring(v.checked))
 							end
 
 						end
 
 						--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
-						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenu, nil, true)
+						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenuParent, { [1] = LSM_ENTRY_TYPE_CHECKBOX }, true)
 					end)
 
 					AddCustomScrollableMenuEntry("Context Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)
@@ -348,7 +348,7 @@ d(debugPrefix .. "Context menu submenu - Custom menu Normal entry 1->RunCustomSc
 					AddCustomScrollableMenuEntry("Context RunCustomScrollableMenuItemsCallback (Same, All)", function(comboBox, itemName, item, selectionChanged, oldItem)
 						d('Custom menu Normal entry 1')
 
-						local function myAddonCallbackFuncSubmenu(p_comboBox, p_item, entriesFound) --... will be filled with customParams
+						local function myAddonCallbackFuncSubmenuSame(p_comboBox, p_item, entriesFound) --... will be filled with customParams
 							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
 d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
 							for k, v in ipairs(entriesFound) do
@@ -359,7 +359,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 						end
 
 						--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
-						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenu, nil, false)
+						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFuncSubmenuSame, nil, false)
 					end)
 
 					AddCustomScrollableMenuEntry("Context Custom menu Normal entry 2", function() d('Custom menu Normal entry 2') end)

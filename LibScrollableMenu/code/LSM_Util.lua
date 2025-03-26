@@ -1150,18 +1150,37 @@ function libUtil.getComboBox(control, owningMenu)
 end
 getComboBox = libUtil.getComboBox
 
+--Get the sorted items of a dropdown's comboBox (either from the current menu or the parent [openingControl] menu)
 function libUtil.getComboBoxsSortedItems(comboBox, fromOpeningControl, onlyOpeningControl)
+d(debugPrefix .. "libUtil.getComboBoxsSortedItems - comboBox: " ..tos(comboBox) .. "; fromOpeningControl: " .. tos(fromOpeningControl) .. "; onlyOpeningControl: " .. tos(onlyOpeningControl))
 	fromOpeningControl = fromOpeningControl or false
 	onlyOpeningControl = onlyOpeningControl or false
 	local sortedItems
-	if fromOpeningControl == true then
-		local openingControl = comboBox.openingControl
-		if openingControl ~= nil then
-			sortedItems = openingControl.m_owner ~= nil and openingControl.m_owner.m_sortedItems
+	local isContextMenu = comboBox.isContextMenu
+	local l_openingControl = comboBox.openingControl
+	local ocCopy = l_openingControl
+
+
+LSM_Debug = LSM_Debug or {}
+LSM_Debug._getComboBoxsSortedItems = {
+	isContextMenu = isContextMenu,
+	comboBox = comboBox,
+	openingControl = ocCopy,
+}
+
+	if comboBox ~= nil then
+		if fromOpeningControl == true then
+			local openingControl = comboBox.openingControl
+			if openingControl ~= nil then
+				sortedItems = (openingControl.m_owner ~= nil and openingControl.m_owner.m_sortedItems) or nil
+d(">found sortedItems: " .. tos(sortedItems ~= nil and #sortedItems or nil))
+			end
+			if onlyOpeningControl then return sortedItems end
 		end
-		if onlyOpeningControl then return sortedItems end
+d(">comboBox.m_sortedItems: " .. tos(comboBox.m_sortedItems))
+		return sortedItems or comboBox.m_sortedItems
 	end
-	return sortedItems or comboBox.m_sortedItems
+	return sortedItems
 end
 lib.getComboBoxsSortedItems = libUtil.getComboBoxsSortedItems
 

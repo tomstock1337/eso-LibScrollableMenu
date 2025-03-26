@@ -526,8 +526,8 @@ local showCustomScrollableMenu = ShowCustomScrollableMenu
 	end)
 ]]
 --If table/function returning a table parameter filterEntryTypes is not nil:
---The table needs to have a number key and a LibScrollableMenu entryType constants e.g. LSM_ENTRY_TYPE_CHECKBOX as value. Only the provided entryTypes will be selected
---from the m_sortedItems list of the parent dropdown! All others will be filtered out. Only the selected entries will be passed to the myAddonCallbackFunc's param openingMenusEntries.
+--The table needs to have a number key and a LibScrollableMenu entryType constants as value, e.g. [1] = LSM_ENTRY_TYPE_CHECKBOX. Only the provided entryTypes will be selected
+--from the m_sortedItems list of the (same/parent) dropdown! All others will be filtered out. Only the selected entries will be passed to the myAddonCallbackFunc's param openingMenusEntries.
 --If the param filterEntryTypes is nil: All entries will be selected and passed to the myAddonCallbackFunc's param openingMenusEntries.
 --
 --If the boolean/function returning a boolean parameter fromParentMenu is true: The menu items of the opening (parent) menu will be returned. If false: The currently shown menu's items will be returned
@@ -553,13 +553,16 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 		assert(type(fromParentMenuValue) == "boolean", sfor("["..MAJOR..":"..assertFuncName.."] fromParentMenu: boolean expected, got %q", tos(type(fromParentMenu))))
 	end
 
---d(debugPrefix .. ""..assertFuncName.." - filterEntryTypes: " ..tos(gotFilterEntryTypes) .. ", type: " ..tos(filterEntryTypesTableType) ..", fromParentMenu: " ..tos(fromParentMenuValue))
+d(debugPrefix .. ""..assertFuncName.." - filterEntryTypes: " ..tos(gotFilterEntryTypes) .. ", type: " ..tos(filterEntryTypesTableType) ..", fromParentMenu: " ..tos(fromParentMenuValue))
 
 	--Find out via comboBox and item -> What was the "opening menu" and "how do I get openingMenu m_sortedItems"?
 	--comboBox would be the comboBox or dropdown of the context menu -> if RunCustomScrollableMenuCheckboxCallback was called from the callback of a contex menu entry
 	--item could have a control or something like that from where we can get the owner and then check if the owner got a openingControl or similar?
-	local sortedItems = getComboBoxsSortedItems(comboBox, fromParentMenu, false)
-	if ZO_IsTableEmpty(sortedItems) then return false end
+	local sortedItems = getComboBoxsSortedItems(comboBox, fromParentMenuValue, false)
+	if ZO_IsTableEmpty(sortedItems) then
+d("<sortedItems are empty!")
+		return false
+	end
 
 	local itemsForCallbackFunc = sortedItems
 

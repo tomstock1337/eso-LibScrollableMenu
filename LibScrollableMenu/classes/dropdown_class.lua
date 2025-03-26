@@ -1387,6 +1387,7 @@ LSM_Debug = {
 			--Show context menu at the entry?
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 				g_contextMenu = getContextMenuReference()
+				g_contextMenu.contextMenuIssuingControl = nil --#2025_28 Reset the contextMenuIssuingControl of the contextMenu for API functions
 				local rightClickCallback = data.contextMenuCallback or data.rightClickCallback
 				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
 					--#2025_22 Check if the openingControl is another contextMenu -> We cannot show a contextMenu on a contextMenu
@@ -1396,6 +1397,8 @@ LSM_Debug = {
 					end
 
 					if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 72) end
+--d(">setting g_contextMenu.contextMenuIssuingControl: " ..tos(control and control:GetName() or "???"))
+					g_contextMenu.contextMenuIssuingControl = control --#2025_28 Set the contextMenuIssuingControl of the contextMenu for API functions
 					rightClickCallback(comboBox, control, data)
 				end
 			end

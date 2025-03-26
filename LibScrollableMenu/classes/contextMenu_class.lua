@@ -154,6 +154,8 @@ end
 function contextMenuClass:ClearItems()
 --d(debugPrefix .. 'contextMenuClass:ClearItems()')
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 152) end
+	self.contextMenuIssuingControl = nil	--#2025_28 Reset the contextMenuIssuingControl of the contextMenu for API functions
+
 	self:SetContextMenuOptions(nil)
 	self:ResetToDefaults(nil) --comboBox_class
 
@@ -198,7 +200,10 @@ function contextMenuClass:ShowContextMenu(parentControl)
 
 	--Cache last opening Control for the comparison with new openingControl and reset of filters etc. below
 	local openingControlOld = self.openingControl
+	if parentControl == nil then parentControl = self.contextMenuIssuingControl or moc() end --#2025_28
 	self.openingControl = parentControl
+
+	--d(">openingCtrl: " .. getControlName(parentControl))
 
 	-- To prevent the context menu from overlapping a submenu it is not opened from:
 	-- If the opening control is a dropdown and has a submenu visible, close the submenu.
@@ -210,41 +215,41 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	if self:IsDropdownVisible() then
 		self:HideDropdown()
 	end
---[[
-d(">Before options: self.enableFilter = " .. tos(self.enableFilter))
-LSM_Debug = LSM_Debug or {}
-LSM_Debug.contextMenusOpened = LSM_Debug.contextMenusOpened or {}
-local newIndex = #LSM_Debug.contextMenusOpened+1
-LSM_Debug.contextMenusOpened[newIndex] = {
-	optionsBefore = self.options ~= nil and ZO_ShallowTableCopy(self.options) or nil,
-	contextMenuOptionsBefore = self.contextMenuOptions ~= nil and ZO_ShallowTableCopy(self.contextMenuOptions) or nil,
-	enableFilterBefore = self.contextMenuOptionsBefore ~= nil and self.contextMenuOptionsBefore.enableFilter or nil,
-}
-]]
+	--[[
+    d(">Before options: self.enableFilter = " .. tos(self.enableFilter))
+    LSM_Debug = LSM_Debug or {}
+    LSM_Debug.contextMenusOpened = LSM_Debug.contextMenusOpened or {}
+    local newIndex = #LSM_Debug.contextMenusOpened+1
+    LSM_Debug.contextMenusOpened[newIndex] = {
+        optionsBefore = self.options ~= nil and ZO_ShallowTableCopy(self.options) or nil,
+        contextMenuOptionsBefore = self.contextMenuOptions ~= nil and ZO_ShallowTableCopy(self.contextMenuOptions) or nil,
+        enableFilterBefore = self.contextMenuOptionsBefore ~= nil and self.contextMenuOptionsBefore.enableFilter or nil,
+    }
+    ]]
 	self:UpdateOptions(self.contextMenuOptions, nil, true, nil) --Updates self.options
---[[
-LSM_Debug.contextMenusOpened[newIndex].optionsAfter = self.options ~= nil and ZO_ShallowTableCopy(self.options) or nil
-LSM_Debug.contextMenusOpened[newIndex].contextMenuOptionsAfter = self.contextMenuOptions ~= nil and ZO_ShallowTableCopy(self.contextMenuOptions) or nil
-LSM_Debug.contextMenusOpened[newIndex].enableFilterAfter = self.contextMenuOptions ~= nil and self.contextMenuOptions.enableFilter or nil,
-d(">After options: self.enableFilter = " .. tos(self.enableFilter))
-]]
+	--[[
+    LSM_Debug.contextMenusOpened[newIndex].optionsAfter = self.options ~= nil and ZO_ShallowTableCopy(self.options) or nil
+    LSM_Debug.contextMenusOpened[newIndex].contextMenuOptionsAfter = self.contextMenuOptions ~= nil and ZO_ShallowTableCopy(self.contextMenuOptions) or nil
+    LSM_Debug.contextMenusOpened[newIndex].enableFilterAfter = self.contextMenuOptions ~= nil and self.contextMenuOptions.enableFilter or nil,
+    d(">After options: self.enableFilter = " .. tos(self.enableFilter))
+    ]]
 
 	self:HighlightOpeningControl()
 
---d("->->->->->->-> [LSM]ContextMenuClass:ShowContextMenu -> ShowDropdown now!")
+	--d("->->->->->->-> [LSM]ContextMenuClass:ShowContextMenu -> ShowDropdown now!")
 	self:ShowDropdown()
 
---d(debugPrefix .. "ContextMenuClass:ShowContextMenu - openingControl changed!")
+	--d(debugPrefix .. "ContextMenuClass:ShowContextMenu - openingControl changed!")
 	throttledCall(function()
 		if openingControlOld ~= parentControl then
---d(debugPrefix .. "ContextMenuClass:ShowContextMenu - openingControl changed!")
+			--d(debugPrefix .. "ContextMenuClass:ShowContextMenu - openingControl changed!")
 			if self:IsFilterEnabled() then
-	--d(">>resetting filters now")
+				--d(">>resetting filters now")
 				local dropdown = self.m_dropdown
 				if dropdown and dropdown.object then
 					dropdown.object:ResetFilters(dropdown)
 				end
 			end
 		end
-  	end, 10, "_ContextMenuClass_ShowContextMenu")
+	end, 10, "_ContextMenuClass_ShowContextMenu")
 end
