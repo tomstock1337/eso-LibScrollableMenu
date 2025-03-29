@@ -553,14 +553,14 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 		assert(type(fromParentMenuValue) == "boolean", sfor("["..MAJOR..":"..assertFuncName.."] fromParentMenu: boolean expected, got %q", tos(type(fromParentMenu))))
 	end
 
-d(debugPrefix .. ""..assertFuncName.." - filterEntryTypes: " ..tos(gotFilterEntryTypes) .. ", type: " ..tos(filterEntryTypesTableType) ..", fromParentMenu: " ..tos(fromParentMenuValue))
+--d(debugPrefix .. ""..assertFuncName.." - filterEntryTypes: " ..tos(gotFilterEntryTypes) .. ", type: " ..tos(filterEntryTypesTableType) ..", fromParentMenu: " ..tos(fromParentMenuValue))
 
 	--Find out via comboBox and item -> What was the "opening menu" and "how do I get openingMenu m_sortedItems"?
 	--comboBox would be the comboBox or dropdown of the context menu -> if RunCustomScrollableMenuCheckboxCallback was called from the callback of a contex menu entry
 	--item could have a control or something like that from where we can get the owner and then check if the owner got a openingControl or similar?
 	local sortedItems = getComboBoxsSortedItems(comboBox, fromParentMenuValue, false)
 	if ZO_IsTableEmpty(sortedItems) then
-d("<sortedItems are empty!")
+--d("<sortedItems are empty!")
 		return false
 	end
 

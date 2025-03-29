@@ -273,31 +273,15 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.35 - Updated 2025-03-26
+	CHANGELOG Current version: 2.35 - Updated 2025-03-30
 ---------------------------------------------------------------
-Max error #: 2025_28
+Max error #: 2025_29
+
+[KNOWN PROBLEMS]
 
 
 [WORKING ON]
--2025_26   Filter header: If the filter header filtered all items and we left click the "No search results" entry it will call the callback of another LSM control all of sudden, and close the filter header?
--->Reason: It is calling
-/EsoUI/Libraries/Globals/DebugUtils.lua:43: in function 'd'
-|caaaaaa<Locals> i = 1, value = "Context menu Normal entry 5" </Locals>|r
-[C]: in function 'PostHookFunction'
-user:/AddOns/LibScrollableMenu/test/LSM_test.lua:748: in function 'callback'
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox_Base.lua:245: in function 'ZO_ComboBox_Base:ItemSelectedClickHelper'
-|caaaaaa<Locals> self = [table:2]{horizontalAlignment = 0, noSelectionText = "Keine Einträge ausgewählt", m_enableMultiSelect = F, visibleRowsSubmenu = 4, m_name = "LibScrollableMenu_ContextMenu...", filterString = "dftd", m_highlightTemplate = "ZO_SelectionHighlight", breadcrumbName = "ContextmenuBreadcrumb", enableFilter = T, m_font = "ZoFontGame", isContextMenu = T, m_maxNumSelectionsErrorText = "Maximale Auswahl erreicht.", currentSelectedItemText = "Context menu Normal entry 5", optionsChanged = T, disableFadeGradient = F, visibleRows = 5, m_sortOrder = T, m_isDropdownVisible = T, containerMinWidth = 493.96606445312, headerCollapsed = F, m_nextFree = 2, m_height = 187, m_containerWidth = 493.96606445312, headerFont = "ZoFontGame", m_sortsItems = F, multiSelectionTextFormatter = 811, baseEntryHeight = 25, m_spacing = 0, itemYPad = 0}, item = [table:3]{isNew = F, name = "Context menu Normal entry 5", isRadioButton = F, entryType = 1, customEntryTemplate = "LibScrollableMenu_ComboBoxEntr...", isCheckbox = F, hasSubmenu = F, isHeader = F, isDivider = F, isButton = F, enabled = T}, selectionChanged = T </Locals>|r
-(tail call): ?
-(tail call): ?
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:149: in function 'ZO_ComboBox:SetSelected'
-|caaaaaa<Locals> self = [table:2], index = 7, item = [table:3] </Locals>|r
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:629: in function 'ZO_ComboBoxDropdown_Keyboard:OnEntrySelected'
-|caaaaaa<Locals> self = [table:4]{spacing = 0, nextScrollTypeId = 17, wasTextSearchContextMenuEntryClicked = T}, control = ud </Locals>|r
-/EsoUI/Libraries/ZO_ComboBox/ZO_ComboBox.lua:658: in function 'ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp'
-|caaaaaa<Locals> control = ud, button = 1, upInside = T, dropdown = [table:4] </Locals>|r
-LibScrollableMenu_ContextMenu1Scroll2Row1_MouseUp:3: in function '(main chunk)'
-|caaaaaa<Locals> self = ud, button = 1, upInside = T, ctrl = F, alt = F, shift = F, command = F </Locals>|r
-
+-2025_29	ContextMenu: Opening LSMTEST UI (opening the dropdown alone is enough!) and use /tbm to show any other userdata (.e.g ZO_ActionButtonn), then e.g. within merTorchbug open a context menu directly with rightclick -> Context menu shows header but empty lines etc. until 2nd time right clicked
 
 
 [Fixed]
@@ -319,8 +303,9 @@ LibScrollableMenu_ContextMenu1Scroll2Row1_MouseUp:3: in function '(main chunk)'
 -2025_23:   ContextMenu: Clicking the reset button closes the contextmenu
 -2025_24:   ContextMenu: If one opens a nested submenu of a nested submenu, and then onMouseEnter another context menu entry, the submenu stays opened
 -2025_25:   If multiselection is enabled: Selecting a ZO_Menu context menu entry at the filter header context menu sets cntxTxtSearchEntryClicked = true, and if you directly click outside the combobox/dropdown, or at the dropdown's open/close main control afterwards, the dropdown does not close anymore
--2025_27 	ContextMenu: Opening an LSM contextMenu, after another was used before, does use some options of the before opened LSM contextMenu then (e.g. the filter header) -> Reset of all options on each contextMenu open
--2025_28 	ContextMenu: API function RunCustomScrollableMenuItemsCallback is not respecting the parameter fromParentMenu
+-2025_26:   Filter header: If the filter header filtered all items and we left click the "No search results" entry it will call the callback of another LSM control (looks like the last entry of m_sortedItems of that combobox) all of sudden?
+-2025_27: 	ContextMenu: Opening an LSM contextMenu, after another was used before, does use some options of the before opened LSM contextMenu then (e.g. the filter header) -> Reset of all options on each contextMenu open
+-2025_28: 	ContextMenu: API function RunCustomScrollableMenuItemsCallback is not respecting the parameter fromParentMenu
 
 
 [Added]

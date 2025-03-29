@@ -64,9 +64,10 @@ local dropdownDefaults = dropdownConstants.defaults
 local isEntryTypeWithParentMocCtrl = entryTypeConstants.isEntryTypeWithParentMocCtrl
 local entryTypeToButtonChildName = constants.entryTypes.entryTypeToButtonChildName
 
-
 local libraryAllowedEntryTypes = entryTypeConstants.libraryAllowedEntryTypes
+local noEntriesResultsText = searchFilterConstants.noEntriesResults.name
 local noEntriesSubmenuResults = searchFilterConstants.noEntriesSubmenuResults
+local noEntriesSubmenuResultsText = noEntriesSubmenuResults.name
 
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
@@ -332,7 +333,7 @@ local function updateDataValues(data, onlyTheseEntries)
 					--Update the current data[key] with the determiend current value
 					p_data[key] = value
 				end)
-				--defaultValue is true and data[*] is nil
+			--defaultValue is true and data[*] is nil
 			elseif l_nilToTrue == true and dataValue == nil then
 				--e.g. data["enabled"] = true to always enable the row if nothing passed in explicitly
 				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 16, tos(key), tos(l_nilToTrue)) end
@@ -343,7 +344,7 @@ local function updateDataValues(data, onlyTheseEntries)
 
 	--Execute the callbackFunctions (the functions of the data[key] were moved to subtable _LSM.funcData via function addEntryLSM above)
 	--and update data[key] with the results of that functions now
-	-->This way we keep the original callback functions for later but alwasy got the actual value returned by them in data[key]
+	-->This way we keep the original callback functions for later but always got the actual value returned by them in data[key]
 	updateDataByFunctions(data)
 end
 
@@ -670,6 +671,7 @@ end
 
 -- Adds widthPadding as a valid parameter
 function comboBox_base:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
+--d(debugPrefix .. "comboBox_base:AddCustomEntryTemplate - entryTemplate: " .. tos(entryTemplate))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 86, tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding)) end
 	if not self.m_customEntryTemplateInfos then
 		self.m_customEntryTemplateInfos = {}
@@ -707,7 +709,7 @@ local function getDefaultXMLTemplates(selfVar)
 			template = 'LibScrollableMenu_ComboBoxEntry',
 			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 			setupFunc = function(control, data, list)
---d(debugPrefix .. "XMLtemplate LSM_ENTRY_TYPE_NORMAL, setupFunc")
+--s(debugPrefix .. "XMLtemplate LSM_ENTRY_TYPE_NORMAL, setupFunc")
 				selfVar:SetupEntryLabel(control, data, list, entryTypeConstants.LSM_ENTRY_TYPE_NORMAL)
 			end,
 		},
@@ -801,6 +803,8 @@ end
 
 --Called from comboBoxClass:UpdateOptions
 function comboBox_base:AddCustomEntryTemplates(options, isContextMenu)
+--d(debugPrefix .. "comboBox_base:AddCustomEntryTemplates - isContextMenu: " .. tos(isContextMenu) ..", options: " .. tos(options))
+
 	--[[
 	if isContextMenu then
 		d(debugPrefix .. "comboBox_base:AddCustomEntryTemplates - options: " ..tos(options) .. ", contextMenu: " ..tos(isContextMenu))
@@ -820,7 +824,7 @@ function comboBox_base:AddCustomEntryTemplates(options, isContextMenu)
 --d(debugPrefix .. "options.XMLRowTemplates found!")
 		for entryType, _ in pairs(defaultXMLTemplates) do
 			if optionTemplates[entryType] ~= nil then
-				--ZOs function overwrites exising table entries!
+				--ZOs function overwrites existing table entries!
 				zo_mixin(XMLrowTemplatesToUse[entryType], optionTemplates[entryType])
 			end
 		end
@@ -1357,10 +1361,16 @@ function comboBox_base:RefreshSortedItems(parentControl)
 	if entries ~= nil then
 		-- replace empty entries with noEntriesSubmenuResults item
 		if ZO_IsTableEmpty(entries) then
+			--noEntriesSubmenuResults.isNoEntriesResultsEntry = true --#2025_26
 			noEntriesSubmenuResults.m_owner = self
 			noEntriesSubmenuResults.m_parentControl = parentControl
+
+--d(debugPrefix .. "comboBox_base:RefreshSortedItems - item is NoEntriesSubmenuResults!") --#2025_26
+
 			self:AddItem(noEntriesSubmenuResults, ZO_COMBOBOX_SUPPRESS_UPDATE)
 		else
+			--noEntriesSubmenuResults.isNoEntriesResultsEntry = nil --#2025_26
+
 			for _, item in ipairs(entries) do
 				item.m_owner = self
 				item.m_parentControl = parentControl
@@ -1642,6 +1652,7 @@ do -- Row setup functions
 	end
 
 	function comboBox_base:SetupEntryBase(control, data, list)
+--d(debugPrefix .. "comboBox_base:SetupEntryBase - control: " .. tos(getControlName(control)) .. ", enabled: " .. tos(data.enabled))
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 104, tos(getControlName(control))) end
 		self.m_dropdownObject:SetupEntryBase(control, data, list) --Calls ZO_ComboBoxDropdown_Keyboard:SetupEntryBase where m_selectionHighlight is used for multiSelect
 
@@ -1649,7 +1660,22 @@ do -- Row setup functions
 		control.contextMenuCallback = data.contextMenuCallback
 		control.closeOnSelect = (control.selectable and type(data.callback) == 'function') or false
 
-		control:SetMouseEnabled(data.enabled ~= false)
+		--[[
+		--#2025_26 lastEntry is clickable (if no entries found after filtering): noEntriesResults.enabled = false, so why can I click it?
+		--Maybe because of controlPool and same "last item" control existed already and it was enabled, but does not get disabled properly now? See comboBox_base:SetupEntryBase
+		if data.isNoEntriesResultsEntry then
+d(debugPrefix .. "comboBox_base:SetupEntryBase - item is NoEntriesResults!")
+d(">enabled: " .. tos(data.enabled))
+			if data.enabled == true then
+				data.enabled = false
+			end
+		end
+		]]
+		local isEnabled = data.enabled
+		if isEnabled == nil then
+			isEnabled = true
+		end
+		control:SetMouseEnabled(isEnabled) -- --#2025_26 data.enabled ~= false)
 	end
 
 	function comboBox_base:SetupEntryDivider(control, data, list)
@@ -1804,27 +1830,78 @@ do -- Row setup functions
 	end
 end
 
---[[
-	if comboBox.m_buttonGroup then
-		comboBox.m_buttonGroup:Clear()
-	end
+local itemTextsOfNothingFound = {
+	[noEntriesSubmenuResultsText] = true,
+	[noEntriesResultsText] = true,
+}
 
-function comboBox_base:HighlightLabel(labelControl, data)
-	if labelControl.SetColor then
-		local color = self:GetItemHighlightColor(data)
-		labelControl:SetColor(color:UnpackRGBA())
+--#2025-26 trying to detect a click on "No entries found" poolcontrol
+function comboBox_base:CheckIfNoEntryFoundWasClicked(item)
+	if item and item.callback then
+		local itemText = item.label or item.name
+		if not itemTextsOfNothingFound[itemText] then
+			--d(">checking mocCtrl")
+			local mocCtrl = moc()
+			if mocCtrl then
+				local data = getControlData(mocCtrl)
+				if data then
+					itemText = data.label or data.name
+				end
+			end
+		end
+--d(">itemText: " .. tos(itemText) .. "/" .. tos(noEntriesResultsText))
+		if itemTextsOfNothingFound[itemText] then
+--d("<clicked noEntriesText! Aborting")
+			lib.preventerVars.suppressNextOnGlobalMouseUp = true
+			return true
+		end
 	end
+	return false
 end
 
-function ZO_ComboBox:UnhighlightLabel(labelControl, data)
-	if labelControl.SetColor then
-		local color = self:GetItemNormalColor(data)
-		labelControl:SetColor(color:UnpackRGBA())
+function comboBox_base:ItemSelectedClickHelper(item, ignoreCallback)
+	--d(debugPrefix .. "comboBox_base:ItemSelectedClickHelper - isNoEntriesResultsEntry: "..tos(item.isNoEntriesResultsEntry) ..", item: " ..tos(item.label or item.name) .. ", ignoreCallback: " ..tos(ignoreCallback))
+	if item.enabled == false then
+		--d(">item is disabled!")
+		return false
 	end
-end
-]]
 
--- Blank
+	if self:CheckIfNoEntryFoundWasClicked(item) then return false end --#2025_26
+
+	local oldItem = self.m_selectedItemData
+	if self.dontSetSelectedTextOnSelection ~= true then
+		self:SetSelectedItemText(item.name)
+	end
+	self.m_selectedItemData = item
+
+	if item.callback and not ignoreCallback then
+		local selectionChanged = (oldItem ~= item)
+		if not selectionChanged and oldItem and item then
+			selectionChanged = item.name ~= oldItem.name
+		end
+		item.callback(self, item.name, item, selectionChanged, oldItem)
+	end
+
+	return true
+end
+
+function comboBox_base:SelectItem(item, ignoreCallback)
+--d(debugPrefix .. "SelectItem:item - item: " ..tos((item and (item.label or item.name)) or "n/a") .. ", ignoreCallback: " .. tos(ignoreCallback))
+    if item then
+        return self:ItemSelectedClickHelper(item, ignoreCallback)
+    end
+end
+
+
+function comboBox_base:GetFilterFunction()
+	local options = self:GetOptions()
+	local filterFunction = (options and options.customFilterFunc) or defaultFilterFunc
+	return filterFunction
+end
+
+
+------------------------------------------------------------------------------------------------------------------------
+-- Blank - Overwrite at inherited classes!
 function comboBox_base:GetMaxRows()
 	-- Overwrite at subclasses
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 125) end
@@ -1832,12 +1909,6 @@ end
 
 function comboBox_base:IsFilterEnabled()
 	-- Overwrite at subclasses
-end
-
-function comboBox_base:GetFilterFunction()
-	local options = self:GetOptions()
-	local filterFunction = (options and options.customFilterFunc) or defaultFilterFunc
-	return filterFunction
 end
 
 function comboBox_base:UpdateOptions(options, onInit, isContextMenu, initExistingComboBox)

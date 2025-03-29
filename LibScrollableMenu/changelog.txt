@@ -1,4 +1,4 @@
--v- ---------------LSM v2.35 - 2025-03-26--------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.35 - 2025-03-30--------------------------------------------------------------------------- -v-
 [Fixed]
 -2025_6:	If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
 -2025_7:	If multiselection is enabled: LSM test Maximum number of selectable entries (maxNumSelections) is not working (maybe after submenus were opened)
@@ -18,8 +18,9 @@
 -2025_23:   ContextMenu: Clicking the reset button closes the contextmenu
 -2025_24:   ContextMenu: If one opens a nested submenu of a nested submenu, and then onMouseEnter another context menu entry, the submenu stays opened
 -2025_25:   If multiselection is enabled: Selecting a ZO_Menu context menu entry at the filter header context menu sets cntxTxtSearchEntryClicked = true, and if you directly click outside the combobox/dropdown, or at the dropdown's open/close main control afterwards, the dropdown does not close anymore
--2025_27 	ContextMenu: Opening an LSM contextMenu, after another was used before, does use some options of the before opened LSM contextMenu then (e.g. the filter header) -> Reset of all options on each contextMenu open
--2025_28 	ContextMenu: API function RunCustomScrollableMenuItemsCallback is not respecting the parameter fromParentMenu
+-2025_26:   Filter header: If the filter header filtered all items and we left click the "No search results" entry it will call the callback of another LSM control (looks like the last entry of m_sortedItems of that combobox) all of sudden?
+-2025_27: 	ContextMenu: Opening an LSM contextMenu, after another was used before, does use some options of the before opened LSM contextMenu then (e.g. the filter header) -> Reset of all options on each contextMenu open
+-2025_28: 	ContextMenu: API function RunCustomScrollableMenuItemsCallback is not respecting the parameter fromParentMenu
 
 [Added]
 -2025_10:	If multiselection is enabled: Submenus with a selection can show the submenu arrow colored differently. option.multiSelectSubmenuSelectedArrowColor defines the color to use (default is white)
@@ -27,7 +28,6 @@
 
 [Changed]
 -2025_5:	Split up into several files
-
 
 
 -v- ---------------LSM v2.34 - 2025-02-07--------------------------------------------------------------------------- -v-

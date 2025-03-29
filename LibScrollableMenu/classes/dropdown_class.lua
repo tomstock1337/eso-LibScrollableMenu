@@ -589,6 +589,10 @@ end
 --------------------------------------------------------------------
 -- Dropdown entry functions
 --------------------------------------------------------------------
+local function noCallback()
+	return --d("NO CALLBACK - executed!")
+end
+
 local function createScrollableComboBoxEntry(self, item, index, entryType)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 54, tos(index), tos(entryType)) end
 	local entryData = ZO_EntryData:New(item)
@@ -599,7 +603,17 @@ local function createScrollableComboBoxEntry(self, item, index, entryType)
 	return entryData
 end
 
-local function addEntryToScrollList(self, item, dataList, index, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
+local function addEntryToScrollList(self, item, dataList, index, allItemsHeight, largestEntryWidth, spacing, isLastEntry, isNoItemsMatchFilter, comboBoxObject)
+
+	--[[
+	if isLastEntry then
+		item.isNoEntriesResultsEntry = isNoItemsMatchFilter --#2025_26
+		if isNoItemsMatchFilter then
+			d(debugPrefix .. "addEntryToScrollList - item is NoEntriesResults! index: " .. tos(index) ..", enabled: " ..tos(item.enabled))
+		end
+	end
+	]]
+
 	local entryHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
 	local entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
 	local widthPadding = 0
@@ -608,7 +622,7 @@ local function addEntryToScrollList(self, item, dataList, index, allItemsHeight,
 		if templateInfo then
 			entryType = templateInfo.typeId
 			entryHeight = templateInfo.entryHeight
-			 -- for static width padding beyond string length, such as submenu icon
+			-- for static width padding beyond string length, such as submenu icon
 			widthPadding = templateInfo.widthPadding or 0
 
 			-- If the entry has an icon, or isNew, we add the row height to adjust for icon size.
@@ -962,7 +976,6 @@ function dropdownClass:Initialize(parent, comboBoxContainer, depth)
 	self.m_comboBox = comboBoxContainer.m_comboBox
 	self.m_container = comboBoxContainer
 	self.owner = parent
-
 	self:SetHidden(true)
 
 	self.m_parentMenu = parent.m_parentMenu
@@ -1092,6 +1105,8 @@ end
 ----------------------------------------
 function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 57, tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding)) end
+
+d(debugPrefix .. "dropdownClass:AddCustomEntryTemplate - entryTemplate: " .. tos(entryTemplate))
 	if not self.customEntryTemplateInfos then
 		self.customEntryTemplateInfos = {}
 	end
@@ -1305,8 +1320,10 @@ function dropdownClass:OnMouseExitTimeout(control)
 end
 
 --Called from XML virtual template <Control name="ZO_ComboBoxEntry" -> "OnMouseUp" -> ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp
+-->And in LSM code from XML virtual template LibScrollableMenu_ComboBoxEntry_Behavior -> "OnMouseUp" -> dropdownClass:OnEntryMouseUp
 function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, ctrl, alt, shift)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 71, tos(getControlName(control)), tos(button), tos(upInside)) end
+--d(debugPrefix .."dropdownClass:OnEntryMouseUp-"  .. tos(getControlName(control)), tos(button), tos(upInside))
 	--20240816 Suppress the next global mouseup event raised from a comboBox's dropdown (e.g. if a submenu entry outside of a context menu was clicked
 	--while a context menu was opened, and the context menu was closed then due to this click, but the global mouse up handler on the sbmenu entry runs
 	--afterwards)
@@ -1319,18 +1336,20 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, 
 	--	local comboBox = getComboBox(control, true)
 		local comboBox = control.m_owner
 
---[[
-LSM_Debug = {
+		--[[
+LSM_Debug = LSM_Debug or {}
+LSM_Debug._OnEntryMouseUp = LSM_Debug._OnEntryMouseUp or {}
+LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 	self = self,
 	control = control,
 	comboBox = comboBox,
 	data = data,
+	enabled = data and data.enabled,
 	multiSelectEnabledComboBox = comboBox.m_enableMultiSelect,
 	multiSelectEnabledDropdownOwner = self.owner.m_enableMultiSelect,
 	isSubmenu = self.isSubmenu or comboBox.isSubmenu
 }
 ]]
-
 
 		if data.enabled then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
@@ -1377,10 +1396,10 @@ LSM_Debug = {
 
 
 				if not ignoreHandler and runHandler(self, handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
---d(">>OnEntrySelected")
+d(">>OnEntrySelected")
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
---d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
+d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
 					self:RunItemCallback(data, data.ignoreCallback)
 				end
 
@@ -1474,6 +1493,7 @@ function dropdownClass:OnHide(formattedEventName)
 	end
 end
 
+--Called from
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, spacing)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 75, tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxWidth), tos(maxHeight), tos(spacing)) end
 
@@ -1518,18 +1538,25 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 
 	--Take control.header's height into account here as base height too
 	local allItemsHeight = comboBox:GetBaseHeight(control)
+
+	local anyItemMatchesFilter = false
+
 	for i = 1, numItems do
 		local item = itemTable[i]
 		local isLastEntry = i == numItems
-		if itemPassesFilter(item, comboBox, textSearchEnabled) then
-			allItemsHeight, largestEntryWidth = addEntryToScrollList(self, item, dataList, i, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
-			lastEntryVisible = true
-		else
-			lastEntryVisible = false
-			if isLastEntry and ZO_IsTableEmpty(dataList) then
-				-- If no item passes filter: Show "No items found with search term" entry
-				allItemsHeight, largestEntryWidth = addEntryToScrollList(self, noEntriesResults, dataList, i, allItemsHeight, largestEntryWidth, spacing, isLastEntry)
-			end
+
+		local itemMatchesFilter = itemPassesFilter(item, comboBox, textSearchEnabled)
+		if itemMatchesFilter and not anyItemMatchesFilter then
+			anyItemMatchesFilter = true
+		end
+		lastEntryVisible        = itemMatchesFilter and true or false
+		--#2025_26   Filter header: If the filter header filtered all items and we left click the "No search results" entry it will call the callback of another LSM control (looks like the controls of the scrollList are not properly destroyed from the pool and this the current control (entry of m_sortedItems of that combobox) is just changing the label text, but nothing else?
+		--Trying to add an extra item instead therefore!
+		local addItem           = (itemMatchesFilter == true or (isLastEntry and ZO_IsTableEmpty(dataList) and true)) or false
+		local itemToAdd         = (addItem and ((itemMatchesFilter and item) or (not itemMatchesFilter and noEntriesResults))) or nil
+
+		if addItem and itemToAdd ~= nil then
+			allItemsHeight, largestEntryWidth = addEntryToScrollList(self, itemToAdd, dataList, i, allItemsHeight, largestEntryWidth, spacing, isLastEntry, not anyItemMatchesFilter, comboBoxObject)
 		end
 	end
 
@@ -1547,7 +1574,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	--Check if a minWidth is > than totalDropDownWidth
 	local desiredWidth = zo_clamp(totalDropDownWidth, minWidth, totalDropDownWidth)
 
---d(">[LSM]dropdownClass:Show - minWidth: " .. tos(minWidth) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) ..", maxWidth: " .. tos(maxWidth) .. ", totalDropDownWidth: " .. tos(totalDropDownWidth) .. ", longestEntryTextWidth: " ..tos(longestEntryTextWidth) ..", desiredWidth: " .. tos(desiredWidth))
+	--d(">[LSM]dropdownClass:Show - minWidth: " .. tos(minWidth) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) ..", maxWidth: " .. tos(maxWidth) .. ", totalDropDownWidth: " .. tos(totalDropDownWidth) .. ", longestEntryTextWidth: " ..tos(longestEntryTextWidth) ..", desiredWidth: " .. tos(desiredWidth))
 
 	--maxHeight should have been defined before via self:UpdateHeight() -> Settings control:SetHeight() so self.m_height was set
 	local desiredHeight = maxHeight
@@ -1558,7 +1585,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	if allItemsHeight < desiredHeight then
 		desiredHeight = allItemsHeight
 	end
---	ZO_Scroll_SetUseScrollbar(self, false)
+	--	ZO_Scroll_SetUseScrollbar(self, false)
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 76, tos(totalDropDownWidth), tos(allItemsHeight), tos(desiredHeight)) end
 
@@ -1763,9 +1790,11 @@ function dropdownClass:ResetFilters(owningWindow)
 --d(debugPrefix .. "dropdownClass:ResetFilters")
 	--If not showing the filters at a contextmenu
 	-->Close any opened contextmenu
-	if self.m_comboBox ~= nil and not self.m_comboBox.isContextMenu then --#2025_23 replaced by self.m_comboBox.isContextMenu -> self.m_comboBox.openingControl == nil then
---d(">>calling ClearCustomScrollableMenu")
-		ClearCustomScrollableMenu()
+	if self.m_comboBox ~= nil then
+		if not self.m_comboBox.isContextMenu then --#2025_23 replaced by self.m_comboBox.isContextMenu -> self.m_comboBox.openingControl == nil then
+			--d(">>calling ClearCustomScrollableMenu")
+			ClearCustomScrollableMenu()
+		end
 	end
 
 	ZO_Tooltips_HideTextTooltip()

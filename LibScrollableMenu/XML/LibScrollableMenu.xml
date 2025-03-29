@@ -78,6 +78,7 @@
 			</OnMouseExit>
 			
 			<OnMouseUp>
+--d("LibScrollableMenu_ComboBoxEntry_Behavior - OnMouseUp: " ..tostring(self.GetName and self:GetName()))
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnEntryMouseUp(self, button, upInside, false, ctrl, alt, shift)

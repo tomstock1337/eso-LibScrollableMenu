@@ -31,7 +31,7 @@ local comboBox_base = classes.comboboxBaseClass
 --------------------------------------------------------------------
 --ZO_ComboBox function references
 --------------------------------------------------------------------
-local zo_comboBox_base_selectItem = ZO_ComboBox_Base.SelectItem
+--local zo_comboBox_base_selectItem = ZO_ComboBox_Base.SelectItem --Uses comboBox_base now!
 
 
 --------------------------------------------------------------------
@@ -45,7 +45,6 @@ local comboBoxMappingConstants = comboBoxConstants.mapping
 local comboBoxDefaults = comboBoxConstants.defaults
 local comboBoxDefaultsContextualInitValues = comboBoxConstants.defaultsContextualInitValues
 local dropdownDefaults = dropdownConstants.defaults
-
 
 local LSMOptionsKeyToZO_ComboBoxOptionsKey = comboBoxMappingConstants.LSMOptionsKeyToZO_ComboBoxOptionsKey
 local LSMOptionsToZO_ComboBoxOptionsCallbacks = comboBoxMappingConstants.LSMOptionsToZO_ComboBoxOptionsCallbacks
@@ -520,52 +519,55 @@ end
 
 --ZO_ComboBoxDropdown_Keyboard:OnEntrySelected(control) -> self.owner (comboboxClass) :SetSelected -> self (comboboxClass) :SelectItem
 function comboBoxClass:SelectItem(item, ignoreCallback)
---d(debugPrefix .. "comboBoxClass:SelectItem - item: " .. tos(item) ..", ignoreCallback: " .. tos(ignoreCallback))
-    --No multiselection
+	--d(debugPrefix .. "comboBoxClass:SelectItem - item: " .. tos(item and item.label or item.name) ..", enabled: " ..tos(item and item.enabled) ..", ignoreCallback: " .. tos(ignoreCallback))
+	--No multiselection
 	if not self.m_enableMultiSelect then
---d(">multiSelection is OFF")
-        return zo_comboBox_base_selectItem(self, item, ignoreCallback)
-    end
---d(">multiSelection is ON")
+		--d(">multiSelection is OFF")
+		--return zo_comboBox_base_selectItem(self, item, ignoreCallback)
+		return comboBox_base.SelectItem(self, item, ignoreCallback)
+	end
+	--d(">multiSelection is ON")
 
-    if item.enabled == false then
-        return false
-    end
+	if item.enabled == false then
+		return false
+	end
+
+	if comboBox_base.CheckIfNoEntryFoundWasClicked(item) then return false end --#2025_26
 
 	--Multiselection
-    local newSelectionStatus = not self:IsItemSelected(item)
-    if newSelectionStatus then
-        if self.m_maxNumSelections == nil or self:GetNumSelectedEntries() < self.m_maxNumSelections then
---d(debugPrefix.."comboBoxClass:SelectItem -> AddItemToSelected")
-            self:AddItemToSelected(item)
-        else
-            if not self.onSelectionBlockedCallback or self.onSelectionBlockedCallback(item) ~= true then
-                local alertText = self:GetSelectionBlockedErrorText()
-                if ZO_REMOTE_SCENE_CHANGE_ORIGIN == SCENE_MANAGER_MESSAGE_ORIGIN_INTERNAL then
-                    RequestAlert(UI_ALERT_CATEGORY_ALERT, SOUNDS.GENERAL_ALERT_ERROR, alertText)
-                elseif ZO_REMOTE_SCENE_CHANGE_ORIGIN == SCENE_MANAGER_MESSAGE_ORIGIN_INGAME then
-                    ZO_Alert(UI_ALERT_CATEGORY_ALERT, SOUNDS.GENERAL_ALERT_ERROR, alertText)
-                end
-                return false
-            end
-        end
-    else
-        self:RemoveItemFromSelected(item)
-    end
+	local newSelectionStatus = not self:IsItemSelected(item)
+	if newSelectionStatus then
+		if self.m_maxNumSelections == nil or self:GetNumSelectedEntries() < self.m_maxNumSelections then
+			--d(debugPrefix.."comboBoxClass:SelectItem -> AddItemToSelected")
+			self:AddItemToSelected(item)
+		else
+			if not self.onSelectionBlockedCallback or self.onSelectionBlockedCallback(item) ~= true then
+				local alertText = self:GetSelectionBlockedErrorText()
+				if ZO_REMOTE_SCENE_CHANGE_ORIGIN == SCENE_MANAGER_MESSAGE_ORIGIN_INTERNAL then
+					RequestAlert(UI_ALERT_CATEGORY_ALERT, SOUNDS.GENERAL_ALERT_ERROR, alertText)
+				elseif ZO_REMOTE_SCENE_CHANGE_ORIGIN == SCENE_MANAGER_MESSAGE_ORIGIN_INGAME then
+					ZO_Alert(UI_ALERT_CATEGORY_ALERT, SOUNDS.GENERAL_ALERT_ERROR, alertText)
+				end
+				return false
+			end
+		end
+	else
+		self:RemoveItemFromSelected(item)
+	end
 	--20250309 Replace sound with LSM selected sound #2025_14 -> For multiselection
-    --PlaySound(SOUNDS.COMBO_CLICK)
+	--PlaySound(SOUNDS.COMBO_CLICK)
 	playSelectedSoundCheck(self.m_dropdownObject, item.entryType)
 
-    if item.callback and not ignoreCallback then
-        item.callback(self, item.name, item)
-    end
-    self:RefreshSelectedItemText()
-    -- refresh the data that was just selected so the selection highlight properly shows/hides
-    if self.m_dropdownObject:IsOwnedByComboBox(self) then
-        self.m_dropdownObject:Refresh(item)
-    end
+	if item.callback and not ignoreCallback then
+		item.callback(self, item.name, item)
+	end
+	self:RefreshSelectedItemText()
+	-- refresh the data that was just selected so the selection highlight properly shows/hides
+	if self.m_dropdownObject:IsOwnedByComboBox(self) then
+		self.m_dropdownObject:Refresh(item)
+	end
 
-    return true
+	return true
 end
 
 -- a maxNumSelections of 0 or nil indicates no limit on selections

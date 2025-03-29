@@ -748,18 +748,23 @@ constants.searchFilter = {}
 
 --No entry found in main menu
 local noEntriesResults = {
+	entryType = LSM_ENTRY_TYPE_NORMAL,
 	enabled = false,
 	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS),
 	m_disabledColor = colors.DEFAULT_TEXT_DISABLED_COLOR,
+	callback = function() d("no entries found!")  end,
+	selectable = false
 }
 constants.searchFilter.noEntriesResults = noEntriesResults
 
 --No entry found in sub menu
 local noEntriesSubmenuResults = {
+	entryType = LSM_ENTRY_TYPE_NORMAL,
 	enabled = false,
 	name = GetString(SI_QUICKSLOTS_EMPTY),
 	m_disabledColor = colors.DEFAULT_TEXT_DISABLED_COLOR,
---	m_disabledColor = ZO_ERROR_COLOR,
+	callback = function() d("no submenu entries found!")  end,
+	selectable = false
 }
 constants.searchFilter.noEntriesSubmenuResults = noEntriesSubmenuResults
 
