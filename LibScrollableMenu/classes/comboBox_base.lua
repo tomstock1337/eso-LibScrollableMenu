@@ -905,16 +905,29 @@ end
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
 function comboBox_base:OnGlobalMouseUp(eventId, button)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(lib.preventerVars.suppressNextOnGlobalMouseUp)) end
---d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
-	if lib.preventerVars.suppressNextOnGlobalMouseUp then
+	--d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
+	local abortEarly = false
+	local suppressNextOnGlobalMouseUp = lib.preventerVars.suppressNextOnGlobalMouseUp
+	local suppressNextOnGlobalMouseUpType = suppressNextOnGlobalMouseUp ~= nil and type(suppressNextOnGlobalMouseUp) or nil
+	if suppressNextOnGlobalMouseUpType ~= nil then
+		--Supress all next clicks (boolean true)
+		if suppressNextOnGlobalMouseUpType == "boolean" and suppressNextOnGlobalMouseUp == true then
+			abortEarly = true
+			--Supress only e.g. a left click, but not a right click?
+		elseif suppressNextOnGlobalMouseUpType == "number" and suppressNextOnGlobalMouseUp == button then
+			abortEarly = true
+		end
+	end
+	if abortEarly then
 		lib.preventerVars.suppressNextOnGlobalMouseUp = nil
 		return false
 	end
 
+
 	if self:IsDropdownVisible() then
 		local isMouseOverOwningDropdown = self.m_dropdownObject:IsMouseOverControl()
 		if not isMouseOverOwningDropdown then
---d(">>dropdownVisible -> not IsMouseOverControl") --#2025_19 Closes a context menu if the clicked entry of the contextmenu was not above the LSM anymore -> Should not directly close if multiselection is enabled in the context menu!
+			--d(">>dropdownVisible -> not IsMouseOverControl") --#2025_19 Closes a context menu if the clicked entry of the contextmenu was not above the LSM anymore -> Should not directly close if multiselection is enabled in the context menu!
 			if self:HiddenForReasons(button, isMouseOverOwningDropdown) then
 				--d(">>>HiddenForReasons -> Hiding dropdown now")
 				return self:HideDropdown()
@@ -922,10 +935,10 @@ function comboBox_base:OnGlobalMouseUp(eventId, button)
 		end
 	else
 		if self.m_container:IsHidden() then
---d(">>>else - containerIsHidden -> Hiding dropdown now")
+			--d(">>>else - containerIsHidden -> Hiding dropdown now")
 			self:HideDropdown()
 		else
---d("<SHOW DROPDOWN OnMouseUp")
+			--d("<SHOW DROPDOWN OnMouseUp")
 			lib.openMenu = self
 			-- If shown in ShowDropdownInternal, the global mouseup will fire and immediately dismiss the combo box. We need to
 			-- delay showing it until the first one fires.
@@ -1398,6 +1411,7 @@ function comboBox_base:SetOptions(options)
 	self.options = options
 end
 
+--Called from normal, submenu and contextmenu
 function comboBox_base:Show()
 	self.m_dropdownObject:Show(self, self.m_sortedItems, self.containerMinWidth, self.m_containerWidth, self.m_height, self:GetSpacing())
 	self.m_dropdownObject.control:BringWindowToTop()
@@ -1852,7 +1866,7 @@ function comboBox_base:CheckIfNoEntryFoundWasClicked(item)
 --d(">itemText: " .. tos(itemText) .. "/" .. tos(noEntriesResultsText))
 		if itemTextsOfNothingFound[itemText] then
 --d("<clicked noEntriesText! Aborting")
-			lib.preventerVars.suppressNextOnGlobalMouseUp = true
+			lib.preventerVars.suppressNextOnGlobalMouseUp = MOUSE_BUTTON_INDEX_LEFT
 			return true
 		end
 	end

@@ -1106,7 +1106,7 @@ end
 function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 57, tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding)) end
 
-d(debugPrefix .. "dropdownClass:AddCustomEntryTemplate - entryTemplate: " .. tos(entryTemplate))
+--d(debugPrefix .. "dropdownClass:AddCustomEntryTemplate - entryTemplate: " .. tos(entryTemplate))
 	if not self.customEntryTemplateInfos then
 		self.customEntryTemplateInfos = {}
 	end
@@ -1396,10 +1396,10 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 
 
 				if not ignoreHandler and runHandler(self, handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
-d(">>OnEntrySelected")
+--d(">>OnEntrySelected")
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
-d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
+--d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
 					self:RunItemCallback(data, data.ignoreCallback)
 				end
 
@@ -1493,9 +1493,10 @@ function dropdownClass:OnHide(formattedEventName)
 	end
 end
 
---Called from
+--Called from comboBox_base:Show()
 function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, spacing)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 75, tos(getControlName(comboBox:GetContainer())), tos(minWidth), tos(maxWidth), tos(maxHeight), tos(spacing)) end
+--d(debugPrefix .. "dropdownClass:Show - minWidth: " ..tos(minWidth) .. ", maxHeight: " .. tos(maxHeight))
 
 	self.owner = comboBox
 
@@ -1574,7 +1575,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	--Check if a minWidth is > than totalDropDownWidth
 	local desiredWidth = zo_clamp(totalDropDownWidth, minWidth, totalDropDownWidth)
 
-	--d(">[LSM]dropdownClass:Show - minWidth: " .. tos(minWidth) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) ..", maxWidth: " .. tos(maxWidth) .. ", totalDropDownWidth: " .. tos(totalDropDownWidth) .. ", longestEntryTextWidth: " ..tos(longestEntryTextWidth) ..", desiredWidth: " .. tos(desiredWidth))
+--d(">[LSM]dropdownClass:Show - minWidth: " .. tos(minWidth) ..", maxDropdownWidth: " .. tos(maxDropdownWidth) ..", maxWidth: " .. tos(maxWidth) .. ", totalDropDownWidth: " .. tos(totalDropDownWidth) .. ", longestEntryTextWidth: " ..tos(longestEntryTextWidth) ..", desiredWidth: " .. tos(desiredWidth))
 
 	--maxHeight should have been defined before via self:UpdateHeight() -> Settings control:SetHeight() so self.m_height was set
 	local desiredHeight = maxHeight

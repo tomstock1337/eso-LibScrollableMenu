@@ -144,9 +144,9 @@ end
 function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 151) end
 	self:RefreshSortedItems()
-	--self:UpdateWidth()
-	--self:UpdateHeight() -->Should be called from self:Show -> self:ShowContextMenu -> self:UpdateHeader
-	self:Show()
+	self:UpdateWidth()
+	--self:UpdateHeight() -->Should be already called from self:Show -> self:ShowContextMenu -> self:UpdateHeader
+	self:Show() --> Calls comboBox_base:Show -> dropdown_class:Show
 	self.m_dropdownObject:AnchorToMouse()
 end
 
