@@ -965,20 +965,33 @@ classes.dropdownClass = dropdownClass
 --------------------------------------------------------------------
 -- LSM dropdown class
 --------------------------------------------------------------------
+local DEFAULT_ENTRY_ID = 1
+local DEFAULT_LAST_ENTRY_ID = 2
+
 -- dropdownClass:New(To simplify locating the beginning of the class
-function dropdownClass:Initialize(parent, comboBoxContainer, depth)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 55, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth)) end
---df(debugPrefix.."dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(depth))
+function dropdownClass:Initialize(comboBoxObject, comboBoxContainer, depth)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 55, tos(getControlName(comboBoxObject)), tos(getControlName(comboBoxContainer)), tos(depth)) end
+--df(debugPrefix.."dropdownClass:Initialize - parent: %s, comboBoxContainer: %s, depth: %s", tos(getControlName(comboBoxObject)), tos(getControlName(comboBoxContainer)), tos(depth))
 	local dropdownControl = CreateControlFromVirtual(comboBoxContainer:GetName(), GuiRoot, "LibScrollableMenu_Dropdown_Template", depth)
-	ZO_ComboBoxDropdown_Keyboard.Initialize(self, dropdownControl)
+	--20250330 #2025_26 ZO_ComboBoxDropdown_Keyboard.Initialize(self, dropdownControl) --disabling this to supress default calls to ZO_ComboBoxDropdown_Keyboard functions, especially default SetupScrollList using ZO_ComboBoxEntry XML templates, instead of LSM's XML templates
+
+	--v- ZO_ComboBoxDropdown_Keyboard.Initialize
+	self.control = dropdownControl
+    self.scrollControl = dropdownControl:GetNamedChild("Scroll")
+    self.spacing = 0
+    self.nextScrollTypeId = DEFAULT_LAST_ENTRY_ID + 1
+    self.owner = nil
+    self:SetupScrollList()
+	--^- ZO_ComboBoxDropdown_Keyboard.Initialize
+
 	dropdownControl.object = self
 	dropdownControl.m_dropdownObject = self
 	self.m_comboBox = comboBoxContainer.m_comboBox
 	self.m_container = comboBoxContainer
-	self.owner = parent
+	self.owner = comboBoxObject
 	self:SetHidden(true)
 
-	self.m_parentMenu = parent.m_parentMenu
+	self.m_parentMenu = comboBoxObject.m_parentMenu
 	self.m_sortedItems = {}
 
 	local scrollCtrl = self.scrollControl
@@ -1103,6 +1116,45 @@ end
 ---------------------------------------
 -- Other dropdownClass functions
 ----------------------------------------
+local getDefaultXMLTemplates
+function dropdownClass:SetupScrollList()
+--df(debugPrefix.."dropdownClass:SetupScrollList")
+
+	local selfVar = self
+    local entryHeightWithSpacing = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT + self.spacing
+
+	local XMLTemplate = "LibScrollableMenu_ComboBoxEntry"
+	local ROWHeight = entryHeightWithSpacing
+	local SetupScrollableEntry = function(...)
+		selfVar:SetupEntry(...)
+	end
+
+	--LSM custom template data?
+	getDefaultXMLTemplates = getDefaultXMLTemplates or libUtil.getDefaultXMLTemplates
+
+	local comboBoxObject = selfVar.owner or selfVar.m_comboBox
+	if comboBoxObject then
+		local defaultTemplates = getDefaultXMLTemplates(comboBoxObject)
+		if defaultTemplates ~= nil then
+			local normalEntryData = defaultTemplates[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL]
+			if normalEntryData then
+				XMLTemplate = normalEntryData.template
+				ROWHeight = normalEntryData.rowHeight
+				SetupScrollableEntry = function(...)
+					return normalEntryData.setupFunc(...)
+				end
+			end
+		end
+	end
+
+	local scrollCtrl = self.scrollControl
+    -- To support spacing like regular combo boxes, a separate template needs to be stored for the last entry.
+    ZO_ScrollList_AddDataType(scrollCtrl, DEFAULT_ENTRY_ID, "LibScrollableMenu_ComboBoxEntry", ROWHeight, SetupScrollableEntry)
+    ZO_ScrollList_AddDataType(scrollCtrl, DEFAULT_LAST_ENTRY_ID, "LibScrollableMenu_ComboBoxEntry", ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT, SetupScrollableEntry)
+
+    ZO_ScrollList_EnableHighlight(scrollCtrl, "ZO_TallListHighlight")
+end
+
 function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupFunction, widthPadding)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 57, tos(entryTemplate), tos(entryHeight), tos(setupFunction), tos(widthPadding)) end
 
@@ -1319,11 +1371,19 @@ function dropdownClass:OnMouseExitTimeout(control)
 	end)
 end
 
+--Calls comboBox_class:SetSelected
+function dropdownClass:OnEntrySelected(control)
+--d(debugPrefix .."dropdownClass:OnEntrySelected-"  .. tos(getControlName(control)))
+    if self.owner then
+        self.owner:SetSelected(control.m_data.m_index)
+    end
+end
+
 --Called from XML virtual template <Control name="ZO_ComboBoxEntry" -> "OnMouseUp" -> ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp
 -->And in LSM code from XML virtual template LibScrollableMenu_ComboBoxEntry_Behavior -> "OnMouseUp" -> dropdownClass:OnEntryMouseUp
 function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, ctrl, alt, shift)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 71, tos(getControlName(control)), tos(button), tos(upInside)) end
---d(debugPrefix .."dropdownClass:OnEntryMouseUp-"  .. tos(getControlName(control)), tos(button), tos(upInside))
+--d(debugPrefix .."dropdownClass:OnEntryMouseUp-"  .. tos(getControlName(control)) ..", button: " .. tos(button) .. ", upInside: " .. tos(upInside))
 	--20240816 Suppress the next global mouseup event raised from a comboBox's dropdown (e.g. if a submenu entry outside of a context menu was clicked
 	--while a context menu was opened, and the context menu was closed then due to this click, but the global mouse up handler on the sbmenu entry runs
 	--afterwards)
@@ -1374,36 +1434,36 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 						self.owner.m_enableMultiSelect = true
 					end
 				end
---d(debugPrefix .. "OnEntryMouseUp-multiSelection/atParent: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(isSubmenu))
---d(">self.owner.m_enableMultiSelect: " ..tos(self.owner.m_enableMultiSelect))
+				--d(debugPrefix .. "OnEntryMouseUp-multiSelection/atParent: " ..tos(isMultiSelectionEnabled) .."/" .. tos(isMultiSelectionEnabledAtParentMenu) .. ", isSubmenu: " .. tos(isSubmenu))
+				--d(">self.owner.m_enableMultiSelect: " ..tos(self.owner.m_enableMultiSelect))
 
 
 				--20250309 if the last comboBox_base:HiddenForReasons call closed an open contextMenu with multiSelect enabled, and we clicked on an LSM entry of another non-contextmenu
 				--to close it, then just exit here and do not select the clicked entry
---d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryMouseUp: " ..tos(lib.preventerVars.suppressNextOnEntryMouseUp))
+				--d("[dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnEntryMouseUp: " ..tos(lib.preventerVars.suppressNextOnEntryMouseUp))
 				if checkNextOnEntryMouseUpShouldExecute() then --#2025_13
 					--#2025_18 Clicking a non-context menu submenu entry, while a context menu is opeed above, close the context nmenu BUT also selects that submenu entry and closes the whole  dropdown then
 					-->That's because of evet_global_mouse_up fires on the submenu entry (if multiselection is disabled) and selects the entry. Trying to suppress it here
 					if isSubmenu and not isMultiSelectionEnabled and lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed then
---d(">>preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed: true -> Setting suppressNextOnGlobalMouseUp = true")
+						--d(">>preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed: true -> Setting suppressNextOnGlobalMouseUp = true")
 						--d("4??? Setting suppressNextOnGlobalMouseUp = true ???")
 						lib.preventerVars.suppressNextOnGlobalMouseUp = true
 					end
 					lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = nil
---d("<<ABORTING")
+					--d("<<ABORTING")
 					return
 				end
 
 
 				if not ignoreHandler and runHandler(self, handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
---d(">>OnEntrySelected")
+					--d(">>OnEntrySelected")
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
---d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
+					--d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
 					self:RunItemCallback(data, data.ignoreCallback)
 				end
 
-			--Show context menu at the entry?
+				--Show context menu at the entry?
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
 				g_contextMenu = getContextMenuReference()
 				g_contextMenu.contextMenuIssuingControl = nil --#2025_28 Reset the contextMenuIssuingControl of the contextMenu for API functions
@@ -1411,15 +1471,20 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
 					--#2025_22 Check if the openingControl is another contextMenu -> We cannot show a contextMenu on a contextMenu
 					if libUtil_BelongsToContextMenuCheck(control:GetOwningWindow()) then
---d("<ABOER: contextMenu opening at a contextMenu entry -> Not allowed!")
+						--d("<ABOER: contextMenu opening at a contextMenu entry -> Not allowed!")
 						return
 					end
 
 					if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 72) end
---d(">setting g_contextMenu.contextMenuIssuingControl: " ..tos(control and control:GetName() or "???"))
+					--d(">setting g_contextMenu.contextMenuIssuingControl: " ..tos(control and control:GetName() or "???"))
 					g_contextMenu.contextMenuIssuingControl = control --#2025_28 Set the contextMenuIssuingControl of the contextMenu for API functions
 					rightClickCallback(comboBox, control, data)
 				end
+			end
+		else
+			if comboBox.isSubmenu then
+--d(">disabled, submenu entry clicked. Supressing next onGlobalMouseUp to keep the submenu opened!")
+				lib.preventerVars.suppressNextOnGlobalMouseUp = true
 			end
 		end
 	end

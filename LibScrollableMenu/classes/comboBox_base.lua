@@ -68,6 +68,10 @@ local libraryAllowedEntryTypes = entryTypeConstants.libraryAllowedEntryTypes
 local noEntriesResultsText = searchFilterConstants.noEntriesResults.name
 local noEntriesSubmenuResults = searchFilterConstants.noEntriesSubmenuResults
 local noEntriesSubmenuResultsText = noEntriesSubmenuResults.name
+local itemTextsOfNothingFound = {
+	[noEntriesSubmenuResultsText] = true,
+	[noEntriesResultsText] = true,
+}
 
 local libUtil = lib.Util
 local getControlName = libUtil.getControlName
@@ -85,6 +89,7 @@ local getScreensMaxDropdownHeight = libUtil.getScreensMaxDropdownHeight
 local getContextMenuReference = libUtil.getContextMenuReference
 local belongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 local subMenuArrowColor = libUtil.subMenuArrowColor
+local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
 
 
 local libDivider = lib.DIVIDER
@@ -521,6 +526,15 @@ local function updateIcons(control, data)
 		multiIconCtrl:Show() --todo 20240527 Make that dependent on getValueOrCallback(data.enabled, data) ?! And update via multiIconCtrl:Hide()/multiIconCtrl:Show() on each show of menu!
 	end
 
+--[[
+	--No entries found with filter search criteria? Hide the icon
+d(">data.isNoEntriesResult: " ..tos(data.isNoEntriesResult))
+	if data.isNoEntriesResult == true then
+		multiIconCtrl:SetHidden(true)
+		multiIconContainerCtrl:SetWidth(WITHOUT_ICON_LABEL_DEFAULT_OFFSETX)
+		return
+	end
+]]
 
 	-- Using the control also as a padding. if no icon then shrink it
 	-- This also allows for keeping the icon in size with the row height.
@@ -800,6 +814,7 @@ local function getDefaultXMLTemplates(selfVar)
 	}
 	return defaultXMLTemplates, defaultXMLHighlightTemplates
 end
+libUtil.getDefaultXMLTemplates = getDefaultXMLTemplates
 
 --Called from comboBoxClass:UpdateOptions
 function comboBox_base:AddCustomEntryTemplates(options, isContextMenu)
@@ -1844,14 +1859,16 @@ d(">enabled: " .. tos(data.enabled))
 	end
 end
 
-local itemTextsOfNothingFound = {
-	[noEntriesSubmenuResultsText] = true,
-	[noEntriesResultsText] = true,
-}
 
 --#2025-26 trying to detect a click on "No entries found" poolcontrol
 function comboBox_base:CheckIfNoEntryFoundWasClicked(item)
 	if item and item.callback then
+--d(">item.isNoEntriesResult: " .. tos(item.isNoEntriesResult))
+		if item.isNoEntriesResult then
+			lib.preventerVars.suppressNextOnGlobalMouseUp = MOUSE_BUTTON_INDEX_LEFT
+			return true
+		end
+
 		local itemText = item.label or item.name
 		if not itemTextsOfNothingFound[itemText] then
 			--d(">checking mocCtrl")
@@ -1865,7 +1882,7 @@ function comboBox_base:CheckIfNoEntryFoundWasClicked(item)
 		end
 --d(">itemText: " .. tos(itemText) .. "/" .. tos(noEntriesResultsText))
 		if itemTextsOfNothingFound[itemText] then
---d("<clicked noEntriesText! Aborting")
+			--d("<clicked noEntriesText! Aborting")
 			lib.preventerVars.suppressNextOnGlobalMouseUp = MOUSE_BUTTON_INDEX_LEFT
 			return true
 		end
@@ -1874,9 +1891,9 @@ function comboBox_base:CheckIfNoEntryFoundWasClicked(item)
 end
 
 function comboBox_base:ItemSelectedClickHelper(item, ignoreCallback)
-	--d(debugPrefix .. "comboBox_base:ItemSelectedClickHelper - isNoEntriesResultsEntry: "..tos(item.isNoEntriesResultsEntry) ..", item: " ..tos(item.label or item.name) .. ", ignoreCallback: " ..tos(ignoreCallback))
+--d(debugPrefix .. "comboBox_base:ItemSelectedClickHelper - isNoEntriesResultsEntry: "..tos(item.isNoEntriesResultsEntry) ..", item: " ..tos(item.label or item.name) .. ", ignoreCallback: " ..tos(ignoreCallback))
 	if item.enabled == false then
-		--d(">item is disabled!")
+--d(">item is disabled!")
 		return false
 	end
 
@@ -1899,11 +1916,73 @@ function comboBox_base:ItemSelectedClickHelper(item, ignoreCallback)
 	return true
 end
 
+--ZO_ComboBoxDropdown_Keyboard:OnEntrySelected(control) -> self.owner (comboboxClass) :SetSelected -> self (comboboxBase) :SelectItem
 function comboBox_base:SelectItem(item, ignoreCallback)
---d(debugPrefix .. "SelectItem:item - item: " ..tos((item and (item.label or item.name)) or "n/a") .. ", ignoreCallback: " .. tos(ignoreCallback))
-    if item then
+--d(debugPrefix .. "comboBox_base:SelectItem - item: " .. tos(item and item.label or item.name) ..", enabled: " ..tos(item and item.enabled) ..", ignoreCallback: " .. tos(ignoreCallback))
+	if not item then return end
+
+	--No multiselection
+	if not self.m_enableMultiSelect then
         return self:ItemSelectedClickHelper(item, ignoreCallback)
-    end
+	end
+--d(">multiSelection is ON - maxSelections: " .. tos(self.m_maxNumSelections))
+
+	if item.enabled == false then
+		return false
+	end
+
+	if self:CheckIfNoEntryFoundWasClicked(item) then return false end --#2025_26
+
+	--Multiselection
+	local newSelectionStatus = not self:IsItemSelected(item)
+	if newSelectionStatus then
+		if self.m_maxNumSelections == nil or self:GetNumSelectedEntries() < self.m_maxNumSelections then
+--d(debugPrefix.."comboBoxClass:SelectItem -> AddItemToSelected")
+			self:AddItemToSelected(item)
+		else
+			if not self.onSelectionBlockedCallback or self.onSelectionBlockedCallback(item) ~= true then
+				local alertText = self:GetSelectionBlockedErrorText()
+				if ZO_REMOTE_SCENE_CHANGE_ORIGIN == SCENE_MANAGER_MESSAGE_ORIGIN_INTERNAL then
+					RequestAlert(UI_ALERT_CATEGORY_ALERT, SOUNDS.GENERAL_ALERT_ERROR, alertText)
+				elseif ZO_REMOTE_SCENE_CHANGE_ORIGIN == SCENE_MANAGER_MESSAGE_ORIGIN_INGAME then
+					ZO_Alert(UI_ALERT_CATEGORY_ALERT, SOUNDS.GENERAL_ALERT_ERROR, alertText)
+				end
+				return false
+			end
+		end
+	else
+--d("<removing from selection")
+		self:RemoveItemFromSelected(item)
+	end
+	--20250309 Replace sound with LSM selected sound #2025_14 -> For multiselection
+	--PlaySound(SOUNDS.COMBO_CLICK)
+	playSelectedSoundCheck(self.m_dropdownObject, item.entryType)
+
+	if item.callback and not ignoreCallback then
+		item.callback(self, item.name, item)
+	end
+	self:RefreshSelectedItemText()
+	-- refresh the data that was just selected so the selection highlight properly shows/hides
+	if self.m_dropdownObject:IsOwnedByComboBox(self) then
+		self.m_dropdownObject:Refresh(item)
+	end
+
+	return true
+end
+
+
+function comboBox_base:SetSelected(index, ignoreCallback)
+	--d(debugPrefix .. "comboBox_base:SetSelected - index: " .. tos(index) .. "; ignoreCallback: " ..tos(ignoreCallback))
+
+	local item = self.m_sortedItems[index]
+	if item == nil then return end
+
+	self:SelectItem(item, ignoreCallback)
+
+	-- multi-select dropdowns will stay open to allow for selecting more entries
+	if not self.m_enableMultiSelect then
+		self:HideDropdown()
+	end
 end
 
 

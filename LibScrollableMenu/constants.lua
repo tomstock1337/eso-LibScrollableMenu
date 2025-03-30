@@ -750,10 +750,11 @@ constants.searchFilter = {}
 local noEntriesResults = {
 	entryType = LSM_ENTRY_TYPE_NORMAL,
 	enabled = false,
-	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS),
+	name = GetString(SI_SORT_FILTER_LIST_NO_RESULTS) .. "    ", --add 4 spaces because of the icon at the left (XML row template)
 	m_disabledColor = colors.DEFAULT_TEXT_DISABLED_COLOR,
 	callback = function() d("no entries found!")  end,
-	selectable = false
+	selectable = false,
+	isNoEntriesResult = true,
 }
 constants.searchFilter.noEntriesResults = noEntriesResults
 
@@ -761,10 +762,11 @@ constants.searchFilter.noEntriesResults = noEntriesResults
 local noEntriesSubmenuResults = {
 	entryType = LSM_ENTRY_TYPE_NORMAL,
 	enabled = false,
-	name = GetString(SI_QUICKSLOTS_EMPTY),
+	name = GetString(SI_QUICKSLOTS_EMPTY) .. "    ", --add 4 spaces because of the icon at the left (XML row template),
 	m_disabledColor = colors.DEFAULT_TEXT_DISABLED_COLOR,
 	callback = function() d("no submenu entries found!")  end,
-	selectable = false
+	selectable = false,
+	isNoEntriesResult = true,
 }
 constants.searchFilter.noEntriesSubmenuResults = noEntriesSubmenuResults
 

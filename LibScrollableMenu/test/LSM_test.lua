@@ -96,7 +96,7 @@ local function test()
 		--==============================================================================================================
 		local options = {
 			--submenuArrowColor = HEADER_TEXT_COLOR_RED,
-			enableMultiSelect = false,
+			enableMultiSelect = true,
 			maxNumSelections = 2,
 			maxNumSelectionsErrorText =		debugPrefix.."ERROR - Maximum items selected already",
 			multiSelectionTextFormatter = 	function(options)
