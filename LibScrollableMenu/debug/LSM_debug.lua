@@ -3,6 +3,7 @@ if not lib then return end
 
 local MAJOR = lib.name
 
+
 --------------------------------------------------------------------
 -- Libraries
 --------------------------------------------------------------------
@@ -13,6 +14,7 @@ local LDL = LibDebugLogger
 -- Locals
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
+local tos = tostring
 local sfor = string.format
 
 
@@ -24,31 +26,18 @@ local logger
 local debugPrefix = lib.Debug.prefix
 
 --DebugLog types
-local LSM_LOGTYPE_DEBUG = 1
-local LSM_LOGTYPE_VERBOSE = 2
-local LSM_LOGTYPE_DEBUG_CALLBACK = 3
-local LSM_LOGTYPE_INFO = 10
-local LSM_LOGTYPE_ERROR = 99
-libDebug.LSM_LOGTYPE_DEBUG = LSM_LOGTYPE_DEBUG
-libDebug.LSM_LOGTYPE_VERBOSE = LSM_LOGTYPE_VERBOSE
-libDebug.LSM_LOGTYPE_DEBUG_CALLBACK = LSM_LOGTYPE_DEBUG_CALLBACK
-libDebug.LSM_LOGTYPE_INFO = LSM_LOGTYPE_INFO
-libDebug.LSM_LOGTYPE_ERROR = LSM_LOGTYPE_ERROR
+local LSM_LOGTYPE_DEBUG = libDebug.LSM_LOGTYPE_DEBUG
+local LSM_LOGTYPE_VERBOSE = libDebug.LSM_LOGTYPE_VERBOSE
+local LSM_LOGTYPE_DEBUG_CALLBACK = libDebug.LSM_LOGTYPE_DEBUG_CALLBACK
+local LSM_LOGTYPE_INFO = libDebug.LSM_LOGTYPE_INFO
+local LSM_LOGTYPE_ERROR = libDebug.LSM_LOGTYPE_ERROR
 
---DebugLog type to name mapping
-local loggerTypeToName = {
-	[LSM_LOGTYPE_DEBUG] = 			" -DEBUG- ",
-	[LSM_LOGTYPE_VERBOSE] = 		" -VERBOSE- ",
-	[LSM_LOGTYPE_DEBUG_CALLBACK] = 	" -CALLBACK- ",
-	[LSM_LOGTYPE_INFO] = 			" -INFO- ",
-	[LSM_LOGTYPE_ERROR] = 			" -ERROR- ",
-}
+local loggerTypeToName = libDebug.loggerTypeToName
 
 
 --------------------------------------------------------------------
 -- Debug logging
 --------------------------------------------------------------------
-
 --The debug messages patterns with their uniqueId. The function dLog only passes in the textId and params to make it
 --more performant
 local debugLogMessagePatterns = {
@@ -81,9 +70,9 @@ local debugLogMessagePatterns = {
 	[27] = "updateIcons - numIcons %s",
 	[28] = "getControlData - name:  %s",
 	[29] = "checkIfContextMenuOpenedButOtherControlWasClicked - cbox == ctxtMenu? %s; cntxt dropdownVis? %s",
-	[30] = "areAnyEntriesNew",
+	[30] = "doOnMouseEnterNestedSubmenuChecks",
 	[31] = "updateSubmenuNewStatus",
-	[32] = "clearNewStatus",
+	[32] = "checkSubmenuOnMouseEnterTasks",
 	[33] = "FireCallbacks: NewStatusUpdated - control:  %s",
 	[34] = "setItemEntryCustomTemplate - name: %q, entryType: %s",
 	[35] = "addItem_Base - itemEntry:  %s",
@@ -233,6 +222,9 @@ local debugLogMessagePatterns = {
 	[179] = "comboBox_base:GetMaxDropdownWidth - maxDropdownWidth: %s",
 	[180] = "comboBox_base:GetBaseWidth - control: %s, gotHeader: %s, width: %s",
 	[181] = "comboBox_base:UpdateWidth - control: %q, newWidth: %s, maxWidth: %s, maxDropdownWidth: %s, minWidth: %s",
+	[182] = "doSubmenuOnMouseEnterNestedSubmenuChecks",
+	[183] = "checkSubmenuOnMouseEnterTasks",
+	[184] = "updateSubmenuIsAnyEntrySelectedStatus",
 }
 
 
@@ -308,3 +300,31 @@ local function dlog(debugType, textId, ...)
 	end
 end
 libDebug.DebugLog = dlog
+
+local function initDebugLogging()
+	if not lib.Debug then return false end
+	libDebug = lib.Debug
+	if not libDebug.LoadLogger then return false end
+	libDebug.LoadLogger()
+	return true
+end
+
+local function debugLoggingToggle(debugType)
+	if not initDebugLogging() then return end
+
+	if debugType == "debug" then
+		lib.Debug.doDebug = not lib.Debug.doDebug
+		libDebug = lib.Debug
+		if libDebug.logger then libDebug.logger:SetEnabled(libDebug.doDebug) end
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 176, tos(libDebug.doDebug and "ON" or "OFF")) end
+
+	elseif debugType == "debugVerbose" then
+		lib.Debug.doVerboseDebug = not lib.Debug.doVerboseDebug
+		libDebug = lib.Debug
+		if libDebug.logger and libDebug.logger.verbose then
+			libDebug.logger.verbose:SetEnabled(libDebug.doVerboseDebug)
+			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 177, tos(libDebug.doVerboseDebug and "ON" or "OFF"), tos(libDebug.doDebug and "ON" or "OFF")) end
+		end
+	end
+end
+libDebug.debugLoggingToggle = debugLoggingToggle
