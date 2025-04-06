@@ -659,6 +659,8 @@ function comboBox_base:Initialize(parent, comboBoxContainer, options, depth, ini
 	local dropdownObject = self:GetDropdownObject(comboBoxContainer, depth)
 	self:SetDropdownObject(dropdownObject)
 
+	lib._objects[#lib._objects + 1] = self
+
 	self:UpdateOptions(options, true, nil, initExistingComboBox)
 
 --[[
@@ -920,7 +922,21 @@ end
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
 function comboBox_base:OnGlobalMouseUp(eventId, button)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(lib.preventerVars.suppressNextOnGlobalMouseUp)) end
-	--d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", suppressNextMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
+	--d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", container: " .. tos(getControlName(self.m_container)) .. ", suppressNextMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
+--[[
+LSM_Debug = LSM_Debug or {}
+LSM_Debug._globalMouseUp = LSM_Debug._globalMouseUp or {}
+local nextGlobalMouseUp = #LSM_Debug._globalMouseUp +1
+d(">self: " ..tos(self) .. "; nextGlobalMouseUp: " .. tos(nextGlobalMouseUp))
+
+LSM_Debug._globalMouseUp[nextGlobalMouseUp] =	{
+	button = button,
+	self = self,
+	container = self.m_container,
+	dropdown = self.m_dropdown,
+}
+]]
+
 	local abortEarly = false
 	local suppressNextOnGlobalMouseUp = lib.preventerVars.suppressNextOnGlobalMouseUp
 	local suppressNextOnGlobalMouseUpType = suppressNextOnGlobalMouseUp ~= nil and type(suppressNextOnGlobalMouseUp) or nil

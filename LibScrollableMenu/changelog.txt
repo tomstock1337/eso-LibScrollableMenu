@@ -1,4 +1,4 @@
--v- ---------------LSM v2.35 - 2025-03-30--------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.35 - 2025-04-06--------------------------------------------------------------------------- -v-
 [Fixed]
 -2025_6:	If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
 -2025_7:	If multiselection is enabled: LSM test Maximum number of selectable entries (maxNumSelections) is not working (maybe after submenus were opened)
@@ -21,6 +21,7 @@
 -2025_26:   Filter header: If the filter header filtered all items and we left click the "No search results" entry it will call the callback of another LSM control (looks like the last entry of m_sortedItems of that combobox) all of sudden?
 -2025_27: 	ContextMenu: Opening an LSM contextMenu, after another was used before, does use some options of the before opened LSM contextMenu then (e.g. the filter header) -> Reset of all options on each contextMenu open
 -2025_28: 	ContextMenu: API function RunCustomScrollableMenuItemsCallback is not respecting the parameter fromParentMenu
+-2025_29	ContextMenu: Opening a contextmenu on another control, while another LSM was opened, cleared the contextMenu entries
 -2025_30:   ContextMenu: Opening a contextmenu sometimes does not change the maximum width of the entries properly
 
 

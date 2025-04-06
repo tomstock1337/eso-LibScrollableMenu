@@ -259,7 +259,7 @@ function comboBoxClass:ResetToDefaults(initExistingComboBox)
 		mixinTableAndSkipExisting(self, defaults, comboBoxDefaultsContextualInitValues, nil)
 	else
 --d(">overwriting self with defaults - self.enableFilter = " .. tos(self.enableFilter))
-		zo_mixin(self, defaults) -- overwrite existing ZO_ComboBox (self) values with LSM defaults
+  	 zo_mixin(self, defaults) -- overwrite existing ZO_ComboBox (self) values with LSM defaults
 	end
 --d(">>self.enableFilter after: " .. tos(self.enableFilter))
 	self:SetOptions(nil)
@@ -314,7 +314,7 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu, initExistin
 	onInit = onInit or false
 	local optionsChanged = self.optionsChanged
 
-	local doDebugNow = false --isContextMenu and true or false --todo remove after testing
+	local doDebugNow = false --isContextMenu and true or false --isContextMenu and true or false --todo remove after testing
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 136, tos(options), tos(onInit), tos(optionsChanged)) end
 	if doDebugNow then

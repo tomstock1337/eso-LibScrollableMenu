@@ -42,7 +42,7 @@ local SubOrContextMenu_highlightControl = libUtil.SubOrContextMenu_highlightCont
 local checkIfHiddenForReasons = libUtil.checkIfHiddenForReasons
 local getComboBox = libUtil.getComboBox
 local throttledCall = libUtil.throttledCall
-
+local libUtil_isAnyLSMDropdownVisible = libUtil.isAnyLSMDropdownVisible
 
 --------------------------------------------------------------------
 --Local library class reference variable
@@ -78,6 +78,7 @@ lib.CreateContextMenuObject = createContextMenuObject --Called once from initial
 -- contextMenuClass:New(To simplify locating the beginning of the class
 function contextMenuClass:Initialize(comboBoxContainer)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 149, tos(getControlName(comboBoxContainer))) end
+--d(debugPrefix .. 'contextMenuClass:Initialize')
 	self:SetDefaults()
 	comboBoxClass.Initialize(self, nil, comboBoxContainer, nil, 1)
 	self.data = {}
@@ -99,6 +100,8 @@ end
 -- Renamed from AddItem since AddItem can be the same as base. This function is only to pre-set data for updating on show,
 function contextMenuClass:AddContextMenuItem(itemEntry)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 150, tos(itemEntry)) end
+--d(debugPrefix .. 'contextMenuClass:AddContextMenuItem - name: ' ..tos(itemEntry.label or itemEntry.name))
+
 	local indexAdded = tins(self.data, itemEntry)
 	indexAdded = indexAdded or #self.data
 	return indexAdded
@@ -128,6 +131,7 @@ function contextMenuClass:HighlightOpeningControl()
 end
 
 function contextMenuClass:SetContextMenuOptions(options)
+--d(debugPrefix .. 'contextMenuClass:SetContextMenuOptions - options: ' ..tos(options))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 158, tos(options)) end
 
 	-- self.contextMenuOptions is only a temporary table used to check for changes in comboBox_class:UpdateOptions
@@ -142,6 +146,7 @@ function contextMenuClass:SetContextMenuOptions(options)
 end
 
 function contextMenuClass:AddMenuItems(parentControl, comingFromFilters)
+--d(debugPrefix .. 'contextMenuClass:AddMenuItems()')
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 151) end
 	self:RefreshSortedItems()
 	self:UpdateWidth()
@@ -192,9 +197,9 @@ end
 function contextMenuClass:ShowContextMenu(parentControl)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 157, tos(getControlName(parentControl))) end
 	--Resetting some preventer variables
-	--d("///////////////////////////////")
-	--d(debugPrefix .. "->->->->-> contextMenuClass:ShowContextMenu")
-	--d(">resetting some lib.preventerVars")
+--d("///////////////////////////////")
+--d(debugPrefix .. "->->->->-> contextMenuClass:ShowContextMenu")
+--d(">resetting some lib.preventerVars")
 	lib.preventerVars.wasContextMenuOpenedAsOnMouseUpWasSuppressed = nil
 	lib.preventerVars.suppressNextOnEntryMouseUpDisableCounter = nil
 
@@ -203,7 +208,6 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	if parentControl == nil then parentControl = self.contextMenuIssuingControl or moc() end --#2025_28
 	self.openingControl = parentControl
 
-	--d(">openingCtrl: " .. getControlName(parentControl))
 
 	-- To prevent the context menu from overlapping a submenu it is not opened from:
 	-- If the opening control is a dropdown and has a submenu visible, close the submenu.
@@ -215,9 +219,9 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	if self:IsDropdownVisible() then
 		self:HideDropdown()
 	end
-	--[[
-    d(">Before options: self.enableFilter = " .. tos(self.enableFilter))
-    LSM_Debug = LSM_Debug or {}
+    --d(">Before options: self.enableFilter = " .. tos(self.enableFilter))
+    --[[
+	LSM_Debug = LSM_Debug or {}
     LSM_Debug.contextMenusOpened = LSM_Debug.contextMenusOpened or {}
     local newIndex = #LSM_Debug.contextMenusOpened+1
     LSM_Debug.contextMenusOpened[newIndex] = {
@@ -227,8 +231,8 @@ function contextMenuClass:ShowContextMenu(parentControl)
     }
     ]]
 	self:UpdateOptions(self.contextMenuOptions, nil, true, nil) --Updates self.options
-	--[[
-    LSM_Debug.contextMenusOpened[newIndex].optionsAfter = self.options ~= nil and ZO_ShallowTableCopy(self.options) or nil
+    --[[
+	LSM_Debug.contextMenusOpened[newIndex].optionsAfter = self.options ~= nil and ZO_ShallowTableCopy(self.options) or nil
     LSM_Debug.contextMenusOpened[newIndex].contextMenuOptionsAfter = self.contextMenuOptions ~= nil and ZO_ShallowTableCopy(self.contextMenuOptions) or nil
     LSM_Debug.contextMenusOpened[newIndex].enableFilterAfter = self.contextMenuOptions ~= nil and self.contextMenuOptions.enableFilter or nil,
     d(">After options: self.enableFilter = " .. tos(self.enableFilter))
@@ -236,8 +240,19 @@ function contextMenuClass:ShowContextMenu(parentControl)
 
 	self:HighlightOpeningControl()
 
-	--d("->->->->->->-> [LSM]ContextMenuClass:ShowContextMenu -> ShowDropdown now!")
+--d("->->->->->->-> [LSM]ContextMenuClass:ShowContextMenu -> ShowDropdown now!")
+	--Check if any non-contextMenu LSM is shown and if that is the case it's OnGlobalMouseUp will fire as it closes
+	if libUtil_isAnyLSMDropdownVisible(false) then --#2025_29
+--d(">supressing next onMouseUp as an LSM is still opened, and the mouse would clear the contextMenu entries")
+		lib.preventerVars.suppressNextOnGlobalMouseUp = true
+	end
 	self:ShowDropdown()
+
+
+	--#2025_29 Next OnGlobalMouse up of any before opened LSM (as we right clicked any other owningWIndows LSM entry to show a contextMenu)
+	--will fire after the contextMenu here is shown -> and these other onGlobalMouseups will clear the contextMenu entries via libUtil.hideContextMenu again :-(
+	--todo 20250406 How can we detect this? And then prevent the globalMouseUps (there are 2 in that case: 1 from the new contextMenu's opening control and one from the before opened LSM)
+
 
 	--d(debugPrefix .. "ContextMenuClass:ShowContextMenu - openingControl changed!")
 	throttledCall(function()

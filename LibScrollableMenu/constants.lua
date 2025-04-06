@@ -5,7 +5,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 --------------------------------------------------------------------
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
-lib.author = "IsJustaGhost, Baertram, tomstock, Kyoma"
+lib.author = "Baertram, IsJustaGhost, tomstock, Kyoma"
 lib.version = "2.35"
 if not lib then return end
 --------------------------------------------------------------------
@@ -22,6 +22,10 @@ local tos = tostring
 --Libray locals
 --------------------------------------------------------------------
 local MAJOR = lib.name
+
+--Contains all created LSM objects
+lib._objects = {}
+
 
 --PreventerVariables
 lib.preventerVars = {

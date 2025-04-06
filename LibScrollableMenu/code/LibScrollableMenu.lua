@@ -274,7 +274,7 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.35 - Updated 2025-03-30
+	CHANGELOG Current version: 2.35 - Updated 2025-04-06
 ---------------------------------------------------------------
 Max error #: 2025_31
 
@@ -282,8 +282,6 @@ Max error #: 2025_31
 
 
 [WORKING ON]
--2025_29	ContextMenu: Opening LSMTEST UI (opening the dropdown alone is enough, but it must stay opened!) and use /tbm to show any other userdata (e.g. ZO_ActionButtonn), then e.g. within merTorchbug open a context menu directly with rightclick -> Context menu shows header but empty lines etc. until 2nd time right clicked
-
 
 [Fixed]
 -2025_6:	If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
@@ -307,6 +305,7 @@ Max error #: 2025_31
 -2025_26:   Filter header: If the filter header filtered all items and we left click the "No search results" entry it will call the callback of another LSM control (looks like the last entry of m_sortedItems of that combobox) all of sudden?
 -2025_27: 	ContextMenu: Opening an LSM contextMenu, after another was used before, does use some options of the before opened LSM contextMenu then (e.g. the filter header) -> Reset of all options on each contextMenu open
 -2025_28: 	ContextMenu: API function RunCustomScrollableMenuItemsCallback is not respecting the parameter fromParentMenu
+-2025_29	ContextMenu: Opening a contextmenu on another control, while another LSM was opened, cleared the contextMenu entries
 -2025_30:   ContextMenu: Opening a contextmenu sometimes does not change the maximum width of the entries properly
 
 

@@ -898,6 +898,18 @@ function libUtil.checkNextOnEntryMouseUpShouldExecute()
 	return false
 end
 
+function libUtil.isAnyLSMDropdownVisible(contextMenuToo)
+	if lib._objects == nil then return false end
+	for _, lsmRef in ipairs(lib._objects) do
+		if lsmRef ~= nil and lsmRef:IsDropdownVisible() then
+			if not contextMenuToo or (contextMenuToo and lsmRef.isContextMenu) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 --20240727 Prevent selection of entries if a context menu was opened and a left click was done "outside of the context menu"
 --Param isContextMenu will be true if coming from contextMenuClass:GetHiddenForReasons function or it will change to true if
 --any contextMenu is curently shown as this function runs
