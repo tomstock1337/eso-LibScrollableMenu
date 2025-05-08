@@ -1633,6 +1633,11 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	-- prevent it from getting any skinnier than the container's initial width
 	local longestEntryTextWidth = largestEntryWidth + (ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2) + ZO_SCROLL_BAR_WIDTH
 
+	--Any options.minDropdownWidth "fixed width" chosen?
+	local minDropdownWidth = comboBoxObject:GetMinDropdownWidth()
+	if minDropdownWidth and minDropdownWidth > minWidth then
+		minWidth = minDropdownWidth
+	end
 	--Any options.maxDropdownWidth "fixed width" chosen?
 	local maxDropdownWidth = comboBoxObject:GetMaxDropdownWidth()
 	--If a maxWidth was set in the options then use that one, else use the auto-size of the longest entry. If the auto-size of the longest entry is smaller than the maxWidth, then use that instead!

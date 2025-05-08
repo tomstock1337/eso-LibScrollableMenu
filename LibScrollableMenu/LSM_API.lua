@@ -98,6 +98,7 @@ end
 --		number visibleRowsSubmenu:optional		Number or function returning number of shown entries at 1 page of the scrollable comboBox's opened submenus
 --		number maxDropdownHeight				Number or function returning number of total dropdown's maximum height
 --		number maxDropdownWidth					Number or function returning number of total dropdown's maximum width
+--		number minDropdownWidth					Number or function returning number of total dropdown's minimum width
 --		boolean sortEntries:optional			Boolean or function returning boolean if items in the main-/submenu should be sorted alphabetically. !!!Attention: Default is TRUE (sorting is enabled)!!!
 --		table sortType:optional					table or function returning table for the sort type, e.g. ZO_SORT_BY_NAME, ZO_SORT_BY_NAME_NUMERIC
 --		boolean sortOrder:optional				Boolean or function returning boolean for the sort order ZO_SORT_ORDER_UP or ZO_SORT_ORDER_DOWN
@@ -337,9 +338,9 @@ local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 --> See examples for the table "entries" values above AddCustomScrollableMenuEntry
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
-function AddCustomScrollableSubMenuEntry(text, entries)
+function AddCustomScrollableSubMenuEntry(text, entries, callbackFunc)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 163, tos(text), tos(entries)) end
-	return addCustomScrollableMenuEntry(text, nil, entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU, entries, nil)
+	return addCustomScrollableMenuEntry(text, callbackFunc, entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU, entries, nil)
 end
 
 --Adds a divider line to the context menu entries
