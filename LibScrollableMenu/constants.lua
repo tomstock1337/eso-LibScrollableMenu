@@ -6,7 +6,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 lib.author = "Baertram, IsJustaGhost, tomstock, Kyoma"
-lib.version = "2.35"
+lib.version = "2.36"
 if not lib then return end
 --------------------------------------------------------------------
 
@@ -527,6 +527,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["font"] = 					"m_font",
 	["maxDropdownHeight"] =		"maxHeight",
 	["maxDropdownWidth"] =		"maxWidth",
+	["minDropdownWidth"] =		"minWidth",
 	["preshowDropdownFn"] = 	"m_preshowDropdownFn",
 	["sortEntries"] = 			"m_sortsItems",
 	["sortOrder"] = 			"m_sortOrder",
@@ -619,6 +620,10 @@ local LSMOptionsToZO_ComboBoxOptionsCallbacks = {
 	end,
 	["maxDropdownWidth"] = function(comboBoxObject, maxDropdownWidth)
 		comboBoxObject.maxWidth = maxDropdownWidth
+		comboBoxObject:UpdateWidth(comboBoxObject.m_dropdown)
+	end,
+	["minDropdownWidth"] = function(comboBoxObject, minDropdownWidth)
+		comboBoxObject.minWidth = minDropdownWidth
 		comboBoxObject:UpdateWidth(comboBoxObject.m_dropdown)
 	end,
 	["maxNumSelections"] = function(comboBoxObject, maxNumSelections)
@@ -726,6 +731,7 @@ local submenuClass_exposedVariables = {
 	["options"] = true,
 	["maxDropdownHeight"] = true,
 	["maxDropdownWidth"] = true,
+	["minDropdownWidth"] = true,
 	["m_highlightTemplate"] = true,
 	["narrateData"] = true,
 	["submenuArrowColor"] =	 true,
@@ -841,5 +847,3 @@ constants.sounds.entryTypeToOriginalSelectedSound = entryTypeToOriginalSelectedS
 -- Global library reference
 ------------------------------------------------------------------------------------------------------------------------
 LibScrollableMenu = lib
-
-

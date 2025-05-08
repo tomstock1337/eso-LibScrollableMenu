@@ -1,3 +1,8 @@
+-v- ---------------LSM v2.36 - 2025-05-08--------------------------------------------------------------------------- -v-
+[Added]
+-2025_32    Added  option "minDropdownWidth": Width of the dropdowns will be minimum this width (minimum width is 50, or 125 if the search editbox header is enabled. Attention: If the minDropdownWidth is > than the max it will overwrite the maximum dropdown width that way!)
+
+
 -v- ---------------LSM v2.35 - 2025-04-06--------------------------------------------------------------------------- -v-
 [Fixed]
 -2025_6:	If multiSelection is enabled: LSM test Entry having a submenu AND a callback is selectable -> should not be the case
@@ -31,7 +36,6 @@
 
 [Changed]
 -2025_5:	Split up into several files
-
 
 -v- ---------------LSM v2.34 - 2025-02-07--------------------------------------------------------------------------- -v-
 -Added  option "maxDropdownWidth": Width of the dropdowns will be maximum this width (minimum width is 50, or 125 if the search editbox header is enabled. If the longest text of entries is < maxDropdownWidth then the dropdown's width will be the longest text entry width
