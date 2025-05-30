@@ -534,6 +534,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["sortType"] = 				"m_sortType",
 	["spacing"] = 				"m_spacing",
 	["submenuArrowColor"] =		"submenuArrowColor",
+	["submenuOpenToSide"] =		"submenuOpenToSide",
 	["multiSelectSubmenuSelectedArrowColor"] = "multiSelectSubmenuSelectedArrowColor",
 	["visibleRowsDropdown"] =	"visibleRows",
 }
@@ -735,6 +736,7 @@ local submenuClass_exposedVariables = {
 	["m_highlightTemplate"] = true,
 	["narrateData"] = true,
 	["submenuArrowColor"] =	 true,
+	["submenuOpenToSide"] = true,
 	["multiSelectSubmenuSelectedArrowColor"] = true,
 	["useDefaultHighlightForSubmenuWithCallback"] = true,
 	["visibleRowsSubmenu"] = true, --we only need this "visibleRowsSubmenu" for the submenus, mainMenu uses visibleRowsDropdown

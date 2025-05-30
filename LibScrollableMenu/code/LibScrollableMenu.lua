@@ -274,14 +274,15 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.36 - Updated 2025-05-08
+	CHANGELOG Current version: 2.36 - Updated 2025-05-30
 ---------------------------------------------------------------
-Max error #: 2025_32
+Max error #: 2025_34
 
 [KNOWN PROBLEMS]
 
 
 [WORKING ON]
+-2025_34    Added .ption "submenuOpenToSide": Open the submenu forced to a specified side, e.g. "left" or "right". If this option is not specified the submenu autmatically chooses where to open to based on the available space left until the menu's width touches the screen's edge.
 
 [Fixed]
 

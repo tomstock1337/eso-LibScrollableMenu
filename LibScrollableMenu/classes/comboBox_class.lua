@@ -168,6 +168,13 @@ function comboBoxClass:GetMenuPrefix()
 	return 'Menu'
 end
 
+function comboBoxClass:GetSubMenuOpeningSide() --#2025_34
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 186) end
+	local options = self:GetOptions()
+	local submenuOpenToSide = (options and getValueOrCallback(options.submenuOpenToSide, options)) or nil
+	return submenuOpenToSide
+end
+
 function comboBoxClass:GetHiddenForReasons(button)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 130, tos(button)) end
 --d("111111111111111 comboBoxClass:GetHiddenForReasons - button: " ..tos(button))
