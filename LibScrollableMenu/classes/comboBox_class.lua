@@ -19,6 +19,8 @@ local dlog = libDebug.DebugLog
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
 local tos = tostring
+local strlow = string.lower
+local stringType = "string"
 
 
 --------------------------------------------------------------------
@@ -172,7 +174,8 @@ function comboBoxClass:GetSubMenuOpeningSide() --#2025_34
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 186) end
 	local options = self:GetOptions()
 	local submenuOpenToSide = (options and getValueOrCallback(options.submenuOpenToSide, options)) or nil
-	return submenuOpenToSide
+d(debugPrefix .. "comboBoxClass:GetSubMenuOpeningSide - " ..tos(submenuOpenToSide))
+	return (type(submenuOpenToSide) == stringType and strlow(submenuOpenToSide)) or nil
 end
 
 function comboBoxClass:GetHiddenForReasons(button)

@@ -328,8 +328,7 @@ local function setTimeout(callback)
 end
 
 local function checkWhereToShowSubmenu(selfVar) --#2025_34
-	--todo #2025_34 Implement submenuOpenToSide -> get it from the settings of the current dropdown object's LSMcomboBox
-	--todo or set self.submenuOpenToSide somewhere?
+--d(debugPrefix .. "dropdownClass:checkWhereToShowSubmenu - parentMenu: " ..tos(selfVar.m_parentMenu))
 	if not selfVar.m_parentMenu then return false, true end
 
 	local openSubmenuToSideForced = false
@@ -337,11 +336,12 @@ local function checkWhereToShowSubmenu(selfVar) --#2025_34
 
 	local submenuOpenToSide = selfVar:GetSubMenuOpeningSide()
 	if submenuOpenToSide ~= nil then
-		openToTheRight = ((submenuOpenToSide == "right" and true) or (submenuOpenToSide == "left" and false)) or nil
-		if openToTheRight ~= nil then
-			openSubmenuToSideForced  = true
-		else
+		if submenuOpenToSide == "right" then
 			openToTheRight = true
+			openSubmenuToSideForced  = true
+		elseif submenuOpenToSide == "left" then
+			openToTheRight = false
+			openSubmenuToSideForced  = true
 		end
 	end
 	return openSubmenuToSideForced, openToTheRight
@@ -1227,7 +1227,7 @@ function dropdownClass:AnchorToControl(parentControl)
 	local point, relativePoint = TOPLEFT, TOPRIGHT
 
 	--It's a submenu and got a parentMenu? Check if we should anchor to the right
-	if self.m_parentMenu then
+	if self.m_parentMenu ~= nil then
 		openSubmenuToSideForced, right = checkWhereToShowSubmenu(self) --#2025_34
 
 		local parentDropdownObject = self.m_parentMenu.m_dropdownObject
@@ -1263,20 +1263,20 @@ end
 function dropdownClass:AnchorToMouse()
 	local menuToAnchor = self.control
 
-	local x, y = GetUIMousePosition()
-	local width, height = GuiRoot:GetDimensions()
+	local x, y                        = GetUIMousePosition()
+	local GUIRootWidth, GUIRootHeight = GuiRoot:GetDimensions()
 
 	menuToAnchor:ClearAnchors()
 
 	local openSubmenuToSideForced, right = checkWhereToShowSubmenu(self) --#2025_34
 	if not openSubmenuToSideForced then
-		if x + menuToAnchor:GetWidth() > width then
+		if (x + menuToAnchor:GetWidth()) > GUIRootWidth then
 			right = false
 		end
 	end
 
 	local bottom = true
-	if y + menuToAnchor:GetHeight() > height then
+	if (y + menuToAnchor:GetHeight()) > GUIRootHeight then
 		bottom = false
 	end
 

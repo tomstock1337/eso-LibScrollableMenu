@@ -282,7 +282,7 @@ Max error #: 2025_34
 
 
 [WORKING ON]
--2025_34    Added .ption "submenuOpenToSide": Open the submenu forced to a specified side, e.g. "left" or "right". If this option is not specified the submenu autmatically chooses where to open to based on the available space left until the menu's width touches the screen's edge.
+-2025_34    Added .option "submenuOpenToSide": Open the submenu forced to a specified side, e.g. "left" or "right". If this option is not specified the submenu autmatically chooses where to open to based on the available space left until the menu's width touches the screen's edge.
 
 [Fixed]
 
