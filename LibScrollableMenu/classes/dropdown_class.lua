@@ -327,6 +327,26 @@ local function setTimeout(callback)
 	end)
 end
 
+local function checkWhereToShowSubmenu(selfVar) --#2025_34
+--d(debugPrefix .. "dropdownClass:checkWhereToShowSubmenu - parentMenu: " ..tos(selfVar.m_parentMenu))
+	if not selfVar.m_parentMenu then return false, true end
+
+	local openSubmenuToSideForced = false
+	local openToTheRight = true --Default value
+
+	local submenuOpenToSide = selfVar:GetSubMenuOpeningSide()
+	if submenuOpenToSide ~= nil then
+		if submenuOpenToSide == "right" then
+			openToTheRight = true
+			openSubmenuToSideForced  = true
+		elseif submenuOpenToSide == "left" then
+			openToTheRight = false
+			openSubmenuToSideForced  = true
+		end
+	end
+	return openSubmenuToSideForced, openToTheRight
+end
+
 
 --------------------------------------------------------------------
 -- Dropdown entry filter functions
@@ -1186,9 +1206,17 @@ function dropdownClass:AddCustomEntryTemplate(entryTemplate, entryHeight, setupF
 	self.nextScrollTypeId = self.nextScrollTypeId + 2
 end
 
+function dropdownClass:GetSubMenuOpeningSide() --#2025_34
+--d(debugPrefix .. "dropdownClass:GetSubMenuOpeningSide")
+	if self.m_comboBox then
+		return self.m_comboBox:GetSubMenuOpeningSide()
+	end
+end
+
 function dropdownClass:AnchorToControl(parentControl)
-	local width, height = GuiRoot:GetDimensions()
+	local guiRootWidth, guiRootHeight = GuiRoot:GetDimensions()
 	local right = true
+	local openSubmenuToSideForced = false
 
 	local offsetX = parentControl.m_dropdownObject.scrollControl.scrollbar:IsHidden() and ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y or ZO_SCROLL_BAR_WIDTH
 --	local offsetX = -4
@@ -1198,11 +1226,18 @@ function dropdownClass:AnchorToControl(parentControl)
 
 	local point, relativePoint = TOPLEFT, TOPRIGHT
 
-	if self.m_parentMenu.m_dropdownObject and self.m_parentMenu.m_dropdownObject.anchorRight ~= nil then
-		right = self.m_parentMenu.m_dropdownObject.anchorRight
+	--It's a submenu and got a parentMenu? Check if we should anchor to the right
+	if self.m_parentMenu ~= nil then
+		openSubmenuToSideForced, right = checkWhereToShowSubmenu(self) --#2025_34
+
+		local parentDropdownObject = self.m_parentMenu.m_dropdownObject
+		if right == nil and parentDropdownObject.anchorRight ~= nil then
+			right = parentDropdownObject.anchorRight
+		end
 	end
 
-	if not right or parentControl:GetRight() + self.control:GetWidth() > width then
+	--Should we anchor the menu to the left or the right of the control > Check if it fits to the maximum GuiRoot's width!
+	if not right or (not openSubmenuToSideForced and ((parentControl:GetRight() + self.control:GetWidth()) > guiRootWidth)) then
 		right = false
 	--	offsetX = 4
 		offsetX = 0
@@ -1228,17 +1263,20 @@ end
 function dropdownClass:AnchorToMouse()
 	local menuToAnchor = self.control
 
-	local x, y = GetUIMousePosition()
-	local width, height = GuiRoot:GetDimensions()
+	local x, y                        = GetUIMousePosition()
+	local GUIRootWidth, GUIRootHeight = GuiRoot:GetDimensions()
 
 	menuToAnchor:ClearAnchors()
 
-	local right = true
-	if x + menuToAnchor:GetWidth() > width then
-		right = false
+	local openSubmenuToSideForced, right = checkWhereToShowSubmenu(self) --#2025_34
+	if not openSubmenuToSideForced then
+		if (x + menuToAnchor:GetWidth()) > GUIRootWidth then
+			right = false
+		end
 	end
+
 	local bottom = true
-	if y + menuToAnchor:GetHeight() > height then
+	if (y + menuToAnchor:GetHeight()) > GUIRootHeight then
 		bottom = false
 	end
 
@@ -1633,6 +1671,11 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	-- prevent it from getting any skinnier than the container's initial width
 	local longestEntryTextWidth = largestEntryWidth + (ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING * 2) + ZO_SCROLL_BAR_WIDTH
 
+	--Any options.minDropdownWidth "fixed width" chosen?
+	local minDropdownWidth = comboBoxObject:GetMinDropdownWidth()
+	if minDropdownWidth and minDropdownWidth > minWidth then
+		minWidth = minDropdownWidth
+	end
 	--Any options.maxDropdownWidth "fixed width" chosen?
 	local maxDropdownWidth = comboBoxObject:GetMaxDropdownWidth()
 	--If a maxWidth was set in the options then use that one, else use the auto-size of the longest entry. If the auto-size of the longest entry is smaller than the maxWidth, then use that instead!
@@ -1733,10 +1776,10 @@ function dropdownClass:XMLHandler(selfVar, handlerName)
 	end
 end
 
+
 --------------------------------------------------------------------
 -- Dropdown text search functions
 --------------------------------------------------------------------
-
 local function setTextSearchEditBoxText(selfVar, filterBox, newText)
 --d(debugPrefix .. "setTextSearchEditBoxText - wasTextSearchContextMenuEntryClicked = true")
 	selfVar.wasTextSearchContextMenuEntryClicked = true
@@ -1874,7 +1917,6 @@ function dropdownClass:IsFilterEnabled()
 		return self.m_comboBox:IsFilterEnabled()
 	end
 end
-
 
 --[[ Used via XML button to I (include) submenu entries. Currently disabled, only available via text search prefix "/"
 function dropdownClass:SetFilterIgnore(ignore)

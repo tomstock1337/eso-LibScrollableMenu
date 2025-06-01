@@ -1010,6 +1010,11 @@ function comboBox_base:GetMaxDropdownWidth()
 	return self.maxWidth --is set via options.maxDropdownWidth -> see table LSMOptionsToZO_ComboBoxOptionsCallbacks
 end
 
+function comboBox_base:GetMinDropdownWidth()
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 185, tos(self.minWidth)) end
+	return self.minWidth --is set via options.minDropdownWidth -> see table LSMOptionsToZO_ComboBoxOptionsCallbacks
+end
+
 function comboBox_base:GetDropdownObject(comboBoxContainer, depth)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 93, tos(getControlName(comboBoxContainer)), tos(depth)) end
 	self.m_nextFree = depth + 1
@@ -1565,7 +1570,12 @@ end
 function comboBox_base:UpdateWidth(control)
 	--d(debugPrefix .. "comboBox_base:UpdateWidth - control: " .. getControlName(control))
 	--Is the dropdown using a header control? then calculate it's size too
-	local minWidth = self:GetBaseWidth(control)
+	local baseWidth = self:GetBaseWidth(control)
+
+	--Get minWidth from settings
+	local minDropdownWidth = self:GetMinDropdownWidth() or baseWidth
+	local minWidth = (minDropdownWidth > baseWidth and minDropdownWidth) or baseWidth
+	if minWidth <= 0 then minWidth = baseWidth end
 
 	--Calculate the maximum width now: Maximum width explicitly set by options? Else use container's width (should be same as the dropdown opening ctrl).
 	-->Will be overwritten at Show function IF no maxWidth is set and any entry in the list is wider (text width) than the container width
