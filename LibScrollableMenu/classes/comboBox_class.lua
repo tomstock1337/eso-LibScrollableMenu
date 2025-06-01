@@ -202,6 +202,7 @@ function comboBoxClass:HideOnMouseEnter()
 	end
 end
 
+--Is called from submenuClass too
 function comboBoxClass:HideOnMouseExit(mocCtrl)
 --d(debugPrefix .. "comboBoxClass:HideOnMouseExit - ctrl: " .. tos(mocCtrl and mocCtrl:GetName() or "n/a"))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 133) end

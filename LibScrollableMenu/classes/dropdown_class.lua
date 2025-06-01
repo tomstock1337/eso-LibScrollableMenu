@@ -267,6 +267,7 @@ end
 local function checkNormalOnMouseEnterTasks(selfVar, control, data)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 32) end
 	--local doRefresh = false
+	--d(debugPrefix.."checkNormalOnMouseEnterTasks - " .. tos(getControlName(control)))
 
 	--Remove the isNew status of a dropdown entry
 	if data.isNew then
@@ -277,10 +278,10 @@ local function checkNormalOnMouseEnterTasks(selfVar, control, data)
 				lib:FireCallbacks('NewStatusUpdated', control, data)
 				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 33, tos(getControlName(control))) end
 				--doRefresh = true
-			--d(debugPrefix.."checkNormalOnMouseEnterTasks - " .. tos(getControlName(control)))
 			--end
 
 			--if doRefresh == true then
+--d(">>m_dropdownObject:Refresh(data)")
 				control.m_dropdownObject:Refresh(data)
 			--end
 
@@ -313,17 +314,22 @@ end
 --------------------------------------------------------------------
 local function clearTimeout()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 7) end
+--d(debugPrefix .. "clearTimeout")
 	EM:UnregisterForUpdate(handlerNameConstants.dropdownCallLaterHandle)
 end
 
 local function setTimeout(callback)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 8) end
+--d(debugPrefix .. "setTimeout-callback: " ..tos(callback))
 	clearTimeout()
 	--Delay the dropdown close callback so we can move the mouse above a new dropdown control and keep that opened e.g.
 	EM:RegisterForUpdate(handlerNameConstants.dropdownCallLaterHandle, submenuConstants.SUBMENU_SHOW_TIMEOUT, function()
-		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 9, tos(submenuConstants.SUBMENU_SHOW_TIMEOUT)) end
 		clearTimeout()
-		if callback then callback() end
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 9, tos(submenuConstants.SUBMENU_SHOW_TIMEOUT)) end
+		if callback ~= nil then
+--d(">>>[DELAYED CALL]setTimeout callback")
+			callback()
+		end
 	end)
 end
 
@@ -440,18 +446,26 @@ end
 --return false to "skip selection" and just run a callback function via dropdownClass:RunItemCallback / return true to "select" entry via described way in ZO_ComboBox handler
 local function checkForMultiSelectEnabled(selfVar, control, isOnMouseUp)
 	local isMultiSelectEnabled = (selfVar.owner and selfVar.owner.m_enableMultiSelect) or false
+--d(debugPrefix.."checkForMultiSelectEnabled - isMultiSelectEnabled: " .. tos(isMultiSelectEnabled) .. ", isOnMouseUp: " .. tos(isOnMouseUp))
 	if isOnMouseUp then
 		if isMultiSelectEnabled then
+			--d("<returned: false")
 			return false
 		end
+		--d("<returned: " .. tos(control.closeOnSelect))
 		return control.closeOnSelect
 	else
+		--d("<returned: " .. tos((not isMultiSelectEnabled and not control.closeOnSelect) or false))
 		return (not isMultiSelectEnabled and not control.closeOnSelect) or false
 	end
 end
 
 local function onMouseEnter(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
+
+	--d(debugPrefix .. "onMouseEnter-"..tos(getControlName(control)) ..", hasSubmenu: "..tos(hasSubmenu))
+
+
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 49, tos(getControlName(control)), tos(hasSubmenu)) end
 	lib:FireCallbacks('EntryOnMouseEnter', control, data)
 	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
@@ -462,6 +476,10 @@ end
 
 local function onMouseExit(control, data, hasSubmenu)
 	local dropdown = control.m_dropdownObject
+
+	--d(debugPrefix .. "onMouseExit-"..tos(getControlName(control)) ..", hasSubmenu: "..tos(hasSubmenu))
+
+
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 51, tos(getControlName(control)), tos(hasSubmenu)) end
 	lib:FireCallbacks('EntryOnMouseExit', control, data)
 	dropdown:Narrate("OnEntryMouseExit", control, data, hasSubmenu)
@@ -484,6 +502,8 @@ local handlerFunctions  = {
 	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO_ComboBox handler and only show tooltip
 	["onMouseEnter"] = {
 		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data, ...)
+--d(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+--d( debugPrefix .. 'onMouseEnter [LSM_ENTRY_TYPE_NORMAL]')
 			onMouseEnter(control, data, no_submenu)
 			doOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
 			return checkForMultiSelectEnabled(selfVar, control)
@@ -497,7 +517,8 @@ local handlerFunctions  = {
 			return true
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, ...)
-			--d( debugPrefix .. 'onMouseEnter [entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU]')
+--d(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+--d( debugPrefix .. 'onMouseEnter [LSM_ENTRY_TYPE_SUBMENU]')
 			local dropdown = onMouseEnter(control, data, has_submenu)
 			clearTimeout()
 			doSubmenuOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
@@ -522,6 +543,8 @@ local handlerFunctions  = {
 	--return false to run default ZO_ComboBox OnMouseExit handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
 	["onMouseExit"] = {
 		[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL] = function(selfVar, control, data)
+--d("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+--d(debugPrefix .. 'onMouseExit [LSM_ENTRY_TYPE_NORMAL]')
 			onMouseExit(control, data, no_submenu)
 			return checkForMultiSelectEnabled(selfVar, control)
 		end,
@@ -534,8 +557,12 @@ local handlerFunctions  = {
 			return true
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data)
+--d("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+--d(debugPrefix .. 'onMouseExit [LSM_ENTRY_TYPE_SUBMENU]')
 			local dropdown = onMouseExit(control, data, has_submenu)
-			if not (MouseIsOver(control) or dropdown:IsEnteringSubmenu()) then
+--#2025_35 IsEnteringSubmenu returns false if we move the mouse to the right (maybe also left) of the entry -> to select a 2nd level submenu entry (nested submenu control!)
+--d(">result: "..tos(not (MouseIsOver(control) or dropdown:IsEnteringSubmenu(control))) .. " - mouseIsOverControl: " .. tos(MouseIsOver(control)) .. "; IsEnteringSubmenu: " .. tos(dropdown:IsEnteringSubmenu(control)))
+			if not (MouseIsOver(control) or dropdown:IsEnteringSubmenu(control)) then --#2025_35
 				dropdown:OnMouseExitTimeout(control)
 			end
 			return false --not control.closeOnSelect
@@ -1325,12 +1352,44 @@ function dropdownClass:IsDropdownVisible()
 	return not self:IsHidden()
 end
 
-function dropdownClass:IsEnteringSubmenu()
+function dropdownClass:IsEnteringSubmenu(ctrl)
 	local submenu = self:GetSubmenu()
+--d(debugPrefix .. "dropdownClass:IsEnteringSubmenu - submenu: " .. tos(submenu))
 	if submenu then
-		if submenu:IsDropdownVisible() and submenu:IsMouseOverControl() then
-			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 63) end
-			return true
+		if submenu:IsDropdownVisible() then
+			if submenu:IsMouseOverControl() then
+				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 63) end
+				return true
+			else --#2025_35 Check if the mouse is over the control (or parent LSM menu) belonging to the submenu's opening control
+				--e.g. if you move the mouse from submenu 1st dpeth entry to the 2nd depth nested submenu, the OnMouseExit of the 1st depth entry submenu
+				--fires first. It will say here that submenu:IsMouseOverControl() returns false as we are stil on the openingControls's LSM with the mouse pointer,
+				--as the check is done, and not on the new opened 2nd level depth nested submenu entry control!
+				--todo Check if we are above the submenu's openingControl (or it's LSM -> parent) maybe and then assume we are going to use the new opened nested submenu now
+				--> but that could be false if the user moved the mouse downwards and is above any other openingControl or control of the LSM -> this should close the sumenu then "OnMouseEnter" hopefully!?
+				-->Attention: If we just change submenu:IsMouseOverControl function return value then the OnMouseEnter at comboBoxClass:HideOnMouseEnter() (which uses the same func!) will not hide
+				-->the opened submenu if we enter a new openingControl :(
+
+				ctrl = ctrl or moc()
+--[[
+LSM_Debug = LSM_Debug or { }
+LSM_Debug["dropdownClass-IsEnteringSubmenu"] = LSM_Debug["dropdownClass-IsEnteringSubmenu"] or {}
+local nextEntry = #LSM_Debug["dropdownClass-IsEnteringSubmenu"] + 1
+LSM_Debug["dropdownClass-IsEnteringSubmenu"][nextEntry] = {
+	self = self,
+	submenu = submenu,
+	IsDropdownVisible = submenu and submenu:IsDropdownVisible() or false,
+	IsMouseOverControl = submenu and submenu:IsMouseOverControl() or false,
+	ctrl = ctrl,
+	submenuOpeningControl = submenu.openingControl,
+}
+d("!!!!!! nextEntry: " ..tos(nextEntry) .. "; IsMouseOverControl: false")
+]]
+				if ctrl == submenu.openingControl then
+--d(">>mouse is still above submenu openingControl")
+					return true
+				end
+
+			end
 		end
 	end
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 64) end
@@ -1350,6 +1409,11 @@ function dropdownClass:IsItemSelected(item)
 	return false
 end
 
+function dropdownClass:IsMouseOverControl()
+--d(debugPrefix .. "dropdownClass:IsMouseOverControl: " .. tos(MouseIsOver(self.control)) .. "; control: " .. tos(getControlName(self.control)) .. "; moc: " .. tos(getControlName(moc())))
+    return MouseIsOver(self.control)
+end
+
 function dropdownClass:IsMouseOverOpeningControl()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 67) end
 	return false
@@ -1359,7 +1423,7 @@ function dropdownClass:OnMouseEnterEntry(control)
 --d(debugPrefix .. "dropdownClass:OnMouseEnterEntry - name: " .. tos(getControlName(control)))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 68, tos(getControlName(control))) end
 	-- Added here for when mouse is moved from away from dropdowns over a row, it will know to close specific children
-	self:OnMouseExitTimeout(control)
+	self:OnMouseExitTimeout(control) --#2025_35
 
 	local data = getControlData(control)
 	if data.enabled == true then
@@ -1380,12 +1444,13 @@ function dropdownClass:OnMouseEnterEntry(control)
 	--TODO: Conflicting OnMouseExitTimeout -> 20240310 What in detail is conflicting here, with what?
 	g_contextMenu = getContextMenuReference()
 	if g_contextMenu:IsDropdownVisible() then
-		--d(">contex menu: Dropdown visible = yes")
+--d(">context menu: Dropdown visible = yes -> OnMouseExitTimeout")
 		g_contextMenu.m_dropdownObject:OnMouseExitTimeout(control)
 	end
 end
 
 function dropdownClass:OnMouseExitEntry(control)
+--d(debugPrefix .. "dropdownClass:OnMouseExitEntry - name: " .. tos(getControlName(control)))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 69, tos(getControlName(control))) end
 
 	hideTooltip(control)
@@ -1403,6 +1468,7 @@ function dropdownClass:OnMouseExitEntry(control)
 end
 
 function dropdownClass:OnMouseExitTimeout(control)
+--d(debugPrefix .. "dropdownClass:OnMouseExitTimeout - name: " .. tos(getControlName(control)))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 70, tos(getControlName(control))) end
 	setTimeout(function()
 		self.owner:HideOnMouseExit(moc())
@@ -1767,6 +1833,7 @@ function dropdownClass:XMLHandler(selfVar, handlerName)
 	if handlerName == "OnEffectivelyHidden" then
 		self:HideDropdown()
 	elseif handlerName == "OnMouseEnter" then
+		--d(debugPrefix .. "dropdownClass:XMLHandler - handlerName: " ..tos(handlerName))
 		self:OnMouseExitTimeout(selfVar)
 
 	elseif handlerName == "OnShow" then
