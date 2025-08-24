@@ -1958,9 +1958,13 @@ end
 
 --XML handler for editBox rows: OnTextChanged should trigger the callback function
 function dropdownClass:OnEditBoxTextChanged(filterBox)
+LSM_Debug = LSM_Debug or {}
+LSM_Debug._filterbox = 	filterBox
+LSM_Debug._comboBox = self.m_comboBox
+
 	ZO_Tooltips_HideTextTooltip()
 	local selfVar = self
-	if selfVar.m_comboBox and filterBox.callback ~= nil then
+	if selfVar.m_comboBox and filterBox and filterBox.callback ~= nil then
 		-- It probably does not need this but, added it to prevent lagging from fast typing.
 		throttledCall(function()
 			local text = filterBox:GetText()
@@ -1968,6 +1972,4 @@ function dropdownClass:OnEditBoxTextChanged(filterBox)
 			filterBox.callback(selfVar.m_comboBox, filterBox, text) --comboBox, filterBox, text
 		end, 250, throttledCallDropdownClassOnTextChangedStringSuffix)
 	end
-
-
 end

@@ -277,8 +277,8 @@
 
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+					<Dimensions x="200"/>
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
-					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
 				</Label>
 				<Backdrop name="$(parent)Edit" hidden="false" tier="HIGH" inherits="ZO_SingleLineEditBackdrop_Keyboard">
 					<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT"/>
@@ -291,7 +291,7 @@
 					<Controls>
 						<EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="ZO_DefaultEditForBackdrop" defaultText="">
 							<OnTextChanged>
-								LibScrollableMenu.XML.OnXMLControlEventHandler("OnEditBoxTextChanged", self)
+								LibScrollableMenu.XML.OnXMLControlEventHandler("OnEditBoxTextChanged", self, self)
 							</OnTextChanged>
 
 							<OnMouseEnter>
