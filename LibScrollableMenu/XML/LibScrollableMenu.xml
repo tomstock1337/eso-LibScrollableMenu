@@ -277,7 +277,7 @@
 
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
-					<Dimensions x="200"/>
+					<DimensionConstraints x="5" maxX="50%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 				</Label>
 				<Backdrop name="$(parent)Edit" hidden="false" tier="HIGH" inherits="ZO_SingleLineEditBackdrop_Keyboard">

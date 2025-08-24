@@ -1906,7 +1906,11 @@ d(">enabled: " .. tos(data.enabled))
 		control.isEditBox = true
 		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX
 		--Set the callback function to the editbox as it is called at OnTextChanged via the XML handler
-		control.callback = data.callback
+		--Control is the row
+		local callbackFunc = data.callback
+		control.callback = callbackFunc
+		--EditBox is the child control
+		control:GetNamedChild("EditBox").callback = callbackFunc
 	end
 end
 

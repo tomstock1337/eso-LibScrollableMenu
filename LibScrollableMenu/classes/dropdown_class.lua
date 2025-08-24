@@ -1964,12 +1964,16 @@ LSM_Debug._comboBox = self.m_comboBox
 
 	ZO_Tooltips_HideTextTooltip()
 	local selfVar = self
-	if selfVar.m_comboBox and filterBox and filterBox.callback ~= nil then
+	if selfVar.m_comboBox and filterBox then
+		local callbackFunc = (filterBox.callback or (filterBox:GetParent() and filterBox:GetParent():GetParent() and filterBox:GetParent():GetParent().callback)) or nil
+		if callbackFunc ~= nil then
+			filterBox.callback = callbackFunc
+		end
 		-- It probably does not need this but, added it to prevent lagging from fast typing.
 		throttledCall(function()
 			local text = filterBox:GetText()
 --d(">throttledCall 1 - text: " ..tos(text))
-			filterBox.callback(selfVar.m_comboBox, filterBox, text) --comboBox, filterBox, text
+			callbackFunc(selfVar.m_comboBox, filterBox, text) --comboBox, filterBox, text
 		end, 250, throttledCallDropdownClassOnTextChangedStringSuffix)
 	end
 end
