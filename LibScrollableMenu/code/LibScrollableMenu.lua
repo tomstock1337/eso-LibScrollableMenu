@@ -274,22 +274,22 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.37 - Updated 2025-06-01
+	CHANGELOG Current version: 2.36 - Updated 2025-05-30
 ---------------------------------------------------------------
-Max error #: 2025_35
+Max error #: 2025_34
 
 [KNOWN PROBLEMS]
 
 
 [WORKING ON]
-
 [Fixed]
--2025_35	Nested submenu: OnMouseExit of the opening control does show the submenu but if you move the mouse above it the complete nested submenu hides
---			(seems like at the time you move the mouse above it the control below checked was something not belonging to the submenu and thus it thinks it needs to close?)
 
 [Added]
+-2025_32    Added  option "minDropdownWidth": Width of the dropdowns will be minimum this width (minimum width is 50, or 125 if the search editbox header is enabled. Attention: If the minDropdownWidth is > than the max it will overwrite the maximum dropdown width that way!)
+-2025_34    Added .option "submenuOpenToSide": Open the submenu forced to a specified side, e.g. "left" or "right". If this option is not specified the submenu autmatically chooses where to open to based on the available space left until the menu's width touches the screen's edge.
 
 [Changed]
+--2025_33	Changed params of API function AddCustomScrollableSubMenuEntry(text, entries, callbackFunc) -> Added callbackFunc. If provided the submenu opening entry will use this callback function once clicked
 
 [Removed]
 

@@ -9,7 +9,7 @@
 ## AddOnVersion: 020307
 ## IsLibrary: true
 ## Author: IsJustaGhost, Baertram, tomstock (, Kyoma)
-## APIVersion: 101045 101046
+## APIVersion: 101047 101048
 ## OptionalDependsOn: LibDebugLogger>=263
 ## SavedVariables: LibScrollableMenu_SavedVars
 

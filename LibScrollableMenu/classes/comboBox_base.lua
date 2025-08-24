@@ -377,6 +377,9 @@ local postItemSetupFunctions = {
 	[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = function(comboBox, itemEntry)
 		itemEntry.name = libDivider
 	end,
+	[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = function(comboBox, itemEntry)
+		--
+	end,
 }
 
 
@@ -775,6 +778,14 @@ local function getDefaultXMLTemplates(selfVar)
 				selfVar:SetupEntryRadioButton(control, data, list)
 			end,
 		},
+		[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = {
+			template = 'LibScrollableMenu_ComboBoxEditBoxEntry',
+			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			setupFunc = function(control, data, list)
+				selfVar:SetupEntryEditBox(control, data, list)
+			end,
+		},
 	}
 
 	--The virtual XML highlight templates (mouse moved above an antry), for the different row types
@@ -809,6 +820,11 @@ local function getDefaultXMLTemplates(selfVar)
 			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = {
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
+		},
+		[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = {
 			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
 			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
 			color = entryTypeDefaultsHighlights.defaultHighlightColor,
@@ -1882,6 +1898,13 @@ d(">enabled: " .. tos(data.enabled))
 		end
 
 		self:UpdateHighlightTemplate(control, data, nil, nil)
+	end
+
+	function comboBox_base:SetupEntryEditBox(control, data, list)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 187, tos(getControlName(control)), tos(list)) end
+		self:SetupEntryLabel(control, data, list)
+		control.isEditBox = true
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX
 	end
 end
 

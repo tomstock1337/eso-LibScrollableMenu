@@ -226,7 +226,8 @@ local debugLogMessagePatterns = {
 	[183] = "checkSubmenuOnMouseEnterTasks",
 	[184] = "updateSubmenuIsAnyEntrySelectedStatus",
 	[185] = "comboBox_base:GetMinDropdownWidth - minDropdownWidth: %s",
-	[186] = "comboBoxClass:GetSubMenuOpeningSide"
+	[186] = "comboBoxClass:GetSubMenuOpeningSide",
+	[187] = "comboBox_base:SetupEntryEditBox - control: %s, list: %s",
 }
 
 

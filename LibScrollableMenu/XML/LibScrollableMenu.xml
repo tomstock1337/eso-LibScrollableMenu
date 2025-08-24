@@ -86,6 +86,30 @@
 			</OnMouseUp>
 		</Control>
 
+		<Control name="LibScrollableMenu_ComboBoxEditBoxEntry_Behavior" level="3" mouseEnabled="true" virtual="true">
+			<OnMouseEnter> <!-- name="BaseHandler"-->
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnMouseEnterEntry(self)
+				end
+			</OnMouseEnter>
+
+			<OnMouseExit>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnMouseExitEntry(self)
+				end
+			</OnMouseExit>
+
+			<OnMouseUp>
+--d("LibScrollableMenu_ComboBoxEditBoxEntry_Behavior - OnMouseUp: " ..tostring(self.GetName and self:GetName()))
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnEntryMouseUp(self, button, upInside, false, ctrl, alt, shift, LSM_ENTRY_TYPE_EDITBOX)
+				end
+			</OnMouseUp>
+		</Control>
+
 		<!-- Row templates -->
 
 		<!-- Header | no handlers-->
@@ -242,6 +266,48 @@
 				</Label>
 			</Controls>
 		</Button>
+
+
+		<!-- EditBox entry -->
+		<Control name="LibScrollableMenu_ComboBoxEditBoxEntry" inherits="LibScrollableMenu_IconEntry_Template LibScrollableMenu_ComboBoxEditBoxEntry_Behavior" mouseEnabled="true" virtual="true">
+			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
+			<OnInitialized>
+				self.isEditBox = true
+			</OnInitialized>
+
+			<Controls>
+				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
+					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+				</Label>
+				<Backdrop name="$(parent)Edit" hidden="false" tier="HIGH" inherits="ZO_SingleLineEditBackdrop_Keyboard">
+					<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT"/>
+					<OnInitialized>
+						self:GetParent().EditBox = self:GetNamedChild('Box')
+					</OnInitialized>
+					<Anchor point="TOPLEFT" relativeTo="$(parent)Label" relativePoint="TOPRIGHT" offsetX="ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y"/>
+
+					<Controls>
+						<EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="ZO_DefaultEditForBackdrop" defaultText="">
+							<OnTextChanged>
+								LibScrollableMenu.XML.OnXMLControlEventHandler("OnEditBoxTextChanged", self)
+							</OnTextChanged>
+
+							<OnMouseEnter>
+							</OnMouseEnter>
+
+							<OnMouseExit>
+							</OnMouseExit>
+
+							<OnMouseUp>
+							</OnMouseUp>
+						</EditBox>
+					</Controls>
+				</Backdrop>
+			</Controls>
+		</Control>
+
 
 		<!-- The genuine Dropdown control. The scroll list container.
 			TLC so it can be forced above other dropdowns without having to consider layering

@@ -221,6 +221,7 @@ local LSM_ENTRY_TYPE_SUBMENU = 	4
 local LSM_ENTRY_TYPE_CHECKBOX = 5
 local LSM_ENTRY_TYPE_BUTTON = 6
 local LSM_ENTRY_TYPE_RADIOBUTTON = 7
+local LSM_ENTRY_TYPE_EDITBOX = 8
 
 --Constant for the divider entryType
 lib.DIVIDER = "-"
@@ -234,6 +235,7 @@ lib.scrollListRowTypes = {
 	["LSM_ENTRY_TYPE_CHECKBOX"] =		LSM_ENTRY_TYPE_CHECKBOX,
 	["LSM_ENTRY_TYPE_BUTTON"] =			LSM_ENTRY_TYPE_BUTTON,
 	["LSM_ENTRY_TYPE_RADIOBUTTON"] = 	LSM_ENTRY_TYPE_RADIOBUTTON,
+	["LSM_ENTRY_TYPE_EDITBOX"] = 		LSM_ENTRY_TYPE_EDITBOX,
 }
 local scrollListRowTypes = lib.scrollListRowTypes
 
@@ -253,9 +255,11 @@ local entryTypeToButtonChildName = {
 }
 constants.entryTypes.entryTypeToButtonChildName = entryTypeToButtonChildName
 
+--Is the entryType having a subcontrol like a checkbox (then define it true here so the parent control, the row, will be selected properly)
 local isEntryTypeWithParentMocCtrl = {
 	[LSM_ENTRY_TYPE_CHECKBOX] = true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
+	[LSM_ENTRY_TYPE_EDITBOX] = true,
 }
 constants.entryTypes.isEntryTypeWithParentMocCtrl = isEntryTypeWithParentMocCtrl
 
@@ -268,6 +272,7 @@ local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_CHECKBOX] =		true,
 	[LSM_ENTRY_TYPE_BUTTON] =		true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] =	true,
+	[LSM_ENTRY_TYPE_EDITBOX] = 		true,
 }
 constants.entryTypes.libraryAllowedEntryTypes = libraryAllowedEntryTypes
 lib.AllowedEntryTypes = libraryAllowedEntryTypes
@@ -281,6 +286,7 @@ local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_CHECKBOX] = 	true,
 	[LSM_ENTRY_TYPE_BUTTON] = 		true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = 	true,
+	[LSM_ENTRY_TYPE_EDITBOX] = 		true,
 }
 constants.entryTypes.allowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
 lib.AllowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
@@ -301,6 +307,7 @@ local additionalDataKeyToLSMEntryType = {
 	["isCheckbox"] =	LSM_ENTRY_TYPE_CHECKBOX,
 	["isButton"] = 		LSM_ENTRY_TYPE_BUTTON,
 	["isRadioButton"] = LSM_ENTRY_TYPE_RADIOBUTTON,
+	["isEditBox"] = 	LSM_ENTRY_TYPE_EDITBOX,
 }
 constants.entryTypes.additionalDataKeyToLSMEntryType = additionalDataKeyToLSMEntryType
 

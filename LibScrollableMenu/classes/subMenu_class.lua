@@ -48,7 +48,7 @@ local getValueOrCallback = libUtil.getValueOrCallback
 local SubOrContextMenu_highlightControl = libUtil.SubOrContextMenu_highlightControl
 local checkIfHiddenForReasons = libUtil.checkIfHiddenForReasons
 local getContextMenuReference = libUtil.getContextMenuReference
-local libUtil_BelongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
+--local libUtil_BelongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 
 local g_contextMenu
 
@@ -188,15 +188,12 @@ end
 function submenuClass:HideOnMouseExit(mocCtrl)
 	-- Only begin hiding if we stopped over a dropdown.
 	mocCtrl = mocCtrl or moc()
---d(debugPrefix .. "submenuClass:HideOnMouseExit - ctrl: " .. tos(mocCtrl and mocCtrl:GetName() or "n/a"))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 147, tos(getControlName(mocCtrl))) end
 	if mocCtrl.m_dropdownObject then
-		if comboBoxClass.HideOnMouseExit(self, mocCtrl) then --#2025_35 Added mocCtrl passing in to comboBoxClass
---d(">comboBoxClass.HideOnMouseExit -> true")
+		if comboBoxClass.HideOnMouseExit(self) then
 			-- Close all open submenus beyond this point
 			-- This will only close the dropdown if the mouse is not over the dropdown or over the control that opened it.
 			if self:ShouldHideDropdown() then
---d(">>self:ShouldHideDropdown -> true")
 				return self:HideDropdown()
 			end
 		end
@@ -205,8 +202,6 @@ end
 
 function submenuClass:ShouldHideDropdown()
 	--d(debugPrefix .. "submenuClass:ShouldHideDropdown - self: " .. tos(self) ..", dropdownVisible: " .. tos(self:IsDropdownVisible()) .. ", mouseOverCombobox: " ..tos(self:IsMouseOverControl()) .. ", mouseOverOpeningCOntrol: " .. tos(self:IsMouseOverOpeningControl()))
-
-	local mocCtrl = moc()
 --[[
 	LSM_Debug = LSM_Debug or {}
 LSM_Debug["submenuClass:ShouldHideDropdown"] = LSM_Debug["submenuClass:ShouldHideDropdown"] or {}
@@ -215,35 +210,34 @@ LSM_Debug["submenuClass:ShouldHideDropdown"][self] = {
 	self = self,
 	isDropdownVisible = self:IsDropdownVisible(),
 	isMouseOverOpeningControl = self:IsMouseOverOpeningControl(),
-	moc = mocCtrl,
+	moc = moc(),
 }
-	]]
+]]
 
 	local isMouseOverAnyRelevantControl = false
 	g_contextMenu = g_contextMenu or getContextMenuReference() --#2025_15 ContextMenus' (nested) submenu (if opened near the screen edge e.g.) somehow does close if we move the mouse from one submenu to the next nested submenu entry. Trying to circumvent this by checking of contextMenu is shown and the moc() ctrl we moved the mouse on is still belonging to the contextMenu
 	if g_contextMenu:IsDropdownVisible() and g_contextMenu.m_container == self.m_container then
-		isMouseOverAnyRelevantControl = (self:IsMouseOverControl() or self:IsMouseOverOpeningControl())
 --d(">comboBox's submenu container is the contextMenu container")
-		--If the mouse is not over any relevant control: Check if it's over any control that belongs to the contextMenu
-		if not isMouseOverAnyRelevantControl then -- #2025_35 -v-
-			if mocCtrl and mocCtrl.GetOwningWindow then
-				local owningWindow = mocCtrl:GetOwningWindow()
---d(">owningWindow: " .. tos(getControlName(owningWindow)) .. ", belongsToContextMenu: " .. tos(belongsToContextMenu))
-				--We are not above a generic contextmenu container, but above any entry and it's a submenu entry
-				if mocCtrl ~= owningWindow and mocCtrl.m_owner and mocCtrl.m_owner.isSubmenu == true then
-					isMouseOverAnyRelevantControl = libUtil_BelongsToContextMenuCheck(owningWindow)
-				end
+		isMouseOverAnyRelevantControl = (self:IsMouseOverControl() or self:IsMouseOverOpeningControl())
+--[[
+		--todo 20250323 If we leave this code uncomment every opened contextMenu supresses proper closing of all submenus...
+		--So the actual question here is: Why is the OnMouseExit fired for the nested contextMenu's submenus allthough we move the mopuse just from openingControl of the submenu to the nested 1st submenu entry?
+		if not isMouseOverAnyRelevantControl then
+			local mocCtrl = moc()
+d(">mocCtrl: " ..tos(mocCtrl and mocCtrl:GetName() or "n/a") .. ", belongsToContextMenu: " .. tos(mocCtrl and libUtil_BelongsToContextMenuCheck(mocCtrl:GetOwningWindow()) or false))
+			if mocCtrl and libUtil_BelongsToContextMenuCheck(mocCtrl:GetOwningWindow()) then
+				isMouseOverAnyRelevantControl = true
 			end
-		end  --#2025_35 -^-
+		end
+]]
 	else
 		isMouseOverAnyRelevantControl = (self:IsMouseOverControl() or self:IsMouseOverOpeningControl())
 	end
---d(">isMouseOverAnyRelevantControl: " .. tos(isMouseOverAnyRelevantControl) .. "; isDropdownVisible: " ..tos(self:IsDropdownVisible()))
-	return self:IsDropdownVisible() and not isMouseOverAnyRelevantControl
+	return self:IsDropdownVisible() and isMouseOverAnyRelevantControl == false
 end
 
 function submenuClass:IsMouseOverOpeningControl()
---d(debugPrefix .. "submenuClass:IsMouseOverOpeningControl: " .. tos(MouseIsOver(self.openingControl)) .. "; openingControl: " .. tos(getControlName(self.openingControl)) .. "; moc: " .. tos(getControlName(moc())))
+--d(debugPrefix .. "submenuClass:IsMouseOverOpeningControl: " .. tos(MouseIsOver(self.openingControl)))
 	return MouseIsOver(self.openingControl)
 end
 

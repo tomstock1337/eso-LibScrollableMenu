@@ -1,7 +1,6 @@
--v- ---------------LSM v2.37 - 2025-06-01--------------------------------------------------------------------------- -v-
-[Fixed]
--2025_35	Nested submenu: OnMouseExit of the opening control does show the submenu but if you move the mouse above it the complete nested submenu hides
---			(seems like at the time you move the mouse above it the control below checked was something not belonging to the submenu and thus it thinks it needs to close?)
+-v- ---------------LSM v2.37 - 2025-08-25--------------------------------------------------------------------------- -v-
+[Added]
+-2025_35    Working on entryType LSM_ENTRY_TYPE_EDITBOX
 
 
 -v- ---------------LSM v2.36 - 2025-05-30--------------------------------------------------------------------------- -v-

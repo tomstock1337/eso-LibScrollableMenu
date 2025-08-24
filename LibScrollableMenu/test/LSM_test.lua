@@ -608,6 +608,16 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				doNotFilter		= true,
 			},
 			{
+				entryType		= LSM_ENTRY_TYPE_EDITBOX,
+				label			= "Enter something",
+				name            = "EditBox1",
+				tooltip         = "Editbox....",
+				callback 		= function(comboBox, filterBox, text)
+					d("I changed the editbox text, to: " .. tostring(text))
+				end,
+				doNotFilter		= true,
+			},
+			{
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
 				label			= "Radiobutton group 1-1",
 				name            = "Radiobutton group 1-1",
