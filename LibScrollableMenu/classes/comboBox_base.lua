@@ -1821,7 +1821,26 @@ do -- Row setup functions
 		local editBoxDefaultText = getValueOrCallback(editBoxData.defaultText, editBoxData)
 		if editBoxDefaultText ~= nil and editBoxDefaultText ~= "" then
 			editBoxCtrl:SetDefaultText(editBoxDefaultText)
+		else
+			editBoxCtrl:SetDefaultText("")
 		end
+
+		--textType
+		local textType = getValueOrCallback(editBoxData.textType, editBoxData)
+		if textType ~= nil and type(textType) == "number" then
+			editBoxCtrl:SetTextType(textType)
+		else
+			editBoxCtrl:SetTextType(nil)
+		end
+
+		--maxInputCharacters
+		local maxInputCharacters = getValueOrCallback(editBoxData.maxInputCharacters, editBoxData)
+		if maxInputCharacters ~= nil and type(maxInputCharacters) == "number" then
+			editBoxCtrl:SetMaxInputCharacters(maxInputCharacters)
+		else
+			editBoxCtrl:SetMaxInputCharacters(nil)
+		end
+
 
 		--EditBox & label Dimensions width/height etc.
 		reAnchorEditBoxControlsInRow(control)

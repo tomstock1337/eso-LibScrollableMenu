@@ -620,6 +620,8 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 					hideLabel = false,
 					labelWidth = "20%",
 					defaultText = "Enter something...",
+					maxInputCharacters = 20,
+					textType = TEXT_TYPE_NUMERIC_UNSIGNED_INT,
 					font = "ZoFontChat",
 					width = "80%",
 
