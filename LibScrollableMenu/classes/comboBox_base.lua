@@ -1722,6 +1722,70 @@ do -- Row setup functions
 		return buttonControl, buttonGroup
 	end
 
+	local function reAnchorEditBoxInRow(control, data, list, editBoxCtrl, editBoxData)
+		local parentCtrl = control:GetParent()
+		local labelCtrl  = control.m_label
+		local editCtrl   = control:GetNamedChild("Edit") --the backdrop
+		editBoxCtrl = editBoxCtrl or editCtrl:GetNamedChild("Box")
+
+		--defaultText
+		--todo 20250825
+		local editBoxDefaultText = getValueOrCallback(editBoxData.defaultText, editBoxData)
+		if editBoxDefaultText ~= nil and editBoxDefaultText ~= "" then
+			editBoxCtrl:SetDefaultText(editBoxDefaultText)
+		end
+
+		--hideLabel
+		--todo 20250825
+
+		--Dimensions
+		local widthOrHeightChanged = false
+		local width = editBoxCtrl:GetWidth() or control:GetWidth() or parentCtrl:GetWidth()
+		local height = editBoxCtrl:GetHeight() or control:GetHeight() or ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
+
+		local editBoxWidth = getValueOrCallback(editBoxData.width, editBoxData)
+		if editBoxWidth ~= nil then
+d(">>editBoxData.width: " .. tos(editBoxWidth) .. "; maxWidth: " .. tos(width))
+			width = zo_clamp(editBoxWidth, 5, width)
+			widthOrHeightChanged = true
+		end
+		local editBoxHeight = getValueOrCallback(editBoxData.height, editBoxData)
+		if editBoxHeight ~= nil then
+			height = zo_clamp(editBoxHeight, 5, height)
+			widthOrHeightChanged = true
+		end
+d(">>width: " .. tos(width).. ", height: " .. tos(height))
+
+		if widthOrHeightChanged then
+d(">>width or height changed, renachoring")
+			editCtrl:ClearAnchors()
+			editCtrl:SetDimensionConstraints(0, 0, width, height)
+			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, 4)
+			editCtrl:SetAnchor(BOTTOMLEFT, labelCtrl, BOTTOMRIGHT, 4)
+			editCtrl:SetDimensions(width, height)
+		else
+d(">>default width and height anchors")
+			editCtrl:ClearAnchors()
+			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, 4)
+			editCtrl:SetAnchor(BOTTOMRIGHT, control, BOTTOMRIGHT, -2)
+		end
+	end
+
+	local function getEditBoxData(control, data, list, editBoxCtrl)
+		--EditBox data was specified too?
+		local editBoxData = getValueOrCallback(data.editBoxData, data)
+		if type(editBoxData) == "table" then
+d(">editBoxData was found")
+			local editBoxFont = getValueOrCallback(editBoxData.font, editBoxData)
+			if editBoxFont then
+d(">>editBoxData.font: " .. tos(editBoxFont))
+				editBoxCtrl:SetFont(editBoxFont)
+			end
+			reAnchorEditBoxInRow(control, data, list, editBoxCtrl, editBoxData)
+		end
+	end
+
+
 	function comboBox_base:SetupEntryBase(control, data, list)
 --d(debugPrefix .. "comboBox_base:SetupEntryBase - control: " .. tos(getControlName(control)) .. ", enabled: " .. tos(data.enabled))
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 104, tos(getControlName(control))) end
@@ -1905,12 +1969,14 @@ d(">enabled: " .. tos(data.enabled))
 		self:SetupEntryLabel(control, data, list)
 		control.isEditBox = true
 		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX
-		--Set the callback function to the editbox as it is called at OnTextChanged via the XML handler
-		--Control is the row
-		local callbackFunc = data.callback
-		control.callback = callbackFunc
-		--EditBox is the child control
-		control:GetNamedChild("EditBox").callback = callbackFunc
+		--Set the callback function to the editbox as it is called at OnTextChanged via the XML handler -> See dropdownClass.lua -> function dropdownClass:OnEditBoxTextChanged(filterBox)
+		--Control is the row, EditBox is the child control
+		local editBoxCtrl = control:GetNamedChild("EditBox")
+		editBoxCtrl.callback = data.callback
+		--Do not close the dropdown if row is clicked
+		control.closeOnSelect = false
+		--EditBox data was specified too? Custom font, height, width, etc.
+		getEditBoxData(control, data, list, editBoxCtrl)
 	end
 end
 

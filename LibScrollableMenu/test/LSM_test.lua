@@ -609,13 +609,20 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_EDITBOX,
-				label			= "Enter something",
+				label			= "Enter something: ",
 				name            = "EditBox1",
 				tooltip         = "Editbox....",
 				callback 		= function(comboBox, filterBox, text)
 					d("I changed the editbox text, to: " .. tostring(text))
 				end,
 				doNotFilter		= true,
+				editBoxData = {
+					hideLabel = false,
+					defaultText = "Enter something...",
+					font = "ZoFontEdit",
+					width = 200,
+
+				}
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
