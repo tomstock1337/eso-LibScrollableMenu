@@ -161,6 +161,16 @@ getControlData = libUtil.getControlData
 --------------------------------------------------------------------
 -- Entry functions
 --------------------------------------------------------------------
+function libUtil.getEditBoxData(control, data)
+	--EditBox data was specified too?
+	local editBoxData = getValueOrCallback(data.editBoxData, data)
+	if type(editBoxData) == "table" then
+		return editBoxData
+	end
+	return
+end
+
+
 function libUtil.compareDropdownDataList(selfVar, scrollControl, item)
 	local dataList = ZO_ScrollList_GetDataList(scrollControl)
 

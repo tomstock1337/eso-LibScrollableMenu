@@ -90,6 +90,7 @@ local getContextMenuReference = libUtil.getContextMenuReference
 local belongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 local subMenuArrowColor = libUtil.subMenuArrowColor
 local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
+local getEditBoxData = libUtil.getEditBoxData
 
 
 local libDivider = lib.DIVIDER
@@ -98,6 +99,7 @@ local iconNewIcon = textureConstants.iconNewIcon
 local iconNarrationNewValue = narrationConstants.iconNarrationNewValue
 
 local g_contextMenu
+
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -365,6 +367,7 @@ local function preUpdateSubItems(item, comboBox)
 	return getIsNew(item, comboBox)
 end
 
+
 --Functions to run per item's entryType, after the item has been setup (e.g. to add missing mandatory data or change visuals)
 local postItemSetupFunctions = {
 	[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(comboBox, itemEntry)
@@ -377,9 +380,10 @@ local postItemSetupFunctions = {
 	[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER] = function(comboBox, itemEntry)
 		itemEntry.name = libDivider
 	end,
+	--[[
 	[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = function(comboBox, itemEntry)
-		--
 	end,
+	]]
 }
 
 
@@ -1626,6 +1630,7 @@ function comboBox_base:UpdateWidth(control)
 	self:SetMinMaxWidth(minWidth, newWidth)
 end
 
+
 do -- Row setup functions
 	local function applyEntryFont(control, font, color, horizontalAlignment)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 108, tos(getControlName(control)), tos(font), tos(color), tos(horizontalAlignment)) end
@@ -1722,7 +1727,8 @@ do -- Row setup functions
 		return buttonControl, buttonGroup
 	end
 
-	local function reAnchorEditBoxInRow(control)
+	--For the editBox rowType: reanchor the label, edit and editbox controls according to the editBoxData passed in to the rowControl
+	local function reAnchorEditBoxControlsInRow(control)
 		local editBoxData = control.editBoxData
 		if type(editBoxData) ~= "table" then return end
 
@@ -1777,18 +1783,18 @@ do -- Row setup functions
 			end
 			widthOrHeightChanged = true
 		end
-d(debugPrefix .. "reAnchorEditBoxInRow-width: " .. tos(width).. ", height: " .. tos(height))
+	--d(debugPrefix .. "reAnchorEditBoxInRow-width: " .. tos(width).. ", height: " .. tos(height))
 
 		local offsetX = hideLabel == true and 0 or 4
 		if widthOrHeightChanged then
-d(">width or height changed, renachoring")
+	--d(">width or height changed, renachoring")
 			editCtrl:ClearAnchors()
 			editCtrl:SetDimensionConstraints(0, 0, width, height)
 			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
 			editCtrl:SetAnchor(BOTTOMLEFT, labelCtrl, BOTTOMRIGHT, offsetX)
 			editCtrl:SetDimensions(width, height)
 		else
-d(">default width and height anchors")
+	--d(">default width and height anchors")
 			editCtrl:ClearAnchors()
 			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
 			editCtrl:SetAnchor(BOTTOMRIGHT, control, BOTTOMRIGHT, -2)
@@ -1818,18 +1824,8 @@ d(">default width and height anchors")
 		end
 
 		--EditBox & label Dimensions width/height etc.
-		reAnchorEditBoxInRow(control)
+		reAnchorEditBoxControlsInRow(control)
 	end
-
-	local function getEditBoxData(control, data)
-		--EditBox data was specified too?
-		local editBoxData = getValueOrCallback(data.editBoxData, data)
-		if type(editBoxData) == "table" then
-			return editBoxData
-		end
-		return
-	end
-
 
 	function comboBox_base:SetupEntryBase(control, data, list)
 --d(debugPrefix .. "comboBox_base:SetupEntryBase - control: " .. tos(getControlName(control)) .. ", enabled: " .. tos(data.enabled))
