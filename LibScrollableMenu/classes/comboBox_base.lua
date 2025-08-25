@@ -1733,13 +1733,16 @@ do -- Row setup functions
 
 		--Current dimensions
 		local widthOrHeightChanged = false
-		local width = control:GetWidth() or parentCtrl:GetWidth()
-		local height = control:GetHeight() or editBoxCtrl:GetHeight() or ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
+		local width = control:GetWidth()
+		if width == nil or width <= 0 then width = parentCtrl:GetWidth() end
+		local height = control:GetHeight()
+		if height == nil or height <= 0 then height = editBoxCtrl:GetHeight() end
+		if height == nil or height <= 0 then height = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT end
 
 		--Dimensions
 		local editBoxWidth = getValueOrCallback(editBoxData.width, editBoxData)
 		if editBoxWidth ~= nil then
-d(">>editBoxData.width: " .. tos(editBoxWidth) .. "; maxWidth: " .. tos(width))
+			d(">>editBoxData.width: " .. tos(editBoxWidth) .. "; maxWidth: " .. tos(width))
 			width = zo_clamp(editBoxWidth, 5, width)
 			widthOrHeightChanged = true
 		end
@@ -1748,19 +1751,22 @@ d(">>editBoxData.width: " .. tos(editBoxWidth) .. "; maxWidth: " .. tos(width))
 			height = zo_clamp(editBoxHeight, 5, height)
 			widthOrHeightChanged = true
 		end
-d(">>width: " .. tos(width).. ", height: " .. tos(height))
+		d(">>width: " .. tos(width).. ", height: " .. tos(height))
+
+		local isLabelHidden = labelCtrl:IsHidden()
+		local offsetX = isLabelHidden == true and 0 or 4
 
 		if widthOrHeightChanged then
-d(">>width or height changed, renachoring")
+			d(">>width or height changed, renachoring")
 			editCtrl:ClearAnchors()
 			editCtrl:SetDimensionConstraints(0, 0, width, height)
-			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, 4)
-			editCtrl:SetAnchor(BOTTOMLEFT, labelCtrl, BOTTOMRIGHT, 4)
+			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
+			editCtrl:SetAnchor(BOTTOMLEFT, labelCtrl, BOTTOMRIGHT, offsetX)
 			editCtrl:SetDimensions(width, height)
 		else
-d(">>default width and height anchors")
+			d(">>default width and height anchors")
 			editCtrl:ClearAnchors()
-			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, 4)
+			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
 			editCtrl:SetAnchor(BOTTOMRIGHT, control, BOTTOMRIGHT, -2)
 		end
 	end
