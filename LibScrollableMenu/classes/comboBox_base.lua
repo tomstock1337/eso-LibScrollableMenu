@@ -1739,32 +1739,56 @@ do -- Row setup functions
 		if height == nil or height <= 0 then height = editBoxCtrl:GetHeight() end
 		if height == nil or height <= 0 then height = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT end
 
+		--hideLabel
+		local hideLabel = getValueOrCallback(editBoxData.hideLabel, editBoxData)
+		if hideLabel then
+			local currentLabelHeight = labelCtrl:GetHeight()
+			labelCtrl:SetDimensionConstraints(0, currentLabelHeight, 0, currentLabelHeight)
+			labelCtrl:SetDimensions(0, currentLabelHeight)
+			labelCtrl:SetText("")
+			labelCtrl:SetHidden(true)
+		end
+		--labelWidth
+		if not hideLabel then
+			local labelWidth = getValueOrCallback(editBoxData.labelWidth, editBoxData)
+			if labelWidth ~= nil then
+				if type(labelWidth) == "number" and labelWidth <= 0 then labelWidth = 5 end
+				labelCtrl:SetWidth(labelWidth)
+			end
+		end
+
 		--Dimensions
 		local editBoxWidth = getValueOrCallback(editBoxData.width, editBoxData)
 		if editBoxWidth ~= nil then
-			d(">>editBoxData.width: " .. tos(editBoxWidth) .. "; maxWidth: " .. tos(width))
-			width = zo_clamp(editBoxWidth, 5, width)
+			--d(">>editBoxData.width: " .. tos(editBoxWidth) .. "; maxWidth: " .. tos(width))
+			if type(editBoxWidth) == "number" then
+				width = zo_clamp(editBoxWidth, 5, width)
+			else
+				width = editBoxWidth
+			end
 			widthOrHeightChanged = true
 		end
 		local editBoxHeight = getValueOrCallback(editBoxData.height, editBoxData)
 		if editBoxHeight ~= nil then
-			height = zo_clamp(editBoxHeight, 5, height)
+			if type(editBoxHeight) == "number" then
+				height = zo_clamp(editBoxHeight, 5, height)
+			else
+				height = editBoxHeight
+			end
 			widthOrHeightChanged = true
 		end
-		d(">>width: " .. tos(width).. ", height: " .. tos(height))
+d(debugPrefix .. "reAnchorEditBoxInRow-width: " .. tos(width).. ", height: " .. tos(height))
 
-		local isLabelHidden = labelCtrl:IsHidden()
-		local offsetX = isLabelHidden == true and 0 or 4
-
+		local offsetX = hideLabel == true and 0 or 4
 		if widthOrHeightChanged then
-			d(">>width or height changed, renachoring")
+d(">width or height changed, renachoring")
 			editCtrl:ClearAnchors()
 			editCtrl:SetDimensionConstraints(0, 0, width, height)
 			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
 			editCtrl:SetAnchor(BOTTOMLEFT, labelCtrl, BOTTOMRIGHT, offsetX)
 			editCtrl:SetDimensions(width, height)
 		else
-			d(">>default width and height anchors")
+d(">default width and height anchors")
 			editCtrl:ClearAnchors()
 			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
 			editCtrl:SetAnchor(BOTTOMRIGHT, control, BOTTOMRIGHT, -2)
@@ -1775,7 +1799,7 @@ do -- Row setup functions
 		local editBoxData = control.editBoxData
 		if type(editBoxData) ~= "table" then return end
 
-		local labelCtrl  = control.m_label
+		--local labelCtrl  = control.m_label
 		local editCtrl = control:GetNamedChild("Edit")
 		local editBoxCtrl = editCtrl:GetNamedChild("Box")
 
@@ -1793,17 +1817,7 @@ do -- Row setup functions
 			editBoxCtrl:SetDefaultText(editBoxDefaultText)
 		end
 
-		--hideLabel
-		local hideLabel = getValueOrCallback(editBoxData.hideLabel, editBoxData)
-		if hideLabel then
-			local currentLabelHeight = labelCtrl:GetHeight()
-			labelCtrl:SetDimensionConstraints(0, currentLabelHeight, 0, currentLabelHeight)
-			labelCtrl:SetDimensions(0, currentLabelHeight)
-			labelCtrl:SetText("")
-			labelCtrl:SetHidden(true)
-		end
-
-		--Dimensions width/height etc.
+		--EditBox & label Dimensions width/height etc.
 		reAnchorEditBoxInRow(control)
 	end
 
