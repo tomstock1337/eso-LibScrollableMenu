@@ -617,7 +617,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				end,
 				doNotFilter		= true,
 				editBoxData = {
-					hideLabel = false,
+					hideLabel = true,
 					defaultText = "Enter something...",
 					font = "ZoFontEdit",
 					width = 200,

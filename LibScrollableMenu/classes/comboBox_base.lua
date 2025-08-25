@@ -1722,27 +1722,21 @@ do -- Row setup functions
 		return buttonControl, buttonGroup
 	end
 
-	local function reAnchorEditBoxInRow(control, data, list, editBoxCtrl, editBoxData)
+	local function reAnchorEditBoxInRow(control)
+		local editBoxData = control.editBoxData
+		if type(editBoxData) ~= "table" then return end
+
 		local parentCtrl = control:GetParent()
 		local labelCtrl  = control.m_label
-		local editCtrl   = control:GetNamedChild("Edit") --the backdrop
-		editBoxCtrl = editBoxCtrl or editCtrl:GetNamedChild("Box")
+		local editCtrl = control:GetNamedChild("Edit")
+		local editBoxCtrl = editCtrl:GetNamedChild("Box")
 
-		--defaultText
-		--todo 20250825
-		local editBoxDefaultText = getValueOrCallback(editBoxData.defaultText, editBoxData)
-		if editBoxDefaultText ~= nil and editBoxDefaultText ~= "" then
-			editBoxCtrl:SetDefaultText(editBoxDefaultText)
-		end
-
-		--hideLabel
-		--todo 20250825
+		--Current dimensions
+		local widthOrHeightChanged = false
+		local width = control:GetWidth() or parentCtrl:GetWidth()
+		local height = control:GetHeight() or editBoxCtrl:GetHeight() or ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
 
 		--Dimensions
-		local widthOrHeightChanged = false
-		local width = editBoxCtrl:GetWidth() or control:GetWidth() or parentCtrl:GetWidth()
-		local height = editBoxCtrl:GetHeight() or control:GetHeight() or ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
-
 		local editBoxWidth = getValueOrCallback(editBoxData.width, editBoxData)
 		if editBoxWidth ~= nil then
 d(">>editBoxData.width: " .. tos(editBoxWidth) .. "; maxWidth: " .. tos(width))
@@ -1771,18 +1765,49 @@ d(">>default width and height anchors")
 		end
 	end
 
-	local function getEditBoxData(control, data, list, editBoxCtrl)
+	local function processEditBoxData(control)
+		local editBoxData = control.editBoxData
+		if type(editBoxData) ~= "table" then return end
+
+		local labelCtrl  = control.m_label
+		local editCtrl = control:GetNamedChild("Edit")
+		local editBoxCtrl = editCtrl:GetNamedChild("Box")
+
+
+		--font (of editBox)
+		local editBoxFont = getValueOrCallback(editBoxData.font, editBoxData)
+		if editBoxFont then
+			--d(">>editBoxData.font: " .. tos(editBoxFont))
+			editBoxCtrl:SetFont(editBoxFont)
+		end
+
+		--defaultText
+		local editBoxDefaultText = getValueOrCallback(editBoxData.defaultText, editBoxData)
+		if editBoxDefaultText ~= nil and editBoxDefaultText ~= "" then
+			editBoxCtrl:SetDefaultText(editBoxDefaultText)
+		end
+
+		--hideLabel
+		local hideLabel = getValueOrCallback(editBoxData.hideLabel, editBoxData)
+		if hideLabel then
+			local currentLabelHeight = labelCtrl:GetHeight()
+			labelCtrl:SetDimensionConstraints(0, currentLabelHeight, 0, currentLabelHeight)
+			labelCtrl:SetDimensions(0, currentLabelHeight)
+			labelCtrl:SetText("")
+			labelCtrl:SetHidden(true)
+		end
+
+		--Dimensions width/height etc.
+		reAnchorEditBoxInRow(control)
+	end
+
+	local function getEditBoxData(control, data)
 		--EditBox data was specified too?
 		local editBoxData = getValueOrCallback(data.editBoxData, data)
 		if type(editBoxData) == "table" then
-d(">editBoxData was found")
-			local editBoxFont = getValueOrCallback(editBoxData.font, editBoxData)
-			if editBoxFont then
-d(">>editBoxData.font: " .. tos(editBoxFont))
-				editBoxCtrl:SetFont(editBoxFont)
-			end
-			reAnchorEditBoxInRow(control, data, list, editBoxCtrl, editBoxData)
+			return editBoxData
 		end
+		return
 	end
 
 
@@ -1975,8 +2000,11 @@ d(">enabled: " .. tos(data.enabled))
 		editBoxCtrl.callback = data.callback
 		--Do not close the dropdown if row is clicked
 		control.closeOnSelect = false
+
 		--EditBox data was specified too? Custom font, height, width, etc.
-		getEditBoxData(control, data, list, editBoxCtrl)
+		local editBoxData = getEditBoxData(control, data)
+		control.editBoxData = editBoxData
+		processEditBoxData(control)
 	end
 end
 
