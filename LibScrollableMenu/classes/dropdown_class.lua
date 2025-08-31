@@ -1436,7 +1436,7 @@ end
 -->And in LSM code from XML virtual template LibScrollableMenu_ComboBoxEntry_Behavior -> "OnMouseUp" -> dropdownClass:OnEntryMouseUp
 function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, ctrl, alt, shift, lsmEntryType)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 71, tos(getControlName(control)), tos(button), tos(upInside)) end
---d(debugPrefix .."dropdownClass:OnEntryMouseUp-"  .. tos(getControlName(control)) ..", button: " .. tos(button) .. ", upInside: " .. tos(upInside))
+--d(debugPrefix .."dropdownClass:OnEntryMouseUp-"  .. tos(getControlName(control)) ..", button: " .. tos(button) .. ", upInside: " .. tos(upInside) .. ", lsmEntryType: " .. tos(lsmEntryType))
 	--20240816 Suppress the next global mouseup event raised from a comboBox's dropdown (e.g. if a submenu entry outside of a context menu was clicked
 	--while a context menu was opened, and the context menu was closed then due to this click, but the global mouse up handler on the sbmenu entry runs
 	--afterwards)
@@ -1465,6 +1465,7 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 
 		if data.enabled then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
+				--Clicking an editBox should not call the callback (only changing the text does!)
 				if lsmEntryType == entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX then return end
 
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then

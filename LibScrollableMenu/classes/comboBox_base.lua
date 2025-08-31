@@ -1164,26 +1164,35 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	local dropdownObject = self.m_dropdownObject
 	local isContextMenuVisible = g_contextMenu:IsDropdownVisible()
 	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
-	local wasTextSearchContextMenuEntryClicked = dropdownObject:WasTextSearchContextMenuEntryClicked() --todo: 20250323 #2025_25 Fix this
+	local wasTextSearchContextMenuEntryClicked = dropdownObject:WasTextSearchContextMenuEntryClicked()
 	local wasFilterHeaderClicked = false
+	local wasEditBoxClickedAtContextMenu = false
 	if isContextMenuVisible and not wasTextSearchContextMenuEntryClicked then
 		wasTextSearchContextMenuEntryClicked = g_contextMenu.m_dropdownObject:WasTextSearchContextMenuEntryClicked()
 		if doDebugNow then d(">wasTextSearchContextMenuEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked)) end
 		if not wasTextSearchContextMenuEntryClicked then
-			--Did we click the "reset" button at the header, or any other control at the context menu's header
-			if mocCtrl then
-				local owningWindowOfMocCtrl = mocCtrl:GetOwningWindow()
-				if owningWindowOfMocCtrl and owningWindowOfMocCtrl.header and belongsToContextMenuCheck(owningWindowOfMocCtrl) then
-					if doDebugNow then d(">clicked header's child control at the contextMenu") end
-					--Clicked a header's child control at the context menu
-					wasFilterHeaderClicked = true
+			if mocCtrl ~= nil then
+				--Did we click any editBox inside a contextMenu?
+				if mocCtrl.isEditBox == true then
+					wasEditBoxClickedAtContextMenu = true
+					if doDebugNow then d(">wasEditBoxClickedAtContextMenu: " .. tos(wasEditBoxClickedAtContextMenu)) end
+				else
+					local owningWindowOfMocCtrl = mocCtrl:GetOwningWindow()
+					if owningWindowOfMocCtrl ~= nil then
+						--Did we click the "reset" button at the header, or any other control at the context menu's header
+						if owningWindowOfMocCtrl.header and belongsToContextMenuCheck(owningWindowOfMocCtrl) then
+							if doDebugNow then d(">clicked header's child control at the contextMenu") end
+							--Clicked a header's child control at the context menu
+							wasFilterHeaderClicked = true
+						end
+					end
 				end
 			end
 		end
 	end
-	if doDebugNow then d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked)) end
+	if doDebugNow then d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked) .. ", wasEditBoxClickedAtContextMenu: " .. tos(wasEditBoxClickedAtContextMenu)) end
 
-	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true or wasFilterHeaderClicked == true then
+	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true or wasFilterHeaderClicked == true or wasEditBoxClickedAtContextMenu == true then
 		if doDebugNow then  d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled())) end
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
@@ -1198,6 +1207,9 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 							--return false
 						elseif wasFilterHeaderClicked then
 							if doDebugNow then d("<<<returning, wasFilterHeaderClicked = true (owningWindow ~= contextMenu)") end
+							return false
+						elseif wasEditBoxClickedAtContextMenu then
+							if doDebugNow then d("<<<returning, wasEditBoxClickedAtContextMenu = true (owningWindow ~= contextMenu)") end
 							return false
 						else
 							--todo: #2025_20 Did we click a mocCtrl which's owner is the contextMenu or a contextMenu's submenu?
@@ -1215,6 +1227,9 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 					else
 						if wasFilterHeaderClicked then
 							if doDebugNow then d("<<<returning, wasFilterHeaderClicked = true (owningWindow == contextMenu)") end
+							return false
+						elseif wasEditBoxClickedAtContextMenu then
+							if doDebugNow then d("<<<returning, wasEditBoxClickedAtContextMenu = true (owningWindow == contextMenu)") end
 							return false
 						end
 
@@ -1237,7 +1252,14 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 		if button == MOUSE_BUTTON_INDEX_LEFT then
 			--If multiselection is enabled and a contextMenu is currently shown, but we clicked somewhere else: Close the contextMenu now if the clicked item does not belong to the contextMenu
 			----#2025_20 clickedEntryBelongsToContextMenu does not work for submeu entries clicked at the contextMenu!
-			local clickedEntryBelongsToContextMenu = isContextMenuVisible and belongsToContextMenuCheck(mocCtrl)
+			local clickedEntryBelongsToContextMenu = false
+			if isContextMenuVisible == true then
+				if wasEditBoxClickedAtContextMenu == true then
+					clickedEntryBelongsToContextMenu = wasEditBoxClickedAtContextMenu
+				else
+					clickedEntryBelongsToContextMenu = belongsToContextMenuCheck(mocCtrl)
+				end
+			end
 			if doDebugNow and mocCtrl then
 				d(">" .. tos(mocCtrl:GetName()) .. " - clickedEntryBelongsToContextMenu: " .. tos(clickedEntryBelongsToContextMenu) ..", isContextMenuVisible: " .. tos(isContextMenuVisible))
 			end
@@ -1801,13 +1823,17 @@ do -- Row setup functions
 		end
 	end
 
-	local function processEditBoxData(control)
-		local editBoxData = control.editBoxData
-		if type(editBoxData) ~= "table" then return end
+	local function updateEditBoxText(control, editBoxData, editBoxCtrl)
+		editBoxData = editBoxData or control.editBoxData
 
-		--local labelCtrl  = control.m_label
 		local editCtrl = control:GetNamedChild("Edit")
-		local editBoxCtrl = editCtrl:GetNamedChild("Box")
+		editBoxCtrl = editBoxCtrl or editCtrl:GetNamedChild("Box")
+
+		--Text
+		local editBoxText = getValueOrCallback(editBoxData.text, editBoxData)
+		if editBoxText ~= nil then
+			editBoxCtrl:SetText(editBoxText)
+		end
 
 		--font (of editBox)
 		local editBoxFont = getValueOrCallback(editBoxData.font, editBoxData) or "ZoFontEdit"
@@ -1815,16 +1841,6 @@ do -- Row setup functions
 			--d(">>editBoxData.font: " .. tos(editBoxFont))
 			editBoxCtrl:SetFont(editBoxFont)
 		end
-
-		--emptyText
-		--[[
-		if editBoxCtrl.SetEmptyText then
-			local editBoxEmptyText = getValueOrCallback(editBoxData.emptyText, editBoxData)
-			if editBoxEmptyText ~= nil then
-				editBoxCtrl:SetEmptyText(editBoxEmptyText)
-			end
-		end
-		]]
 
 		--defaultText
 		local editBoxDefaultText = getValueOrCallback(editBoxData.defaultText, editBoxData)
@@ -1848,6 +1864,18 @@ do -- Row setup functions
 		else
 			editBoxCtrl:SetMaxInputChars(MAX_TEXT_CHAT_INPUT_CHARACTERS)
 		end
+	end
+
+	local function processEditBoxData(control)
+		local editBoxData = control.editBoxData
+		if type(editBoxData) ~= "table" then return end
+
+		--local labelCtrl  = control.m_label
+		local editCtrl = control:GetNamedChild("Edit")
+		local editBoxCtrl = editCtrl:GetNamedChild("Box")
+
+		--font, text, defaultText, textType, maxInputCharacters
+		updateEditBoxText(control, editBoxData, editBoxCtrl)
 
 		----EditBox - HANDLERS
 		--contextMenuCallback -- ContextMenu at the editBox
@@ -2053,6 +2081,10 @@ d(">enabled: " .. tos(data.enabled))
 		--Control is the row, EditBox is the child control
 		local editBoxCtrl = control:GetNamedChild("EditBox")
 		editBoxCtrl.callback = data.callback
+		--Add some values directly to the editBox child control of the row, so functions later like HiddenForReasons can use those if we left click the editBox control
+		editBoxCtrl.isEditBox = true
+		editBoxCtrl.closeOnSelect = false
+
 		--Do not close the dropdown if row is clicked
 		control.closeOnSelect = false
 

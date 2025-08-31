@@ -635,6 +635,8 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 		local gotSubmenuEntries = false
 		local isChecked = false
 
+		local editBoxText = "Hello world"
+
 		--==============================================================================================================
 		-- Main combobox menu entries
 		--==============================================================================================================
@@ -662,18 +664,21 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				tooltip         = "Editbox....",
 				callback 		= function(comboBox, filterBox, text)
 					d("I changed the editbox text, to: " .. tostring(text))
+					editBoxText = text
 				end,
 				enabled			= true,
-				doNotFilter		= true,
+				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
+				doNotFilter		= false,
 				editBoxData = {
-					hideLabel = false,
-					labelWidth = "20%",
-					defaultText = "Enter something...",
-					--maxInputCharacters = 5,
-					--textType = TEXT_TYPE_NUMERIC_UNSIGNED_INT,
-					font = "ZoFontChat",
-					width = "80%",
-					contextMenuCallback = function(self)
+					hideLabel = 			true,
+					labelWidth = 			"20%",
+					text = 					function() return editBoxText end,
+					defaultText = 			function() return "Enter something here..." end,
+					--maxInputCharacters = 	5,
+					--textType = 			TEXT_TYPE_NUMERIC_UNSIGNED_INT,
+					font = 					"ZoFontChat",
+					width = 				"80%",
+					contextMenuCallback = 	function(self)
 						d("--> ContextMenu at EditBox")
 						ClearCustomScrollableMenu()
 						AddCustomScrollableMenuRadioButton("Radio button1 at context", function() d("clicked radio button1 at context") end, true, 1, nil)
