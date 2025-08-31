@@ -404,7 +404,6 @@ function AddCustomScrollableMenuRadioButton(text, callback, checked, buttonGroup
 	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON, nil, additionalData)
 end
 
-
 --Adds an editBox line to the context menu entries
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 -->Clicking the line does not call any callback, only changing the text in the editBox calls the callback!
@@ -418,6 +417,18 @@ function AddCustomScrollableMenuEditBox(text, callback, editBoxData, additionalD
 	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX, nil, additionalData)
 end
 
+--Adds a slider line to the context menu entries
+--Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+-->Clicking the line does not call any callback, only changing the slider value calls the callback!
+---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
+function AddCustomScrollableMenuSlider(text, callback, sliderData, additionalData)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 191, tos(text), tos(sliderData)) end
+	if sliderData ~= nil then
+		additionalData = additionalData or {}
+		additionalData.sliderData = sliderData
+	end
+	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_SLIDER, nil, additionalData)
+end
 
 --Set the options (visible rows max, etc.) for the scrollable context menu, or any passed in 2nd param comboBoxContainer
 -->See possible options above AddCustomScrollableComboBoxDropdownMenu

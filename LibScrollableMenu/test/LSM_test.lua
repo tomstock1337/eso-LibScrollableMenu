@@ -280,6 +280,29 @@ local function test()
 				name            =	"-",
 			},
 			{
+				entryType		= LSM_ENTRY_TYPE_SLIDER,
+				label			= "Slide me",
+				name            = "SliderContextmenu1",
+				tooltip         = "Slider slides sidewise...",
+				callback 		= function(comboBox, slider, value)
+					d("Slider context menu value changed to: " .. tostring(value))
+				end,
+				doNotFilter		= false,
+				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
+				sliderData = {
+					hideLabel = 			true,
+					labelWidth = 			"20%",
+					width = 				"95%",
+					value = 				function() return 12 end,
+					min = 					0,
+					max =					16,
+					step =					2,
+				}
+			},
+			{
+				name            =	"-",
+			},
+			{
 
 				name            = "CntxtMenu - Submenu entry 1:2",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
@@ -670,9 +693,9 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				doNotFilter		= false,
 				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
 				sliderData = {
-					hideLabel = 			false,
+					hideLabel = 			true,
 					labelWidth = 			"20%",
-					width = 				"80%",
+					width = 				"95%",
 					value = 				function() return sliderValue end,
 					min = 					0,
 					max =					20,

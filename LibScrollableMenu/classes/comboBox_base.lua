@@ -1184,6 +1184,7 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	local wasTextSearchContextMenuEntryClicked = dropdownObject:WasTextSearchContextMenuEntryClicked()
 	local wasFilterHeaderClicked = false
 	local wasEditBoxClickedAtContextMenu = false
+	local wasSliderClickedAtContextMenu = false
 	if isContextMenuVisible and not wasTextSearchContextMenuEntryClicked then
 		wasTextSearchContextMenuEntryClicked = g_contextMenu.m_dropdownObject:WasTextSearchContextMenuEntryClicked()
 		if doDebugNow then d(">wasTextSearchContextMenuEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked)) end
@@ -1193,6 +1194,9 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 				if mocCtrl.isEditBox == true then
 					wasEditBoxClickedAtContextMenu = true
 					if doDebugNow then d(">wasEditBoxClickedAtContextMenu: " .. tos(wasEditBoxClickedAtContextMenu)) end
+				elseif mocCtrl.isSlider == true then
+					wasSliderClickedAtContextMenu = true
+					if doDebugNow then d(">wasSliderClickedAtContextMenu: " .. tos(wasSliderClickedAtContextMenu)) end
 				else
 					local owningWindowOfMocCtrl = mocCtrl:GetOwningWindow()
 					if owningWindowOfMocCtrl ~= nil then
@@ -1207,9 +1211,9 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 			end
 		end
 	end
-	if doDebugNow then d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked) .. ", wasEditBoxClickedAtContextMenu: " .. tos(wasEditBoxClickedAtContextMenu)) end
+	if doDebugNow then d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked) .. ", wasEditBoxClickedAtContextMenu: " .. tos(wasEditBoxClickedAtContextMenu) .. ", wasSliderClickedAtContextMenu: " .. tos(wasSliderClickedAtContextMenu)) end
 
-	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true or wasFilterHeaderClicked == true or wasEditBoxClickedAtContextMenu == true then
+	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true or wasFilterHeaderClicked == true or wasEditBoxClickedAtContextMenu == true or wasSliderClickedAtContextMenu == true then
 		if doDebugNow then  d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled())) end
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
@@ -1227,6 +1231,9 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 							return false
 						elseif wasEditBoxClickedAtContextMenu then
 							if doDebugNow then d("<<<returning, wasEditBoxClickedAtContextMenu = true (owningWindow ~= contextMenu)") end
+							return false
+						elseif wasSliderClickedAtContextMenu then
+							if doDebugNow then d("<<<returning, wasSliderClickedAtContextMenu = true (owningWindow ~= contextMenu)") end
 							return false
 						else
 							--todo: #2025_20 Did we click a mocCtrl which's owner is the contextMenu or a contextMenu's submenu?
@@ -1247,6 +1254,9 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 							return false
 						elseif wasEditBoxClickedAtContextMenu then
 							if doDebugNow then d("<<<returning, wasEditBoxClickedAtContextMenu = true (owningWindow == contextMenu)") end
+							return false
+						elseif wasSliderClickedAtContextMenu then
+							if doDebugNow then d("<<<returning, wasSliderClickedAtContextMenu = true (owningWindow 0= contextMenu)") end
 							return false
 						end
 
@@ -1271,8 +1281,8 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 			----#2025_20 clickedEntryBelongsToContextMenu does not work for submeu entries clicked at the contextMenu!
 			local clickedEntryBelongsToContextMenu = false
 			if isContextMenuVisible == true then
-				if wasEditBoxClickedAtContextMenu == true then
-					clickedEntryBelongsToContextMenu = wasEditBoxClickedAtContextMenu
+				if wasEditBoxClickedAtContextMenu == true or wasSliderClickedAtContextMenu == true then
+					clickedEntryBelongsToContextMenu = true
 				else
 					clickedEntryBelongsToContextMenu = belongsToContextMenuCheck(mocCtrl)
 				end
@@ -1989,6 +1999,7 @@ do -- Row setup functions
 
 		--local labelCtrl  = control.m_label
 		local sliderCtrl = control:GetNamedChild("Slider")
+		sliderCtrl:SetOrientation(ORIENTATION_HORIZONTAL)
 
 		--value
 		local sliderValue = getValueOrCallback(sliderData.value, sliderData)
@@ -2022,7 +2033,7 @@ do -- Row setup functions
 			end)
 		end
 
-		--EditBox & label Dimensions width/height etc.
+		--Slider & label Dimensions width/height etc.
 		reAnchorSliderControlsInRow(control)
 	end
 
