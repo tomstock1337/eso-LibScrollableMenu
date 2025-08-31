@@ -635,6 +635,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 		local gotSubmenuEntries = false
 		local isChecked = false
 
+		local sliderValue = 10
 		local editBoxText = "Hello world"
 
 		--==============================================================================================================
@@ -658,8 +659,36 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				doNotFilter		= true,
 			},
 			{
+				entryType		= LSM_ENTRY_TYPE_SLIDER,
+				label			= "Slide me",
+				name            = "Slider1",
+				tooltip         = "Slider slides sidewise...",
+				callback 		= function(comboBox, slider, value)
+					d("Slider value changed to: " .. tostring(value))
+					sliderValue = value
+				end,
+				doNotFilter		= false,
+				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
+				sliderData = {
+					hideLabel = 			false,
+					labelWidth = 			"20%",
+					width = 				"80%",
+					value = 				function() return sliderValue end,
+					min = 					0,
+					max =					20,
+					step =					1,
+					contextMenuCallback = 	function(self)
+						d("--> ContextMenu at Slider")
+						ClearCustomScrollableMenu()
+						AddCustomScrollableMenuRadioButton("Radio button3 at context", function() d("clicked radio button3 at context") end, true, 2, nil)
+						AddCustomScrollableMenuRadioButton("Radio button4 at context", function() d("clicked radio button4 at context") end, true, 2, nil)
+						ShowCustomScrollableMenu()
+					end
+				}
+			},
+			{
 				entryType		= LSM_ENTRY_TYPE_EDITBOX,
-				label			= "Enter something: ",
+				label			= "Name:",
 				name            = "EditBox1",
 				tooltip         = "Editbox....",
 				callback 		= function(comboBox, filterBox, text)
@@ -670,14 +699,14 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
 				doNotFilter		= false,
 				editBoxData = {
-					hideLabel = 			true,
-					labelWidth = 			"20%",
+					hideLabel = 			false,
+					labelWidth = 			"10%",
 					text = 					function() return editBoxText end,
 					defaultText = 			function() return "Enter something here..." end,
 					--maxInputCharacters = 	5,
 					--textType = 			TEXT_TYPE_NUMERIC_UNSIGNED_INT,
 					font = 					"ZoFontChat",
-					width = 				"80%",
+					--width = 				"100%",
 					contextMenuCallback = 	function(self)
 						d("--> ContextMenu at EditBox")
 						ClearCustomScrollableMenu()

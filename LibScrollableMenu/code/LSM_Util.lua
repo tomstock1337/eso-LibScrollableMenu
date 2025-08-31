@@ -170,6 +170,14 @@ function libUtil.getEditBoxData(control, data)
 	return
 end
 
+function libUtil.getSliderData(control, data)
+	--Slider data was specified too?
+	local sliderData = getValueOrCallback(data.sliderData, data)
+	if type(sliderData) == "table" then
+		return sliderData
+	end
+	return
+end
 
 function libUtil.compareDropdownDataList(selfVar, scrollControl, item)
 	local dataList = ZO_ScrollList_GetDataList(scrollControl)

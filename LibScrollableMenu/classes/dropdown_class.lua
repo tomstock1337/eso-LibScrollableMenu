@@ -64,7 +64,7 @@ local handlerNameConstants = constants.handlerNames
 local submenuConstants = constants.submenu
 local dropdownConstants = constants.dropdown
 local fontConstants = constants.fonts
-
+local onEntryMouseUpExcludeEntryTypes = entryTypeConstants.onEntryMouseUpExclude
 
 local dropdownDefaults = dropdownConstants.defaults
 local noEntriesResults = searchFilterConstants.noEntriesResults
@@ -102,6 +102,7 @@ local filterString				--the search string
 local filterFunc				--the filter function to use. Default is "defaultFilterFunc". Custom filterFunc can be added via options.customFilterFunc
 local throttledCallDropdownClassSetFilterStringSuffix =  "_DropdownClass_SetFilterString"
 local throttledCallDropdownClassOnTextChangedStringSuffix =  "_DropdownClass_OnTextChanged"
+local throttledCallDropdownClassOnValueChangedStringSuffix =  "_DropdownClass_OnValueChanged"
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -524,6 +525,11 @@ local handlerFunctions  = {
 			-- Return true to skip the default handler to prevent row highlight.
 			return false --not control.closeOnSelect
 		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = function(selfVar, control, data, ...)
+			onMouseEnter(control, data, no_submenu)
+			-- Return true to skip the default handler to prevent row highlight.
+			return false --not control.closeOnSelect
+		end,
 	},
 
 	--return false to run default ZO_ComboBox OnMouseExit handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
@@ -560,6 +566,10 @@ local handlerFunctions  = {
 			return false --not control.closeOnSelect
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = function(selfVar, control, data, ...)
+			-- Return true to skip the default handler to prevent row highlight.
+			return false --not control.closeOnSelect
+		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = function(selfVar, control, data, ...)
 			-- Return true to skip the default handler to prevent row highlight.
 			return false --not control.closeOnSelect
 		end,
@@ -605,6 +615,10 @@ local handlerFunctions  = {
 			return false
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+			onMouseUp(control, data, no_submenu)
+			return false
+		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
@@ -1462,11 +1476,11 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 	isSubmenu = self.isSubmenu or comboBox.isSubmenu
 }
 ]]
-
 		if data.enabled then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
-				--Clicking an editBox should not call the callback (only changing the text does!)
-				if lsmEntryType == entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX then return end
+				--Clicking an editBox/slider should not call the callback (only changing the text does!)
+				if onEntryMouseUpExcludeEntryTypes[lsmEntryType] == true then return end
+
 
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
 					--d("3??? Setting suppressNextOnGlobalMouseUp = true ???")
@@ -1971,5 +1985,22 @@ function dropdownClass:OnEditBoxTextChanged(editBox)
 --d(">throttledCall 1 - text: " ..tos(text))
 			callbackFunc(selfVar.m_comboBox, editBox, text) --comboBox, filterBox, text
 		end, 250, throttledCallDropdownClassOnTextChangedStringSuffix)
+	end
+end
+
+--XML handler for slider rows: OnValueChanged should trigger the callback function
+function dropdownClass:OnSliderValueChanged(slider)
+	ZO_Tooltips_HideTextTooltip()
+	local selfVar = self
+	if selfVar.m_comboBox and slider then
+		local callbackFunc = slider.callback
+		if callbackFunc == nil then return end
+
+		-- It probably does not need this but, added it to prevent lagging from fast typing.
+		throttledCall(function()
+			local value = slider:GetValue()
+d(">throttledCall 1 - value: " ..tos(value))
+			callbackFunc(selfVar.m_comboBox, slider, value) --comboBox, slider, value
+		end, 250, throttledCallDropdownClassOnValueChangedStringSuffix)
 	end
 end

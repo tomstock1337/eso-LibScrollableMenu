@@ -91,6 +91,8 @@ local belongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 local subMenuArrowColor = libUtil.subMenuArrowColor
 local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
 local getEditBoxData = libUtil.getEditBoxData
+local getSliderData = libUtil.getSliderData
+
 
 
 local libDivider = lib.DIVIDER
@@ -382,6 +384,8 @@ local postItemSetupFunctions = {
 	end,
 	--[[
 	[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = function(comboBox, itemEntry)
+	end,
+	[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = function(comboBox, itemEntry)
 	end,
 	]]
 }
@@ -790,6 +794,14 @@ local function getDefaultXMLTemplates(selfVar)
 				selfVar:SetupEntryEditBox(control, data, list)
 			end,
 		},
+		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = {
+			template = 'LibScrollableMenu_ComboBoxSliderEntry',
+			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			setupFunc = function(control, data, list)
+				selfVar:SetupEntrySlider(control, data, list)
+			end,
+		},
 	}
 
 	--The virtual XML highlight templates (mouse moved above an antry), for the different row types
@@ -829,6 +841,11 @@ local function getDefaultXMLTemplates(selfVar)
 			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = {
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
+		},
+		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = {
 			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
 			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
 			color = entryTypeDefaultsHighlights.defaultHighlightColor,
@@ -1133,7 +1150,7 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	--is the mocCtrl a checkbox of a checkBox row -> then get the parent = the row
 	local mocCtrlOrig = mocCtrl
 	if mocCtrl ~= nil and mocCtrl.m_owner == nil then
-		if (mocCtrl.entryType ~= nil and isEntryTypeWithParentMocCtrl[mocCtrl.entryType]) or  mocCtrl.toggleFunction then
+		if (mocCtrl.entryType ~= nil and isEntryTypeWithParentMocCtrl[mocCtrl.entryType]) or mocCtrl.toggleFunction then
 			local parentCtrl = mocCtrl:GetParent()
 			if parentCtrl ~= nil then
 				mocCtrl = parentCtrl
@@ -1819,7 +1836,7 @@ do -- Row setup functions
 	--d(">default width and height anchors")
 			editCtrl:ClearAnchors()
 			editCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
-			editCtrl:SetAnchor(BOTTOMRIGHT, control, BOTTOMRIGHT, -2)
+			editCtrl:SetAnchor(BOTTOMRIGHT, control, BOTTOMRIGHT, -5)
 		end
 	end
 
@@ -1885,6 +1902,9 @@ do -- Row setup functions
 			editBoxCtrl:SetHandler("OnMouseUp", nil)
 			editBoxCtrl:SetHandler("OnMouseUp", function(control, button, upInside, ctrl, alt, shift)
 				if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+					--Remove the cursor from the editbox
+					editBoxCtrl:LoseFocus()
+					--Show the contextMenu now
 					contextMenuCallback(control)
 				end
 			end)
@@ -1892,6 +1912,118 @@ do -- Row setup functions
 
 		--EditBox & label Dimensions width/height etc.
 		reAnchorEditBoxControlsInRow(control)
+	end
+
+	--For the slider rowType: reanchor the label, slider controls according to the sliderData passed in to the rowControl
+	local function reAnchorSliderControlsInRow(control)
+		local sliderData = control.sliderData
+		if type(sliderData) ~= "table" then return end
+
+		local parentCtrl = control:GetParent()
+		local labelCtrl  = control.m_label
+		local sliderCtrl = control:GetNamedChild("Slider")
+
+		--Current dimensions
+		local widthOrHeightChanged = false
+		local width = control:GetWidth()
+		if width == nil or width <= 0 then width = parentCtrl:GetWidth() end
+		local height = control:GetHeight()
+		if height == nil or height <= 0 then height = sliderCtrl:GetHeight() end
+		if height == nil or height <= 0 then height = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT end
+
+		--hideLabel
+		local hideLabel = getValueOrCallback(sliderData.hideLabel, sliderData)
+		if hideLabel then
+			local currentLabelHeight = labelCtrl:GetHeight()
+			labelCtrl:SetDimensionConstraints(0, currentLabelHeight, 0, currentLabelHeight)
+			labelCtrl:SetDimensions(0, currentLabelHeight)
+			labelCtrl:SetText("")
+			labelCtrl:SetHidden(true)
+		end
+		--labelWidth
+		if not hideLabel then
+			local labelWidth = getValueOrCallback(sliderData.labelWidth, sliderData)
+			if labelWidth ~= nil then
+				if type(labelWidth) == "number" and labelWidth <= 0 then labelWidth = 5 end
+				labelCtrl:SetWidth(labelWidth)
+			end
+		end
+
+		--Dimensions
+		local sliderWidth = getValueOrCallback(sliderData.width, sliderData)
+		if sliderWidth ~= nil then
+			if type(sliderWidth) == "number" then
+				width = zo_clamp(sliderWidth, 5, width)
+			else
+				width = sliderWidth
+			end
+			widthOrHeightChanged = true
+		end
+		local sliderHeight = getValueOrCallback(sliderData.height, sliderData)
+		if sliderHeight ~= nil then
+			if type(sliderHeight) == "number" then
+				height = zo_clamp(sliderHeight, 5, height)
+			else
+				height = sliderHeight
+			end
+			widthOrHeightChanged = true
+		end
+
+		local offsetX = hideLabel == true and 0 or 4
+		if widthOrHeightChanged then
+			sliderCtrl:ClearAnchors()
+			sliderCtrl:SetDimensionConstraints(0, 0, width, height)
+			sliderCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
+			sliderCtrl:SetAnchor(BOTTOMLEFT, labelCtrl, BOTTOMRIGHT, offsetX)
+			sliderCtrl:SetDimensions(width, height)
+		else
+			sliderCtrl:ClearAnchors()
+			sliderCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
+			sliderCtrl:SetAnchor(BOTTOMRIGHT, control, BOTTOMRIGHT, -10)
+		end
+	end
+
+	local function processSliderData(control)
+		local sliderData = control.sliderData
+		if type(sliderData) ~= "table" then return end
+
+		--local labelCtrl  = control.m_label
+		local sliderCtrl = control:GetNamedChild("Slider")
+
+		--value
+		local sliderValue = getValueOrCallback(sliderData.value, sliderData)
+		if sliderValue ~= nil then
+			sliderCtrl:SetValue(sliderValue)
+		end
+
+		local minValue = getValueOrCallback(sliderData.min, sliderData)
+		local maxValue = getValueOrCallback(sliderData.max, sliderData)
+		minValue = minValue or 0
+		maxValue = maxValue or 0
+		sliderCtrl:SetMinMax(minValue, maxValue)
+
+		local stepValue = getValueOrCallback(sliderData.step, sliderData)
+		stepValue = stepValue or 0
+		sliderCtrl:SetValueStep(stepValue)
+
+
+		----EditBox - HANDLERS
+		--contextMenuCallback -- ContextMenu at the editBox
+		local contextMenuCallback = sliderData.contextMenuCallback
+		if type(contextMenuCallback) == "function" then
+			sliderCtrl:SetMouseEnabled(true)
+			sliderCtrl:SetHandler("OnMouseUp", nil)
+			sliderCtrl:SetHandler("OnMouseUp", function(control, button, upInside, ctrl, alt, shift)
+				if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+					--Remove the cursor from the editbox
+					--Show the contextMenu now
+					contextMenuCallback(control)
+				end
+			end)
+		end
+
+		--EditBox & label Dimensions width/height etc.
+		reAnchorSliderControlsInRow(control)
 	end
 
 	function comboBox_base:SetupEntryBase(control, data, list)
@@ -2098,6 +2230,34 @@ d(">enabled: " .. tos(data.enabled))
 			isEnabled = control:IsEnabled()
 		end
 		editBoxCtrl:SetMouseEnabled(isEnabled)
+	end
+
+	function comboBox_base:SetupEntrySlider(control, data, list)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 190, tos(getControlName(control)), tos(list)) end
+		self:SetupEntryLabel(control, data, list)
+		control.isSlider = true
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_SLIDER
+		--Set the callback function to the row's slider which is called at OnValueChanged via the XML handler -> See dropdownClass.lua -> function dropdownClass:OnSlidervalueChanged(slider)
+		--Control is the row, sliderCtrl is the child control
+		local sliderCtrl = control:GetNamedChild("Slider")
+		sliderCtrl.callback = data.callback
+		--Add some values directly to the editBox child control of the row, so functions later like HiddenForReasons can use those if we left click the editBox control
+		sliderCtrl.isSlider = true
+		sliderCtrl.closeOnSelect = false
+
+		--Do not close the dropdown if row is clicked
+		control.closeOnSelect = false
+
+		--EditBox data was specified too? Custom font, height, width, etc.
+		local sliderData = getSliderData(control, data)
+		control.sliderData = sliderData
+		processSliderData(control)
+
+		local isEnabled = data.enabled
+		if isEnabled == nil then
+			isEnabled = control:IsEnabled()
+		end
+		sliderCtrl:SetMouseEnabled(isEnabled)
 	end
 end
 

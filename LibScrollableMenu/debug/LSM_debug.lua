@@ -230,6 +230,7 @@ local debugLogMessagePatterns = {
 	[187] = "comboBox_base:SetupEntryEditBox - control: %s, list: %s",
 	[188] = "AddCustomScrollableMenuEditBox-text: %s, editBoxData: %s",
 	[189] = "AddCustomScrollableMenuRadioButton-text: %s, checked: %s, buttonGroup: %s",
+	[190] = "comboBox_base:SetupEntrySlider - control: %s, list: %s",
 }
 
 

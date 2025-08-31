@@ -50,6 +50,21 @@
             <Anchor point="BOTTOMRIGHT" offsetX="-ZO_SINGLE_LINE_EDIT_CONTAINER_PADDING_RIGHT" offsetY="-ZO_SINGLE_LINE_EDIT_CONTAINER_PADDING_BOTTOM"/>
         </EditBox>
 
+		<!-- Slider virtual templte -->
+		<Slider name="LibScrollableMenu_Slider" mouseEnabled="true" orientation="HORIZONTAL" virtual="true">
+            <Dimensions x="150" y="16" />
+            <ThumbTexture
+                textureFile="EsoUI/Art/Miscellaneous/scrollbox_elevator.dds"
+                disabledTextureFile="EsoUI/Art/Miscellaneous/scrollbox_elevator_disabled.dds"
+                thumbWidth="8"
+                thumbHeight="16"
+            />
+
+            <Controls>
+                <Backdrop name="$(parent)Backdrop" inherits="ZO_SliderBackdrop" />
+            </Controls>
+        </Slider>
+
 
 		<!-- Base row templates -->
 		<Control name="LibScrollableMenu_IconEntry_Template" virtual="true">
@@ -121,10 +136,32 @@
 			</OnMouseExit>
 
 			<OnMouseUp>
---d("LibScrollableMenu_ComboBoxEditBoxEntry_Behavior - OnMouseUp: " ..tostring(self.GetName and self:GetName()))
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnEntryMouseUp(self, button, upInside, false, ctrl, alt, shift, LSM_ENTRY_TYPE_EDITBOX)
+				end
+			</OnMouseUp>
+		</Control>
+
+		<Control name="LibScrollableMenu_ComboBoxSliderEntry_Behavior" level="3" mouseEnabled="true" virtual="true">
+			<OnMouseEnter> <!-- name="BaseHandler"-->
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnMouseEnterEntry(self)
+				end
+			</OnMouseEnter>
+
+			<OnMouseExit>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnMouseExitEntry(self)
+				end
+			</OnMouseExit>
+
+			<OnMouseUp>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnEntryMouseUp(self, button, upInside, false, ctrl, alt, shift, LSM_ENTRY_TYPE_SLIDER)
 				end
 			</OnMouseUp>
 		</Control>
@@ -311,21 +348,37 @@
 							<OnTextChanged>
 								LibScrollableMenu.XML.OnXMLControlEventHandler("OnEditBoxTextChanged", self, self)
 							</OnTextChanged>
-
-							<OnMouseEnter>
-							</OnMouseEnter>
-
-							<OnMouseExit>
-							</OnMouseExit>
-
-							<OnMouseUp>
-							</OnMouseUp>
 						</EditBox>
 					</Controls>
 				</Backdrop>
 			</Controls>
 		</Control>
 
+
+		<!-- Slider entry -->
+		<Control name="LibScrollableMenu_ComboBoxSliderEntry" inherits="LibScrollableMenu_IconEntry_Template LibScrollableMenu_ComboBoxSliderEntry_Behavior" mouseEnabled="true" virtual="true">
+			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
+			<OnInitialized>
+				self.isSlider = true
+			</OnInitialized>
+
+			<Controls>
+				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+					<DimensionConstraints x="5" maxX="90%" />
+					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
+				</Label>
+				<Slider name="$(parent)Slider" hidden="false" tier="HIGH" inherits="LibScrollableMenu_Slider">
+					<OnInitialized>
+						self:GetParent().Slider = self
+					</OnInitialized>
+					<OnValueChanged>
+						LibScrollableMenu.XML.OnXMLControlEventHandler("OnSliderValueChanged", self, self)
+					</OnValueChanged>
+					<Anchor point="TOPLEFT" relativeTo="$(parent)Label" relativePoint="TOPRIGHT" offsetX="4"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-2"/>
+				</Slider>
+			</Controls>
+		</Control>
 
 		<!-- The genuine Dropdown control. The scroll list container.
 			TLC so it can be forced above other dropdowns without having to consider layering

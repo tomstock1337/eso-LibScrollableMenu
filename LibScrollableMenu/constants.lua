@@ -222,6 +222,7 @@ local LSM_ENTRY_TYPE_CHECKBOX = 5
 local LSM_ENTRY_TYPE_BUTTON = 6
 local LSM_ENTRY_TYPE_RADIOBUTTON = 7
 local LSM_ENTRY_TYPE_EDITBOX = 8
+local LSM_ENTRY_TYPE_SLIDER = 9
 
 --Constant for the divider entryType
 lib.DIVIDER = "-"
@@ -236,6 +237,7 @@ lib.scrollListRowTypes = {
 	["LSM_ENTRY_TYPE_BUTTON"] =			LSM_ENTRY_TYPE_BUTTON,
 	["LSM_ENTRY_TYPE_RADIOBUTTON"] = 	LSM_ENTRY_TYPE_RADIOBUTTON,
 	["LSM_ENTRY_TYPE_EDITBOX"] = 		LSM_ENTRY_TYPE_EDITBOX,
+	["LSM_ENTRY_TYPE_SLIDER"] =			LSM_ENTRY_TYPE_SLIDER,
 }
 local scrollListRowTypes = lib.scrollListRowTypes
 
@@ -247,6 +249,14 @@ for key, value in pairs(scrollListRowTypes) do
 	--Create the LSM_ENTRY_TYPE*L globals
 	_G[key] = value
 end
+
+--Exclude the OnMouseup handler for these rowTypes (entryTypes) as the callbacks of an editBox/slider should not be executed
+--if you click the row, but the editBox text was changed or the slider value was changed (via XML handlers!)
+local onEntryMouseUpExclude = {
+	[LSM_ENTRY_TYPE_EDITBOX] = true,
+	[LSM_ENTRY_TYPE_SLIDER] = true,
+}
+constants.entryTypes.onEntryMouseUpExclude = onEntryMouseUpExclude
 
 --Mapping table for entryType to button's childName (in XML template)
 local entryTypeToButtonChildName = {
@@ -260,6 +270,7 @@ local isEntryTypeWithParentMocCtrl = {
 	[LSM_ENTRY_TYPE_CHECKBOX] = true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
 	[LSM_ENTRY_TYPE_EDITBOX] = true,
+	[LSM_ENTRY_TYPE_SLIDER] = true,
 }
 constants.entryTypes.isEntryTypeWithParentMocCtrl = isEntryTypeWithParentMocCtrl
 
@@ -273,6 +284,7 @@ local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_BUTTON] =		true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] =	true,
 	[LSM_ENTRY_TYPE_EDITBOX] = 		true,
+	[LSM_ENTRY_TYPE_SLIDER] = 		true,
 }
 constants.entryTypes.libraryAllowedEntryTypes = libraryAllowedEntryTypes
 lib.AllowedEntryTypes = libraryAllowedEntryTypes
@@ -287,6 +299,7 @@ local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_BUTTON] = 		true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = 	true,
 	[LSM_ENTRY_TYPE_EDITBOX] = 		true,
+	[LSM_ENTRY_TYPE_SLIDER] = 		true,
 }
 constants.entryTypes.allowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
 lib.AllowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
@@ -308,6 +321,7 @@ local additionalDataKeyToLSMEntryType = {
 	["isButton"] = 		LSM_ENTRY_TYPE_BUTTON,
 	["isRadioButton"] = LSM_ENTRY_TYPE_RADIOBUTTON,
 	["isEditBox"] = 	LSM_ENTRY_TYPE_EDITBOX,
+	["isSlider"] = 		LSM_ENTRY_TYPE_SLIDER,
 }
 constants.entryTypes.additionalDataKeyToLSMEntryType = additionalDataKeyToLSMEntryType
 

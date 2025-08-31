@@ -3,6 +3,7 @@
 -2025_35    Added entryType LSM_ENTRY_TYPE_EDITBOX
 -2025_36    Added API function AddCustomScrollableMenuEditBox(text, callback, editBoxData, additionalData)
 -2025_37    Added API function AddCustomScrollableMenuRadioButton(text, callback, checked, buttonGroup, additionalData)
+-2025_38    Working on entryType LSM_ENTRY_TYPE_SLIDER
 
 
 -v- ---------------LSM v2.36 - 2025-05-30--------------------------------------------------------------------------- -v-
