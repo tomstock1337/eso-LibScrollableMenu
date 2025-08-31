@@ -228,6 +228,8 @@ local debugLogMessagePatterns = {
 	[185] = "comboBox_base:GetMinDropdownWidth - minDropdownWidth: %s",
 	[186] = "comboBoxClass:GetSubMenuOpeningSide",
 	[187] = "comboBox_base:SetupEntryEditBox - control: %s, list: %s",
+	[188] = "AddCustomScrollableMenuEditBox-text: %s, editBoxData: %s",
+	[189] = "AddCustomScrollableMenuRadioButton-text: %s, checked: %s, buttonGroup: %s",
 }
 
 

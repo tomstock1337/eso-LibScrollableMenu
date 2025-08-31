@@ -1311,11 +1311,11 @@ function comboBox_base:GetHighlightTemplateData(control, m_data, isSubMenu, isCo
 	else
 		local isContextMenuAndHighlightContextMenuOpeningControl = (options ~= nil and options.highlightContextMenuOpeningControl == true) or self.highlightContextMenuOpeningControl == true
 		if isContextMenuAndHighlightContextMenuOpeningControl then
-			local comboBox = control.m_owner
-			local gotRightCLickCallback = ((data ~= nil and comboBox ~= nil and (data.contextMenuCallback ~= nil or data.rightClickCallback ~= nil)) and true) or false
+			local comboBox                     = control.m_owner
+			local gotRightClickCallback        = ((data ~= nil and comboBox ~= nil and (data.contextMenuCallback ~= nil or data.rightClickCallback ~= nil)) and true) or false
 			local isOwnedByContextMenuComboBox = g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox)
 
-			if gotRightCLickCallback and not isOwnedByContextMenuComboBox then
+			if gotRightClickCallback and not isOwnedByContextMenuComboBox then
 
 				--highlightContextMenuOpeningControl support -> highlightTemplateData.templateContextMenuOpeningControl
 				highlightTemplateData.template = ((highlightTemplateData.templateContextMenuOpeningControl ~= nil and highlightTemplateData.templateContextMenuOpeningControl) or (appliedHighlightTemplateCopy)) or ZO_ShallowTableCopy(entryTypeDefaultsHighlights.defaultHighlightTemplateDataEntryContextMenuOpeningControl).template
@@ -1809,20 +1809,28 @@ do -- Row setup functions
 		local editCtrl = control:GetNamedChild("Edit")
 		local editBoxCtrl = editCtrl:GetNamedChild("Box")
 
-
 		--font (of editBox)
-		local editBoxFont = getValueOrCallback(editBoxData.font, editBoxData)
+		local editBoxFont = getValueOrCallback(editBoxData.font, editBoxData) or "ZoFontEdit"
 		if editBoxFont then
 			--d(">>editBoxData.font: " .. tos(editBoxFont))
 			editBoxCtrl:SetFont(editBoxFont)
 		end
 
+		--emptyText
+		--[[
+		if editBoxCtrl.SetEmptyText then
+			local editBoxEmptyText = getValueOrCallback(editBoxData.emptyText, editBoxData)
+			if editBoxEmptyText ~= nil then
+				editBoxCtrl:SetEmptyText(editBoxEmptyText)
+			end
+		end
+		]]
+
 		--defaultText
 		local editBoxDefaultText = getValueOrCallback(editBoxData.defaultText, editBoxData)
-		if editBoxDefaultText ~= nil and editBoxDefaultText ~= "" then
+		editBoxDefaultText = editBoxDefaultText or ""
+		if editBoxDefaultText ~= nil then
 			editBoxCtrl:SetDefaultText(editBoxDefaultText)
-		else
-			editBoxCtrl:SetDefaultText("")
 		end
 
 		--textType
@@ -1830,17 +1838,29 @@ do -- Row setup functions
 		if textType ~= nil and type(textType) == "number" then
 			editBoxCtrl:SetTextType(textType)
 		else
-			editBoxCtrl:SetTextType(nil)
+			editBoxCtrl:SetTextType(TEXT_TYPE_ALL)
 		end
 
 		--maxInputCharacters
 		local maxInputCharacters = getValueOrCallback(editBoxData.maxInputCharacters, editBoxData)
-		if maxInputCharacters ~= nil and type(maxInputCharacters) == "number" then
-			editBoxCtrl:SetMaxInputCharacters(maxInputCharacters)
+		if maxInputCharacters ~= nil and type(maxInputCharacters) == "number" and maxInputCharacters >= 0 then
+			editBoxCtrl:SetMaxInputChars(maxInputCharacters)
 		else
-			editBoxCtrl:SetMaxInputCharacters(nil)
+			editBoxCtrl:SetMaxInputChars(MAX_TEXT_CHAT_INPUT_CHARACTERS)
 		end
 
+		----EditBox - HANDLERS
+		--contextMenuCallback -- ContextMenu at the editBox
+		local contextMenuCallback = editBoxData.contextMenuCallback
+		if type(contextMenuCallback) == "function" then
+			editBoxCtrl:SetMouseEnabled(true)
+			editBoxCtrl:SetHandler("OnMouseUp", nil)
+			editBoxCtrl:SetHandler("OnMouseUp", function(control, button, upInside, ctrl, alt, shift)
+				if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+					contextMenuCallback(control)
+				end
+			end)
+		end
 
 		--EditBox & label Dimensions width/height etc.
 		reAnchorEditBoxControlsInRow(control)
@@ -1870,7 +1890,7 @@ d(">enabled: " .. tos(data.enabled))
 		if isEnabled == nil then
 			isEnabled = true
 		end
-		control:SetMouseEnabled(isEnabled) -- --#2025_26 data.enabled ~= false)
+		control:SetMouseEnabled(isEnabled) -- --#2025_26 data.enabled ~= false
 	end
 
 	function comboBox_base:SetupEntryDivider(control, data, list)
@@ -2040,6 +2060,12 @@ d(">enabled: " .. tos(data.enabled))
 		local editBoxData = getEditBoxData(control, data)
 		control.editBoxData = editBoxData
 		processEditBoxData(control)
+
+		local isEnabled = data.enabled
+		if isEnabled == nil then
+			isEnabled = control:IsEnabled()
+		end
+		editBoxCtrl:SetMouseEnabled(isEnabled)
 	end
 end
 

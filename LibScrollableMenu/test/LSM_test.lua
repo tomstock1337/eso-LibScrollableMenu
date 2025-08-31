@@ -232,6 +232,54 @@ local function test()
 				name            =	"-",
 			},
 			{
+				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
+				label = 			"Test radiobutton in submenu 1",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("CntxtMenu - Test radiobutton in submenu 1")
+				end,
+				tooltip         = 	"CntxtMenu - Test radiobutton in submenu 1",
+				enabled 		= true,
+				checked			= true,
+				buttonGroup 	= 1,
+			},
+			{
+				isRadioButton 	= true,
+				name = 			"Test radiobutton in submenu 2",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("CntxtMenu - Test radiobutton in submenu 2")
+				end,
+				tooltip         = 	"CntxtMenu - Test radiobutton in submenu 2",
+				enabled 		= true,
+				checked			= false,
+				buttonGroup 	= 1,
+			},
+			{
+				name            =	"-",
+			},
+			{
+				entryType		= LSM_ENTRY_TYPE_EDITBOX,
+				label			= "Enter something submenu: ",
+				name            = "EditBox1 submenu",
+				tooltip         = "Editbox1 submenu....",
+				callback 		= function(comboBox, filterBox, text)
+					d("I changed the editbox 1 submenu text, to: " .. tostring(text))
+				end,
+				enabled 		= true,
+				doNotFilter		= true,
+				editBoxData = {
+					hideLabel = true,
+					labelWidth = "20%",
+					defaultText = "Enter number nnnnn",
+					maxInputCharacters = 5,
+					textType = TEXT_TYPE_NUMERIC_UNSIGNED_INT,
+					font = "ZoFontChat",
+					width = "80%",
+				}
+			},
+			{
+				name            =	"-",
+			},
+			{
 
 				name            = "CntxtMenu - Submenu entry 1:2",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
@@ -615,16 +663,23 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				callback 		= function(comboBox, filterBox, text)
 					d("I changed the editbox text, to: " .. tostring(text))
 				end,
+				enabled			= true,
 				doNotFilter		= true,
 				editBoxData = {
 					hideLabel = false,
 					labelWidth = "20%",
 					defaultText = "Enter something...",
-					maxInputCharacters = 20,
-					textType = TEXT_TYPE_NUMERIC_UNSIGNED_INT,
+					--maxInputCharacters = 5,
+					--textType = TEXT_TYPE_NUMERIC_UNSIGNED_INT,
 					font = "ZoFontChat",
 					width = "80%",
-
+					contextMenuCallback = function(self)
+						d("--> ContextMenu at EditBox")
+						ClearCustomScrollableMenu()
+						AddCustomScrollableMenuRadioButton("Radio button1 at context", function() d("clicked radio button1 at context") end, true, 1, nil)
+						AddCustomScrollableMenuRadioButton("Radio button2 at context", function() d("clicked radio button2 at context") end, true, 1, nil)
+						ShowCustomScrollableMenu()
+					end
 				}
 			},
 			{
