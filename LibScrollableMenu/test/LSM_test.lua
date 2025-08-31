@@ -290,9 +290,9 @@ local function test()
 				doNotFilter		= false,
 				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
 				sliderData = {
-					hideLabel = 			true,
+					--hideLabel = 			true,
 					labelWidth = 			"20%",
-					width = 				"95%",
+					--width = 				"95%",
 					value = 				function() return 12 end,
 					min = 					0,
 					max =					16,

@@ -1,4 +1,4 @@
--v- ---------------LSM v2.37 - 2025-08-31--------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.37 - 2025-09-01--------------------------------------------------------------------------- -v-
 [Added]
 -2025_35    Added entryType LSM_ENTRY_TYPE_EDITBOX
 -2025_36    Added API function AddCustomScrollableMenuEditBox(text, callback, editBoxData, additionalData)
