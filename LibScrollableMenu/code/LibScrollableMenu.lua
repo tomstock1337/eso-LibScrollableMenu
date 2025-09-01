@@ -274,15 +274,13 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.37 - Updated 2025-09-01
+	CHANGELOG Current version: 2.37 - Updated 2025-09-02
 ---------------------------------------------------------------
 Max error #: 2025_40
 
 [KNOWN PROBLEMS]
-2025_39 Clicking icon in contextmenu's submenu will close the entry as it "get's selected" even though the row got closeOnSelect = false
 
 [WORKING ON]
--2025_38    Working on entryType LSM_ENTRY_TYPE_SLIDER
 
 [Fixed]
 
@@ -290,6 +288,9 @@ Max error #: 2025_40
 -2025_35    Added entryType LSM_ENTRY_TYPE_EDITBOX
 -2025_36    Added API function AddCustomScrollableMenuEditBox(text, callback, editBoxData, additionalData)
 -2025_37    Added API function AddCustomScrollableMenuRadioButton(text, callback, checked, buttonGroup, additionalData)
+-2025_38    Added entryType LSM_ENTRY_TYPE_SLIDER
+-2025_39 	Clicking icon in contextmenu's submenu will close the entry as it "get's selected" even though the row got closeOnSelect = false
+-2025_41    Added API function AddCustomScrollableMenuSlider(text, callback, sliderData, additionalData)
 
 [Changed]
 

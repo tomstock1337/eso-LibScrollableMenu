@@ -1186,6 +1186,7 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	local wasFilterHeaderClicked = false
 	local wasEditBoxClickedAtContextMenu = false
 	local wasSliderClickedAtContextMenu = false
+	local wasMultiIconClickedAtContextMenu = false --#2025_39
 	if isContextMenuVisible and not wasTextSearchContextMenuEntryClicked then
 		wasTextSearchContextMenuEntryClicked = g_contextMenu.m_dropdownObject:WasTextSearchContextMenuEntryClicked()
 		if doDebugNow then d(">wasTextSearchContextMenuEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked)) end
@@ -1198,6 +1199,12 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 				elseif mocCtrl.isSlider == true then
 					wasSliderClickedAtContextMenu = true
 					if doDebugNow then d(">wasSliderClickedAtContextMenu: " .. tos(wasSliderClickedAtContextMenu)) end
+				--Did we click on a MultiIcon control
+				elseif mocCtrl.ClearIcons then
+					if not mocCtrl.closeOnSelect then
+						wasMultiIconClickedAtContextMenu = true
+						if doDebugNow then d(">wasMultiIconClickedAtContextMenu: " .. tos(wasMultiIconClickedAtContextMenu)) end
+					end
 				else
 					local owningWindowOfMocCtrl = mocCtrl:GetOwningWindow()
 					if owningWindowOfMocCtrl ~= nil then
@@ -1212,9 +1219,9 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 			end
 		end
 	end
-	if doDebugNow then d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked) .. ", wasEditBoxClickedAtContextMenu: " .. tos(wasEditBoxClickedAtContextMenu) .. ", wasSliderClickedAtContextMenu: " .. tos(wasSliderClickedAtContextMenu)) end
+	if doDebugNow then d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked) .. ", wasEditBoxClickedAtContextMenu: " .. tos(wasEditBoxClickedAtContextMenu) .. ", wasSliderClickedAtContextMenu: " .. tos(wasSliderClickedAtContextMenu) .. "; wasMultiIconClickedAtContextMenu: " .. tos(wasMultiIconClickedAtContextMenu)) end
 
-	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true or wasFilterHeaderClicked == true or wasEditBoxClickedAtContextMenu == true or wasSliderClickedAtContextMenu == true then
+	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true or wasFilterHeaderClicked == true or wasEditBoxClickedAtContextMenu == true or wasSliderClickedAtContextMenu == true or wasMultiIconClickedAtContextMenu == true then
 		if doDebugNow then  d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled())) end
 		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
@@ -1235,6 +1242,9 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 							return false
 						elseif wasSliderClickedAtContextMenu then
 							if doDebugNow then d("<<<returning, wasSliderClickedAtContextMenu = true (owningWindow ~= contextMenu)") end
+							return false
+						elseif wasMultiIconClickedAtContextMenu then
+							if doDebugNow then d("<<<returning, wasMultiIconClickedAtContextMenu = true (owningWindow ~= contextMenu)") end
 							return false
 						else
 							--todo: #2025_20 Did we click a mocCtrl which's owner is the contextMenu or a contextMenu's submenu?
@@ -1257,7 +1267,10 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 							if doDebugNow then d("<<<returning, wasEditBoxClickedAtContextMenu = true (owningWindow == contextMenu)") end
 							return false
 						elseif wasSliderClickedAtContextMenu then
-							if doDebugNow then d("<<<returning, wasSliderClickedAtContextMenu = true (owningWindow 0= contextMenu)") end
+							if doDebugNow then d("<<<returning, wasSliderClickedAtContextMenu = true (owningWindow == contextMenu)") end
+							return false
+						elseif wasMultiIconClickedAtContextMenu then
+							if doDebugNow then d("<<<returning, wasMultiIconClickedAtContextMenu = true (owningWindow == contextMenu)") end
 							return false
 						end
 
@@ -1282,7 +1295,7 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 			----#2025_20 clickedEntryBelongsToContextMenu does not work for submeu entries clicked at the contextMenu!
 			local clickedEntryBelongsToContextMenu = false
 			if isContextMenuVisible == true then
-				if wasEditBoxClickedAtContextMenu == true or wasSliderClickedAtContextMenu == true then
+				if wasEditBoxClickedAtContextMenu == true or wasSliderClickedAtContextMenu == true or wasMultiIconClickedAtContextMenu == true then
 					clickedEntryBelongsToContextMenu = true
 				else
 					clickedEntryBelongsToContextMenu = belongsToContextMenuCheck(mocCtrl)
@@ -1704,6 +1717,7 @@ do -- Row setup functions
 		local iconContainer = control.m_iconContainer
 		control.m_icon = control.m_icon or iconContainer:GetNamedChild("Icon")
 		updateIcons(control, data)
+		control.m_icon.closeOnSelect = false --#2025_39 Clicking icon in contextMenu closes the contextMenu
 	end
 
 	-- SUBMENU
@@ -1938,7 +1952,7 @@ do -- Row setup functions
 	-- SLIDER
 	--For the slider rowType: reanchor the label, slider controls according to the sliderData passed in to the rowControl
 	local function reAnchorSliderControlsInRow(control)
---d(">reAnchorSliderControlsInRow")
+		--d(">reAnchorSliderControlsInRow")
 		local sliderData = control.sliderData
 		if type(sliderData) ~= "table" then return end
 		local parentCtrl = control:GetParent()
@@ -1980,11 +1994,11 @@ do -- Row setup functions
 		--Current dimensions
 		local widthOrHeightChanged = false
 		local width = currentSliderContainerWidth - sliderValueLabelMinWidth
---d(">width: " ..tos(width) .. "; currentSliderContainerWidth: " .. tos(currentSliderContainerWidth))
+		--d(">width: " ..tos(width) .. "; currentSliderContainerWidth: " .. tos(currentSliderContainerWidth))
 		if width == nil or width <= 0 then width = parentCtrl:GetWidth() - sliderValueLabelMinWidth end
---d(">width2: " ..tos(width))
+		--d(">width2: " ..tos(width))
 		if width == nil or width <= 0 then width = 20 end
---d(">width3: " ..tos(width))
+		--d(">width3: " ..tos(width))
 		local height = control:GetHeight()
 		if height == nil or height <= 0 then height = sliderCtrl:GetHeight() end
 		if height == nil or height <= 0 then height = 20 end
@@ -2004,6 +2018,11 @@ do -- Row setup functions
 			sliderValueLabel:SetDimensionConstraints(0, currentSliderContainerHeight, 0, currentSliderContainerHeight)
 			sliderValueLabel:SetText("")
 		end
+
+		--valueLabelFont
+		local valueLabelFont = getValueOrCallback(sliderData.valueLabelFont, sliderData)
+		if type(valueLabelFont) ~= "string" then valueLabelFont = "ZoFontWinH5" end
+		sliderValueLabel:SetFont(valueLabelFont)
 
 		--Dimensions
 		local sliderWidth = getValueOrCallback(sliderData.width, sliderData)
@@ -2025,7 +2044,7 @@ do -- Row setup functions
 			widthOrHeightChanged = true
 		end
 
-		if not widthOrHeightChanged and showSliderValueLabel == true then
+		if not widthOrHeightChanged and showSliderValueLabel == false then
 			width = width + sliderValueLabelMinWidth
 		end
 
@@ -2101,7 +2120,7 @@ do -- Row setup functions
 			if tooltipText ~= nil and tooltipText ~= "" then
 				tooltipTextCurrentValue = tooltipTextCurrentValue .. "\n" .. tooltipText
 			end
-			ZO_Tooltips_ShowTextTooltip(p_sliderCtrl.rowControl, RIGHT, tooltipTextCurrentValue)
+			ZO_Tooltips_ShowTextTooltip(p_sliderCtrl.rowControl, TOP, tooltipTextCurrentValue)
 			InformationTooltipTopLevel:BringWindowToTop()
 		end
 

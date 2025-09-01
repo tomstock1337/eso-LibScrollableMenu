@@ -246,6 +246,20 @@ GetCustomScrollableMenuRowData = libUtil.getControlData
 --					width = "80%",								-- optional string/number or function returning a string/number The width of the editbox
 --					contextMenuCallback = function(selfEditBox) end,	-- optional function to open a contextMenu at the editbox (if right clicked)
 --		->		}
+--		isSlider = false, -- optional boolean or function returning a boolean Is this entry a clickable slider control with text?
+--		-> --ONLY for slider control type:	sliderData = { table or function returning a table providing the slider's visuals, validation options, right click handler etc.
+--					hideLabel = false,							-- optional boolean or function returning a boolean Hide the label at the row
+--					labelWidth = "20%",							-- optional string/number or function returning a string/number	Width of the label at the row
+--					value = 10,									-- optional number or function returning a number Value of the slider (e.g. from SavedVariables)
+--					min = 0,									-- optional number or function returning a number Minimum value of the slider (e.g. from SavedVariables)
+--					max = 20, 									-- optional number or function returning a number Maximum value of the slider (e.g. from SavedVariables)
+--					step = 0.5,									-- optional number or function returning a number The step of the slider (e.g. from SavedVariables)
+--					showValueLabel = false,						-- optional boolean or function returning a boolean Show the value label at the row, right side of the slider
+--					valueLabelFont = "ZoFontWinH5",				-- optional string or function returning a string The font of the value label
+--					hideValueTooltip = true,					-- optional boolean or function returning a boolean Hide the tooltip showing the actual value, min, max and tooltip of the row at the slider
+--					width = "80%",								-- optional string/number or function returning a string/number The width of the slider
+--					contextMenuCallback = function(selfSlider) end,	-- optional function to open a contextMenu at the slider (if right clicked)
+--		->		}
 --		isNew = false, --  optional booelan or function returning a boolean Is this entry a new entry and thus shows the "New" icon?
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
 --		contextMenuCallback = function(ctrl) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
