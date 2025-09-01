@@ -1999,7 +1999,7 @@ function dropdownClass:OnSliderValueChanged(slider)
 		-- It probably does not need this but, added it to prevent lagging from fast typing.
 		throttledCall(function()
 			local value = slider:GetValue()
-d(">throttledCall 1 - value: " ..tos(value))
+--d(">throttledCall 1 - value: " ..tos(value))
 			callbackFunc(selfVar.m_comboBox, slider, value) --comboBox, slider, value
 		end, 250, throttledCallDropdownClassOnValueChangedStringSuffix)
 	end

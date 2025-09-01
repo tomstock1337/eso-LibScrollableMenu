@@ -658,7 +658,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 		local gotSubmenuEntries = false
 		local isChecked = false
 
-		local sliderValue = 10
+		local sliderValue = 100
 		local editBoxText = "Hello world"
 
 		--==============================================================================================================
@@ -701,6 +701,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 					max =					2000000,
 					step =					100,
 					showValueLabel = 		true,
+					--valueLabelFont = 		"ZoFontWinH3",
 					hideValueTooltip = 		true,
 					contextMenuCallback = 	function(self)
 						d("--> ContextMenu at Slider")
