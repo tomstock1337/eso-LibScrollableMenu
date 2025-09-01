@@ -367,16 +367,26 @@
 					<DimensionConstraints x="5" maxX="90%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 				</Label>
-				<Slider name="$(parent)Slider" hidden="false" tier="HIGH" inherits="LibScrollableMenu_Slider">
-					<OnInitialized>
-						self:GetParent().Slider = self
-					</OnInitialized>
-					<OnValueChanged>
-						LibScrollableMenu.XML.OnXMLControlEventHandler("OnSliderValueChanged", self, self)
-					</OnValueChanged>
+				<Control name="$(parent)SliderContainer">
+					<DimensionConstraints x="100%" maxX="100%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)Label" relativePoint="TOPRIGHT" offsetX="4"/>
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-2"/>
-				</Slider>
+					<Controls>
+						<Slider name="$(parent)Slider" hidden="false" tier="HIGH" inherits="LibScrollableMenu_Slider">
+							<OnInitialized>
+								self:GetParent():GetParent().Slider = self
+							</OnInitialized>
+							<OnValueChanged>
+								LibScrollableMenu.XML.OnXMLControlEventHandler("OnSliderValueChanged", self, self)
+							</OnValueChanged>
+							<Anchor point="TOPLEFT" relativeTo="$(parent)SliderContainer" relativePoint="TOPLEFT" />
+						</Slider>
+						<Label name="$(parent)SliderValueLabel" font="ZoFontWinH5" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+							<Anchor point="TOPLEFT" relativeTo="$(parent)Slider" relativePoint="TOPRIGHT"/>
+							<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)SliderContainer" relativePoint="BOTTOMRIGHT" offsetX="-2"/>
+						</Label>
+					</Controls>
+				</Control>
 			</Controls>
 		</Control>
 

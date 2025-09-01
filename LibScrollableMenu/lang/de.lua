@@ -17,6 +17,8 @@ local stringsDE = {
     SI_LSM_CNTXT_CHECK_ALL = "Alle wählen",
     SI_LSM_CNTXT_CHECK_NONE = "Keine wählen",
     SI_LSM_CNTXT_CHECK_INVERT = "Invertieren",
+
+    SI_LSM_SLIDER_CURRENT_MIN_MAX_STEP = "Aktuell: %q (Min.: %s/Max.: %s, Schritt: %s)"
 }
 
 for stringId, stringValue in pairs(stringsDE) do

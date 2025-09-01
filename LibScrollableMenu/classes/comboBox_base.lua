@@ -21,6 +21,7 @@ local dlog = libDebug.DebugLog
 local EM = GetEventManager() --EVENT_MANAGER
 local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
+local strfor = string.format
 local zostrlow = zo_strlower
 local tins = table.insert
 
@@ -1696,6 +1697,7 @@ do -- Row setup functions
 		end
 	end
 
+	--All kind of entryTypes
 	local function addIcon(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 109, tos(getControlName(control)), tos(list)) end
 		control.m_iconContainer = control.m_iconContainer or control:GetNamedChild("IconContainer")
@@ -1704,17 +1706,20 @@ do -- Row setup functions
 		updateIcons(control, data)
 	end
 
+	-- SUBMENU
 	local function addArrow(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 110, tos(getControlName(control)), tos(list)) end
 		control.m_arrow = control:GetNamedChild("Arrow")
 		subMenuArrowColor(control, data)
 	end
 
+	-- DIVIDER / HEADER
 	local function addDivider(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 111, tos(getControlName(control)), tos(list)) end
 		control.m_divider = control:GetNamedChild("Divider")
 	end
 
+	--All kind of entryTypes
 	local function addLabel(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 112, tos(getControlName(control)), tos(list)) end
 		control.m_label = control.m_label or control:GetNamedChild("Label")
@@ -1722,7 +1727,8 @@ do -- Row setup functions
 		control.m_label:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
 	end
 
-	local function addButton(comboBox, control, data, toggleFunction)
+	-- CHECKBOX / RADIOBUTTON
+	local function addCheckButton(comboBox, control, data, toggleFunction)
 		local entryType = control.typeId
 		if entryType == nil then return end
 		local childName = entryTypeConstants.entryTypeToButtonChildName[entryType]
@@ -1776,6 +1782,7 @@ do -- Row setup functions
 		return buttonControl, buttonGroup
 	end
 
+	-- EDITBOX
 	--For the editBox rowType: reanchor the label, edit and editbox controls according to the editBoxData passed in to the rowControl
 	local function reAnchorEditBoxControlsInRow(control)
 		local editBoxData = control.editBoxData
@@ -1785,14 +1792,6 @@ do -- Row setup functions
 		local labelCtrl  = control.m_label
 		local editCtrl = control:GetNamedChild("Edit")
 		local editBoxCtrl = editCtrl:GetNamedChild("Box")
-
-		--Current dimensions
-		local widthOrHeightChanged = false
-		local width = control:GetWidth()
-		if width == nil or width <= 0 then width = parentCtrl:GetWidth() end
-		local height = control:GetHeight()
-		if height == nil or height <= 0 then height = editBoxCtrl:GetHeight() end
-		if height == nil or height <= 0 then height = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT end
 
 		--hideLabel
 		local hideLabel = getValueOrCallback(editBoxData.hideLabel, editBoxData)
@@ -1811,6 +1810,14 @@ do -- Row setup functions
 				labelCtrl:SetWidth(labelWidth)
 			end
 		end
+
+		--Current dimensions
+		local widthOrHeightChanged = false
+		local width = control:GetWidth()
+		if width == nil or width <= 0 then width = parentCtrl:GetWidth() end
+		local height = control:GetHeight()
+		if height == nil or height <= 0 then height = editBoxCtrl:GetHeight() end
+		if height == nil or height <= 0 then height = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT end
 
 		--Dimensions
 		local editBoxWidth = getValueOrCallback(editBoxData.width, editBoxData)
@@ -1900,6 +1907,7 @@ do -- Row setup functions
 		--local labelCtrl  = control.m_label
 		local editCtrl = control:GetNamedChild("Edit")
 		local editBoxCtrl = editCtrl:GetNamedChild("Box")
+		editBoxCtrl.rowControl = control --reference to the actual row's control having the m_data table
 
 		--font, text, defaultText, textType, maxInputCharacters
 		updateEditBoxText(control, editBoxData, editBoxCtrl)
@@ -1910,37 +1918,38 @@ do -- Row setup functions
 		if type(contextMenuCallback) == "function" then
 			editBoxCtrl:SetMouseEnabled(true)
 			editBoxCtrl:SetHandler("OnMouseUp", nil)
-			editBoxCtrl:SetHandler("OnMouseUp", function(control, button, upInside, ctrl, alt, shift)
+			editBoxCtrl:SetHandler("OnMouseUp", function(p_editBox, button, upInside, ctrl, alt, shift)
 				if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
 					--Remove the cursor from the editbox
-					editBoxCtrl:LoseFocus()
+					p_editBox:LoseFocus()
 					--Show the contextMenu now
-					contextMenuCallback(control)
+					contextMenuCallback(p_editBox)
 				end
 			end)
 		end
 
 		--EditBox & label Dimensions width/height etc.
-		reAnchorEditBoxControlsInRow(control)
+		--Slightly delay this so the controls are updated properly before (e.g. row's width)
+		zo_callLater(function()
+			reAnchorEditBoxControlsInRow(control)
+		end, 0)
 	end
 
+	-- SLIDER
 	--For the slider rowType: reanchor the label, slider controls according to the sliderData passed in to the rowControl
 	local function reAnchorSliderControlsInRow(control)
+--d(">reAnchorSliderControlsInRow")
 		local sliderData = control.sliderData
 		if type(sliderData) ~= "table" then return end
-
 		local parentCtrl = control:GetParent()
 		local labelCtrl  = control.m_label
-		local sliderCtrl = control:GetNamedChild("Slider")
+		local sliderContainerCtrl = control:GetNamedChild("SliderContainer")
+		local sliderCtrl = sliderContainerCtrl:GetNamedChild("Slider")
+		local sliderValueLabel             = sliderContainerCtrl:GetNamedChild("SliderValueLabel")
 
-		--Current dimensions
-		local widthOrHeightChanged = false
-		local width = control:GetWidth()
-		if width == nil or width <= 0 then width = parentCtrl:GetWidth() end
-		local height = control:GetHeight()
-		if height == nil or height <= 0 then height = sliderCtrl:GetHeight() end
-		if height == nil or height <= 0 then height = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT end
 
+		--#2025_40 Slider's 1st open does not apply correct width and does not apply correct value?
+		-->Label width needs to be updated to sliderCOntainerControl first, and then the others width in the same row
 		--hideLabel
 		local hideLabel = getValueOrCallback(sliderData.hideLabel, sliderData)
 		if hideLabel then
@@ -1950,6 +1959,7 @@ do -- Row setup functions
 			labelCtrl:SetText("")
 			labelCtrl:SetHidden(true)
 		end
+
 		--labelWidth
 		if not hideLabel then
 			local labelWidth = getValueOrCallback(sliderData.labelWidth, sliderData)
@@ -1957,6 +1967,42 @@ do -- Row setup functions
 				if type(labelWidth) == "number" and labelWidth <= 0 then labelWidth = 5 end
 				labelCtrl:SetWidth(labelWidth)
 			end
+		end
+		--local currentLabelWidth = labelCtrl:GetWidth()
+
+		local currentSliderContainerHeight = sliderContainerCtrl:GetHeight()
+		local currentSliderContainerWidth  = sliderContainerCtrl:GetWidth()
+
+		--min/max
+		local min, max = sliderCtrl:GetMinMax()
+		if max <= 0 then max = 1 end
+		local sliderValueLabelMinWidth = zo_clamp(ZO_SCROLL_BAR_WIDTH + ( max * 2 ), 50, 100)
+		--Current dimensions
+		local widthOrHeightChanged = false
+		local width = currentSliderContainerWidth - sliderValueLabelMinWidth
+--d(">width: " ..tos(width) .. "; currentSliderContainerWidth: " .. tos(currentSliderContainerWidth))
+		if width == nil or width <= 0 then width = parentCtrl:GetWidth() - sliderValueLabelMinWidth end
+--d(">width2: " ..tos(width))
+		if width == nil or width <= 0 then width = 20 end
+--d(">width3: " ..tos(width))
+		local height = control:GetHeight()
+		if height == nil or height <= 0 then height = sliderCtrl:GetHeight() end
+		if height == nil or height <= 0 then height = 20 end
+
+		--showValueLabel
+		local showSliderValueLabel = getValueOrCallback(sliderData.showValueLabel, sliderData)
+		showSliderValueLabel = showSliderValueLabel or false
+		sliderValueLabel:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
+		sliderValueLabel:ClearAnchors()
+		if showSliderValueLabel == true then
+			sliderValueLabel:SetAnchor(LEFT, sliderCtrl, RIGHT, 2, -1)
+			sliderValueLabel:SetAnchor(RIGHT, sliderContainerCtrl, RIGHT, -1)
+			sliderValueLabel:SetDimensionConstraints(20, currentSliderContainerHeight, 150, currentSliderContainerHeight)
+			sliderValueLabel:SetText(tos(sliderCtrl:GetValue()))
+		else
+			sliderValueLabel:SetAnchor(RIGHT, sliderContainerCtrl, RIGHT, -1)
+			sliderValueLabel:SetDimensionConstraints(0, currentSliderContainerHeight, 0, currentSliderContainerHeight)
+			sliderValueLabel:SetText("")
 		end
 
 		--Dimensions
@@ -1979,64 +2025,129 @@ do -- Row setup functions
 			widthOrHeightChanged = true
 		end
 
-		local offsetX = hideLabel == true and 0 or 4
-		if widthOrHeightChanged then
+		if not widthOrHeightChanged and showSliderValueLabel == true then
+			width = width + sliderValueLabelMinWidth
+		end
+
+		local offsetX = (hideLabel == true and 0) or 4
+		if widthOrHeightChanged == true then
 			sliderCtrl:ClearAnchors()
 			sliderCtrl:SetDimensionConstraints(0, 0, width, height)
-			sliderCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
-			sliderCtrl:SetAnchor(BOTTOMLEFT, labelCtrl, BOTTOMRIGHT, offsetX)
 			sliderCtrl:SetDimensions(width, height)
+			sliderCtrl:SetAnchor(LEFT, labelCtrl, RIGHT, offsetX)
 		else
 			sliderCtrl:ClearAnchors()
-			sliderCtrl:SetAnchor(TOPLEFT, labelCtrl, TOPRIGHT, offsetX)
-			sliderCtrl:SetAnchor(BOTTOMRIGHT, control, BOTTOMRIGHT, -10)
+			sliderCtrl:SetDimensionConstraints(20, 5, width, height)
+			sliderCtrl:SetDimensions(width, height)
+			sliderCtrl:SetAnchor(LEFT, labelCtrl, RIGHT, offsetX)
 		end
 	end
 
+	local currentMinMaxStepText = GetString(SI_LSM_SLIDER_CURRENT_MIN_MAX_STEP)
 	local function processSliderData(control)
 		local sliderData = control.sliderData
 		if type(sliderData) ~= "table" then return end
 
 		--local labelCtrl  = control.m_label
-		local sliderCtrl = control:GetNamedChild("Slider")
+		local sliderContainerCtrl = control:GetNamedChild("SliderContainer")
+		local sliderCtrl = sliderContainerCtrl:GetNamedChild("Slider")
+		sliderCtrl.rowControl = control --reference to the actual row's control having the m_data table
 		sliderCtrl:SetOrientation(ORIENTATION_HORIZONTAL)
+		local sliderValueLabel = sliderContainerCtrl:GetNamedChild("SliderValueLabel")
+
+		--slider value label
+		local showSliderValueLabel = getValueOrCallback(sliderData.showValueLabel, sliderData)
+		showSliderValueLabel = showSliderValueLabel or false
+		sliderValueLabel:SetHidden(not showSliderValueLabel)
+
+		--slider value tooltip
+		local hideSliderValueTooltip = getValueOrCallback(sliderData.hideValueTooltip, sliderData)
+		hideSliderValueTooltip = hideSliderValueTooltip or false
 
 		--value
 		local sliderValue = getValueOrCallback(sliderData.value, sliderData)
 		if sliderValue ~= nil then
 			sliderCtrl:SetValue(sliderValue)
 		end
+		sliderValueLabel:SetText(sliderValue ~= nil and tos(sliderValue) or "")
 
+		--min/max
 		local minValue = getValueOrCallback(sliderData.min, sliderData)
 		local maxValue = getValueOrCallback(sliderData.max, sliderData)
 		minValue = minValue or 0
 		maxValue = maxValue or 0
 		sliderCtrl:SetMinMax(minValue, maxValue)
 
+		--step
 		local stepValue = getValueOrCallback(sliderData.step, sliderData)
 		stepValue = stepValue or 0
 		sliderCtrl:SetValueStep(stepValue)
 
+		----Slider - HANDLERS
+		--OnMouseEnter / OnMouseExit -> Show/Hide the currently selected value
+		sliderCtrl:SetMouseEnabled(true)
+		sliderCtrl:SetHandler("OnMouseEnter", nil)
+		sliderCtrl:SetHandler("OnMouseExit", nil)
+		local function sliderOnMouseEnter(p_sliderCtrl)
+			if hideSliderValueTooltip == true then return end
 
-		----EditBox - HANDLERS
-		--contextMenuCallback -- ContextMenu at the editBox
+			local tooltipTextCurrentValue = tos(p_sliderCtrl:GetValue())
+			local min, max = p_sliderCtrl:GetMinMax()
+			local step = p_sliderCtrl:GetValueStep()
+			tooltipTextCurrentValue = strfor(currentMinMaxStepText, tooltipTextCurrentValue, tos(min), tos(max), tos(step))
+
+			local data = getControlData(p_sliderCtrl.rowControl)
+			local tooltipText = (data ~= nil and getValueOrCallback(data.tooltip, data)) or nil
+			if tooltipText ~= nil and tooltipText ~= "" then
+				tooltipTextCurrentValue = tooltipTextCurrentValue .. "\n" .. tooltipText
+			end
+			ZO_Tooltips_ShowTextTooltip(p_sliderCtrl.rowControl, RIGHT, tooltipTextCurrentValue)
+			InformationTooltipTopLevel:BringWindowToTop()
+		end
+
+		sliderCtrl:SetHandler("OnMouseEnter", sliderOnMouseEnter)
+		sliderCtrl:SetHandler("OnMouseExit", function(p_sliderCtrl)
+			ZO_Tooltips_HideTextTooltip()
+		end)
+
+		--contextMenuCallback -- ContextMenu at the slider
 		local contextMenuCallback = sliderData.contextMenuCallback
-		if type(contextMenuCallback) == "function" then
-			sliderCtrl:SetMouseEnabled(true)
-			sliderCtrl:SetHandler("OnMouseUp", nil)
-			sliderCtrl:SetHandler("OnMouseUp", function(control, button, upInside, ctrl, alt, shift)
-				if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
-					--Remove the cursor from the editbox
-					--Show the contextMenu now
-					contextMenuCallback(control)
+		if type(contextMenuCallback) ~= "function" then
+			contextMenuCallback = nil
+		end
+
+		--Left click/right click contextMenu
+		local function onSliderMouseUp(p_sliderCtrl, button, upInside, ctrl, alt, shift)
+			if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+				if contextMenuCallback == nil then return end
+				ZO_Tooltips_HideTextTooltip()
+				contextMenuCallback(p_sliderCtrl)
+			elseif button == MOUSE_BUTTON_INDEX_LEFT then
+				sliderValueLabel:SetText((showSliderValueLabel == true and tos(p_sliderCtrl:GetValue())) or "")
+				if upInside then
+					sliderOnMouseEnter(p_sliderCtrl)
 				end
-			end)
+			end
+		end
+
+		if not sliderCtrl.onMouseUpFunc then
+			local sliderOnMouseUpCallback = sliderCtrl:GetHandler("OnMouseUp")
+			if type(sliderOnMouseUpCallback) == "function" then
+				ZO_PostHookHandler(sliderCtrl, "OnMouseUp", onSliderMouseUp)
+			else
+				sliderCtrl:SetHandler("OnMouseUp", onSliderMouseUp)
+			end
+			sliderCtrl.onMouseUpFunc = sliderCtrl:GetHandler("OnMouseUp")
 		end
 
 		--Slider & label Dimensions width/height etc.
-		reAnchorSliderControlsInRow(control)
+		-->Slightly delay this so the controls update properly before (e.g. row's width)
+		zo_callLater(function()
+			reAnchorSliderControlsInRow(control)
+		end, 0) --#2025_40 delay to next frame to update row's width properly first
 	end
 
+	--Setup row function -> Basis setup for all kind of entryTypes
 	function comboBox_base:SetupEntryBase(control, data, list)
 --d(debugPrefix .. "comboBox_base:SetupEntryBase - control: " .. tos(getControlName(control)) .. ", enabled: " .. tos(data.enabled))
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 104, tos(getControlName(control))) end
@@ -2064,14 +2175,7 @@ d(">enabled: " .. tos(data.enabled))
 		control:SetMouseEnabled(isEnabled) -- --#2025_26 data.enabled ~= false
 	end
 
-	function comboBox_base:SetupEntryDivider(control, data, list)
-		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 113, tos(getControlName(control)), tos(list)) end
-		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
-		addDivider(control, data, list)
-		self:SetupEntryBase(control, data, list)
-		control.isDivider = true
-	end
-
+	--Setup row function -> Basis label setup which use SetupEntryLabel
 	function comboBox_base:SetupEntryLabelBase(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 114, tos(getControlName(control)), tos(list)) end
 		local font = getValueOrCallback(data.font, data)
@@ -2087,6 +2191,7 @@ d(">enabled: " .. tos(data.enabled))
 		self:SetupEntryBase(control, data, list)
 	end
 
+	--Setup row function -> Label for entries like LSM_ENTRY_TYPE_NORMAL, but also others
 	function comboBox_base:SetupEntryLabel(control, data, list, realEntryType)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 115, tos(getControlName(control)), tos(list)) end
 		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
@@ -2100,6 +2205,25 @@ d(">enabled: " .. tos(data.enabled))
 		end
 	end
 
+	--Setup row function: LSM_ENTRY_TYPE_DIVIDER
+	function comboBox_base:SetupEntryDivider(control, data, list)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 113, tos(getControlName(control)), tos(list)) end
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER
+		addDivider(control, data, list)
+		self:SetupEntryBase(control, data, list)
+		control.isDivider = true
+	end
+
+	--Setup row function: LSM_ENTRY_TYPE_HEADER
+	function comboBox_base:SetupEntryHeader(control, data, list)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 117, tos(getControlName(control)), tos(list)) end
+		addDivider(control, data, list)
+		self:SetupEntryLabel(control, data, list)
+		control.isHeader = true
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_HEADER
+	end
+
+	--Setup row function: LSM_ENTRY_TYPE_SUBMENU
 	function comboBox_base:SetupEntrySubmenu(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 116, tos(getControlName(control)), tos(list)) end
 		self:SetupEntryLabel(control, data, list)
@@ -2112,15 +2236,7 @@ d(">enabled: " .. tos(data.enabled))
 		self:UpdateHighlightTemplate(control, data, true, nil)
 	end
 
-	function comboBox_base:SetupEntryHeader(control, data, list)
-		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 117, tos(getControlName(control)), tos(list)) end
-		addDivider(control, data, list)
-		self:SetupEntryLabel(control, data, list)
-		control.isHeader = true
-		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_HEADER
-	end
-
-
+	--Setup row function: LSM_ENTRY_TYPE_RADIOBUTTON
 	function comboBox_base:SetupEntryRadioButton(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 118, tos(getControlName(control)), tos(list)) end
 
@@ -2145,7 +2261,7 @@ d(">enabled: " .. tos(data.enabled))
 
 		self:UpdateHighlightTemplate(control, data, nil, nil)
 
-		local radioButton, radioButtonGroup = addButton(self, control, data, toggleFunction)
+		local radioButton, radioButtonGroup = addCheckButton(self, control, data, toggleFunction)
 		if radioButtonGroup then
 			if data.checked == true then
 				-- Only 1 can be set as "checked" here.
@@ -2155,6 +2271,7 @@ d(">enabled: " .. tos(data.enabled))
 		end
 	end
 
+	--Setup row function: LSM_ENTRY_TYPE_CHECKBOX
 	function comboBox_base:SetupEntryCheckbox(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 121, tos(getControlName(control)), tos(list)) end
 
@@ -2181,10 +2298,11 @@ d(">enabled: " .. tos(data.enabled))
 
 		self:UpdateHighlightTemplate(control, data, nil, nil)
 
-		local checkbox = addButton(self, control, data, toggleFunction)
+		local checkbox = addCheckButton(self, control, data, toggleFunction)
 		ZO_CheckButton_SetCheckState(checkbox, getValueOrCallback(data.checked, data))
 	end
 
+	--Setup row function: LSM_ENTRY_TYPE_BUTTON
 	function comboBox_base:SetupEntryButton(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 124, tos(getControlName(control)), tos(list)) end
 
@@ -2215,6 +2333,7 @@ d(">enabled: " .. tos(data.enabled))
 		self:UpdateHighlightTemplate(control, data, nil, nil)
 	end
 
+	--Setup row function: LSM_ENTRY_TYPE_EDITBOX
 	function comboBox_base:SetupEntryEditBox(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 187, tos(getControlName(control)), tos(list)) end
 		self:SetupEntryLabel(control, data, list)
@@ -2243,6 +2362,7 @@ d(">enabled: " .. tos(data.enabled))
 		editBoxCtrl:SetMouseEnabled(isEnabled)
 	end
 
+	--Setup row function: LSM_ENTRY_TYPE_SLIDER
 	function comboBox_base:SetupEntrySlider(control, data, list)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 190, tos(getControlName(control)), tos(list)) end
 		self:SetupEntryLabel(control, data, list)
@@ -2250,7 +2370,8 @@ d(">enabled: " .. tos(data.enabled))
 		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_SLIDER
 		--Set the callback function to the row's slider which is called at OnValueChanged via the XML handler -> See dropdownClass.lua -> function dropdownClass:OnSlidervalueChanged(slider)
 		--Control is the row, sliderCtrl is the child control
-		local sliderCtrl = control:GetNamedChild("Slider")
+		local sliderContainerCtrl = control:GetNamedChild("SliderContainer")
+		local sliderCtrl = sliderContainerCtrl:GetNamedChild("Slider")
 		sliderCtrl.callback = data.callback
 		--Add some values directly to the editBox child control of the row, so functions later like HiddenForReasons can use those if we left click the editBox control
 		sliderCtrl.isSlider = true

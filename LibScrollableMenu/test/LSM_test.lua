@@ -693,18 +693,21 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				doNotFilter		= false,
 				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
 				sliderData = {
-					hideLabel = 			true,
+					--hideLabel = 			false,
 					labelWidth = 			"20%",
-					width = 				"95%",
+					--width = 				"80%",
 					value = 				function() return sliderValue end,
 					min = 					0,
-					max =					20,
-					step =					1,
+					max =					2000000,
+					step =					100,
+					showValueLabel = 		true,
+					hideValueTooltip = 		true,
 					contextMenuCallback = 	function(self)
 						d("--> ContextMenu at Slider")
 						ClearCustomScrollableMenu()
 						AddCustomScrollableMenuRadioButton("Radio button3 at context", function() d("clicked radio button3 at context") end, true, 2, nil)
 						AddCustomScrollableMenuRadioButton("Radio button4 at context", function() d("clicked radio button4 at context") end, true, 2, nil)
+						AddCustomScrollableMenuSlider("Slider context", function() d("Changed slider at context") end, { min=1, max=5, step=0.5, width="85%", labelWidth="10%" }, nil)
 						ShowCustomScrollableMenu()
 					end
 				}

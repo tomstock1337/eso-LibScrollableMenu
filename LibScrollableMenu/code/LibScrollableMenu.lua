@@ -276,7 +276,7 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 ---------------------------------------------------------------
 	CHANGELOG Current version: 2.37 - Updated 2025-09-01
 ---------------------------------------------------------------
-Max error #: 2025_39
+Max error #: 2025_40
 
 [KNOWN PROBLEMS]
 2025_39 Clicking icon in contextmenu's submenu will close the entry as it "get's selected" even though the row got closeOnSelect = false
