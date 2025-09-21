@@ -274,22 +274,26 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.36 - Updated 2025-05-30
+	CHANGELOG Current version: 2.37 - Updated 2025-09-21
 ---------------------------------------------------------------
-Max error #: 2025_34
+Max error #: 2025_41
 
 [KNOWN PROBLEMS]
-
+#2025_41 Slider does not show it's actual value on first open (value set via sliderData.value entry)
 
 [WORKING ON]
+
 [Fixed]
 
 [Added]
--2025_32    Added  option "minDropdownWidth": Width of the dropdowns will be minimum this width (minimum width is 50, or 125 if the search editbox header is enabled. Attention: If the minDropdownWidth is > than the max it will overwrite the maximum dropdown width that way!)
--2025_34    Added .option "submenuOpenToSide": Open the submenu forced to a specified side, e.g. "left" or "right". If this option is not specified the submenu autmatically chooses where to open to based on the available space left until the menu's width touches the screen's edge.
+-2025_35    Added entryType LSM_ENTRY_TYPE_EDITBOX
+-2025_36    Added API function AddCustomScrollableMenuEditBox(text, callback, editBoxData, additionalData)
+-2025_37    Added API function AddCustomScrollableMenuRadioButton(text, callback, checked, buttonGroup, additionalData)
+-2025_38    Added entryType LSM_ENTRY_TYPE_SLIDER
+-2025_39 	Clicking icon in contextmenu's submenu will close the entry as it "get's selected" even though the row got closeOnSelect = false
+-2025_41    Added API function AddCustomScrollableMenuSlider(text, callback, sliderData, additionalData)
 
 [Changed]
---2025_33	Changed params of API function AddCustomScrollableSubMenuEntry(text, entries, callbackFunc) -> Added callbackFunc. If provided the submenu opening entry will use this callback function once clicked
 
 [Removed]
 
@@ -297,7 +301,7 @@ Max error #: 2025_34
 ---------------------------------------------------------------
 TODO - To check (future versions)
 ---------------------------------------------------------------
-	1. Make Options update same style like updateDataValues does for entries
+	1. Optionally: Make Options update same style like updateDataValues does for entries
 	2. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
 	3. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
 	- fired on handlers dropdown_OnShow dropdown_OnHide

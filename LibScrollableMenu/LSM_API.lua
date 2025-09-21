@@ -233,6 +233,33 @@ GetCustomScrollableMenuRowData = libUtil.getControlData
 --		isHeader = false, -- optional boolean or function returning a boolean Is this entry a non clickable header control with a headline text?
 --		isDivider = false, -- optional boolean or function returning a boolean Is this entry a non clickable divider control without any text?
 --		isCheckbox = false, -- optional boolean or function returning a boolean Is this entry a clickable checkbox control with text?
+--		isRadioButton = false, -- optional boolean or function returning a boolean Is this entry a clickable radiobutton control with text?
+--		isEditBox = false, -- optional boolean or function returning a boolean Is this entry a clickable editbox control with text?
+--		-> --ONLY for editBox control type:	editBoxData = { table or function returning a table providing the editbox's visuals, validation options, right click handler etc.
+--					hideLabel = false,							-- optional boolean or function returning a boolean Hide the label at the row
+--					labelWidth = "20%",							-- optional string/number or function returning a string/number	Width of the label at the row
+--					text = "Hello world",						-- optional string or function returning a string Text of the editBox, when it is shown (e.g. from SavedVariables)
+--					defaultText = "Enter something...",			-- optional string or function returning a string The text to show as default text inside the editBox, if no other text was entered
+--					maxInputCharacters = 5,						-- optional number or function returning a number The maximum number of characters that can be typed into the editbox
+--					textType = TEXT_TYPE_NUMERIC_UNSIGNED_INT,	-- optional number or function returning a number The text type constant for the validation
+--					font = "ZoFontChat",						-- optional string or function returning a string The font of the editBox
+--					width = "80%",								-- optional string/number or function returning a string/number The width of the editbox
+--					contextMenuCallback = function(selfEditBox) end,	-- optional function to open a contextMenu at the editbox (if right clicked)
+--		->		}
+--		isSlider = false, -- optional boolean or function returning a boolean Is this entry a clickable slider control with text?
+--		-> --ONLY for slider control type:	sliderData = { table or function returning a table providing the slider's visuals, validation options, right click handler etc.
+--					hideLabel = false,							-- optional boolean or function returning a boolean Hide the label at the row
+--					labelWidth = "20%",							-- optional string/number or function returning a string/number	Width of the label at the row
+--					value = 10,									-- optional number or function returning a number Value of the slider (e.g. from SavedVariables)
+--					min = 0,									-- optional number or function returning a number Minimum value of the slider (e.g. from SavedVariables)
+--					max = 20, 									-- optional number or function returning a number Maximum value of the slider (e.g. from SavedVariables)
+--					step = 0.5,									-- optional number or function returning a number The step of the slider (e.g. from SavedVariables)
+--					showValueLabel = false,						-- optional boolean or function returning a boolean Show the value label at the row, right side of the slider
+--					valueLabelFont = "ZoFontWinH5",				-- optional string or function returning a string The font of the value label
+--					hideValueTooltip = true,					-- optional boolean or function returning a boolean Hide the tooltip showing the actual value, min, max and tooltip of the row at the slider
+--					width = "80%",								-- optional string/number or function returning a string/number The width of the slider
+--					contextMenuCallback = function(selfSlider) end,	-- optional function to open a contextMenu at the slider (if right clicked)
+--		->		}
 --		isNew = false, --  optional booelan or function returning a boolean Is this entry a new entry and thus shows the "New" icon?
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
 --		contextMenuCallback = function(ctrl) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
@@ -373,6 +400,49 @@ function AddCustomScrollableMenuCheckbox(text, callback, checked, additionalData
 	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX, nil, additionalData)
 end
 
+--Adds a radiobutton line to the context menu entries
+--The buttonGroup number (function returning a number) controls which group the radiobutton belongs to (same number = 1 group)
+-->If the buttonGroup is not specified it will be automatically set to 1!
+-->If you want to specify the buttonGroupOnSelectionChangedCallback function(control, previousControl), add it to the additionalData table
+--callback function signature:  comboBox, itemName, item, checked, data
+--Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
+function AddCustomScrollableMenuRadioButton(text, callback, checked, buttonGroup, additionalData)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 189, tos(text), tos(checked), tos(buttonGroup)) end
+	if checked ~= nil or buttonGroup ~= nil then
+		buttonGroup = buttonGroup or 1
+		additionalData = additionalData or {}
+		additionalData.checked = checked
+		additionalData.buttonGroup = buttonGroup
+	end
+	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON, nil, additionalData)
+end
+
+--Adds an editBox line to the context menu entries
+--Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+-->Clicking the line does not call any callback, only changing the text in the editBox calls the callback!
+---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
+function AddCustomScrollableMenuEditBox(text, callback, editBoxData, additionalData)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 188, tos(text), tos(editBoxData)) end
+	if editBoxData ~= nil then
+		additionalData = additionalData or {}
+		additionalData.editBoxData = editBoxData
+	end
+	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX, nil, additionalData)
+end
+
+--Adds a slider line to the context menu entries
+--Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+-->Clicking the line does not call any callback, only changing the slider value calls the callback!
+---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
+function AddCustomScrollableMenuSlider(text, callback, sliderData, additionalData)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 191, tos(text), tos(sliderData)) end
+	if sliderData ~= nil then
+		additionalData = additionalData or {}
+		additionalData.sliderData = sliderData
+	end
+	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_SLIDER, nil, additionalData)
+end
 
 --Set the options (visible rows max, etc.) for the scrollable context menu, or any passed in 2nd param comboBoxContainer
 -->See possible options above AddCustomScrollableComboBoxDropdownMenu

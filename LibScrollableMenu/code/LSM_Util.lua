@@ -161,6 +161,24 @@ getControlData = libUtil.getControlData
 --------------------------------------------------------------------
 -- Entry functions
 --------------------------------------------------------------------
+function libUtil.getEditBoxData(control, data)
+	--EditBox data was specified too?
+	local editBoxData = getValueOrCallback(data.editBoxData, data)
+	if type(editBoxData) == "table" then
+		return editBoxData
+	end
+	return
+end
+
+function libUtil.getSliderData(control, data)
+	--Slider data was specified too?
+	local sliderData = getValueOrCallback(data.sliderData, data)
+	if type(sliderData) == "table" then
+		return sliderData
+	end
+	return
+end
+
 function libUtil.compareDropdownDataList(selfVar, scrollControl, item)
 	local dataList = ZO_ScrollList_GetDataList(scrollControl)
 
@@ -366,7 +384,7 @@ recursiveMultiSelectSubmenuOpeningControlUpdate = libUtil.recursiveMultiSelectSu
 function libUtil.subMenuArrowColor(control, data)
 	if control.m_arrow == nil then return end
 	local comboBox = control.m_owner
-	local isMultiSelectionEnabled = (comboBox and comboBox.m_enableMultiSelect) or false -- todo 20250211 Replace with correct value m_enableMultiSelect from comboBox -> via control's m_dropdownObject e.g.?
+	local isMultiSelectionEnabled = (comboBox and comboBox.m_enableMultiSelect) or false
 	local isMultiSelectSubmenuEntrySelected = (isMultiSelectionEnabled == true and control.isAnySubmenuEntrySelected) or false
 
 	local options = (comboBox and comboBox:GetOptions()) or nil
@@ -927,12 +945,12 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 
 	local dropdownObject = selfVar.m_dropdownObject
 	local contextMenuDropdownObject = g_contextMenu.m_dropdownObject
-	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
-	local isCntxtMenOwnedByComboBox = contextMenuDropdownObject:IsOwnedByComboBox(comboBox)
+	local isOwnedByComboBox          = dropdownObject:IsOwnedByComboBox(comboBox)
+	local isCntxtMenuOwnedByComboBox = contextMenuDropdownObject:IsOwnedByComboBox(comboBox)
 
 
 	local doDebugNow = false --todo disable again after testing
-	if doDebugNow then d(debugPrefix .. "[checkIfHiddenForReasons]isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu)) end
+	if doDebugNow then d(debugPrefix .. "[checkIfHiddenForReasons]isOwnedByCBox: " .. tos(isOwnedByComboBox) .. ", isCntxtMenVis: " .. tos(isContextMenuVisible) .. ", isCntxtMenOwnedByCBox: " ..tos(isCntxtMenuOwnedByComboBox) .. ", isSubmenu: " .. tos(selfVar.isSubmenu)) end
 
 	if not isContextMenu then
 		--No context menu currently shown
@@ -967,10 +985,10 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 						end
 					end
 				end
-			elseif isCntxtMenOwnedByComboBox ~= nil then
+			elseif isCntxtMenuOwnedByComboBox ~= nil then
 				--20240807 Works for context menu clicks raised from a submenu but not if context menu go a submenu itsself....
-				if doDebugNow then d(">isCntxtMenOwnedByComboBox: " .. tos(isCntxtMenOwnedByComboBox)) end
-				return not isCntxtMenOwnedByComboBox
+				if doDebugNow then d(">isCntxtMenuOwnedByComboBox: " .. tos(isCntxtMenuOwnedByComboBox)) end
+				return not isCntxtMenuOwnedByComboBox
 			else
 				returnValue = true
 			end
@@ -1018,7 +1036,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 									LSM_Debug.checkIfHiddenForReasons[mocCtrlName] = {
 										mocCtrl = type(mocCtrl) == "table" and ZO_ShallowTableCopy(mocCtrl) or nil,
 										closeOnSelect = mocCtrl.closeOnSelect,
-										isCntxtMenOwnedByComboBox = isCntxtMenOwnedByComboBox,
+										isCntxtMenOwnedByComboBox = isCntxtMenuOwnedByComboBox,
 										enableMultiSelect = selfVar.m_enableMultiSelect,
 									}
 								end
@@ -1036,7 +1054,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 										LSM_Debug.checkIfHiddenForReasons[mocCtrlName].isSubmenu = isSubmenu or owner.isSubmenu
 									end
 								end
-								if owner and (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
+								if owner and (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenuOwnedByComboBox == true then
 									if doDebugNow then d(">>2 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect) .. ", multiSelect: " .. tos(selfVar.m_enableMultiSelect) .. ", result: " .. tos(not mocCtrl.closeOnSelect or selfVar.m_enableMultiSelect)) end
 									returnValue = not mocCtrl.closeOnSelect or selfVar.m_enableMultiSelect
 								else
@@ -1073,7 +1091,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 									if doDebugNow then d(">>2_1 - true: isSubmenu: " .. tos(isSubmenu) .. "/" .. tos(owner.isSubmenu) .. "; closeOnSelect: " .. tos(mocCtrl.closeOnSelect)) end
 									--Does moc entry belong to a LSM menu but it's not the current contextMenu?
 									--Is it a submenu entry of the context menu?
-									if (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenOwnedByComboBox == true then
+									if (isSubmenu == true or owner.isSubmenu == true) and isCntxtMenuOwnedByComboBox == true then
 										if doDebugNow then d(">>>2_1 - clicked contextMenu entry, not moc.closeOnSelect: " .. tos(not mocCtrl.closeOnSelect)) end
 										returnValue = not mocCtrl.closeOnSelect or selfVar.m_enableMultiSelect
 									else

@@ -232,6 +232,77 @@ local function test()
 				name            =	"-",
 			},
 			{
+				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
+				label = 			"Test radiobutton in submenu 1",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("CntxtMenu - Test radiobutton in submenu 1")
+				end,
+				tooltip         = 	"CntxtMenu - Test radiobutton in submenu 1",
+				enabled 		= true,
+				checked			= true,
+				buttonGroup 	= 1,
+			},
+			{
+				isRadioButton 	= true,
+				name = 			"Test radiobutton in submenu 2",
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("CntxtMenu - Test radiobutton in submenu 2")
+				end,
+				tooltip         = 	"CntxtMenu - Test radiobutton in submenu 2",
+				enabled 		= true,
+				checked			= false,
+				buttonGroup 	= 1,
+			},
+			{
+				name            =	"-",
+			},
+			{
+				entryType		= LSM_ENTRY_TYPE_EDITBOX,
+				label			= "Enter something submenu: ",
+				name            = "EditBox1 submenu",
+				tooltip         = "Editbox1 submenu....",
+				callback 		= function(comboBox, filterBox, text)
+					d("I changed the editbox 1 submenu text, to: " .. tostring(text))
+				end,
+				enabled 		= true,
+				doNotFilter		= true,
+				editBoxData = {
+					hideLabel = true,
+					labelWidth = "20%",
+					defaultText = "Enter number nnnnn",
+					maxInputCharacters = 5,
+					textType = TEXT_TYPE_NUMERIC_UNSIGNED_INT,
+					font = "ZoFontChat",
+					width = "80%",
+				}
+			},
+			{
+				name            =	"-",
+			},
+			{
+				entryType		= LSM_ENTRY_TYPE_SLIDER,
+				label			= "Slide me",
+				name            = "SliderContextmenu1",
+				tooltip         = "Slider slides sidewise...",
+				callback 		= function(comboBox, slider, value)
+					d("Slider context menu value changed to: " .. tostring(value))
+				end,
+				doNotFilter		= false,
+				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
+				sliderData = {
+					--hideLabel = 			true,
+					labelWidth = 			"20%",
+					--width = 				"95%",
+					value = 				function() return 12 end,
+					min = 					0,
+					max =					16,
+					step =					2,
+				}
+			},
+			{
+				name            =	"-",
+			},
+			{
 
 				name            = "CntxtMenu - Submenu entry 1:2",
 				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
@@ -587,6 +658,9 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 		local gotSubmenuEntries = false
 		local isChecked = false
 
+		local sliderValue = 795900
+		local editBoxText = "Hello world"
+
 		--==============================================================================================================
 		-- Main combobox menu entries
 		--==============================================================================================================
@@ -606,6 +680,68 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 					d("I clicked a button with the name: " .. tostring(itemName))
 				end,
 				doNotFilter		= true,
+			},
+			{
+				entryType		= LSM_ENTRY_TYPE_SLIDER,
+				label			= "Slide big",
+				name            = "SliderBig1",
+				tooltip         = "Slider slides sidewise...",
+				callback 		= function(comboBox, slider, value)
+					d("Slider value changed to: " .. tostring(value))
+					sliderValue = value
+				end,
+				doNotFilter		= false,
+				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
+				sliderData = {
+					--hideLabel = 			false,
+					labelWidth = 			"20%",
+					--width = 				"80%",
+					value = 				function() return sliderValue end,
+					min = 					0,
+					max =					2000000,
+					step =					100,
+					showValueLabel = 		true,
+					--valueLabelFont = 		"ZoFontWinH3",
+					hideValueTooltip = 		true,
+					contextMenuCallback = 	function(self)
+						d("--> ContextMenu at Slider")
+						ClearCustomScrollableMenu()
+						AddCustomScrollableMenuRadioButton("Radio button3 at context", function() d("clicked radio button3 at context") end, true, 2, nil)
+						AddCustomScrollableMenuRadioButton("Radio button4 at context", function() d("clicked radio button4 at context") end, true, 2, nil)
+						AddCustomScrollableMenuSlider("Slider context", function() d("Changed slider at context") end, { min=1, max=5, step=0.5, width="85%", labelWidth="10%" }, nil)
+						ShowCustomScrollableMenu()
+					end
+				}
+			},
+			{
+				entryType		= LSM_ENTRY_TYPE_EDITBOX,
+				label			= "Name:",
+				name            = "EditBox1",
+				tooltip         = "Editbox....",
+				callback 		= function(comboBox, filterBox, text)
+					d("I changed the editbox text, to: " .. tostring(text))
+					editBoxText = text
+				end,
+				enabled			= true,
+				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
+				doNotFilter		= false,
+				editBoxData = {
+					hideLabel = 			false,
+					labelWidth = 			"10%",
+					text = 					function() return editBoxText end,
+					defaultText = 			function() return "Enter something here..." end,
+					--maxInputCharacters = 	5,
+					--textType = 			TEXT_TYPE_NUMERIC_UNSIGNED_INT,
+					font = 					"ZoFontChat",
+					--width = 				"100%",
+					contextMenuCallback = 	function(self)
+						d("--> ContextMenu at EditBox")
+						ClearCustomScrollableMenu()
+						AddCustomScrollableMenuRadioButton("Radio button1 at context", function() d("clicked radio button1 at context") end, true, 1, nil)
+						AddCustomScrollableMenuRadioButton("Radio button2 at context", function() d("clicked radio button2 at context") end, true, 1, nil)
+						ShowCustomScrollableMenu()
+					end
+				}
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_RADIOBUTTON,
@@ -795,7 +931,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 			{
 				label = "test",
 				isDivider = true
-			}, --todo: Divider test, working this way?
+			},
 			{
 				customFilterFuncData = {
 					findMe = "test",
@@ -817,7 +953,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 			{
 				label ="Header with label",
 				isHeader = true
-			}, --todo: header test, working this way?
+			},
 			{
 				name            = "Main checkbox 3 - entryType = checkbox, checked = SV func",
 				checked           = function() return testSV.cbox2  end,

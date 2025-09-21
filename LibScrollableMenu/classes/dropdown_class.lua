@@ -64,7 +64,7 @@ local handlerNameConstants = constants.handlerNames
 local submenuConstants = constants.submenu
 local dropdownConstants = constants.dropdown
 local fontConstants = constants.fonts
-
+local onEntryMouseUpExcludeEntryTypes = entryTypeConstants.onEntryMouseUpExclude
 
 local dropdownDefaults = dropdownConstants.defaults
 local noEntriesResults = searchFilterConstants.noEntriesResults
@@ -101,6 +101,8 @@ local lastEntryVisible  = true	--Was the last entry processed visible at the res
 local filterString				--the search string
 local filterFunc				--the filter function to use. Default is "defaultFilterFunc". Custom filterFunc can be added via options.customFilterFunc
 local throttledCallDropdownClassSetFilterStringSuffix =  "_DropdownClass_SetFilterString"
+local throttledCallDropdownClassOnTextChangedStringSuffix =  "_DropdownClass_OnTextChanged"
+local throttledCallDropdownClassOnValueChangedStringSuffix =  "_DropdownClass_OnValueChanged"
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -297,7 +299,7 @@ end
 --e.g.multiselection any item selected in submenus
 local function doSubmenuOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 182) end
-	--checkSubmenuOnMouseEnterTasks(selfVar, control, data) --todo 20250212 Done in function libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate now!
+	--checkSubmenuOnMouseEnterTasks(selfVar, control, data) --20250212 Done in function libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate now!
 end
 
 --Run checks for submenus and nested submenus (upwards from the current item!) if you move the mouse above an entry
@@ -480,6 +482,7 @@ local function onMouseUp(control, data, hasSubmenu)
 	return dropdown
 end
 
+
 local handlerFunctions  = {
 	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO_ComboBox handler and only show tooltip
 	["onMouseEnter"] = {
@@ -517,6 +520,16 @@ local handlerFunctions  = {
 			onMouseEnter(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = function(selfVar, control, data, ...)
+			onMouseEnter(control, data, no_submenu)
+			-- Return true to skip the default handler to prevent row highlight.
+			return false --not control.closeOnSelect
+		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = function(selfVar, control, data, ...)
+			onMouseEnter(control, data, no_submenu)
+			-- Return true to skip the default handler to prevent row highlight.
+			return false --not control.closeOnSelect
+		end,
 	},
 
 	--return false to run default ZO_ComboBox OnMouseExit handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
@@ -550,6 +563,14 @@ local handlerFunctions  = {
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, ...)
 			onMouseExit(control, data, no_submenu)
+			return false --not control.closeOnSelect
+		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = function(selfVar, control, data, ...)
+			-- Return true to skip the default handler to prevent row highlight.
+			return false --not control.closeOnSelect
+		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = function(selfVar, control, data, ...)
+			-- Return true to skip the default handler to prevent row highlight.
 			return false --not control.closeOnSelect
 		end,
 	},
@@ -590,6 +611,14 @@ local handlerFunctions  = {
 			return false
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+			onMouseUp(control, data, no_submenu)
+			return false
+		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+			onMouseUp(control, data, no_submenu)
+			return false
+		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
@@ -1056,7 +1085,7 @@ function dropdownClass:Initialize(comboBoxObject, comboBoxContainer, depth)
 			--return selfVar.owner:GetHighlightTemplate(control)
 			local XMLVirtualHighlightTemplateOfRow = selfVar.owner:GetHighlightTemplate(control)
 			--Check if the XML virtual template name changed and invalidate the _G highlight and animation control then (set = nil)
-			--[[todo 20241228 Idea: Get a highlight control and animation from a ZO_ObjectPool instead of setting the existing highlight control and animation  = nil and
+			--[[todo 20241228 Idea: Get a highlight control and animation from a ZO_ObjectPool instead of setting the existing highlight control and animation = nil and
 				creating a new one with the next template
 
 			control.LSM_HighlightAnimation = selfVar.owner:GetHighlightFromPool()
@@ -1337,7 +1366,7 @@ function dropdownClass:IsEnteringSubmenu()
 	return false
 end
 
---todo 20250203 Why is this function here? As aS proxy to the comboBoxClass:IsItemSelected function?
+--Proxy to the comboBoxClass:IsItemSelected function, to add debug messages
 function dropdownClass:IsItemSelected(item)
 --d(debugPrefix .. "dropdownClass:IsItemSelected - item: " ..tos(item))
 	if self.owner and self.owner.IsItemSelected then
@@ -1419,9 +1448,9 @@ end
 
 --Called from XML virtual template <Control name="ZO_ComboBoxEntry" -> "OnMouseUp" -> ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp
 -->And in LSM code from XML virtual template LibScrollableMenu_ComboBoxEntry_Behavior -> "OnMouseUp" -> dropdownClass:OnEntryMouseUp
-function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, ctrl, alt, shift)
+function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, ctrl, alt, shift, lsmEntryType)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 71, tos(getControlName(control)), tos(button), tos(upInside)) end
---d(debugPrefix .."dropdownClass:OnEntryMouseUp-"  .. tos(getControlName(control)) ..", button: " .. tos(button) .. ", upInside: " .. tos(upInside))
+--d(debugPrefix .."dropdownClass:OnEntryMouseUp-"  .. tos(getControlName(control)) ..", button: " .. tos(button) .. ", upInside: " .. tos(upInside) .. ", lsmEntryType: " .. tos(lsmEntryType))
 	--20240816 Suppress the next global mouseup event raised from a comboBox's dropdown (e.g. if a submenu entry outside of a context menu was clicked
 	--while a context menu was opened, and the context menu was closed then due to this click, but the global mouse up handler on the sbmenu entry runs
 	--afterwards)
@@ -1429,9 +1458,8 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, 
 	lib.preventerVars.suppressNextOnEntryMouseUp = nil --#2025_13
 
 	if upInside then
-
 		local data = getControlData(control)
-	--	local comboBox = getComboBox(control, true)
+		--	local comboBox = getComboBox(control, true)
 		local comboBox = control.m_owner
 
 		--[[
@@ -1448,13 +1476,16 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 	isSubmenu = self.isSubmenu or comboBox.isSubmenu
 }
 ]]
-
 		if data.enabled then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
+				--Clicking an editBox/slider should not call the callback (only changing the text does!)
+				if onEntryMouseUpExcludeEntryTypes[lsmEntryType] == true then return end
+
+
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
 					--d("3??? Setting suppressNextOnGlobalMouseUp = true ???")
 					lib.preventerVars.suppressNextOnGlobalMouseUp = true
---d("<ABORT -> [dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
+					--d("<ABORT -> [dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
 					return
 				end
 
@@ -1521,7 +1552,7 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 			end
 		else
 			if comboBox.isSubmenu then
---d(">disabled, submenu entry clicked. Supressing next onGlobalMouseUp to keep the submenu opened!")
+				--d(">disabled, submenu entry clicked. Supressing next onGlobalMouseUp to keep the submenu opened!")
 				lib.preventerVars.suppressNextOnGlobalMouseUp = true
 			end
 		end
@@ -1937,4 +1968,39 @@ function dropdownClass:ShowTextTooltip(control, side, tooltipText, owningWindow)
 	end
 	ZO_Tooltips_ShowTextTooltip(control, side, tooltipText)
 	InformationTooltipTopLevel:BringWindowToTop()
+end
+
+
+--XML handler for editBox rows: OnTextChanged should trigger the callback function
+function dropdownClass:OnEditBoxTextChanged(editBox)
+	ZO_Tooltips_HideTextTooltip()
+	local selfVar = self
+	if selfVar.m_comboBox and editBox then
+		local callbackFunc = editBox.callback
+		if callbackFunc == nil then return end
+
+		-- It probably does not need this but, added it to prevent lagging from fast typing.
+		throttledCall(function()
+			local text = editBox:GetText()
+--d(">throttledCall 1 - text: " ..tos(text))
+			callbackFunc(selfVar.m_comboBox, editBox, text) --comboBox, filterBox, text
+		end, 250, throttledCallDropdownClassOnTextChangedStringSuffix)
+	end
+end
+
+--XML handler for slider rows: OnValueChanged should trigger the callback function
+function dropdownClass:OnSliderValueChanged(slider)
+	ZO_Tooltips_HideTextTooltip()
+	local selfVar = self
+	if selfVar.m_comboBox and slider then
+		local callbackFunc = slider.callback
+		if callbackFunc == nil then return end
+
+		-- It probably does not need this but, added it to prevent lagging from fast typing.
+		throttledCall(function()
+			local value = slider:GetValue()
+--d(">throttledCall 1 - value: " ..tos(value))
+			callbackFunc(selfVar.m_comboBox, slider, value) --comboBox, slider, value
+		end, 250, throttledCallDropdownClassOnValueChangedStringSuffix)
+	end
 end

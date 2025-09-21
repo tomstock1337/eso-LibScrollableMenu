@@ -1,3 +1,15 @@
+-v- ---------------LSM v2.37 - 2025-09-21--------------------------------------------------------------------------- -v-
+[Added]
+-2025_37    Added API function AddCustomScrollableMenuRadioButton(text, callback, checked, buttonGroup, additionalData)
+-2025_35    Added entryType LSM_ENTRY_TYPE_EDITBOX
+-2025_36    Added API function AddCustomScrollableMenuEditBox(text, callback, editBoxData, additionalData)
+-2025_38    Added entryType LSM_ENTRY_TYPE_EDITBOX
+-2025_41    Added API function AddCustomScrollableMenuSlider(text, callback, sliderData, additionalData)
+
+[Fixed]
+-2025_39 	Clicking icon in contextmenu's submenu will close the entry
+
+
 -v- ---------------LSM v2.36 - 2025-05-30--------------------------------------------------------------------------- -v-
 [Added]
 -2025_32    Added  option "minDropdownWidth": Width of the dropdowns will be minimum this width (minimum width is 50, or 125 if the search editbox header is enabled. Attention: If the minDropdownWidth is > than the max it will overwrite the maximum dropdown width that way!)
@@ -5,7 +17,6 @@
 
 [Changed]
 --2025_33	Changed params of API function AddCustomScrollableSubMenuEntry(text, entries, callbackFunc) -> Added callbackFunc. If provided the submenu opening entry will use this callback function once clicked
-
 
 -v- ---------------LSM v2.35 - 2025-04-06--------------------------------------------------------------------------- -v-
 [Fixed]

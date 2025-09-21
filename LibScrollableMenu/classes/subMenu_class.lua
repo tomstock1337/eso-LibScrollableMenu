@@ -173,12 +173,6 @@ function submenuClass:HideDropdownInternal()
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 146) end
 		self.onHideDropdownCallback()
 	end
-
-	--[[ todo 20250208 non exisitng function?!
-	if self.highlightedControl then
-		unhighlightHighlightedControl(self)
-	end
-	]]
 end
 
 function submenuClass:HideDropdown()
@@ -220,8 +214,8 @@ LSM_Debug["submenuClass:ShouldHideDropdown"][self] = {
 --d(">comboBox's submenu container is the contextMenu container")
 		isMouseOverAnyRelevantControl = (self:IsMouseOverControl() or self:IsMouseOverOpeningControl())
 --[[
-		--todo 20250323 If we leave this code uncomment every opened contextMenu supresses proper closing of all submenus...
-		--So the actual question here is: Why is the OnMouseExit fired for the nested contextMenu's submenus allthough we move the mopuse just from openingControl of the submenu to the nested 1st submenu entry?
+		--todo 20250323 If we leave this code uncommented every opened contextMenu supresses proper closing of all submenus...
+		--So the actual question here is: Why is the OnMouseExit fired for the nested contextMenu's submenus allthough we move the mouse just from openingControl of the submenu to the nested 1st submenu entry?
 		if not isMouseOverAnyRelevantControl then
 			local mocCtrl = moc()
 d(">mocCtrl: " ..tos(mocCtrl and mocCtrl:GetName() or "n/a") .. ", belongsToContextMenu: " .. tos(mocCtrl and libUtil_BelongsToContextMenuCheck(mocCtrl:GetOwningWindow()) or false))

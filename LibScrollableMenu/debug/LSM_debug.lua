@@ -226,7 +226,12 @@ local debugLogMessagePatterns = {
 	[183] = "checkSubmenuOnMouseEnterTasks",
 	[184] = "updateSubmenuIsAnyEntrySelectedStatus",
 	[185] = "comboBox_base:GetMinDropdownWidth - minDropdownWidth: %s",
-	[186] = "comboBoxClass:GetSubMenuOpeningSide"
+	[186] = "comboBoxClass:GetSubMenuOpeningSide",
+	[187] = "comboBox_base:SetupEntryEditBox - control: %s, list: %s",
+	[188] = "AddCustomScrollableMenuEditBox-text: %s, editBoxData: %s",
+	[189] = "AddCustomScrollableMenuRadioButton-text: %s, checked: %s, buttonGroup: %s",
+	[190] = "comboBox_base:SetupEntrySlider - control: %s, list: %s",
+	[191] = "AddCustomScrollableMenuSlider-text: %s, sliderData: %s",
 }
 
 

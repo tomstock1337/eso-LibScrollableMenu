@@ -6,7 +6,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 lib.author = "Baertram, IsJustaGhost, tomstock, Kyoma"
-lib.version = "2.36"
+lib.version = "2.37"
 if not lib then return end
 --------------------------------------------------------------------
 
@@ -221,6 +221,8 @@ local LSM_ENTRY_TYPE_SUBMENU = 	4
 local LSM_ENTRY_TYPE_CHECKBOX = 5
 local LSM_ENTRY_TYPE_BUTTON = 6
 local LSM_ENTRY_TYPE_RADIOBUTTON = 7
+local LSM_ENTRY_TYPE_EDITBOX = 8
+local LSM_ENTRY_TYPE_SLIDER = 9
 
 --Constant for the divider entryType
 lib.DIVIDER = "-"
@@ -234,6 +236,8 @@ lib.scrollListRowTypes = {
 	["LSM_ENTRY_TYPE_CHECKBOX"] =		LSM_ENTRY_TYPE_CHECKBOX,
 	["LSM_ENTRY_TYPE_BUTTON"] =			LSM_ENTRY_TYPE_BUTTON,
 	["LSM_ENTRY_TYPE_RADIOBUTTON"] = 	LSM_ENTRY_TYPE_RADIOBUTTON,
+	["LSM_ENTRY_TYPE_EDITBOX"] = 		LSM_ENTRY_TYPE_EDITBOX,
+	["LSM_ENTRY_TYPE_SLIDER"] =			LSM_ENTRY_TYPE_SLIDER,
 }
 local scrollListRowTypes = lib.scrollListRowTypes
 
@@ -246,6 +250,14 @@ for key, value in pairs(scrollListRowTypes) do
 	_G[key] = value
 end
 
+--Exclude the OnMouseup handler for these rowTypes (entryTypes) as the callbacks of an editBox/slider should not be executed
+--if you click the row, but the editBox text was changed or the slider value was changed (via XML handlers!)
+local onEntryMouseUpExclude = {
+	[LSM_ENTRY_TYPE_EDITBOX] = true,
+	[LSM_ENTRY_TYPE_SLIDER] = true,
+}
+constants.entryTypes.onEntryMouseUpExclude = onEntryMouseUpExclude
+
 --Mapping table for entryType to button's childName (in XML template)
 local entryTypeToButtonChildName = {
 	[LSM_ENTRY_TYPE_CHECKBOX] = 	"Checkbox",
@@ -253,9 +265,12 @@ local entryTypeToButtonChildName = {
 }
 constants.entryTypes.entryTypeToButtonChildName = entryTypeToButtonChildName
 
+--Is the entryType having a subcontrol like a checkbox (then define it true here so the parent control, the row, will be selected properly)
 local isEntryTypeWithParentMocCtrl = {
 	[LSM_ENTRY_TYPE_CHECKBOX] = true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
+	[LSM_ENTRY_TYPE_EDITBOX] = true,
+	[LSM_ENTRY_TYPE_SLIDER] = true,
 }
 constants.entryTypes.isEntryTypeWithParentMocCtrl = isEntryTypeWithParentMocCtrl
 
@@ -268,6 +283,8 @@ local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_CHECKBOX] =		true,
 	[LSM_ENTRY_TYPE_BUTTON] =		true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] =	true,
+	[LSM_ENTRY_TYPE_EDITBOX] = 		true,
+	[LSM_ENTRY_TYPE_SLIDER] = 		true,
 }
 constants.entryTypes.libraryAllowedEntryTypes = libraryAllowedEntryTypes
 lib.AllowedEntryTypes = libraryAllowedEntryTypes
@@ -281,6 +298,8 @@ local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_CHECKBOX] = 	true,
 	[LSM_ENTRY_TYPE_BUTTON] = 		true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = 	true,
+	[LSM_ENTRY_TYPE_EDITBOX] = 		true,
+	[LSM_ENTRY_TYPE_SLIDER] = 		true,
 }
 constants.entryTypes.allowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
 lib.AllowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
@@ -301,6 +320,8 @@ local additionalDataKeyToLSMEntryType = {
 	["isCheckbox"] =	LSM_ENTRY_TYPE_CHECKBOX,
 	["isButton"] = 		LSM_ENTRY_TYPE_BUTTON,
 	["isRadioButton"] = LSM_ENTRY_TYPE_RADIOBUTTON,
+	["isEditBox"] = 	LSM_ENTRY_TYPE_EDITBOX,
+	["isSlider"] = 		LSM_ENTRY_TYPE_SLIDER,
 }
 constants.entryTypes.additionalDataKeyToLSMEntryType = additionalDataKeyToLSMEntryType
 

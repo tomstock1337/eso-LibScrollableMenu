@@ -323,7 +323,7 @@ function comboBoxClass:UpdateOptions(options, onInit, isContextMenu, initExistin
 	onInit = onInit or false
 	local optionsChanged = self.optionsChanged
 
-	local doDebugNow = false --isContextMenu and true or false --isContextMenu and true or false --todo remove after testing
+	local doDebugNow = false --isContextMenu and true or false --todo remove after testing
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 136, tos(options), tos(onInit), tos(optionsChanged)) end
 	if doDebugNow then

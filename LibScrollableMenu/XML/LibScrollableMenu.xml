@@ -32,6 +32,40 @@
 			</Controls>
 		</Control-->
 
+		<!-- EditBox virtual templte -->
+		<Backdrop name="LibScrollableMenu_EditBackdrop" virtual="true">
+            <Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT"/>
+            <Edge file="EsoUI/Art/ChatWindow/textEntry_edge.dds" edgeFileWidth="64" edgeFileHeight="8" />
+            <Center file="EsoUI/Art/ChatWindow/textEntry_center.dds" />
+            <Insets left="8" top="8" right="-8" bottom="-8" />
+        </Backdrop>
+
+        <Backdrop name="LibScrollableMenu_SingleLineEditBackdrop_Keyboard" inherits="LibScrollableMenu_EditBackdrop" virtual="true">
+            <OnInitialized>
+                ZO_SingleLineEditContainerSize_Keyboard_OnInitialized(self)
+            </OnInitialized>
+        </Backdrop>
+		<EditBox name="LibScrollableMenu_EditForBackdrop" inherits="ZO_DefaultEdit" font="ZoFontChat" virtual="true">
+            <Anchor point="TOPLEFT" offsetX="ZO_SINGLE_LINE_EDIT_CONTAINER_PADDING_LEFT" offsetY="ZO_SINGLE_LINE_EDIT_CONTAINER_PADDING_TOP"/>
+            <Anchor point="BOTTOMRIGHT" offsetX="-ZO_SINGLE_LINE_EDIT_CONTAINER_PADDING_RIGHT" offsetY="-ZO_SINGLE_LINE_EDIT_CONTAINER_PADDING_BOTTOM"/>
+        </EditBox>
+
+		<!-- Slider virtual templte -->
+		<Slider name="LibScrollableMenu_Slider" mouseEnabled="true" orientation="HORIZONTAL" virtual="true">
+            <Dimensions x="150" y="16" />
+            <ThumbTexture
+                textureFile="EsoUI/Art/Miscellaneous/scrollbox_elevator.dds"
+                disabledTextureFile="EsoUI/Art/Miscellaneous/scrollbox_elevator_disabled.dds"
+                thumbWidth="8"
+                thumbHeight="16"
+            />
+
+            <Controls>
+                <Backdrop name="$(parent)Backdrop" inherits="ZO_SliderBackdrop" />
+            </Controls>
+        </Slider>
+
+
 		<!-- Base row templates -->
 		<Control name="LibScrollableMenu_IconEntry_Template" virtual="true">
 			<Anchor point="LEFT" offsetX="8" offsetY="0" />
@@ -82,6 +116,52 @@
 				local dropdown = self.m_dropdownObject
 				if dropdown then
 					dropdown:OnEntryMouseUp(self, button, upInside, false, ctrl, alt, shift)
+				end
+			</OnMouseUp>
+		</Control>
+
+		<Control name="LibScrollableMenu_ComboBoxEditBoxEntry_Behavior" level="3" mouseEnabled="true" virtual="true">
+			<OnMouseEnter> <!-- name="BaseHandler"-->
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnMouseEnterEntry(self)
+				end
+			</OnMouseEnter>
+
+			<OnMouseExit>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnMouseExitEntry(self)
+				end
+			</OnMouseExit>
+
+			<OnMouseUp>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnEntryMouseUp(self, button, upInside, false, ctrl, alt, shift, LSM_ENTRY_TYPE_EDITBOX)
+				end
+			</OnMouseUp>
+		</Control>
+
+		<Control name="LibScrollableMenu_ComboBoxSliderEntry_Behavior" level="3" mouseEnabled="true" virtual="true">
+			<OnMouseEnter> <!-- name="BaseHandler"-->
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnMouseEnterEntry(self)
+				end
+			</OnMouseEnter>
+
+			<OnMouseExit>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnMouseExitEntry(self)
+				end
+			</OnMouseExit>
+
+			<OnMouseUp>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+					dropdown:OnEntryMouseUp(self, button, upInside, false, ctrl, alt, shift, LSM_ENTRY_TYPE_SLIDER)
 				end
 			</OnMouseUp>
 		</Control>
@@ -242,6 +322,73 @@
 				</Label>
 			</Controls>
 		</Button>
+
+
+		<!-- EditBox entry -->
+		<Control name="LibScrollableMenu_ComboBoxEditBoxEntry" inherits="LibScrollableMenu_IconEntry_Template LibScrollableMenu_ComboBoxEditBoxEntry_Behavior" mouseEnabled="true" virtual="true">
+			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
+			<OnInitialized>
+				self.isEditBox = true
+			</OnInitialized>
+
+			<Controls>
+				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+					<DimensionConstraints x="5" maxX="75%" />
+					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
+				</Label>
+				<Backdrop name="$(parent)Edit" hidden="false" tier="HIGH" inherits="LibScrollableMenu_SingleLineEditBackdrop_Keyboard">
+					<OnInitialized>
+						self:GetParent().EditBox = self:GetNamedChild('Box')
+					</OnInitialized>
+					<Anchor point="TOPLEFT" relativeTo="$(parent)Label" relativePoint="TOPRIGHT" offsetX="4"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-2"/>
+
+					<Controls>
+						<EditBox name="$(parent)Box" excludeFromResizeToFitExtents="true" inherits="LibScrollableMenu_EditForBackdrop" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_NORMAL" defaultText="">
+							<OnTextChanged>
+								LibScrollableMenu.XML.OnXMLControlEventHandler("OnEditBoxTextChanged", self, self)
+							</OnTextChanged>
+						</EditBox>
+					</Controls>
+				</Backdrop>
+			</Controls>
+		</Control>
+
+
+		<!-- Slider entry -->
+		<Control name="LibScrollableMenu_ComboBoxSliderEntry" inherits="LibScrollableMenu_IconEntry_Template LibScrollableMenu_ComboBoxSliderEntry_Behavior" mouseEnabled="true" virtual="true">
+			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
+			<OnInitialized>
+				self.isSlider = true
+			</OnInitialized>
+
+			<Controls>
+				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+					<DimensionConstraints x="5" maxX="90%" />
+					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
+				</Label>
+				<Control name="$(parent)SliderContainer">
+					<DimensionConstraints x="100%" maxX="100%" />
+					<Anchor point="TOPLEFT" relativeTo="$(parent)Label" relativePoint="TOPRIGHT" offsetX="4"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-2"/>
+					<Controls>
+						<Slider name="$(parent)Slider" hidden="false" tier="HIGH" inherits="LibScrollableMenu_Slider">
+							<OnInitialized>
+								self:GetParent():GetParent().Slider = self
+							</OnInitialized>
+							<OnValueChanged>
+								LibScrollableMenu.XML.OnXMLControlEventHandler("OnSliderValueChanged", self, self)
+							</OnValueChanged>
+							<Anchor point="TOPLEFT" relativeTo="$(parent)SliderContainer" relativePoint="TOPLEFT" />
+						</Slider>
+						<Label name="$(parent)SliderValueLabel" font="ZoFontWinH5" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+							<Anchor point="TOPLEFT" relativeTo="$(parent)Slider" relativePoint="TOPRIGHT"/>
+							<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)SliderContainer" relativePoint="BOTTOMRIGHT" offsetX="-2"/>
+						</Label>
+					</Controls>
+				</Control>
+			</Controls>
+		</Control>
 
 		<!-- The genuine Dropdown control. The scroll list container.
 			TLC so it can be forced above other dropdowns without having to consider layering
