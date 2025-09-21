@@ -299,7 +299,7 @@ end
 --e.g.multiselection any item selected in submenus
 local function doSubmenuOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 182) end
-	--checkSubmenuOnMouseEnterTasks(selfVar, control, data) --todo 20250212 Done in function libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate now!
+	--checkSubmenuOnMouseEnterTasks(selfVar, control, data) --20250212 Done in function libUtil.recursiveMultiSelectSubmenuOpeningControlUpdate now!
 end
 
 --Run checks for submenus and nested submenus (upwards from the current item!) if you move the mouse above an entry
@@ -1085,7 +1085,7 @@ function dropdownClass:Initialize(comboBoxObject, comboBoxContainer, depth)
 			--return selfVar.owner:GetHighlightTemplate(control)
 			local XMLVirtualHighlightTemplateOfRow = selfVar.owner:GetHighlightTemplate(control)
 			--Check if the XML virtual template name changed and invalidate the _G highlight and animation control then (set = nil)
-			--[[todo 20241228 Idea: Get a highlight control and animation from a ZO_ObjectPool instead of setting the existing highlight control and animation  = nil and
+			--[[todo 20241228 Idea: Get a highlight control and animation from a ZO_ObjectPool instead of setting the existing highlight control and animation = nil and
 				creating a new one with the next template
 
 			control.LSM_HighlightAnimation = selfVar.owner:GetHighlightFromPool()
@@ -1366,7 +1366,7 @@ function dropdownClass:IsEnteringSubmenu()
 	return false
 end
 
---todo 20250203 Why is this function here? As aS proxy to the comboBoxClass:IsItemSelected function?
+--Proxy to the comboBoxClass:IsItemSelected function, to add debug messages
 function dropdownClass:IsItemSelected(item)
 --d(debugPrefix .. "dropdownClass:IsItemSelected - item: " ..tos(item))
 	if self.owner and self.owner.IsItemSelected then

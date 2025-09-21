@@ -551,8 +551,6 @@ d(">data.isNoEntriesResult: " ..tos(data.isNoEntriesResult))
 	-- Using the control also as a padding. if no icon then shrink it
 	-- This also allows for keeping the icon in size with the row height.
 	multiIconContainerCtrl:SetDimensions(iconWidth, iconHeight)
-	--TODO: see how this effects it
-	--	multiIconCtrl:SetDimensions(iconWidth, iconHeight)
 	multiIconCtrl:SetHidden(not anyIconWasAdded)
 end
 
@@ -1247,7 +1245,6 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 							if doDebugNow then d("<<<returning, wasMultiIconClickedAtContextMenu = true (owningWindow ~= contextMenu)") end
 							return false
 						else
-							--todo: #2025_20 Did we click a mocCtrl which's owner is the contextMenu or a contextMenu's submenu?
 							if mocCtrl then
 								if mocCtrl.m_owner and mocCtrl.m_owner.m_parentMenu and mocCtrl.m_owner.m_parentMenu.m_dropdownObject and mocCtrl.m_owner.m_parentMenu.m_dropdownObject == self.m_dropdownObject then
 									if doDebugNow then d(">we clicked a contextMenu submenu entry: " ..tos(mocCtrl:GetName()) .. ", closeOnSelect: " .. tos(mocCtrl.closeOnSelect) .. ", multiSelect: " ..tos(self.m_enableMultiSelect)) end
@@ -2083,13 +2080,6 @@ do -- Row setup functions
 		local hideSliderValueTooltip = getValueOrCallback(sliderData.hideValueTooltip, sliderData)
 		hideSliderValueTooltip = hideSliderValueTooltip or false
 
-		--value
-		local sliderValue = getValueOrCallback(sliderData.value, sliderData)
-		if sliderValue ~= nil then
-			sliderCtrl:SetValue(sliderValue)
-		end
-		sliderValueLabel:SetText(sliderValue ~= nil and tos(sliderValue) or "")
-
 		--min/max
 		local minValue = getValueOrCallback(sliderData.min, sliderData)
 		local maxValue = getValueOrCallback(sliderData.max, sliderData)
@@ -2101,6 +2091,14 @@ do -- Row setup functions
 		local stepValue = getValueOrCallback(sliderData.step, sliderData)
 		stepValue = stepValue or 0
 		sliderCtrl:SetValueStep(stepValue)
+
+		--value
+		local sliderValue = getValueOrCallback(sliderData.value, sliderData)
+		if sliderValue ~= nil then
+--d(">SliderValue was set to: " .. tos(sliderValue))
+			sliderCtrl:SetValue(sliderValue)  --#2025_41 Why doesn't that visually update the slider's position on first show? Or was it only a visual bug?
+		end
+		sliderValueLabel:SetText(sliderValue ~= nil and tos(sliderValue) or "")
 
 		----Slider - HANDLERS
 		--OnMouseEnter / OnMouseExit -> Show/Hide the currently selected value

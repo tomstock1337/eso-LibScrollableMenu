@@ -384,7 +384,7 @@ recursiveMultiSelectSubmenuOpeningControlUpdate = libUtil.recursiveMultiSelectSu
 function libUtil.subMenuArrowColor(control, data)
 	if control.m_arrow == nil then return end
 	local comboBox = control.m_owner
-	local isMultiSelectionEnabled = (comboBox and comboBox.m_enableMultiSelect) or false -- todo 20250211 Replace with correct value m_enableMultiSelect from comboBox -> via control's m_dropdownObject e.g.?
+	local isMultiSelectionEnabled = (comboBox and comboBox.m_enableMultiSelect) or false
 	local isMultiSelectSubmenuEntrySelected = (isMultiSelectionEnabled == true and control.isAnySubmenuEntrySelected) or false
 
 	local options = (comboBox and comboBox:GetOptions()) or nil

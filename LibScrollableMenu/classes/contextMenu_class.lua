@@ -249,8 +249,8 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	self:ShowDropdown()
 
 
-	--#2025_29 Next OnGlobalMouse up of any before opened LSM (as we right clicked any other owningWIndows LSM entry to show a contextMenu)
-	--will fire after the contextMenu here is shown -> and these other onGlobalMouseups will clear the contextMenu entries via libUtil.hideContextMenu again :-(
+	--#2025_29 Next OnGlobalMouse up of any before opened LSM (as we right clicked any other owningWindow's LSM entry to show a contextMenu)
+	--will fire after the contextMenu here is shown -> and these other onGlobalMouseUps will clear the contextMenu entries via libUtil.hideContextMenu again :-(
 	--todo 20250406 How can we detect this? And then prevent the globalMouseUps (there are 2 in that case: 1 from the new contextMenu's opening control and one from the before opened LSM)
 
 

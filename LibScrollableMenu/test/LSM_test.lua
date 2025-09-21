@@ -658,7 +658,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 		local gotSubmenuEntries = false
 		local isChecked = false
 
-		local sliderValue = 100
+		local sliderValue = 795900
 		local editBoxText = "Hello world"
 
 		--==============================================================================================================
@@ -683,8 +683,8 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_SLIDER,
-				label			= "Slide me",
-				name            = "Slider1",
+				label			= "Slide big",
+				name            = "SliderBig1",
 				tooltip         = "Slider slides sidewise...",
 				callback 		= function(comboBox, slider, value)
 					d("Slider value changed to: " .. tostring(value))
@@ -931,7 +931,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 			{
 				label = "test",
 				isDivider = true
-			}, --todo: Divider test, working this way?
+			},
 			{
 				customFilterFuncData = {
 					findMe = "test",
@@ -953,7 +953,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 			{
 				label ="Header with label",
 				isHeader = true
-			}, --todo: header test, working this way?
+			},
 			{
 				name            = "Main checkbox 3 - entryType = checkbox, checked = SV func",
 				checked           = function() return testSV.cbox2  end,

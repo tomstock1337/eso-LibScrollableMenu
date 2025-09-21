@@ -274,11 +274,12 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.37 - Updated 2025-09-02
+	CHANGELOG Current version: 2.37 - Updated 2025-09-21
 ---------------------------------------------------------------
-Max error #: 2025_40
+Max error #: 2025_41
 
 [KNOWN PROBLEMS]
+#2025_41 Slider does not show it's actual value on first open (value set via sliderData.value entry)
 
 [WORKING ON]
 
@@ -300,7 +301,7 @@ Max error #: 2025_40
 ---------------------------------------------------------------
 TODO - To check (future versions)
 ---------------------------------------------------------------
-	1. Make Options update same style like updateDataValues does for entries
+	1. Optionally: Make Options update same style like updateDataValues does for entries
 	2. Attention: zo_comboBox_base_hideDropdown(self) in self:HideDropdown() does NOT close the main dropdown if right clicked! Only for a left click... See ZO_ComboBox:HideDropdownInternal()
 	3. verify submenu anchors. Small adjustments not easily seen on small laptop monitor
 	- fired on handlers dropdown_OnShow dropdown_OnHide
