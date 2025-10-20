@@ -479,7 +479,6 @@ local function onMouseUp(control, data, hasSubmenu)
 	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
 
 	hideTooltip(control)
-d("[LSM]onMouseUp -> dropdown:SubmenuRefresh")
 	dropdown:SubmenuRefresh(control) --#2025_42
 	return dropdown
 end
@@ -1764,6 +1763,9 @@ end
 --#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
 function dropdownClass:SubmenuRefresh(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 192, tos(getControlName(control))) end
+
+	if not self.owner or not self.m_parentMenu then return end --dropdown got no submenu?
+
 	local owner = (control ~= nil and control.m_owner) or self.owner
 	if owner ~= nil and owner.openingControl ~= nil and self.m_comboBox:IsDropdownVisible() then
 		--Reshow the whole submenu of the openingControl again, to update all enabled and checked states of the entries,
