@@ -147,11 +147,15 @@ function lib.XML.XMLButtonOnInitialize(control, entryType)
 				if checkNextOnEntryMouseUpShouldExecute() then return end
 
 				local data = getControlData(parent)
-				playSelectedSoundCheck(parent.m_dropdownObject, data.entryType)
+				local dropdown = parent.m_dropdownObject
+				playSelectedSoundCheck(dropdown, data.entryType)
 
 				local onClickedHandler = control:GetHandler('OnClicked')
 				if onClickedHandler then
 					onClickedHandler(control, buttonId)
+
+					d("[LSM]lib.XML.XMLButtonOnInitialize -> Checkbox/RadioButton dropdown:SubmenuRefresh")
+					dropdown:SubmenuRefresh(control) --#2025_42
 				end
 
 			elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then
@@ -274,24 +278,18 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.37 - Updated 2025-09-21
+	CHANGELOG Current version: 2.38 - Updated 2025-10-21
 ---------------------------------------------------------------
-Max error #: 2025_41
+Max error #: 2025_42
 
 [KNOWN PROBLEMS]
-#2025_41 Slider does not show it's actual value on first open (value set via sliderData.value entry)
 
 [WORKING ON]
+#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
 
 [Fixed]
 
 [Added]
--2025_35    Added entryType LSM_ENTRY_TYPE_EDITBOX
--2025_36    Added API function AddCustomScrollableMenuEditBox(text, callback, editBoxData, additionalData)
--2025_37    Added API function AddCustomScrollableMenuRadioButton(text, callback, checked, buttonGroup, additionalData)
--2025_38    Added entryType LSM_ENTRY_TYPE_SLIDER
--2025_39 	Clicking icon in contextmenu's submenu will close the entry as it "get's selected" even though the row got closeOnSelect = false
--2025_41    Added API function AddCustomScrollableMenuSlider(text, callback, sliderData, additionalData)
 
 [Changed]
 

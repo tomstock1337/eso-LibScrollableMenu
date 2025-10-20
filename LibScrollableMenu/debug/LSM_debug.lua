@@ -232,6 +232,7 @@ local debugLogMessagePatterns = {
 	[189] = "AddCustomScrollableMenuRadioButton-text: %s, checked: %s, buttonGroup: %s",
 	[190] = "comboBox_base:SetupEntrySlider - control: %s, list: %s",
 	[191] = "AddCustomScrollableMenuSlider-text: %s, sliderData: %s",
+	[192] = "dropdownClass:SubmenuRefresh - control:  %s",
 }
 
 

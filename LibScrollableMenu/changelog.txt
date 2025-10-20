@@ -1,3 +1,8 @@
+-v- ---------------LSM v2.38 - 2025-10-21--------------------------------------------------------------------------- -v-
+[WORKING ON]
+#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
+
+
 -v- ---------------LSM v2.37 - 2025-09-21--------------------------------------------------------------------------- -v-
 [Added]
 -2025_37    Added API function AddCustomScrollableMenuRadioButton(text, callback, checked, buttonGroup, additionalData)
