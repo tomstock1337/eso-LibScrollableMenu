@@ -1769,23 +1769,23 @@ end
 
 function dropdownClass:SubmenuOrCurrentListRefresh(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 192, tos(getControlName(control))) end
-
-	if not self.owner then return end
 	local comboBox = self.m_comboBox
 	if not comboBox or not comboBox:IsDropdownVisible() then return end
 
 	--Check if the automatic update is enabled via the options
-	if not self:IsAutomaticRefreshEnabled() then return end
+	local automaticRefresh, automaticSubmenuRefresh = self:IsAutomaticRefreshEnabled()
+--d("[LSM]dropdownClass:SubmenuOrCurrentListRefresh - automaticRefresh: " .. tos(automaticRefresh) .. ", automaticSubmenuRefresh: " .. tos(automaticSubmenuRefresh))
 
-	--d("[LSM]dropdownClass:SubmenuOrCurrentListRefresh")
-	if not self.m_parentMenu then --dropdown got no submenu? Refresh current scrollList
+	if automaticRefresh == true and not self.m_parentMenu then --dropdown got no submenu? Refresh current scrollList
+--d(">refreshing menu")
 		zo_callLater(function() --delay the update of the entries a bit so all values have been updated properly before
 			comboBox:Show()
 		end, 25)
-	else
+	elseif automaticSubmenuRefresh == true then
 		--Submenu refresh
 		local owner = (control ~= nil and control.m_owner) or self.owner
 		if owner ~= nil and owner.openingControl ~= nil then
+--d(">refreshing submenu")
 			--Reshow the whole submenu of the openingControl again, to update all enabled and checked states of the entries,
 			--if any other entry was clicked
 			-- Must clear now. Otherwise, moving onto a submenu will close it from exiting previous row.

@@ -509,9 +509,16 @@ local function updateIcons(control, data)
 	local anyIconWasAdded = false
 	local iconDataType = iconData ~= nil and type(iconData) or nil
 	if iconDataType ~= nil then
+--d("[LSM]updateIcons - iconData found")
 		if iconDataType ~= 'table' then
 			--If only a "any.dds" texture path or a function returning this was passed in
 			iconData = { [1] = { iconTexture = iconData } }
+		else
+			--#2025_43 Check if icon table got just 1 entry, directly starting with iconTexture etc. (wrong formatted)
+			if iconData.iconTexture ~= nil then
+				local iconDataFixed = { [1] = ZO_ShallowTableCopy(iconData) }
+				iconData = iconDataFixed
+			end
 		end
 		for iconIdx, singleIconData in ipairs(iconData) do
 			local l_anyIconWasAdded, l_iconWidth, l_iconHeight = updateIcon(control, data, iconIdx, singleIconData, multiIconCtrl, parentHeight)

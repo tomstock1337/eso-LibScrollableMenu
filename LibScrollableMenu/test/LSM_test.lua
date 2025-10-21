@@ -109,6 +109,7 @@ local function test()
 
 			selectedSoundDisabled = false,
 			automaticRefresh = true,
+			automaticSubmenuRefresh = false,
 
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,

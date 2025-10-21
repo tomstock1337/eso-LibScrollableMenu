@@ -237,9 +237,12 @@ end
 --#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
 function comboBoxClass:IsAutomaticRefreshEnabled()
 	local options = self:GetOptions()
-	local automaticRefreshEnabled = (options and getValueOrCallback(options.automaticRefresh, options)) or false
---d(debugPrefix .. "comboBoxClass:IsAutomaticRefreshEnabled - automaticRefreshEnabled: " ..tos(automaticRefreshEnabled))
-	return automaticRefreshEnabled
+	if options ~= nil then
+		local automaticRefreshEnabled = (getValueOrCallback(options.automaticRefresh, options)) or false
+		local automaticSubmenuRefreshEnabled = (getValueOrCallback(options.automaticSubmenuRefresh, options)) or false
+		--d(debugPrefix .. "comboBoxClass:IsAutomaticRefreshEnabled - automaticRefreshEnabled: " ..tos(automaticRefreshEnabled))
+		return automaticRefreshEnabled, automaticSubmenuRefreshEnabled
+	end
 end
 
 

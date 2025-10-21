@@ -462,6 +462,8 @@ local comboBoxDefaults = {
 	itemYPad = 						0,
 
 	--LibScrollableMenu internal (e.g. options)
+	automaticRefresh = 				false, --#2025_42
+	automaticSubmenuRefresh =		false, --#2025_42
 	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 	containerMinWidth = 			dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER,
 	disableFadeGradient = 			false,
@@ -472,7 +474,6 @@ local comboBoxDefaults = {
 	submenuArrowColor = 			colors.DEFAULT_ARROW_COLOR,
 	visibleRows = 					dropdownDefaults.DEFAULT_VISIBLE_ROWS,
 	visibleRowsSubmenu = 			dropdownDefaults.DEFAULT_VISIBLE_ROWS,
-	automaticRefresh = 				false, --#2025_42
 }
 constants.comboBox.defaults = comboBoxDefaults
 
@@ -494,6 +495,7 @@ constants.entryTypes.defaults.highlights.defaultHighlightColor = comboBoxDefault
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
 local defaultComboBoxOptions  = {
 	["automaticRefresh"] = 			false, --#2025_42
+	["automaticSubmenuRefresh"] =	false, --#2025_42
 	["enableFilter"] = 				false,
 	["disableFadeGradient"] = 		false,
 	["font"] = 						fonts.DEFAULT_FONT,
@@ -522,6 +524,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	-->is defiend below this function will be executed too).
 	-->Missing entries (even if names are the same) will relate in function comboBoxClass:SetOption not respecting the value!
 	["automaticRefresh"] =		"automaticRefresh", --#2025_42
+	["automaticSubmenuRefresh"]= "automaticSubmenuRefresh", --#2025_42
 	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
 	["disabledColor"] =			"m_disabledColor",
 	["enableFilter"] =			"enableFilter",
