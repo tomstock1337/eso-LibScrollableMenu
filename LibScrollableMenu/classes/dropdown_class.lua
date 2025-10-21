@@ -145,61 +145,84 @@ end
 --------------------------------------------------------------------
 -- Dropdown (nested) submenu parsing functions
 --------------------------------------------------------------------
---[[
--- Add/Remove the isAnySubmenuEntrySelected status
--- This works up from the mouse-over entry's submenu to the dropdown,
--- but only on entries having (opening) a submenu
--- as long as it does not run into a submenu still having a matching entry.
-local function updateSubmenuIsAnyEntrySelectedStatus(selfVar, control, isMultiSelectEnabled)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 184) end
-	local comboBox = selfVar.owner
-	if not comboBox then return end
 
-	--Only go on if multiselection is enabled
-	if isMultiSelectEnabled == nil then
-		isMultiSelectEnabled = comboBox.m_enableMultiSelect
-	end
-	if not isMultiSelectEnabled then return end
-
-	local isAnySubmenuEntrySelected = false
+--#2025_44 Recursive function to update the entry (and fire the IconUpdated) callback
+local function updateSubmenuIcons(selfVar, control)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 194) end
 
 	local data = getControlData(control)
-	local submenuEntries = getValueOrCallback(data.entries, data) or {}
+	--local submenuEntries = getValueOrCallback(data.entries, data) or {}
+--d("[LSM]updateSubmenuIcons - control: " .. tos(getControlName(control)))
 
-	-- We are only going to check the current submenu's entries, not recursively
-	-- down from here since we are working our way up until we find an entry.
-	for idx, subentry in ipairs(submenuEntries) do
-		if comboBox:IsItemSelected(subentry) then
---d(">submenu item is selected: " .. tos(idx))
---LSM_Debug = LSM_Debug or {}
---LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus = LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus or {}
---LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus[#LSM_Debug.updateSubmenuIsAnyEntrySelectedStatus+1] = {
-	--indexFound = idx,
-	--comboBox = comboBox,
-	--subentry = ZO_ShallowTableCopy(subentry),
-	--submenuEntries = ZO_ShallowTableCopy(submenuEntries),
---}
-			isAnySubmenuEntrySelected = true
-			break
+	local doRefresh = false
+
+	--data.icon could be nil now as icons were removed, so update in any case
+	--Just detect if any icon is currently set and if the current data.icon is still having any icons
+	local oldHasIcon, newHasIcon
+	local multiIconControl = control.m_icon
+	if multiIconControl ~= nil then
+		oldHasIcon = multiIconControl:HasIcon()
+		local newIconData = getValueOrCallback((data ~= nil and data.icon) or nil, data)
+		newHasIcon = (newIconData ~= nil and true) or false
+		doRefresh = oldHasIcon ~= newHasIcon
+--d(">hasIcon: " .. tos(oldHasIcon) .. " / " .. tos(newHasIcon) .. " -> doRefresh: " ..tos(doRefresh))
+		--Nothing changed, then check in detail: The number of icons old and new
+		if not doRefresh and newIconData ~= nil then
+--d(">Icon counts: " .. tos(#multiIconControl.iconData) .. " / " .. tos(#newIconData))
+			doRefresh = #multiIconControl.iconData ~= #newIconData
 		end
 	end
+--d(">doRefresh: " ..tos(doRefresh))
+	--This alone does not update the scroll list entry's icon (only if icons were removed!)
+	ZO_ScrollList_RefreshVisible(control.m_dropdownObject.scrollControl)
 
-	-- Set flag on submenu opening control
-	control.isAnySubmenuEntrySelected = isAnySubmenuEntrySelected
+	--Icons were removed?
+	if not doRefresh and oldHasIcon ~= nil and (oldHasIcon == false and oldHasIcon == newHasIcon) then
+		lib:FireCallbacks('IconUpdated', control, data)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 195, tos(getControlName(control))) end
 
-	if not isAnySubmenuEntrySelected then
-		ZO_ScrollList_RefreshVisible(control.m_dropdownObject.scrollControl)
+	elseif doRefresh == true then
+		--Icons were added/count changed than before
+		lib:FireCallbacks('IconUpdated', control, data)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 195, tos(getControlName(control))) end
 
-		local parent = data.m_parentControl
-		if parent then
-			updateSubmenuIsAnyEntrySelectedStatus(selfVar, parent, isMultiSelectEnabled)
-		end
+		--We need to call the dropdown Show function for that to update...
+		control.m_dropdownObject:SubmenuOrCurrentListRefresh(control, true) --override refresh
+	end
+
+	--Check if any other parent (recursively)
+	local parent = data.m_parentControl
+	if parent then
+		updateSubmenuIcons(selfVar, parent)
 	end
 end
-]]
+
+--#2025_44 Recursively check if any icon on the current submenu path up to main menu needs an update
+local function onEntryCallbackUpdateIcons(selfVar, control, data)
+--d("[LSM]UpdateIconsRecursively - control: " .. tos(getControlName(control)))
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 193, tos(getControlName(control))) end
+	if selfVar == nil or control == nil then return end
+	if data == nil then
+		data = getControlData(control)
+	end
+
+	if data ~= nil and data.icon then
+		lib:FireCallbacks('IconUpdated', control, data)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 195, tos(getControlName(control))) end
+
+		control.m_dropdownObject:Refresh(data)
+	end
+
+	--Check parent menus (from bottom -> up to top)
+	local parent = data.m_parentControl
+	if parent then
+		updateSubmenuIcons(selfVar, parent)
+	end
+end
+lib.UpdateIconsRecursively = onEntryCallbackUpdateIcons -- #2025_44 API function
 
 -- Add/Remove the new status of a dropdown entry,
--- This works up from the mouse-over entry's submenu to the dropdown,
+-- This works up from the mouse-over entry's submenu, to the dropdown,
 -- as long as it does not run into a submenu still having a matching entry.
 local function updateSubmenuNewStatus(selfVar, control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 31) end
@@ -228,43 +251,13 @@ local function updateSubmenuNewStatus(selfVar, control)
 	if not isNew then
 		ZO_ScrollList_RefreshVisible(control.m_dropdownObject.scrollControl)
 
+		--Check if any other parent (recursively)
 		local parent = data.m_parentControl
 		if parent then
 			updateSubmenuNewStatus(selfVar, parent)
 		end
 	end
 end
-
---[[
-local function checkSubmenuOnMouseEnterTasks(selfVar, control, data)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 183) end
-	--local doRefresh = false
-	local comboBox = selfVar.owner
-	local isMultiSelectEnabled = (comboBox ~= nil and comboBox.m_enableMultiSelect) or false
-
-	--Remove the isAnySubmenuEntrySelected status of a dropdown entry
-	-->Generally do this even if multiSelectionw as disabled
-	--if isMultiSelectEnabled == true then
-		-- Only directly change status on submenu openingControl entries
-		if control.hasSubmenu == true or data.entries ~= nil then
-			if control.isAnySubmenuEntrySelected == true then
-				control.isAnySubmenuEntrySelected = false
-				--doRefresh = true
-			--end
-
-			--if doRefresh == true then
-				control.m_dropdownObject:Refresh(data)
-			end
-		else
-			--Check parent menus (from bottom -> up to top)
-			local parent = data.m_parentControl
-			if parent then
-				updateSubmenuIsAnyEntrySelectedStatus(selfVar, parent, isMultiSelectEnabled)
-			end
-		end
-	--end
-end
-]]
 
 local function checkNormalOnMouseEnterTasks(selfVar, control, data)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 32) end
@@ -274,17 +267,11 @@ local function checkNormalOnMouseEnterTasks(selfVar, control, data)
 	if data.isNew then
 		-- Only directly change status on non-submenu entries. They are effected by child entries
 		if data.entries == nil then
-			--if data.isNew == true then
 				data.isNew = false
 				lib:FireCallbacks('NewStatusUpdated', control, data)
 				if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 33, tos(getControlName(control))) end
-				--doRefresh = true
-			--d(debugPrefix.."checkNormalOnMouseEnterTasks - " .. tos(getControlName(control)))
-			--end
 
-			--if doRefresh == true then
 				control.m_dropdownObject:Refresh(data)
-			--end
 
 			--Check parent menus (from bottom -> up to top)
 			local parent = data.m_parentControl
@@ -1621,6 +1608,15 @@ end
 --Will be executed from XML handlers -> formattedEventName will be build via method GetFormattedNarrateEvent
 function dropdownClass:OnHide(formattedEventName)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 79) end
+
+	--todo #2025_45 Call special contextMenu OnClose callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.OnCloseCallback)
+d("[LSM]dropdownClass:OnHide - isContextMenu: " .. tos(self.isContextMenu))
+	if self.isContextMenu == true then
+		if self.owner then
+			self.owner:RunSpecialCallback("onHideCallback")
+		end
+	end
+
 	if formattedEventName ~= nil then
 		local ctrl = self.control
 		lib:FireCallbacks(formattedEventName, ctrl, self)
@@ -1767,20 +1763,25 @@ function dropdownClass:IsAutomaticRefreshEnabled()
 	end
 end
 
-function dropdownClass:SubmenuOrCurrentListRefresh(control)
+function dropdownClass:SubmenuOrCurrentListRefresh(control, override)
+	override = override or false
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 192, tos(getControlName(control))) end
 	local comboBox = self.m_comboBox
 	if not comboBox or not comboBox:IsDropdownVisible() then return end
 
 	--Check if the automatic update is enabled via the options
 	local automaticRefresh, automaticSubmenuRefresh = self:IsAutomaticRefreshEnabled()
+	if override == true then
+		automaticRefresh = true
+		automaticSubmenuRefresh = true
+	end
 --d("[LSM]dropdownClass:SubmenuOrCurrentListRefresh - automaticRefresh: " .. tos(automaticRefresh) .. ", automaticSubmenuRefresh: " .. tos(automaticSubmenuRefresh))
 
 	if automaticRefresh == true and not self.m_parentMenu then --dropdown got no submenu? Refresh current scrollList
 --d(">refreshing menu")
 		zo_callLater(function() --delay the update of the entries a bit so all values have been updated properly before
 			comboBox:Show()
-		end, 25)
+		end, 15)
 	elseif automaticSubmenuRefresh == true then
 		--Submenu refresh
 		local owner = (control ~= nil and control.m_owner) or self.owner

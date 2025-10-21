@@ -279,18 +279,20 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 ---------------------------------------------------------------
 	CHANGELOG Current version: 2.38 - Updated 2025-10-21
 ---------------------------------------------------------------
-Max error #: 2025_43
+Max error #: 2025_44
 
 [KNOWN PROBLEMS]
 #2025_42 is not working for the icons, they do not update at the submenu/menus
 
 [WORKING ON]
+#2025_45 Register special contextMenu OnShow and/or OnHide callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.onHideCallback e.g.)
 
 [Fixed]
 
 [Added]
 #2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
 #2025_43 Automatically fix wrong formated .icon table format
+#2025_44 New API function lib.OnEntryCallbackUpdateIcons to check from submenu up to main menu if any icon needs an update at the current path. Automatically called if an entry's data contains data.recursiveIconUpdate = true
 
 [Changed]
 

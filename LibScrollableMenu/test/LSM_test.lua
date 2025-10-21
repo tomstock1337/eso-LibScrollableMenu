@@ -1307,6 +1307,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 		-- This example callback is checking if the data matches a checkbox entry from this addon.
 		lib:RegisterCallback('CheckboxUpdated', function(checked, data, checkbox)
 			-- Callback is fired on checkbox checked state change
+--d("[LSM]test - Checkbox callback")
 			if entryMap[data] ~= nil then
 				-- Belongs to this addon
 			end

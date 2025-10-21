@@ -268,3 +268,39 @@ function contextMenuClass:ShowContextMenu(parentControl)
 		end
 	end, 10, "_ContextMenuClass_ShowContextMenu")
 end
+
+--#2025_45 Register special contextMenu OnShow and/or OnHide callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.onHideCallback e.g.)
+local contextMenuCallbacksRegistered = {}
+lib.contextMenuCallbacksRegistered = contextMenuCallbacksRegistered
+function contextMenuClass:RegisterSpecialCallback(uniqueAddonName, callbackName, specialCallbackData)
+	if uniqueAddonName == nil or uniqueAddonName == "" or callbackName == nil or callbackName == ""
+			or specialCallbackData == nil or type(specialCallbackData[callbackName] ~= "function") then return false end
+
+	--Register the callback(s), in order of appearance (1st addon registering a callback should be kept first in the table)
+	local counterAddons = #contextMenuCallbacksRegistered + 1
+	contextMenuCallbacksRegistered[counterAddons] = {}
+	contextMenuCallbacksRegistered[counterAddons][uniqueAddonName] = {}
+	contextMenuCallbacksRegistered[counterAddons][uniqueAddonName][callbackName] = { callback = specialCallbackData[callbackName], specialData = specialCallbackData }
+
+	return true
+end
+
+function contextMenuClass:RunSpecialCallback(callbackName)
+d("[LSM]contextMenuClass:RunSpecialCallback - callbackName: " .. tos(callbackName))
+	if callbackName == nil or callbackName == "" or #contextMenuCallbacksRegistered == 0 then return end
+
+	local retVar = false
+	local openingControl = self.openingControl
+	--Execute the callbacks like onShowCallback or onHideCallback now
+	for _, registeredAddons in ipairs(contextMenuCallbacksRegistered) do
+		for uniqueAddonName, registeredCallbacks in ipairs(registeredAddons) do
+			local callbackEntry = registeredCallbacks[callbackName]
+			if callbackEntry ~= nil and callbackEntry.callback ~= nil then
+d(">executing callback for registered addon: " .. tos(uniqueAddonName))
+				local l_retVar = callbackEntry.callback(self, openingControl, callbackEntry.specialData)
+				if not retVar then retVar = l_retVar end
+			end
+		end
+	end
+	return retVar
+end

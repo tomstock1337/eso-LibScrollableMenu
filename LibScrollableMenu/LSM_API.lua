@@ -543,8 +543,13 @@ end
 
 --Show the custom scrollable context menu now at the control controlToAnchorTo, using optional options.
 --If controlToAnchorTo is nil it will be anchored to the current control's position below the mouse, like ZO_Menu does
+--Optional table specialCallbackData can be used to register an onShowCallback or onHideCallback function for your unqiue addon name,
+--so you can react on an "Show" and/or "Hide" of this particular context menu. Registered callback functions will be executed in order of register!
+--You can pass in any other variable with the same table. The whole tablr will passed to the callback function's signature, and to the uniqueAddonName generating function.
+-- The signature of the table must follow this example:
+--  { addonName = string or function returning a string "UniqueString", onShowCallback = function(comboBox, openingControl, specialData) end, onHideCallback = function(comboBox, openingControl, specialData) end, anyOtherVariableToPassInToTheCallback=anyValue, ... }
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
-function ShowCustomScrollableMenu(controlToAnchorTo, options)
+function ShowCustomScrollableMenu(controlToAnchorTo, options, specialCallbackData) --#2025_45
 	updateContextMenuRef()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 171, tos(getControlName(controlToAnchorTo)), tos(options)) end
 	--d("°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
@@ -572,6 +577,22 @@ LSM_Debug.cntxtMenuControlToAnchorTo = controlToAnchorTo
 	if options ~= nil then
 		--d(">>>>>calling SetCustomScrollableMenuOptions")
 		setCustomScrollableMenuOptions(options)
+	end
+
+	--#2025_45 Register special callback functions for this contextMenu?
+	if type(specialCallbackData) == "table" then
+		local uniqueAddonName = getValueOrCallback(specialCallbackData.addonName, specialCallbackData)
+		assert(uniqueAddonName ~= nil and uniqueAddonName ~= "", sfor("["..MAJOR.."-ShowCustomScrollableMenu]specialCallbackData.addonName: Unique string expected, got %q", tos(uniqueAddonName)))
+		if specialCallbackData.onShowCallback ~= nil then
+			local funcTypeOnShow = type(specialCallbackData.onShowCallback)
+			assert(funcTypeOnShow == "function", sfor("["..MAJOR.."-ShowCustomScrollableMenu]specialCallbackData.onShowCallback: Function expected, got %q", tos(funcTypeOnShow)))
+			g_contextMenu:RegisterSpecialCallback(uniqueAddonName, "onShowCallback", specialCallbackData)
+		end
+		if specialCallbackData.onHideCallback ~= nil then
+			local funcTypeOnHide = type(specialCallbackData.onHideCallback)
+			assert(funcTypeOnHide == "function", sfor("["..MAJOR.."-ShowCustomScrollableMenu]specialCallbackData.onHideCallback: Function expected, got %q", tos(funcTypeOnHide)))
+			g_contextMenu:RegisterSpecialCallback(uniqueAddonName, "onHideCallback", specialCallbackData)
+		end
 	end
 
 	g_contextMenu:ShowContextMenu(controlToAnchorTo)

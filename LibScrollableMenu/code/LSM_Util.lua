@@ -151,7 +151,7 @@ local getDataSource = libUtil.getDataSource
 -- >> data, dataEntry
 function libUtil.getControlData(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 28, tos(getControlName(control))) end
-	local data = control.m_sortedItems or control.m_data
+	local data = control.m_sortedItems or control.m_data or control
 
 	return getDataSource(data)
 end

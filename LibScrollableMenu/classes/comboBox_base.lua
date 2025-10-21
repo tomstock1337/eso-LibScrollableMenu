@@ -520,6 +520,7 @@ local function updateIcons(control, data)
 				iconData = iconDataFixed
 			end
 		end
+
 		for iconIdx, singleIconData in ipairs(iconData) do
 			local l_anyIconWasAdded, l_iconWidth, l_iconHeight = updateIcon(control, data, iconIdx, singleIconData, multiIconCtrl, parentHeight)
 			if l_anyIconWasAdded == true then
@@ -536,11 +537,16 @@ local function updateIcons(control, data)
 	multiIconCtrl:SetDrawLevel(10)
 
 	if anyIconWasAdded then
-		multiIconCtrl:SetHandler("OnMouseEnter", function(...)
-			ZO_Options_OnMouseEnter(...)
-			InformationTooltipTopLevel:BringWindowToTop()
-		end)
-		multiIconCtrl:SetHandler("OnMouseExit", ZO_Options_OnMouseExit)
+--d(">icons were added")
+		if multiIconCtrl:GetHandler("OnMouseEnter") == nil then
+			multiIconCtrl:SetHandler("OnMouseEnter", function(...)
+				ZO_Options_OnMouseEnter(...)
+				InformationTooltipTopLevel:BringWindowToTop()
+			end)
+		end
+		if multiIconCtrl:GetHandler("OnMouseExit") == nil then
+			multiIconCtrl:SetHandler("OnMouseExit", ZO_Options_OnMouseExit)
+		end
 
 		multiIconCtrl:Show() --todo 20240527 Make that dependent on getValueOrCallback(data.enabled, data) ?! And update via multiIconCtrl:Hide()/multiIconCtrl:Show() on each show of menu!
 	end
