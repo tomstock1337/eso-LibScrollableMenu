@@ -1234,7 +1234,7 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 
 	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true or wasFilterHeaderClicked == true or wasEditBoxClickedAtContextMenu == true or wasSliderClickedAtContextMenu == true or wasMultiIconClickedAtContextMenu == true then
 		if doDebugNow then  d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled())) end
-		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
+		if type(mocEntry) == "table" and (ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled())) then
 			if button == MOUSE_BUTTON_INDEX_LEFT then
 				--do not close or keep open based on clicked entry but do checks in contextMenuClass:GetHiddenForReasons instead
 				if isContextMenuVisible == true then

@@ -38,6 +38,9 @@ lib.preventerVars = {
 --Library's XML functions and code
 lib.XML = {}
 
+--ContextMenu callbacks which got registered
+lib.contextMenuCallbacksRegistered = {} --#2025_45
+
 --Constants for the library
 lib.constants = {}
 local constants = lib.constants

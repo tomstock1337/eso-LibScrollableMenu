@@ -961,7 +961,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 					returnValue = true
 				else
 					--Is the mocEntry an empty table (something else was clicked than a LSM entry)
-					if ZO_IsTableEmpty(entry) then
+					if type(entry) == "table" and ZO_IsTableEmpty(entry) then
 						if doDebugNow then d("<1ZO_IsTableEmpty(entry) -> true") end
 						returnValue = true
 					else
@@ -1012,7 +1012,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 				clickedNoEntry = true
 			else
 				--Is the mocEntry an empty table (something else was clicked than a LSM entry)
-				if ZO_IsTableEmpty(entry) then
+				if type(entry) == "table" and ZO_IsTableEmpty(entry) then
 					if doDebugNow then d("<2 ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown)) end
 					-- Was e.g. a context menu's submenu search header's editBox or the refresh button left clicked?
 					if mocCtrl then

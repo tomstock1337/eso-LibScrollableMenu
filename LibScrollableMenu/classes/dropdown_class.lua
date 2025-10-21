@@ -1609,11 +1609,14 @@ end
 function dropdownClass:OnHide(formattedEventName)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 79) end
 
-	--todo #2025_45 Call special contextMenu OnClose callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.OnCloseCallback)
-d("[LSM]dropdownClass:OnHide - isContextMenu: " .. tos(self.isContextMenu))
-	if self.isContextMenu == true then
-		if self.owner then
-			self.owner:RunSpecialCallback("onHideCallback")
+	--#2025_45 Call special contextMenu OnClose callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.OnCloseCallback)
+	local comboBox = self.m_comboBox
+	local isContextMenu = comboBox and comboBox.isContextMenu or false
+--d("[LSM]dropdownClass:OnHide - isContextMenu: " .. tos(isContextMenu))
+	if isContextMenu == true then
+		local owner = self.owner
+		if owner and owner.RunSpecialCallback then --Only contextMenu_Class uses that function
+			owner:RunSpecialCallback("onHideCallback")
 		end
 	end
 
