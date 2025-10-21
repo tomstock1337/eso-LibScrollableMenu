@@ -234,6 +234,15 @@ function comboBoxClass:SetFilterString(filterBox, newText)
 	self:UpdateResults(true)
 end
 
+--#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
+function comboBoxClass:IsAutomaticRefreshEnabled()
+	local options = self:GetOptions()
+	local automaticRefreshEnabled = (options and getValueOrCallback(options.automaticRefresh, options)) or false
+--d(debugPrefix .. "comboBoxClass:IsAutomaticRefreshEnabled - automaticRefreshEnabled: " ..tos(automaticRefreshEnabled))
+	return automaticRefreshEnabled
+end
+
+
 function comboBoxClass:SetDefaults()
 	self.defaults = {}
 	for k, v in pairs(comboBoxDefaults) do

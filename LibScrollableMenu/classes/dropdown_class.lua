@@ -1761,13 +1761,23 @@ function dropdownClass:HideDropdown()
 end
 
 --#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
+function dropdownClass:IsAutomaticRefreshEnabled()
+	if self.m_comboBox then
+		return self.m_comboBox:IsAutomaticRefreshEnabled()
+	end
+end
+
 function dropdownClass:SubmenuOrCurrentListRefresh(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 192, tos(getControlName(control))) end
 
 	if not self.owner then return end
 	local comboBox = self.m_comboBox
 	if not comboBox or not comboBox:IsDropdownVisible() then return end
-d("[LSM]dropdownClass:SubmenuOrCurrentListRefresh")
+
+	--Check if the automatic update is enabled via the options
+	if not self:IsAutomaticRefreshEnabled() then return end
+
+	--d("[LSM]dropdownClass:SubmenuOrCurrentListRefresh")
 	if not self.m_parentMenu then --dropdown got no submenu? Refresh current scrollList
 		zo_callLater(function() --delay the update of the entries a bit so all values have been updated properly before
 			comboBox:Show()

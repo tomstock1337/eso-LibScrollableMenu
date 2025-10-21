@@ -108,6 +108,7 @@ local function test()
 			OnSelectionBlockedCallback = function() d(debugPrefix.."ERROR - Selection of entry was blocked!") end,
 
 			selectedSoundDisabled = false,
+			automaticRefresh = true,
 
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,

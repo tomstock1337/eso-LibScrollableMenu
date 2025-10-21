@@ -135,6 +135,9 @@ end
 --		function customFilterFunc				A function returning a boolean true: show item / false: hide item. Signature of function: customFilterFunc(item, filterString)
 --->  === Dropdown callback functions
 -- 		function preshowDropdownFn:optional 	function function(ctrl) codeHere end: to run before the dropdown shows
+--->  === Dropdown Refresh functions
+--		boolean automaticRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the scrolllist should happen, if you click/change any entry's value. This would be needed
+--												e.g. if you want the entry B to react on entry A's value (e.g. checkboxes -> enabled state). Default value is false
 --->  === Dropdown's Custom XML virtual row/entry templates ============================================================
 --		boolean useDefaultHighlightForSubmenuWithCallback	Boolean or function returning a boolean if always the default ZO_ComboBox highlight XML template should be used for an entry having a submenu AND a callback function. If false the highlight 'LibScrollableMenu_Highlight_Green' will be used
 --		table XMLRowTemplates:optional			Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having

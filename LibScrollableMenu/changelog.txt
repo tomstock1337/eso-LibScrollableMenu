@@ -1,6 +1,10 @@
 -v- ---------------LSM v2.38 - 2025-10-21--------------------------------------------------------------------------- -v-
 [WORKING ON]
-#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
+-#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
+-Added options.automaticRefresh
+--->  === Dropdown Refresh functions
+--		boolean automaticRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the scrolllist should happen, if you click/change any entry's value. This would be needed
+--												e.g. if you want the entry B to react on entry A's value (e.g. checkboxes -> enabled state). Default value is false
 
 
 -v- ---------------LSM v2.37 - 2025-09-21--------------------------------------------------------------------------- -v-
