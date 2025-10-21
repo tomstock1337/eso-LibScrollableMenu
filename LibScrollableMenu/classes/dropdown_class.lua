@@ -479,7 +479,7 @@ local function onMouseUp(control, data, hasSubmenu)
 	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
 
 	hideTooltip(control)
-	dropdown:SubmenuRefresh(control) --#2025_42
+	dropdown:SubmenuOrCurrentListRefresh(control) --#2025_42
 	return dropdown
 end
 
@@ -1761,18 +1761,27 @@ function dropdownClass:HideDropdown()
 end
 
 --#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
-function dropdownClass:SubmenuRefresh(control)
+function dropdownClass:SubmenuOrCurrentListRefresh(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 192, tos(getControlName(control))) end
 
-	if not self.owner or not self.m_parentMenu then return end --dropdown got no submenu?
-
-	local owner = (control ~= nil and control.m_owner) or self.owner
-	if owner ~= nil and owner.openingControl ~= nil and self.m_comboBox:IsDropdownVisible() then
-		--Reshow the whole submenu of the openingControl again, to update all enabled and checked states of the entries,
-		--if any other entry was clicked
-		-- Must clear now. Otherwise, moving onto a submenu will close it from exiting previous row.
-		clearTimeout()
-		self:ShowSubmenu(owner.openingControl)
+	if not self.owner then return end
+	local comboBox = self.m_comboBox
+	if not comboBox or not comboBox:IsDropdownVisible() then return end
+d("[LSM]dropdownClass:SubmenuOrCurrentListRefresh")
+	if not self.m_parentMenu then --dropdown got no submenu? Refresh current scrollList
+		zo_callLater(function() --delay the update of the entries a bit so all values have been updated properly before
+			comboBox:Show()
+		end, 25)
+	else
+		--Submenu refresh
+		local owner = (control ~= nil and control.m_owner) or self.owner
+		if owner ~= nil and owner.openingControl ~= nil then
+			--Reshow the whole submenu of the openingControl again, to update all enabled and checked states of the entries,
+			--if any other entry was clicked
+			-- Must clear now. Otherwise, moving onto a submenu will close it from exiting previous row.
+			clearTimeout()
+			self:ShowSubmenu(owner.openingControl)
+		end
 	end
 end
 
@@ -2002,6 +2011,7 @@ function dropdownClass:OnEditBoxTextChanged(editBox)
 			local text = editBox:GetText()
 --d(">throttledCall 1 - text: " ..tos(text))
 			callbackFunc(selfVar.m_comboBox, editBox, text) --comboBox, filterBox, text
+			self:SubmenuOrCurrentListRefresh(editBox)
 		end, 250, throttledCallDropdownClassOnTextChangedStringSuffix)
 	end
 end
@@ -2019,6 +2029,7 @@ function dropdownClass:OnSliderValueChanged(slider)
 			local value = slider:GetValue()
 --d(">throttledCall 1 - value: " ..tos(value))
 			callbackFunc(selfVar.m_comboBox, slider, value) --comboBox, slider, value
+			self:SubmenuOrCurrentListRefresh(slider)
 		end, 250, throttledCallDropdownClassOnValueChangedStringSuffix)
 	end
 end

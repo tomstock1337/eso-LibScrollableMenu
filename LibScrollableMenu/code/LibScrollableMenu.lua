@@ -154,8 +154,7 @@ function lib.XML.XMLButtonOnInitialize(control, entryType)
 				if onClickedHandler then
 					onClickedHandler(control, buttonId)
 
-					d("[LSM]lib.XML.XMLButtonOnInitialize -> Checkbox/RadioButton dropdown:SubmenuRefresh")
-					dropdown:SubmenuRefresh(control) --#2025_42
+					dropdown:SubmenuOrCurrentListRefresh(control) --#2025_42
 				end
 
 			elseif buttonId == MOUSE_BUTTON_INDEX_RIGHT then

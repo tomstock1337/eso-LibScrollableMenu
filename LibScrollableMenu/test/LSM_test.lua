@@ -677,7 +677,8 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				name            = "Button1",
 				tooltip         = "Button button button...",
 				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("I clicked a button with the name: " .. tostring(itemName))
+					sliderValue = 500000
+					d("I clicked a button with the name: " .. tostring(itemName) .. " and changed the slider below to " .. tostring(sliderValue))
 				end,
 				doNotFilter		= true,
 			},
