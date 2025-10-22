@@ -197,7 +197,8 @@ local function updateSubmenuIcons(selfVar, control)
 	end
 end
 
---#2025_44 Recursively check if any icon on the current submenu path up to main menu needs an update
+--#2025_44 Recursively check if any icon on the current submenu path up to main menu needs an update. Manual call via API
+--or automatic call if submenuEntry.recursiveIconUpdate == true
 local function onEntryCallbackUpdateIcons(selfVar, control, data)
 --d("[LSM]UpdateIconsRecursively - control: " .. tos(getControlName(control)))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 193, tos(getControlName(control))) end
@@ -1436,6 +1437,7 @@ end
 
 --Called from XML virtual template <Control name="ZO_ComboBoxEntry" -> "OnMouseUp" -> ZO_ComboBoxDropdown_Keyboard.OnEntryMouseUp
 -->And in LSM code from XML virtual template LibScrollableMenu_ComboBoxEntry_Behavior -> "OnMouseUp" -> dropdownClass:OnEntryMouseUp
+--> #2025_46 This method is not called as the control is mouseEnabled false!
 function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, ctrl, alt, shift, lsmEntryType)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 71, tos(getControlName(control)), tos(button), tos(upInside)) end
 --d(debugPrefix .."dropdownClass:OnEntryMouseUp-"  .. tos(getControlName(control)) ..", button: " .. tos(button) .. ", upInside: " .. tos(upInside) .. ", lsmEntryType: " .. tos(lsmEntryType))
@@ -1449,8 +1451,7 @@ function dropdownClass:OnEntryMouseUp(control, button, upInside, ignoreHandler, 
 		local data = getControlData(control)
 		--	local comboBox = getComboBox(control, true)
 		local comboBox = control.m_owner
-
-		--[[
+--[[
 LSM_Debug = LSM_Debug or {}
 LSM_Debug._OnEntryMouseUp = LSM_Debug._OnEntryMouseUp or {}
 LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {

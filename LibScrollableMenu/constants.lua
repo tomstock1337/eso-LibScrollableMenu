@@ -38,8 +38,8 @@ lib.preventerVars = {
 --Library's XML functions and code
 lib.XML = {}
 
---ContextMenu callbacks which got registered
-lib.contextMenuCallbacksRegistered = {} --#2025_45
+--#2025_45 ContextMenu callbacks which got registered via API function ShowCustomScrollableMenu's parameter specialCallbackData
+lib.contextMenuCallbacksRegistered = {}
 
 --Constants for the library
 lib.constants = {}
@@ -103,7 +103,7 @@ lib.SV = {} --will be init properly at the onAddonLoaded function
 --------------------------------------------------------------------
 -- Other Libraries
 --------------------------------------------------------------------
---LibAddonMenu2, LibDebugLogger
+--LibDebugLogger
 
 
 -----------------------------------------------------------------------
@@ -148,8 +148,9 @@ constants.throttledCallDelay = 		10
 --Handler names
 constants.handlerNames = {}
 constants.handlerNames.dropdownCallLaterHandle = 	MAJOR .. "_Timeout"
-constants.handlerNames.UINarrationName = 			MAJOR .. "_UINarration_"
-constants.handlerNames.UINarrationUpdaterName = 	MAJOR .. "_UINarrationUpdater_"
+local UINarrationName = MAJOR .. "_UINarration"
+constants.handlerNames.UINarrationName = 			UINarrationName .. "_"
+constants.handlerNames.UINarrationUpdaterName = 	UINarrationName .. "Updater_"
 constants.handlerNames.throttledCallDelayName = 	MAJOR .. '_throttledCallDelay'
 
 --ComboBox
@@ -217,15 +218,15 @@ constants.entryTypes.defaults.highlights.subAndContextMenuHighlightAnimationBrea
 
 ------------------------------------------------------------------------------------------------------------------------
 --Entry types - For the scroll list's dataType of the menus
-local LSM_ENTRY_TYPE_NORMAL = 	1
-local LSM_ENTRY_TYPE_DIVIDER = 	2
-local LSM_ENTRY_TYPE_HEADER = 	3
-local LSM_ENTRY_TYPE_SUBMENU = 	4
-local LSM_ENTRY_TYPE_CHECKBOX = 5
-local LSM_ENTRY_TYPE_BUTTON = 6
-local LSM_ENTRY_TYPE_RADIOBUTTON = 7
-local LSM_ENTRY_TYPE_EDITBOX = 8
-local LSM_ENTRY_TYPE_SLIDER = 9
+local LSM_ENTRY_TYPE_NORMAL 		= 1
+local LSM_ENTRY_TYPE_DIVIDER 		= 2
+local LSM_ENTRY_TYPE_HEADER 		= 3
+local LSM_ENTRY_TYPE_SUBMENU 		= 4
+local LSM_ENTRY_TYPE_CHECKBOX		= 5
+local LSM_ENTRY_TYPE_BUTTON 		= 6
+local LSM_ENTRY_TYPE_RADIOBUTTON 	= 7
+local LSM_ENTRY_TYPE_EDITBOX 		= 8
+local LSM_ENTRY_TYPE_SLIDER 		= 9
 
 --Constant for the divider entryType
 lib.DIVIDER = "-"
@@ -253,8 +254,8 @@ for key, value in pairs(scrollListRowTypes) do
 	_G[key] = value
 end
 
---Exclude the OnMouseup handler for these rowTypes (entryTypes) as the callbacks of an editBox/slider should not be executed
---if you click the row, but the editBox text was changed or the slider value was changed (via XML handlers!)
+--Exclude the OnMouseUp handler for these rowTypes (entryTypes) as the callbacks of an editBox/slider should not be executed
+--if you click the row, but the editBox's text/the slider's value was changed (via XML handlers!)
 local onEntryMouseUpExclude = {
 	[LSM_ENTRY_TYPE_EDITBOX] = true,
 	[LSM_ENTRY_TYPE_SLIDER] = true,
@@ -821,6 +822,8 @@ local filteredEntryTypes = {
 	[LSM_ENTRY_TYPE_BUTTON] = 	true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
 	--[LSM_ENTRY_TYPE_DIVIDER] = false,
+	[LSM_ENTRY_TYPE_EDITBOX] = true,
+	[LSM_ENTRY_TYPE_SLIDER] = true,
 }
 constants.searchFilter.filteredEntryTypes = filteredEntryTypes
 

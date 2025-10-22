@@ -892,6 +892,15 @@ end
 --------------------------------------------------------------------
 -- Dropdown / combobox hidden checks
 --------------------------------------------------------------------
+--#2025_47 Check if a scrollbar, up or down button is clicked
+function libUtil.isScrollBarClicked(scrollCtrl, compareCtrl)
+	if scrollCtrl == nil or compareCtrl == nil or scrollCtrl.scrollbar == nil then return false end
+	if scrollCtrl.scrollbar == compareCtrl then return true end
+	if scrollCtrl.upButton and scrollCtrl.upButton == compareCtrl then return true end
+	if scrollCtrl.downButton and scrollCtrl.downButton == compareCtrl then return true end
+	return false
+end
+
 --20250309 #2025_13 If the last comboBox_base:HiddenForReasons call closed an open contextMenu with multiSelect enabled, and we clicked on an LSM entry of another non-contextmenu
 --to close it, then just exit here and do not select the clicked entry
 function libUtil.checkNextOnEntryMouseUpShouldExecute()

@@ -277,21 +277,31 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.38 - Updated 2025-10-21
+	CHANGELOG Current version: 2.38 - Updated 2025-10-23
 ---------------------------------------------------------------
-Max error #: 2025_44
+Max error #: 2025_55
 
 [KNOWN PROBLEMS]
-#2025_42 is not working for the icons, they do not update at the submenu/menus
+#2025_48 Search header is not searching an editBox's text or a slider's balue (only the label's text in front)
 
 [WORKING ON]
+#2025_44 New API function lib.OnEntryCallbackUpdateIcons to check from submenu up to main menu if any icon needs an update at the current path.
+--> todo: Automatically called if an entry's data contains data.recursiveIconUpdate = true
 
 [Fixed]
+#2025_46 Clicking a disabled entry at a contextmenu submenu will close the submenu as the control is not mouseEnabled and the scrollList control below is clicked. Detection of the scrollList's owner == LSM menu should take place then to suppress the close of the menu?
+#2025_47 Clicking a scrollbar at a contextmenu (submenu) will close the contextmenu (submenu)
+#2025_49 Editbox clicked at context menu's submenu will close the contextmenu
+#2025_50 Slider  clicked at context menu's submenu will close the contextmenu
+#2025_51 MultiIcon clicked at context menu's submenu will close the contextmenu
+#2025_52 Checkbox [ ] part clicked in a submenu closes the submenu
+#2025_53 Checkbox label or [ ] part clicked in a contextmenu's submenu closes the submenu
+#2025_54 Radiobutton label or [ ] part clicked in a contextmenu's submenu closes the submenu
+#2025_55 Radiobutton [ ] part clicked in a contextmenu's submenu raises a lua error user:/AddOns/LibScrollableMenu/classes/buttonGroup_class.lua:171: attempt to index a nil value
 
 [Added]
 #2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
 #2025_43 Automatically fix wrong formated .icon table format
-#2025_44 New API function lib.OnEntryCallbackUpdateIcons to check from submenu up to main menu if any icon needs an update at the current path. Automatically called if an entry's data contains data.recursiveIconUpdate = true
 #2025_45 Register special contextMenu OnShow and/or OnHide callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.onHideCallback e.g.)
 
 [Changed]
