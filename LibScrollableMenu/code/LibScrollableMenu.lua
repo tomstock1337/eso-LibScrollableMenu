@@ -279,14 +279,25 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 ---------------------------------------------------------------
 	CHANGELOG Current version: 2.38 - Updated 2025-10-23
 ---------------------------------------------------------------
-Max error #: 2025_55
+Max error #: 2025_57
+
+[FEATURE[
+#2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(comboBox, entry, currentDropdownEntriesTable), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
 
 [KNOWN PROBLEMS]
 #2025_48 Search header is not searching an editBox's text or a slider's balue (only the label's text in front)
 
 [WORKING ON]
-#2025_44 New API function lib.OnEntryCallbackUpdateIcons to check from submenu up to main menu if any icon needs an update at the current path.
---> todo: Automatically called if an entry's data contains data.recursiveIconUpdate = true
+--#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+--Manual call via API function lib.UpdateIconsPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateIconPath == true
+--lib.UpdateIconsPath(comboBox, control, data)
+
+--#2025_44 Recursively check if any entry on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+--Optional checkFunc must return a boolean true [default return value] (refresh now) or false (no refresh needed), and uses the signature:
+--> checkFunc(comboBox, control, data)
+--Manual call via API function lib.UpdateEntryPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateEntryPath == true
+--lib.UpdateEntryPath(comboBox, control, data, checkFunc)
+
 
 [Fixed]
 #2025_46 Clicking a disabled entry at a contextmenu submenu will close the submenu as the control is not mouseEnabled and the scrollList control below is clicked. Detection of the scrollList's owner == LSM menu should take place then to suppress the close of the menu?
@@ -300,7 +311,7 @@ Max error #: 2025_55
 #2025_55 Radiobutton [ ] part clicked in a contextmenu's submenu raises a lua error user:/AddOns/LibScrollableMenu/classes/buttonGroup_class.lua:171: attempt to index a nil value
 
 [Added]
-#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a submenu, if e.g. any other entry was clicked
+#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a (sub)menu, if e.g. any other entry was clicked
 #2025_43 Automatically fix wrong formated .icon table format
 #2025_45 Register special contextMenu OnShow and/or OnHide callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.onHideCallback e.g.)
 

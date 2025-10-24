@@ -54,6 +54,9 @@ local refreshDropdownHeader
 local has_submenu = true
 local no_submenu = false
 
+local LSM_normalMenuRefreshDone = 1
+local LSM_submenuRefreshDone = 2
+
 
 --Constants
 local constants = lib.constants
@@ -74,6 +77,7 @@ local filterNamesExempts = searchFilterConstants.filterNamesExempts
 local MIN_WIDTH_WITHOUT_SEARCH_HEADER = dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER
 local MIN_WIDTH_WITH_SEARCH_HEADER = dropdownDefaults.MIN_WIDTH_WITH_SEARCH_HEADER
 
+local allowedEntryDataAutomaticUpdateRaise = entryTypeConstants.dataAllowedAutomaticUpdateRaise
 
 
 --Utility functions
@@ -144,47 +148,85 @@ end
 
 --------------------------------------------------------------------
 -- Dropdown (nested) submenu parsing functions
+-- -> API functions
 --------------------------------------------------------------------
+--#2025_57 Recursive function to update the entry's icon (and fire the IconUpdated) callback
+local function multiIconCheckFunc(comboBox, control, data)
+	local doRefresh = false
+	local oldHasIcon, newHasIcon
 
---#2025_44 Recursive function to update the entry (and fire the IconUpdated) callback
-local function updateSubmenuIcons(selfVar, control)
+	--Data table was provided, and it got a multiIcon value assigned
+	if data ~= nil and data.icon ~= nil then
+		doRefresh = true
+	else
+		--data.icon could be nil as icons were removed, so update the entry either way!
+		-->Just detect if any icon is currently set to the multiIcon control, and if the current data.icon is still having any icons
+		local multiIconControl = control.m_icon
+		if multiIconControl ~= nil then
+			oldHasIcon = multiIconControl:HasIcon()
+			local newIconData = getValueOrCallback((data ~= nil and data.icon) or nil, data)
+			newHasIcon = (newIconData ~= nil and true) or false
+			doRefresh = oldHasIcon ~= newHasIcon
+			--d(">hasIcon: " .. tos(oldHasIcon) .. " / " .. tos(newHasIcon) .. " -> doRefresh: " ..tos(doRefresh))
+			--Nothing changed, then check in detail: The number of icons old and new
+			if not doRefresh and newIconData ~= nil then
+				--d(">Icon counts: " .. tos(#multiIconControl.iconData) .. " / " .. tos(#newIconData))
+				doRefresh = #multiIconControl.iconData ~= #newIconData
+			end
+		end
+	end
+
+	--Icons were added, or removed?
+	if doRefresh == true
+		or (not doRefresh and oldHasIcon ~= nil and newHasIcon ~= nil and oldHasIcon == false and oldHasIcon == newHasIcon) then
+		lib:FireCallbacks('IconUpdated', control, data)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 195, tos(getControlName(control))) end
+	end
+	return doRefresh
+end
+
+
+--#2025_44/2025_57 checkFunction to define we do not need an additional update of the current (sub)menu, as we are coming from the OnMouseUp runHandler and
+--dropdown:SubmenuOrCurrentListRefresh(control) is always called before! So we only need to update the parentMenu entries
+local function checkFuncOnMouseupRundHandler_NoCurrentMenuUpdate(comboBox, control, data, isRecursiveCall, ...)
+	--Always suppress the 1st refresh try (on current entry's menu! As it was done by dropdown:SubmenuOrCurrentListRefresh(control) already)
+	--but allow the following ones later (from the parentMenus, if available). Param isRecursiveCall will tell us that we are at the parentMenus then
+	isRecursiveCall = isRecursiveCall or false
+
+	--... contains (if provided) the LSM_normalMenuRefreshDone = 1 or LSM_submenuRefreshDone = 2 or false from the OnMouseUp runHandler call of dropdown:SubmenuOrCurrentListRefresh(control)
+	local LSM_menuRefreshVar = select(1, ...)
+	if not LSM_menuRefreshVar then
+		--No menu update was done, allow it now
+		return true
+	else
+		if LSM_menuRefreshVar == LSM_normalMenuRefreshDone then
+			--Menu update was done
+			return not isRecursiveCall
+		elseif LSM_menuRefreshVar == LSM_submenuRefreshDone then
+			--Submenu refresh was done already
+			return isRecursiveCall
+		end
+	end
+	return true --allow the refresh in general (better twice than never)
+end
+
+--#2025_44 Recursive function to update the parent entry
+local function updateParentEntryRecursively(comboBox, control, checkFunc, ...)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 194) end
 
 	local data = getControlData(control)
 	--local submenuEntries = getValueOrCallback(data.entries, data) or {}
---d("[LSM]updateSubmenuIcons - control: " .. tos(getControlName(control)))
 
-	local doRefresh = false
-
-	--data.icon could be nil now as icons were removed, so update in any case
-	--Just detect if any icon is currently set and if the current data.icon is still having any icons
-	local oldHasIcon, newHasIcon
-	local multiIconControl = control.m_icon
-	if multiIconControl ~= nil then
-		oldHasIcon = multiIconControl:HasIcon()
-		local newIconData = getValueOrCallback((data ~= nil and data.icon) or nil, data)
-		newHasIcon = (newIconData ~= nil and true) or false
-		doRefresh = oldHasIcon ~= newHasIcon
---d(">hasIcon: " .. tos(oldHasIcon) .. " / " .. tos(newHasIcon) .. " -> doRefresh: " ..tos(doRefresh))
-		--Nothing changed, then check in detail: The number of icons old and new
-		if not doRefresh and newIconData ~= nil then
---d(">Icon counts: " .. tos(#multiIconControl.iconData) .. " / " .. tos(#newIconData))
-			doRefresh = #multiIconControl.iconData ~= #newIconData
-		end
+	local doRefresh = true
+	if type(checkFunc) == functionType then
+		doRefresh = checkFunc(comboBox, control, data, true, ...)
 	end
+
 --d(">doRefresh: " ..tos(doRefresh))
-	--This alone does not update the scroll list entry's icon (only if icons were removed!)
-	ZO_ScrollList_RefreshVisible(control.m_dropdownObject.scrollControl)
 
-	--Icons were removed?
-	if not doRefresh and oldHasIcon ~= nil and (oldHasIcon == false and oldHasIcon == newHasIcon) then
-		lib:FireCallbacks('IconUpdated', control, data)
-		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 195, tos(getControlName(control))) end
-
-	elseif doRefresh == true then
-		--Icons were added/count changed than before
-		lib:FireCallbacks('IconUpdated', control, data)
-		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 195, tos(getControlName(control))) end
+	if doRefresh == true then
+		--This alone does not update the scroll list entry's icon (only if icons were removed!)
+		ZO_ScrollList_RefreshVisible(control.m_dropdownObject.scrollControl)
 
 		--We need to call the dropdown Show function for that to update...
 		control.m_dropdownObject:SubmenuOrCurrentListRefresh(control, true) --override refresh
@@ -193,39 +235,98 @@ local function updateSubmenuIcons(selfVar, control)
 	--Check if any other parent (recursively)
 	local parent = data.m_parentControl
 	if parent then
-		updateSubmenuIcons(selfVar, parent)
+		updateParentEntryRecursively(comboBox, parent, checkFunc, ...)
 	end
+	return doRefresh
 end
 
---#2025_44 Recursively check if any icon on the current submenu path up to main menu needs an update. Manual call via API
---or automatic call if submenuEntry.recursiveIconUpdate == true
-local function onEntryCallbackUpdateIcons(selfVar, control, data)
---d("[LSM]UpdateIconsRecursively - control: " .. tos(getControlName(control)))
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 193, tos(getControlName(control))) end
-	if selfVar == nil or control == nil then return end
+--#2025_44 Recursively check if any entry on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+--Optional checkFunc must return a boolean true (refresh now) or false (no refresh needed), and uses the signature:
+--> checkFunc(comboBox, control, data)
+--Manual call via API function or automatic call if submenuEntry.updateEntryPath == true
+local function onEntryCallbackUpdateEntryPath(comboBox, control, data, checkFunc, ...)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 196, tos(getControlName(control))) end
+	if comboBox == nil or control == nil then return end
 	if data == nil then
 		data = getControlData(control)
 	end
 
-	if data ~= nil and data.icon then
-		lib:FireCallbacks('IconUpdated', control, data)
-		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 195, tos(getControlName(control))) end
+	local doRefresh = true
+	if type(checkFunc) == functionType then
+		doRefresh = checkFunc(comboBox, control, data, false, ...)
+	end
 
+	if data ~= nil and doRefresh == true then
 		control.m_dropdownObject:Refresh(data)
 	end
 
 	--Check parent menus (from bottom -> up to top)
 	local parent = data.m_parentControl
 	if parent then
-		updateSubmenuIcons(selfVar, parent)
+		updateParentEntryRecursively(comboBox, parent, checkFunc, ...)
 	end
+	return doRefresh
 end
-lib.UpdateIconsRecursively = onEntryCallbackUpdateIcons -- #2025_44 API function
+lib.UpdateEntryPath = onEntryCallbackUpdateEntryPath --#2025_44 API function
+
+--#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+--Manual call via API function or automatic call if submenuEntry.updateIconPath == true
+local function onEntryCallbackUpdateIconsPath(comboBox, control, data)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 193, tos(getControlName(control))) end
+	return onEntryCallbackUpdateEntryPath(comboBox, control, data, multiIconCheckFunc)
+end
+lib.UpdateIconsPath = onEntryCallbackUpdateIconsPath -- #2025_57 API function
+
+
+--#2025_44/2025_57 Check if data.updateEntryPath (and optional data.updateDataPathCheckFunc function), or data.updateIconPath
+-- were provided, and automatically update the entry and it's parentMenu entries then
+
+--Table with callback functions (defined above) according to the possible entry's data.<automaticUpdateData>
+local updateDataPathStr = "updateDataPath"
+local updateDataPathCheckFuncStr = "updateDataPathCheckFunc"
+local callbacksForRefresh = {
+	[updateDataPathStr] =	onEntryCallbackUpdateEntryPath,
+	["updateIconPath"] = 	onEntryCallbackUpdateIconsPath,
+}
+
+local function checkIfEntryRaisesAutomaticUpdate(comboBox, control, data, checkFuncForRefresh, ...)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 197, tos(getControlName(checkFuncForRefresh))) end
+	if comboBox == nil or control == nil then return end
+	if data == nil then
+		data = getControlData(control)
+	end
+	if data == nil then return false end
+
+	--Check if e.g. data.updateEntryPath or updateIconPath are provided
+	--> Priority of the refresh functions must be set via the index of table allowedEntryDataAutomaticUpdateRaise!
+	--> The lower the index, the higher the priority
+	for _, automaticUpdateData in ipairs(allowedEntryDataAutomaticUpdateRaise) do
+		if automaticUpdateData ~= nil then
+			local autoUpdateNow = getValueOrCallback(data[automaticUpdateData], data)
+			if autoUpdateNow == true then
+				--Any special checkFunction for the "updateDataPath" defined at the entry?
+				local callbackFuncForRefresh
+				if automaticUpdateData == updateDataPathStr then
+					if checkFuncForRefresh == nil then
+						checkFuncForRefresh = getValueOrCallback(data[updateDataPathCheckFuncStr], data)
+					end
+				end
+				callbackFuncForRefresh = callbacksForRefresh[automaticUpdateData]
+
+				if type(callbackFuncForRefresh) == functionType then
+					return callbackFuncForRefresh(comboBox, control, data, checkFuncForRefresh, ...)
+				end
+			end
+		end
+	end
+	return false
+end
+
 
 -- Add/Remove the new status of a dropdown entry,
 -- This works up from the mouse-over entry's submenu, to the dropdown,
 -- as long as it does not run into a submenu still having a matching entry.
-local function updateSubmenuNewStatus(selfVar, control)
+local function updateSubmenuNewStatus(comboBox, control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 31) end
 	-- reverse parse
 	local isNew = false
@@ -255,7 +356,7 @@ local function updateSubmenuNewStatus(selfVar, control)
 		--Check if any other parent (recursively)
 		local parent = data.m_parentControl
 		if parent then
-			updateSubmenuNewStatus(selfVar, parent)
+			updateSubmenuNewStatus(comboBox, parent)
 		end
 	end
 end
@@ -467,7 +568,9 @@ local function onMouseUp(control, data, hasSubmenu)
 	dropdown:Narrate("OnEntrySelected", control, data, hasSubmenu)
 
 	hideTooltip(control)
-	dropdown:SubmenuOrCurrentListRefresh(control) --#2025_42
+
+	local onMouseUpMenuRefreshResult = dropdown:SubmenuOrCurrentListRefresh(control) --#2025_42 Update currently shown list to update enabled state of other entries etc.
+	checkIfEntryRaisesAutomaticUpdate(dropdown.m_comboBox, control, data, checkFuncOnMouseupRundHandler_NoCurrentMenuUpdate, onMouseUpMenuRefreshResult) --#2025_44/2025_57 Check if data.updateDataPath etc. is provided and should update the current entry AND parentMenu entries
 	return dropdown
 end
 
@@ -1767,6 +1870,7 @@ function dropdownClass:IsAutomaticRefreshEnabled()
 	end
 end
 
+--#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a (sub)menu, if e.g. any other entry was clicked
 function dropdownClass:SubmenuOrCurrentListRefresh(control, override)
 	override = override or false
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 192, tos(getControlName(control))) end
@@ -1786,6 +1890,7 @@ function dropdownClass:SubmenuOrCurrentListRefresh(control, override)
 		zo_callLater(function() --delay the update of the entries a bit so all values have been updated properly before
 			comboBox:Show()
 		end, 15)
+		return LSM_normalMenuRefreshDone --Normal menu refresh started
 	elseif automaticSubmenuRefresh == true then
 		--Submenu refresh
 		local owner = (control ~= nil and control.m_owner) or self.owner
@@ -1796,8 +1901,10 @@ function dropdownClass:SubmenuOrCurrentListRefresh(control, override)
 			-- Must clear now. Otherwise, moving onto a submenu will close it from exiting previous row.
 			clearTimeout()
 			self:ShowSubmenu(owner.openingControl)
+			return LSM_submenuRefreshDone --Submenu refresh done
 		end
 	end
+	return false
 end
 
 

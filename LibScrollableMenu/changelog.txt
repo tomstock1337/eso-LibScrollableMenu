@@ -3,8 +3,16 @@
 #2025_48 Search header is not searching an editBox's text or a slider's balue (only the label's text in front)
 
 [WORKING ON]
-#2025_44 New API function lib.OnEntryCallbackUpdateIcons to check from submenu up to main menu if any icon needs an update at the current path.
---> todo: Automatically called if an entry's data contains data.recursiveIconUpdate = true
+--#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+--Manual call via API function lib.UpdateIconsPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateIconPath == true
+--lib.UpdateIconsPath(comboBox, control, data)
+
+--#2025_44 Recursively check if any entry on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+--Optional checkFunc must return a boolean true [default return value] (refresh now) or false (no refresh needed), and uses the signature:
+--> checkFunc(comboBox, control, data)
+--Manual call via API function lib.UpdateEntryPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateEntryPath == true
+--lib.UpdateEntryPath(comboBox, control, data, checkFunc)
+
 
 [Fixed]
 #2025_46 Clicking a disabled entry at a contextmenu submenu will close the submenu as the control is not mouseEnabled and the scrollList control below is clicked. Detection of the scrollList's owner == LSM menu should take place then to suppress the close of the menu?
@@ -23,12 +31,10 @@
 -Added options.automaticRefresh
 -Added options.automaticSubmenuRefresh
 --->  === Dropdown Refresh functions
---		boolean automaticRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the normal scrolllist should happen, if you click/change any entry's value. This would be needed
+--		boolean automaticRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the normal scrollList should happen, if you click/change any entry's value. This would be needed
 --												e.g. if you want the entry B to react on entry A's value (e.g. checkboxes -> enabled state). Default value is false
---		boolean automaticSubmenuRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the submenu's scrolllist should happen, if you click/change any entry's value. This would be needed
+--		boolean automaticSubmenuRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the submenu's scrollList should happen, if you click/change any entry's value. This would be needed
 --												e.g. if you want the entry B to react on entry A's value (e.g. checkboxes -> enabled state). Default value is false
-#2025_44 Added API function lib.UpdateIconsRecursively(comboBox, rowControl, optional: data) Update the path upwards from submenu's rowControl to the parent menus and refresh the icons at the entries. Can be called manually from a callback of any submenu entry e.g. or will be automatically called if the submenu's entry data.recursiveIconUpdate == true
--->2nd part entry data.recursiveIconUpdate == true is still open -> 20251023
 #2025_45 Register special contextMenu OnShow and/or OnHide callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.onHideCallback e.g.)
 
 

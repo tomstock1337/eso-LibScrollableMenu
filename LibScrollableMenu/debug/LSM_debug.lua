@@ -233,9 +233,11 @@ local debugLogMessagePatterns = {
 	[190] = "comboBox_base:SetupEntrySlider - control: %s, list: %s",
 	[191] = "AddCustomScrollableMenuSlider-text: %s, sliderData: %s",
 	[192] = "dropdownClass:SubmenuRefresh - control:  %s",
-	[193] = "onEntryCallbackUpdateIcons - control:  %s",
-	[194] = "updateSubmenuIcons",
+	[193] = "onEntryCallbackUpdateIconsPath - control:  %s",
+	[194] = "updateParentEntryRecursively",
 	[195] = "FireCallbacks: IconUpdated - control:  %s",
+	[196] = "onEntryCallbackUpdateEntryPath - control:  %s",
+	[197] = "checkIfEntryRaisesAutomaticUpdate - control:  %s, checkFuncForRefresh: %s",
 }
 
 

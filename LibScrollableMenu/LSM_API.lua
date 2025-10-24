@@ -692,7 +692,8 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 end
 
 
--- API to show a context menu at a buttonGrouop where you can set all buttons in a group based on Select all, Unselect All, Invert all.
+-- API to show a context menu at a buttonGroup where you can (un)check/invert all buttons in a group:
+-- Select all, Unselect All, Invert all.
 function buttonGroupDefaultContextMenu(comboBox, control, data)
 	local buttonGroup = comboBox.m_buttonGroup
 	if buttonGroup == nil then return end
@@ -750,3 +751,20 @@ function buttonGroupDefaultContextMenu(comboBox, control, data)
 end
 lib.SetButtonGroupState = buttonGroupDefaultContextMenu --Only for compatibilitxy (if any other addon was using 'SetButtonGroupState' already)
 lib.ButtonGroupDefaultContextMenu = buttonGroupDefaultContextMenu
+
+
+--======================================================================================================================
+--[[ Other API functions available:
+
+--]Defined in dropdown_class.lua[--
+
+--#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+--Manual call via API function lib.UpdateIconsPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateIconPath == true
+--lib.UpdateIconsPath(comboBox, control, data)
+
+--#2025_44 Recursively check if any entry on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+--Optional checkFunc must return a boolean true [default return value] (refresh now) or false (no refresh needed), and uses the signature:
+--> checkFunc(comboBox, control, data)
+--Manual call via API function lib.UpdateEntryPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateEntryPath == true
+--lib.UpdateEntryPath(comboBox, control, data, checkFunc)
+]]
