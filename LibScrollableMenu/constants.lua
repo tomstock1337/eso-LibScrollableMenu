@@ -52,6 +52,7 @@ local constants = lib.constants
 lib.Debug = {}
 lib.Debug.doDebug = false
 lib.Debug.doVerboseDebug = false
+lib.Debug.controlNameCache = {}
 
 local debugPrefix = "[" .. MAJOR .. "]"
 lib.Debug.prefix = debugPrefix
@@ -227,6 +228,12 @@ local LSM_ENTRY_TYPE_BUTTON 		= 6
 local LSM_ENTRY_TYPE_RADIOBUTTON 	= 7
 local LSM_ENTRY_TYPE_EDITBOX 		= 8
 local LSM_ENTRY_TYPE_SLIDER 		= 9
+
+--Updater modes for the menus (See API function RefreshCustomScrollableMenu)
+LSM_UPDATE_MODE_MAINMENU = 1
+LSM_UPDATE_MODE_SUBMENU = 2
+LSM_UPDATE_MODE_BOTH = 99
+
 
 --Constant for the divider entryType
 lib.DIVIDER = "-"

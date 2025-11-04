@@ -79,11 +79,20 @@ local alreadyCheckedSubmenuOpeningItems = {}
 --------------------------------------------------------------------
 -- Controls
 --------------------------------------------------------------------
+local controlNameCache = lib.Debug.controlNameCache --Cache already determined control names, unless they are nil
+
 function libUtil.getControlName(control, alternativeControl)
+	--Check if cached controlName exists
+	if control ~= nil and controlNameCache[control] ~= nil then return controlNameCache[control] end
+	if alternativeControl ~= nil and controlNameCache[alternativeControl] ~= nil then return controlNameCache[alternativeControl]  end
+
+	--Get controlName and cache it if found
 	local ctrlName = control ~= nil and (control.name or (control.GetName ~= nil and control:GetName()))
 	if ctrlName == nil and alternativeControl ~= nil then
 		ctrlName = (alternativeControl.name or (alternativeControl.GetName ~= nil and alternativeControl:GetName()))
+		if ctrlName ~= nil then controlNameCache[alternativeControl] = ctrlName end
 	end
+	if control ~= nil and ctrlName ~= nil then controlNameCache[control] = ctrlName end
 	ctrlName = ctrlName or "n/a"
 	return ctrlName
 end

@@ -188,25 +188,46 @@ end
 
 --#2025_44/2025_57 checkFunction to define we do not need an additional update of the current (sub)menu, as we are coming from the OnMouseUp runHandler and
 --dropdown:SubmenuOrCurrentListRefresh(control) is always called before! So we only need to update the parentMenu entries
-local function checkFuncOnMouseupRundHandler_NoCurrentMenuUpdate(comboBox, control, data, isRecursiveCall, ...)
-	--Always suppress the 1st refresh try (on current entry's menu! As it was done by dropdown:SubmenuOrCurrentListRefresh(control) already)
-	--but allow the following ones later (from the parentMenus, if available). Param isRecursiveCall will tell us that we are at the parentMenus then
+local function checkFuncOnMouseUpRunHandler_NoCurrentMenuUpdate(comboBox, control, data, isRecursiveCall, ...)
+d("[LSM]checkFuncOnMouseUpRundHandler_NoCurrentMenuUpdate - control: " .. getControlName(control) .. ", isRecursiveCall: " .. tos(isRecursiveCall))
+	--Always suppress the refresh try on either current entry's menu or submenu (depending on the return value of dropdown:SubmenuOrCurrentListRefresh(control) which was called at
+	--the runHandler["OnMouseUp"] already. But allow the following ones later (from the parentMenus, if available).
+	--Param isRecursiveCall == true will tell us that we are at the recursively parsed parentMenus
+	--Params ... should 1st contain the returnValue of dropdown:SubmenuOrCurrentListRefresh, e.g. LSM_normalMenuRefreshDone or LSM_submenuRefreshDone,
+	--			and 2nd the entryControl which is currently checked (and was used within runHandler["OnMouseUp"])
 	isRecursiveCall = isRecursiveCall or false
 
-	--... contains (if provided) the LSM_normalMenuRefreshDone = 1 or LSM_submenuRefreshDone = 2 or false from the OnMouseUp runHandler call of dropdown:SubmenuOrCurrentListRefresh(control)
 	local LSM_menuRefreshVar = select(1, ...)
-	if not LSM_menuRefreshVar then
-		--No menu update was done, allow it now
+	local entryControlUsedForOnMouseUpRunHandler = select(2, ...)
+	if not LSM_menuRefreshVar or entryControlUsedForOnMouseUpRunHandler == nil then
+		d("<1 fixed allowed")
+		--No menu update was done via runHandler["OnMouseUp"] , allow it now
 		return true
-	else
+	elseif LSM_menuRefreshVar ~= nil and entryControlUsedForOnMouseUpRunHandler ~= nil then
 		if LSM_menuRefreshVar == LSM_normalMenuRefreshDone then
-			--Menu update was done
-			return not isRecursiveCall
-		elseif LSM_menuRefreshVar == LSM_submenuRefreshDone then
-			--Submenu refresh was done already
+			--Menu update was done via runHandler["OnMouseUp"], only allow parentMenu update
+d("<2 isRecursiveCall: " ..tos(isRecursiveCall))
 			return isRecursiveCall
+		elseif LSM_menuRefreshVar == LSM_submenuRefreshDone then
+			local allowRefresh = false
+			--Submenu (but only the direct submenu of the openingControl, not all recursively up the path!) update was done via runHandler["OnMouseUp"]
+			--only allow menu update, or
+			allowRefresh = not isRecursiveCall
+			--allow other parentMenus (which aren't the direct openingControl of the current control's menu)
+			if not allowRefresh and control ~= entryControlUsedForOnMouseUpRunHandler then
+				-- Compare the original entry's control openingControl with the current control (parentMenu). If they differ, this menu wasn't updated yet
+				-- and will be updated now
+				local owner = (entryControlUsedForOnMouseUpRunHandler ~= nil and entryControlUsedForOnMouseUpRunHandler.m_owner)
+				if owner ~= nil and owner.openingControl ~= nil then
+					allowRefresh = owner.openingControl ~= control
+				end
+d(">entryControlUsedForOnMouseUpRunHandler: " .. tos(getControlName(entryControlUsedForOnMouseUpRunHandler)) .. ", owner: " .. tos(owner) .. ", openingControl: " .. tos(owner ~= nil and owner.openingControl or nil))
+			end
+d("<3 allowRefresh: " ..tos(allowRefresh))
+			return allowRefresh
 		end
 	end
+d("<4 fixed allowed")
 	return true --allow the refresh in general (better twice than never)
 end
 
@@ -291,6 +312,7 @@ local callbacksForRefresh = {
 
 local function checkIfEntryRaisesAutomaticUpdate(comboBox, control, data, checkFuncForRefresh, ...)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 197, tos(getControlName(checkFuncForRefresh))) end
+--d("[LSM]checkIfEntryRaisesAutomaticUpdate - control: " .. tos(getControlName(control)))
 	if comboBox == nil or control == nil then return end
 	if data == nil then
 		data = getControlData(control)
@@ -570,7 +592,8 @@ local function onMouseUp(control, data, hasSubmenu)
 	hideTooltip(control)
 
 	local onMouseUpMenuRefreshResult = dropdown:SubmenuOrCurrentListRefresh(control) --#2025_42 Update currently shown list to update enabled state of other entries etc.
-	checkIfEntryRaisesAutomaticUpdate(dropdown.m_comboBox, control, data, checkFuncOnMouseupRundHandler_NoCurrentMenuUpdate, onMouseUpMenuRefreshResult) --#2025_44/2025_57 Check if data.updateDataPath etc. is provided and should update the current entry AND parentMenu entries
+
+	checkIfEntryRaisesAutomaticUpdate(dropdown.m_comboBox, control, data, checkFuncOnMouseUpRunHandler_NoCurrentMenuUpdate, onMouseUpMenuRefreshResult, control) --#2025_44/2025_57 Check if data.updateDataPath etc. is provided and should update the current entry AND parentMenu entries
 	return dropdown
 end
 
@@ -1871,7 +1894,7 @@ function dropdownClass:IsAutomaticRefreshEnabled()
 end
 
 --#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a (sub)menu, if e.g. any other entry was clicked
-function dropdownClass:SubmenuOrCurrentListRefresh(control, override)
+function dropdownClass:SubmenuOrCurrentListRefresh(control, override, refreshMainMenuOrSubmenu)
 	override = override or false
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 192, tos(getControlName(control))) end
 	local comboBox = self.m_comboBox
@@ -1883,15 +1906,15 @@ function dropdownClass:SubmenuOrCurrentListRefresh(control, override)
 		automaticRefresh = true
 		automaticSubmenuRefresh = true
 	end
---d("[LSM]dropdownClass:SubmenuOrCurrentListRefresh - automaticRefresh: " .. tos(automaticRefresh) .. ", automaticSubmenuRefresh: " .. tos(automaticSubmenuRefresh))
+--d("[LSM]dropdownClass:SubmenuOrCurrentListRefresh - automaticRefresh: " .. tos(automaticRefresh) .. ", automaticSubmenuRefresh: " .. tos(automaticSubmenuRefresh) .. ", refreshMainMenuOrSubmenu: " .. tos(refreshMainMenuOrSubmenu))
 
-	if automaticRefresh == true and not self.m_parentMenu then --dropdown got no submenu? Refresh current scrollList
+	if automaticRefresh == true and ( not self.m_parentMenu or (refreshMainMenuOrSubmenu ~= nil and refreshMainMenuOrSubmenu == true) ) then --dropdown got no submenu? Refresh current scrollList
 --d(">refreshing menu")
 		zo_callLater(function() --delay the update of the entries a bit so all values have been updated properly before
 			comboBox:Show()
 		end, 15)
 		return LSM_normalMenuRefreshDone --Normal menu refresh started
-	elseif automaticSubmenuRefresh == true then
+	elseif automaticSubmenuRefresh == true and ( self.m_parentMenu ~= nil or (refreshMainMenuOrSubmenu ~= nil and refreshMainMenuOrSubmenu == false) ) then
 		--Submenu refresh
 		local owner = (control ~= nil and control.m_owner) or self.owner
 		if owner ~= nil and owner.openingControl ~= nil then

@@ -691,6 +691,41 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	return true, myAddonCallbackFunc(comboBox, item, itemsForCallbackFunc, ...)
 end
 
+--API to refresh a dropdown's submenu or mainmenu or an entry control visually (e.g. if you click an entry, called from the callback function)
+-->Parameter updateMode can be left empty, then the system will automatically determine if a submenu exists and the item belongs to that, and refresh that,
+--or it will update the mainmenu if it exists.
+--Or you specify one of the following updateModes:
+--->LSM_UPDATE_MODE_MAINMENU	Only update the mainmenu visually
+--->LSM_UPDATE_MODE_SUBMENU		Only update the submenu visually
+--->LSM_UPDATE_MODE_BOTH		Update the submenu and the mainmenu, both
+---Parameter comboBox is optional
+local function LSM_RefreshLibScrollableMenu(mocCtrl, updateMode, comboBox)
+    --Update the visible LSM dropdown's submenu now so the disabled state and checkbox values commit again
+	if mocCtrl ~= nil then
+		if comboBox == nil then
+			comboBox = (mocCtrl.m_comboBox or (mocCtrl.m_owner and mocCtrl.m_owner.m_comboBox)) or nil
+		end
+		if comboBox == nil then return end
+
+		--Main Menu
+		if updateMode == LSM_UPDATE_MODE_BOTH or updateMode == LSM_UPDATE_MODE_MAINMENU then
+			local owningWindow = mocCtrl.GetOwningWindow ~= nil and mocCtrl:GetOwningWindow() or nil
+			local mainMenuDropdown = (owningWindow and owningWindow.m_dropdownObject) or nil
+			if mainMenuDropdown ~= nil then
+				mainMenuDropdown:SubmenuOrCurrentListRefresh(mocCtrl, true, true)
+			end
+		end
+
+		--Submenu
+		if updateMode == LSM_UPDATE_MODE_BOTH or updateMode == LSM_UPDATE_MODE_SUBMENU then
+			if comboBox and comboBox:IsDropdownVisible() == true and mocCtrl.m_dropdownObject then
+				mocCtrl.m_dropdownObject:SubmenuOrCurrentListRefresh(mocCtrl, true, false)
+			end
+		end
+	end
+end
+RefreshCustomScrollableMenu = LSM_RefreshLibScrollableMenu
+
 
 -- API to show a context menu at a buttonGroup where you can (un)check/invert all buttons in a group:
 -- Select all, Unselect All, Invert all.
