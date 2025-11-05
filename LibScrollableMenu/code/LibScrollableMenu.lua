@@ -277,9 +277,9 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.38 - Updated 2025-10-23
+	CHANGELOG Current version: 2.38 - Updated 2025-11-05
 ---------------------------------------------------------------
-Max error #: 2025_57
+Max error #: 2025_59
 
 [FEATURE[
 #2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(comboBox, entry, currentDropdownEntriesTable), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
@@ -314,6 +314,17 @@ Max error #: 2025_57
 #2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a (sub)menu, if e.g. any other entry was clicked
 #2025_43 Automatically fix wrong formated .icon table format
 #2025_45 Register special contextMenu OnShow and/or OnHide callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.onHideCallback e.g.)
+#2025_58 API to refresh a dropdown's submenu or mainmenu or an entry control visually (e.g. if you click an entry, called from the callback function)
+-->Parameter updateMode can be left empty, then the system will automatically determine if a submenu exists and the item belongs to that, and refresh that,
+--or it will update the mainmenu if it exists.
+--Or you specify one of the following updateModes:
+--->LSM_UPDATE_MODE_MAINMENU	Only update the mainmenu visually
+--->LSM_UPDATE_MODE_SUBMENU		Only update the submenu visually
+--->LSM_UPDATE_MODE_BOTH		Update the submenu and the mainmenu, both
+---Parameter comboBox is optional
+RefreshCustomScrollableMenu(mocCtrl, updateMode, comboBox)
+#2025_59 Added API function IsCustomScrollableContextMenuShown
+--Returns boolean true/false if any LSM context menu is currently showing it's dropdown
 
 [Changed]
 

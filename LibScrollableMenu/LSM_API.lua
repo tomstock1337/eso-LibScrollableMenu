@@ -700,6 +700,7 @@ end
 --->LSM_UPDATE_MODE_BOTH		Update the submenu and the mainmenu, both
 ---Parameter comboBox is optional
 local function LSM_RefreshLibScrollableMenu(mocCtrl, updateMode, comboBox)
+--d("[RefreshCustomScrollableMenu] - moc: " .. getControlName(mocCtrl) .. "; updateMode: " ..tos(updateMode) .. "; comboBox: " .. tos(comboBox))
     --Update the visible LSM dropdown's submenu now so the disabled state and checkbox values commit again
 	if mocCtrl ~= nil then
 		if comboBox == nil then
@@ -709,22 +710,34 @@ local function LSM_RefreshLibScrollableMenu(mocCtrl, updateMode, comboBox)
 
 		--Main Menu
 		if updateMode == LSM_UPDATE_MODE_BOTH or updateMode == LSM_UPDATE_MODE_MAINMENU then
-			local owningWindow = mocCtrl.GetOwningWindow ~= nil and mocCtrl:GetOwningWindow() or nil
-			local mainMenuDropdown = (owningWindow and owningWindow.m_dropdownObject) or nil
+			--local owningWindow = mocCtrl.GetOwningWindow ~= nil and mocCtrl:GetOwningWindow() or nil
+			--local mainMenuDropdown = (owningWindow and owningWindow.m_dropdownObject) or nil
+			local mainMenuComboBox = (mocCtrl.m_owner ~= nil and mocCtrl.m_owner.m_comboBox) or nil
+			local mainMenuDropdown = (mainMenuComboBox ~= nil and mainMenuComboBox.m_dropdownObject) or nil
 			if mainMenuDropdown ~= nil then
-				mainMenuDropdown:SubmenuOrCurrentListRefresh(mocCtrl, true, true)
+				if mainMenuComboBox:IsDropdownVisible() == true then
+					mainMenuDropdown:SubmenuOrCurrentListRefresh(mocCtrl, true, true)
+				end
 			end
 		end
 
 		--Submenu
 		if updateMode == LSM_UPDATE_MODE_BOTH or updateMode == LSM_UPDATE_MODE_SUBMENU then
-			if comboBox and comboBox:IsDropdownVisible() == true and mocCtrl.m_dropdownObject then
+			if mocCtrl.m_dropdownObject and comboBox and comboBox:IsDropdownVisible() == true then
 				mocCtrl.m_dropdownObject:SubmenuOrCurrentListRefresh(mocCtrl, true, false)
 			end
 		end
 	end
 end
 RefreshCustomScrollableMenu = LSM_RefreshLibScrollableMenu
+
+--Returns boolean true/false if any LSM context menu is currently showing it's dropdown
+local function LSM_IsContextMenuShown()
+	g_contextMenu = updateContextMenuRef()
+	if g_contextMenu == nil then return false end
+	return g_contextMenu:IsDropdownVisible()
+end
+IsCustomScrollableContextMenuShown = LSM_IsContextMenuShown
 
 
 -- API to show a context menu at a buttonGroup where you can (un)check/invert all buttons in a group:

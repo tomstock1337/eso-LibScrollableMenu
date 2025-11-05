@@ -36,7 +36,17 @@
 --		boolean automaticSubmenuRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the submenu's scrollList should happen, if you click/change any entry's value. This would be needed
 --												e.g. if you want the entry B to react on entry A's value (e.g. checkboxes -> enabled state). Default value is false
 #2025_45 Register special contextMenu OnShow and/or OnHide callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.onHideCallback e.g.)
-
+#2025_58 API to refresh a dropdown's submenu or mainmenu or an entry control visually (e.g. if you click an entry, called from the callback function)
+-->Parameter updateMode can be left empty, then the system will automatically determine if a submenu exists and the item belongs to that, and refresh that,
+--or it will update the mainmenu if it exists.
+--Or you specify one of the following updateModes:
+--->LSM_UPDATE_MODE_MAINMENU	Only update the mainmenu visually
+--->LSM_UPDATE_MODE_SUBMENU		Only update the submenu visually
+--->LSM_UPDATE_MODE_BOTH		Update the submenu and the mainmenu, both
+---Parameter comboBox is optional
+RefreshCustomScrollableMenu(mocCtrl, updateMode, comboBox)
+#2025_59 Added API function IsCustomScrollableContextMenuShown
+--Returns boolean true/false if any LSM context menu is currently showing it's dropdown
 
 
 -v- ---------------LSM v2.37 - 2025-09-21--------------------------------------------------------------------------- -v-
