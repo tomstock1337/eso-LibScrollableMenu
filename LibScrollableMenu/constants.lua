@@ -348,8 +348,8 @@ constants.entryTypes.updateEntryPathsData = updateEntryPathsData
 --The index of this table defines the priority -> The lower the index, the higher the priority (the higher the priority the
 --earlier this data's callback function is called)
 local dataAllowedAutomaticUpdateRaise = {
-	[1] = updateEntryPaths.updateEntryPath,
-	[2] = updateEntryPaths.updateIconPath,
+	[1] = updateEntryPathsData.updateEntryPath,
+	[2] = updateEntryPathsData.updateIconPath,
 }
 constants.entryTypes.dataAllowedAutomaticUpdateRaise = dataAllowedAutomaticUpdateRaise
 
