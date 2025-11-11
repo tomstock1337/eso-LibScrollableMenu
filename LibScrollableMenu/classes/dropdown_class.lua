@@ -79,6 +79,11 @@ local MIN_WIDTH_WITH_SEARCH_HEADER = dropdownDefaults.MIN_WIDTH_WITH_SEARCH_HEAD
 
 local allowedEntryDataAutomaticUpdateRaise = entryTypeConstants.dataAllowedAutomaticUpdateRaise
 
+local updateEntryPathsData = entryTypeConstants.updateEntryPathsData
+local updateEntryPath = updateEntryPathsData.updateEntryPath
+local updateIconPath = updateEntryPathsData.updateIconPath
+local updateEntryPathCheckFunc = updateEntryPathsData.updateEntryPathCheckFunc
+
 
 --Utility functions
 local libUtil = lib.Util
@@ -299,15 +304,13 @@ end
 lib.UpdateIconsPath = onEntryCallbackUpdateIconsPath -- #2025_57 API function
 
 
---#2025_44/2025_57 Check if data.updateEntryPath (and optional data.updateDataPathCheckFunc function), or data.updateIconPath
+--#2025_44/2025_57 Check if data.updateEntryPath (and optional data.updateEntryPathCheckFunc function), or data.updateIconPath
 -- were provided, and automatically update the entry and it's parentMenu entries then
 
 --Table with callback functions (defined above) according to the possible entry's data.<automaticUpdateData>
-local updateDataPathStr = "updateDataPath"
-local updateDataPathCheckFuncStr = "updateDataPathCheckFunc"
-local callbacksForRefresh = {
-	[updateDataPathStr] =	onEntryCallbackUpdateEntryPath,
-	["updateIconPath"] = 	onEntryCallbackUpdateIconsPath,
+local callbacksForRefresh         = {
+	[updateEntryPathCheckFunc] =	onEntryCallbackUpdateEntryPath,
+	[updateIconPath]   = 			onEntryCallbackUpdateIconsPath,
 }
 
 local function checkIfEntryRaisesAutomaticUpdate(comboBox, control, data, checkFuncForRefresh, ...)
@@ -325,17 +328,21 @@ local function checkIfEntryRaisesAutomaticUpdate(comboBox, control, data, checkF
 	for _, automaticUpdateData in ipairs(allowedEntryDataAutomaticUpdateRaise) do
 		if automaticUpdateData ~= nil then
 			local autoUpdateNow = getValueOrCallback(data[automaticUpdateData], data)
-			if autoUpdateNow == true then
-				--Any special checkFunction for the "updateDataPath" defined at the entry?
-				local callbackFuncForRefresh
-				if automaticUpdateData == updateDataPathStr then
-					if checkFuncForRefresh == nil then
-						checkFuncForRefresh = getValueOrCallback(data[updateDataPathCheckFuncStr], data)
-					end
-				end
-				callbackFuncForRefresh = callbacksForRefresh[automaticUpdateData]
-
+			if autoUpdateNow ~= nil and autoUpdateNow == true then
+--d(">found automatic update entry: " ..tos(automaticUpdateData))
+				local callbackFuncForRefresh = callbacksForRefresh[automaticUpdateData]
 				if type(callbackFuncForRefresh) == functionType then
+					--Any special checkFunction for the "updateEntryPath" defined at the entry?
+					if automaticUpdateData == updateEntryPath then
+						local checkFuncForRefreshBackup = checkFuncForRefresh
+						checkFuncForRefresh = data[updateEntryPathCheckFunc]
+						if checkFuncForRefresh == nil then
+							checkFuncForRefresh = checkFuncForRefreshBackup
+--d(">>using passed in checkFuncForRefresh!")
+						else
+--d(">>using data["..tos(updateEntryPathCheckFuncStr).."] checkFuncForRefresh!")
+						end
+					end
 					return callbackFuncForRefresh(comboBox, control, data, checkFuncForRefresh, ...)
 				end
 			end
@@ -593,7 +600,7 @@ local function onMouseUp(control, data, hasSubmenu)
 
 	local onMouseUpMenuRefreshResult = dropdown:SubmenuOrCurrentListRefresh(control) --#2025_42 Update currently shown list to update enabled state of other entries etc.
 
-	checkIfEntryRaisesAutomaticUpdate(dropdown.m_comboBox, control, data, checkFuncOnMouseUpRunHandler_NoCurrentMenuUpdate, onMouseUpMenuRefreshResult, control) --#2025_44/2025_57 Check if data.updateDataPath etc. is provided and should update the current entry AND parentMenu entries
+	checkIfEntryRaisesAutomaticUpdate(dropdown.m_comboBox, control, data, checkFuncOnMouseUpRunHandler_NoCurrentMenuUpdate, onMouseUpMenuRefreshResult, control) --#2025_44/2025_57 Check if data.updateEntryPath etc. is provided and should update the current entry AND parentMenu entries
 	return dropdown
 end
 

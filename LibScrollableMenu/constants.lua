@@ -337,11 +337,21 @@ local additionalDataKeyToLSMEntryType = {
 constants.entryTypes.additionalDataKeyToLSMEntryType = additionalDataKeyToLSMEntryType
 
 --##2025_44/2025_57 Table with entry's data key which could raise an automatic update of the entry, and all parentMenu
---entries. The index of this table defines the priority -> The lower the index, the higher the priority
-constants.entryTypes.dataAllowedAutomaticUpdateRaise ={
-	[1] = "updateEntryPath",
-	[2] = "updateIconPath",
+--entries.
+local updateEntryPathsData = {
+	updateEntryPath = "updateEntryPath",
+	updateEntryPathCheckFunc = "updateEntryPathCheckFunc",
+	updateIconPath = "updateIconPath"
 }
+constants.entryTypes.updateEntryPathsData = updateEntryPathsData
+
+--The index of this table defines the priority -> The lower the index, the higher the priority (the higher the priority the
+--earlier this data's callback function is called)
+local dataAllowedAutomaticUpdateRaise = {
+	[1] = updateEntryPaths.updateEntryPath,
+	[2] = updateEntryPaths.updateIconPath,
+}
+constants.entryTypes.dataAllowedAutomaticUpdateRaise = dataAllowedAutomaticUpdateRaise
 
 
 ------------------------------------------------------------------------------------------------------------------------

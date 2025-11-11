@@ -285,7 +285,7 @@ Max error #: 2025_59
 #2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(comboBox, entry, currentDropdownEntriesTable), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
 
 [KNOWN PROBLEMS]
-#2025_48 Search header is not searching an editBox's text or a slider's balue (only the label's text in front)
+#2025_48 Search header is not searching an editBox's text or a slider's value (only the label's text in front)
 
 [WORKING ON]
 --#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
