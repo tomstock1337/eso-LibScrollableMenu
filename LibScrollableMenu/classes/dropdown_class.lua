@@ -72,6 +72,7 @@ local onEntryMouseUpExcludeEntryTypes = entryTypeConstants.onEntryMouseUpExclude
 local dropdownDefaults = dropdownConstants.defaults
 local noEntriesResults = searchFilterConstants.noEntriesResults
 local filteredEntryTypes = searchFilterConstants.filteredEntryTypes
+local filteredEntryTypsChildsToSearch = searchFilterConstants.filteredEntryTypsChildsToSearch
 local filterNamesExempts = searchFilterConstants.filterNamesExempts
 
 local MIN_WIDTH_WITHOUT_SEARCH_HEADER = dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER
@@ -293,7 +294,7 @@ local function onEntryCallbackUpdateEntryPath(comboBox, control, data, checkFunc
 	end
 	return doRefresh
 end
-lib.UpdateEntryPath = onEntryCallbackUpdateEntryPath --#2025_44 API function
+UpdateCustomScrollableMenuEntryPath = onEntryCallbackUpdateEntryPath --#2025_44 API function
 
 --#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
 --Manual call via API function or automatic call if submenuEntry.updateIconPath == true
@@ -301,7 +302,7 @@ local function onEntryCallbackUpdateIconsPath(comboBox, control, data)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 193, tos(getControlName(control))) end
 	return onEntryCallbackUpdateEntryPath(comboBox, control, data, multiIconCheckFunc)
 end
-lib.UpdateIconsPath = onEntryCallbackUpdateIconsPath -- #2025_57 API function
+UpdateCustomScrollableMenuEntryIconPath = onEntryCallbackUpdateIconsPath -- #2025_57 API function
 
 
 --#2025_44/2025_57 Check if data.updateEntryPath (and optional data.updateEntryPathCheckFunc function), or data.updateIconPath
@@ -480,9 +481,42 @@ local function verifyLabelString(data)
 	return type(data.name) == stringType
 end
 
+--Check if a childControl of the entryType's item matches the search text, e.g.
+--a editBox's or slider's text/number value
+local function checkIfChildControlTextMatches(item, entryType, textToSearch) --#2025_48
+	local childControlsToCheck = filteredEntryTypsChildsToSearch[entryType]
+	if childControlsToCheck == nil then return false end
+
+	local rowControl = item.control
+	if rowControl ~= nil then
+		for _, childControlData in ipairs(childControlsToCheck) do
+			if childControlData.childName ~= nil and childControlData.getFunc ~= nil then
+				local childControl = rowControl:GetNameChild(childControlData.childName)
+				if childControl ~= nil and childControl[childControlData.getFunc] ~= nil then
+					local textToCheck = tos(childControl[childControlData.getFunc](childControl))
+					--Text is missing: Do not filter
+					if textToCheck ~= nil and textToCheck ~= "nil" then
+						if not filterNamesExempts[textToCheck] then
+							--Search the string textToCheck now for textToSearch, but pass in a custom item containing the
+							--label & name = textToCheck now to let the default, and any custom, searchFunc work properly!
+							local newItem = ZO_ShallowTableCopy(item)
+							newItem.label = textToCheck
+							newItem.name = textToCheck
+							if filterFunc(newItem, filterString) == true then
+								return true
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+
 --Check if entry should be added to the search/filter of the string search of the collapsible header
 -->Returning true: item must be considered for the search / false: item should be skipped
-local function passItemToSearch(item)
+local function passItemToSearch(item, entryType)
 	--Check if name of entry counts as "to search", or not
 	if filterString ~= "" then
 		local name = item.label or item.name
@@ -504,9 +538,13 @@ local function filterResults(item, comboBox)
 			return true -- always included
 		end
 		--Check for other prerequisites
-		if passItemToSearch(item) == true then
+		if passItemToSearch(item, entryType) == true then
 			--Not excluded, do the string comparison now
 			return filterFunc(item, filterString)
+		else
+			if entryType ~= nil then
+				return checkIfChildControlTextMatches(item, entryType, filterString) --#2025_48
+			end
 		end
 	else
 		return lastEntryVisible

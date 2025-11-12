@@ -851,6 +851,23 @@ local filteredEntryTypes = {
 }
 constants.searchFilter.filteredEntryTypes = filteredEntryTypes
 
+--LSM entryTypes which should not search the LSMentry's name alone, but also another childControl of the LSMentry
+local filteredEntryTypsChildsToSearch = {
+	[LSM_ENTRY_TYPE_EDITBOX] = {
+		[1] = {
+			childName = "EditBox",
+			getFunc = "GetText",
+		}
+	},
+	[LSM_ENTRY_TYPE_SLIDER] = {
+		[1] = {
+			childName = "Slider",
+			getFunc = "GetValue",
+		}
+	},
+}
+constants.searchFilter.filteredEntryTypsChildsToSearch = filteredEntryTypsChildsToSearch
+
 --Table defines if some names of the entries count as "search them or skip them".
 --true: Item's name does not need to be searched -> skip them / false: search the item's name as usual
 local filterNamesExempts = {

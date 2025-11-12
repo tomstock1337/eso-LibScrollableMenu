@@ -196,7 +196,7 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, opti
 	assert(comboBox and comboBox.IsInstanceOf and comboBox:IsInstanceOf(ZO_ComboBox), MAJOR .. ' | The comboBoxContainer you supplied must be a valid ZO_ComboBox container. "comboBoxContainer.m_comboBox:IsInstanceOf(ZO_ComboBox)"')
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 161, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(options)) end
-	comboBoxClass.UpdateMetatable(comboBox, parent, comboBoxContainer, options) --Calls comboboxCLass:Initialize
+	comboBoxClass.UpdateMetatable(comboBox, parent, comboBoxContainer, options) --Calls comboboxClass:Initialize
 
 	return comboBox.m_dropdownObject
 end
@@ -699,7 +699,7 @@ end
 --->LSM_UPDATE_MODE_SUBMENU		Only update the submenu visually
 --->LSM_UPDATE_MODE_BOTH		Update the submenu and the mainmenu, both
 ---Parameter comboBox is optional
-local function LSM_RefreshLibScrollableMenu(mocCtrl, updateMode, comboBox)
+local function LSM_RefreshLibScrollableMenu(mocCtrl, updateMode, comboBox) -- #2025_58
 --d("[RefreshCustomScrollableMenu] - moc: " .. getControlName(mocCtrl) .. "; updateMode: " ..tos(updateMode) .. "; comboBox: " .. tos(comboBox))
     --Update the visible LSM dropdown's submenu now so the disabled state and checkbox values commit again
 	if mocCtrl ~= nil then
@@ -732,13 +732,24 @@ end
 RefreshCustomScrollableMenu = LSM_RefreshLibScrollableMenu
 
 --Returns boolean true/false if any LSM context menu is currently showing it's dropdown
-local function LSM_IsContextMenuShown()
+local function LSM_IsContextMenuCurrentlyShown()
 	g_contextMenu = updateContextMenuRef()
 	if g_contextMenu == nil then return false end
 	return g_contextMenu:IsDropdownVisible()
 end
-IsCustomScrollableContextMenuShown = LSM_IsContextMenuShown
+IsCustomScrollableContextMenuShown = LSM_IsContextMenuCurrentlyShown --#2025_59
 
+local function LSM_IsLSMCurrentlyShown()
+	local LSM_menus = lib._objects
+	if ZO_IsTableEmpty(LSM_menus) then return false end
+	for _, LSM_menu in ipairs(LSM_menus) do
+		if LSM_menu ~= nil and LSM_menu.IsDropdownVisible then
+			if LSM_menu:IsDropdownVisible() then return true end
+		end
+	end
+	return LSM_IsContextMenuCurrentlyShown()
+end
+IsCustomScrollableMenuShown = LSM_IsLSMCurrentlyShown --#2025_60
 
 -- API to show a context menu at a buttonGroup where you can (un)check/invert all buttons in a group:
 -- Select all, Unselect All, Invert all.
@@ -807,12 +818,12 @@ lib.ButtonGroupDefaultContextMenu = buttonGroupDefaultContextMenu
 --]Defined in dropdown_class.lua[--
 
 --#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
---Manual call via API function lib.UpdateIconsPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateIconPath == true
---lib.UpdateIconsPath(comboBox, control, data)
+--Manual call via API function UpdateCustomScrollableMenuEntryIconPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateIconPath == true
+--UpdateCustomScrollableMenuEntryIconPath(comboBox, control, data)
 
 --#2025_44 Recursively check if any entry on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
 --Optional checkFunc must return a boolean true [default return value] (refresh now) or false (no refresh needed), and uses the signature:
 --> checkFunc(comboBox, control, data)
---Manual call via API function lib.UpdateEntryPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateEntryPath == true
---lib.UpdateEntryPath(comboBox, control, data, checkFunc)
+--Manual call via API function UpdateCustomScrollableMenuEntryPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateEntryPath == true
+--UpdateCustomScrollableMenuEntryPath(comboBox, control, data, checkFunc, checkFuncParam1, checkFuncParam2, ...)
 ]]
