@@ -852,16 +852,19 @@ local filteredEntryTypes = {
 constants.searchFilter.filteredEntryTypes = filteredEntryTypes
 
 --LSM entryTypes which should not search the LSMentry's name alone, but also another childControl of the LSMentry
+--which was added to the data table as e.g. ._EditBoxCtrl reference
 local filteredEntryTypsChildsToSearch = {
 	[LSM_ENTRY_TYPE_EDITBOX] = {
 		[1] = {
-			childName = "EditBox",
+			dataTable = "editBoxData",
+			dataName = "_EditBoxCtrl",
 			getFunc = "GetText",
 		}
 	},
 	[LSM_ENTRY_TYPE_SLIDER] = {
 		[1] = {
-			childName = "Slider",
+			dataTable = "sliderData",
+			dataName = "_SliderCtrl",
 			getFunc = "GetValue",
 		}
 	},

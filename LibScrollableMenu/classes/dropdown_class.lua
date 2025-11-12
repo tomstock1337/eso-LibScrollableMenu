@@ -483,35 +483,44 @@ end
 
 --Check if a childControl of the entryType's item matches the search text, e.g.
 --a editBox's or slider's text/number value
-local function checkIfChildControlTextMatches(item, entryType, textToSearch) --#2025_48
+local function checkIfChildControlTextMatches(item, entryType) --#2025_48
+--d("[LSM]checkIfChildControlTextMatches")
 	local childControlsToCheck = filteredEntryTypsChildsToSearch[entryType]
-	if childControlsToCheck == nil then return false end
+	if ZO_IsTableEmpty(childControlsToCheck) then return false, nil end
 
-	local rowControl = item.control
-	if rowControl ~= nil then
-		for _, childControlData in ipairs(childControlsToCheck) do
-			if childControlData.childName ~= nil and childControlData.getFunc ~= nil then
-				local childControl = rowControl:GetNameChild(childControlData.childName)
-				if childControl ~= nil and childControl[childControlData.getFunc] ~= nil then
-					local textToCheck = tos(childControl[childControlData.getFunc](childControl))
-					--Text is missing: Do not filter
-					if textToCheck ~= nil and textToCheck ~= "nil" then
-						if not filterNamesExempts[textToCheck] then
-							--Search the string textToCheck now for textToSearch, but pass in a custom item containing the
-							--label & name = textToCheck now to let the default, and any custom, searchFunc work properly!
-							local newItem = ZO_ShallowTableCopy(item)
-							newItem.label = textToCheck
-							newItem.name = textToCheck
-							if filterFunc(newItem, filterString) == true then
-								return true
-							end
+lib._LSMDebugItem = {
+	item = item,
+ 	entryType = entryType,
+ 	filterString = filterString,
+}
+
+	for _, childControlData in ipairs(childControlsToCheck) do
+--d(">checking entryType data for: " .. tos(entryType))
+		if childControlData.dataTable ~= nil and childControlData.dataName ~= nil and childControlData.getFunc ~= nil then
+--d(">>found dataTable: " .. tos(childControlData.dataTable) ..", dataName: " .. tos(childControlData.dataName) .. ", getFunc: " ..tos(childControlData.getFunc))
+			local dataTable = item[childControlData.dataTable]
+			local childControl = (dataTable ~= nil and dataTable[childControlData.dataName]) or nil
+			if childControl ~= nil and childControl[childControlData.getFunc] ~= nil then
+				local textToCheck = tos(childControl[childControlData.getFunc](childControl))
+d(">>found childControl: " .. getControlName(childControl) .. ", textToCheck: " .. tos(textToCheck))
+				--Text is missing: Do not filter
+				if textToCheck ~= nil and textToCheck ~= "nil" then
+					if not filterNamesExempts[textToCheck] then
+						--Search the string textToCheck now for filterString, but pass in a custom item containing the
+						--label & name = textToCheck now to let the default, and any custom, searchFunc work properly!
+						local newItem = ZO_ShallowTableCopy(item)
+						newItem.label = textToCheck
+						newItem.name = textToCheck
+						if filterFunc(newItem, filterString) == true then
+d(">>>returning true!")
+							return true, true
 						end
 					end
 				end
 			end
 		end
 	end
-	return false
+	return false, nil
 end
 
 --Check if entry should be added to the search/filter of the string search of the collapsible header
@@ -521,10 +530,17 @@ local function passItemToSearch(item, entryType)
 	if filterString ~= "" then
 		local name = item.label or item.name
 		--Name is missing: Do not filter
-		if name == nil then return false end
-		return not filterNamesExempts[name]
+		local doExtraEntryTypeCheck = (entryType ~= nil and true) or false
+		if name == nil and not doExtraEntryTypeCheck then return false, nil end
+
+		local retVarNameAndLabelChecks = not filterNamesExempts[name]
+--d("[LSM]passItemToSearch - entryType: " ..tos(entryType) .. ", retVarNameAndLabelChecks: " ..tos(retVarNameAndLabelChecks))
+		if doExtraEntryTypeCheck == true then --#2025_48
+			return checkIfChildControlTextMatches(item, entryType) --#2025_48
+		end
+		return retVarNameAndLabelChecks, nil
 	end
-	return false
+	return false, nil
 end
 
 --Search the item's label or name now, if the entryType of the item should be processed by text search, and if the entry
@@ -538,13 +554,12 @@ local function filterResults(item, comboBox)
 			return true -- always included
 		end
 		--Check for other prerequisites
-		if passItemToSearch(item, entryType) == true then
-			--Not excluded, do the string comparison now
+		local doSearch, searchResult = passItemToSearch(item, entryType) == true
+		if doSearch == true and searchResult == nil then
+			--Not excluded, do the string comparison now (if not already done in passItemToSearch)
 			return filterFunc(item, filterString)
-		else
-			if entryType ~= nil then
-				return checkIfChildControlTextMatches(item, entryType, filterString) --#2025_48
-			end
+		elseif searchResult ~= nil then
+			return searchResult
 		end
 	else
 		return lastEntryVisible

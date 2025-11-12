@@ -2466,7 +2466,13 @@ d(">enabled: " .. tos(data.enabled))
 
 		--EditBox data was specified too? Custom font, height, width, etc.
 		local editBoxData = getEditBoxData(control, data)
+		--Add the editBoxCtrl to the editBoxData, as reference for the text search functionalities
+		editBoxData._EditBoxCtrl = editBoxCtrl
 		control.editBoxData = editBoxData
+		local editBoxTemplate = data.editBoxTemplate or editBoxData.editBoxTemplate
+		if editBoxTemplate then
+			ApplyTemplateToControl(control, editBoxTemplate)
+		end
 		processEditBoxData(control)
 
 		local isEnabled = data.enabled
@@ -2474,6 +2480,8 @@ d(">enabled: " .. tos(data.enabled))
 			isEnabled = control:IsEnabled()
 		end
 		editBoxCtrl:SetMouseEnabled(isEnabled)
+
+		self:UpdateHighlightTemplate(control, data, nil, nil)
 	end
 
 	--Setup row function: LSM_ENTRY_TYPE_SLIDER
@@ -2496,7 +2504,13 @@ d(">enabled: " .. tos(data.enabled))
 
 		--EditBox data was specified too? Custom font, height, width, etc.
 		local sliderData = getSliderData(control, data)
+		--Add the sliderCtrl to the sliderData, as reference for the text search functionalities
+		sliderData._SliderCtrl = sliderCtrl
 		control.sliderData = sliderData
+		local sliderTemplate = data.sliderTemplate or sliderData.sliderTemplate
+		if sliderTemplate then
+			ApplyTemplateToControl(control, sliderTemplate)
+		end
 		processSliderData(control)
 
 		local isEnabled = data.enabled
@@ -2504,6 +2518,8 @@ d(">enabled: " .. tos(data.enabled))
 			isEnabled = control:IsEnabled()
 		end
 		sliderCtrl:SetMouseEnabled(isEnabled)
+
+		self:UpdateHighlightTemplate(control, data, nil, nil)
 	end
 end
 
