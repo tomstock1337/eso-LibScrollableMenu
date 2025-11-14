@@ -268,3 +268,81 @@ function contextMenuClass:ShowContextMenu(parentControl)
 		end
 	end, 10, "_ContextMenuClass_ShowContextMenu")
 end
+
+--#2025_45 Register special contextMenu OnShow and/or OnHide callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.onHideCallback e.g.)
+function contextMenuClass:RegisterSpecialCallback(uniqueAddonName, callbackName, specialCallbackData)
+	--d("[LSM]contextMenuClass:RegisterSpecialCallback - uniqueAddonName: " .. tos(uniqueAddonName) ..", callbackName: " .. tos(callbackName))
+	if uniqueAddonName == nil or uniqueAddonName == "" or callbackName == nil or callbackName == "" then return false end
+	if specialCallbackData == nil or type(specialCallbackData[callbackName]) ~= "function" then return false end
+
+	local contextMenuCallbacksRegistered = lib.contextMenuCallbacksRegistered
+	--Register the callback(s), in order of appearance (1st addon registering a callback should be kept first in the table)
+	local counterAddons = #contextMenuCallbacksRegistered + 1
+--d(">counterAddons: " .. tos(counterAddons))
+	contextMenuCallbacksRegistered[counterAddons] = {}
+	contextMenuCallbacksRegistered[counterAddons][uniqueAddonName] = {}
+	contextMenuCallbacksRegistered[counterAddons][uniqueAddonName][callbackName] = {
+	callback = 		specialCallbackData[callbackName],
+	specialData = 	specialCallbackData
+	}
+	return true
+end
+
+function contextMenuClass:UnregisterSpecialCallback(uniqueAddonName, callbackName)
+	if uniqueAddonName == nil or uniqueAddonName == "" then return false end
+
+	local toDeleteIndices = {}
+	local contextMenuCallbacksRegistered = lib.contextMenuCallbacksRegistered
+	for idx, registeredAddons in ipairs(contextMenuCallbacksRegistered) do
+		for loopedUniqueAddonName, registeredCallbacks in pairs(registeredAddons) do
+			if loopedUniqueAddonName == uniqueAddonName then
+				--No callbackname provided, means: delete all
+				if callbackName == nil then
+	d(">no callback specified, deleting all contextMenuCallbacksRegistered[" .. tos(idx) .."][" .. tos(loopedUniqueAddonName) .. "]")
+					registeredCallbacks = nil
+					toDeleteIndices[idx] = true
+				else
+					--Remove the callbacks of that uniqueAddonName entry
+					if registeredCallbacks[callbackName] ~= nil then
+	d(">deleting contextMenuCallbacksRegistered[" .. tos(idx) .."][" .. tos(loopedUniqueAddonName) .. "][" .. tos(callbackName) .. "]")
+						registeredCallbacks[callbackName] = nil
+						--Check if any other callback is still registered there, else remove the total registered callbacks entry
+						if NonContiguousCount(registeredCallbacks) == 0 then
+	d(">deleting contextMenuCallbacksRegistered[" .. tos(idx) .."][" .. tos(loopedUniqueAddonName) .. "]")
+							registeredCallbacks = nil
+							toDeleteIndices[idx] = true
+						end
+					end
+				end
+			end
+		end
+	end
+
+	if NonContiguousCount(toDeleteIndices) > 0 then
+		for idx, doDelete in pairs(toDeleteIndices) do
+d(">deleting contextMenuCallbacksRegistered[" .. tos(idx) .."]")
+			lib.contextMenuCallbacksRegistered[idx] = nil
+		end
+	end
+end
+
+function contextMenuClass:RunSpecialCallback(callbackName)
+--d("[LSM]contextMenuClass:RunSpecialCallback - callbackName: " .. tos(callbackName))
+	local contextMenuCallbacksRegistered = lib.contextMenuCallbacksRegistered
+	if callbackName == nil or callbackName == "" or #contextMenuCallbacksRegistered == 0 then return end
+
+	local retVar = false
+	local openingControl = self.openingControl
+	--Execute the callbacks like onShowCallback or onHideCallback now
+	for _, registeredAddons in ipairs(contextMenuCallbacksRegistered) do
+		for uniqueAddonName, registeredCallbacks in pairs(registeredAddons) do
+			local callbackEntry = registeredCallbacks[callbackName]
+			if callbackEntry ~= nil and callbackEntry.callback ~= nil then
+--d(">executing callback for registered addon: " .. tos(uniqueAddonName))
+				local l_retVar = callbackEntry.callback(self, openingControl, callbackEntry.specialData)
+				if not retVar then retVar = l_retVar end
+			end
+		end
+	end
+	return retVar
+end

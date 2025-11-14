@@ -135,6 +135,10 @@ end
 --		function customFilterFunc				A function returning a boolean true: show item / false: hide item. Signature of function: customFilterFunc(item, filterString)
 --->  === Dropdown callback functions
 -- 		function preshowDropdownFn:optional 	function function(ctrl) codeHere end: to run before the dropdown shows
+--		boolean automaticRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the normal scrolllist should happen, if you click/change any entry's value. This would be needed
+--												e.g. if you want the entry B to react on entry A's value (e.g. checkboxes -> enabled state). Default value is false
+--		boolean automaticSubmenuRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the submenu's scrolllist should happen, if you click/change any entry's value. This would be needed
+--												e.g. if you want the entry B to react on entry A's value (e.g. checkboxes -> enabled state). Default value is false
 --->  === Dropdown's Custom XML virtual row/entry templates ============================================================
 --		boolean useDefaultHighlightForSubmenuWithCallback	Boolean or function returning a boolean if always the default ZO_ComboBox highlight XML template should be used for an entry having a submenu AND a callback function. If false the highlight 'LibScrollableMenu_Highlight_Green' will be used
 --		table XMLRowTemplates:optional			Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having
@@ -192,7 +196,7 @@ function AddCustomScrollableComboBoxDropdownMenu(parent, comboBoxContainer, opti
 	assert(comboBox and comboBox.IsInstanceOf and comboBox:IsInstanceOf(ZO_ComboBox), MAJOR .. ' | The comboBoxContainer you supplied must be a valid ZO_ComboBox container. "comboBoxContainer.m_comboBox:IsInstanceOf(ZO_ComboBox)"')
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 161, tos(getControlName(parent)), tos(getControlName(comboBoxContainer)), tos(options)) end
-	comboBoxClass.UpdateMetatable(comboBox, parent, comboBoxContainer, options) --Calls comboboxCLass:Initialize
+	comboBoxClass.UpdateMetatable(comboBox, parent, comboBoxContainer, options) --Calls comboboxClass:Initialize
 
 	return comboBox.m_dropdownObject
 end
@@ -539,8 +543,13 @@ end
 
 --Show the custom scrollable context menu now at the control controlToAnchorTo, using optional options.
 --If controlToAnchorTo is nil it will be anchored to the current control's position below the mouse, like ZO_Menu does
+--Optional table specialCallbackData can be used to register an onShowCallback or onHideCallback function for your unqiue addon name,
+--so you can react on an "Show" and/or "Hide" of this particular context menu. Registered callback functions will be executed in order of register!
+--You can pass in any other variable with the same table. The whole tablr will passed to the callback function's signature, and to the uniqueAddonName generating function.
+-- The signature of the table must follow this example:
+--  { addonName = string or function returning a string "UniqueString", onShowCallback = function(comboBox, openingControl, specialData) end, onHideCallback = function(comboBox, openingControl, specialData) end, anyOtherVariableToPassInToTheCallback=anyValue, ... }
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
-function ShowCustomScrollableMenu(controlToAnchorTo, options)
+function ShowCustomScrollableMenu(controlToAnchorTo, options, specialCallbackData) --#2025_45
 	updateContextMenuRef()
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 171, tos(getControlName(controlToAnchorTo)), tos(options)) end
 	--d("°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
@@ -570,12 +579,28 @@ LSM_Debug.cntxtMenuControlToAnchorTo = controlToAnchorTo
 		setCustomScrollableMenuOptions(options)
 	end
 
+	--#2025_45 Register special callback functions for this contextMenu?
+	if type(specialCallbackData) == "table" then
+		local uniqueAddonName = getValueOrCallback(specialCallbackData.addonName, specialCallbackData)
+		assert(uniqueAddonName ~= nil and uniqueAddonName ~= "", sfor("["..MAJOR.."-ShowCustomScrollableMenu]specialCallbackData.addonName: Unique string expected, got %q", tos(uniqueAddonName)))
+		if specialCallbackData.onShowCallback ~= nil then
+			local funcTypeOnShow = type(specialCallbackData.onShowCallback)
+			assert(funcTypeOnShow == "function", sfor("["..MAJOR.."-ShowCustomScrollableMenu]specialCallbackData.onShowCallback: Function expected, got %q", tos(funcTypeOnShow)))
+			g_contextMenu:RegisterSpecialCallback(uniqueAddonName, "onShowCallback", specialCallbackData)
+		end
+		if specialCallbackData.onHideCallback ~= nil then
+			local funcTypeOnHide = type(specialCallbackData.onHideCallback)
+			assert(funcTypeOnHide == "function", sfor("["..MAJOR.."-ShowCustomScrollableMenu]specialCallbackData.onHideCallback: Function expected, got %q", tos(funcTypeOnHide)))
+			g_contextMenu:RegisterSpecialCallback(uniqueAddonName, "onHideCallback", specialCallbackData)
+		end
+	end
+
 	g_contextMenu:ShowContextMenu(controlToAnchorTo)
 	return true
 end
 local showCustomScrollableMenu = ShowCustomScrollableMenu
 
---Run a callback function myAddonCallbackFunc passing in the entries of the opening menu/submneu of a clicked LSM context menu item
+--Run a callback function myAddonCallbackFunc passing in the entries of the opening menu/submenu of a clicked LSM context menu item
 -->Parameters of your function myAddonCallbackFunc must be:
 -->function myAddonCallbackFunc(userdata LSM_comboBox, userdata selectedContextMenuItem, table openingMenusEntries, ...)
 -->... can be any additional params that your function needs, and must be passed in to the ... of calling API function RunCustomScrollableMenuItemsCallback too!
@@ -633,7 +658,7 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	local sortedItems = getComboBoxsSortedItems(comboBox, fromParentMenuValue, false)
 	if ZO_IsTableEmpty(sortedItems) then
 --d("<sortedItems are empty!")
-		return false
+		return false, nil
 	end
 
 	local itemsForCallbackFunc = sortedItems
@@ -666,8 +691,70 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	return true, myAddonCallbackFunc(comboBox, item, itemsForCallbackFunc, ...)
 end
 
+--API to refresh a dropdown's submenu or mainmenu or an entry control visually (e.g. if you click an entry, called from the callback function)
+-->Parameter updateMode can be left empty, then the system will automatically determine if a submenu exists and the item belongs to that, and refresh that,
+--or it will update the mainmenu if it exists.
+--Or you specify one of the following updateModes:
+--->LSM_UPDATE_MODE_MAINMENU	Only update the mainmenu visually
+--->LSM_UPDATE_MODE_SUBMENU		Only update the submenu visually
+--->LSM_UPDATE_MODE_BOTH		Update the submenu and the mainmenu, both
+---Parameter comboBox is optional
+local function LSM_RefreshLibScrollableMenu(mocCtrl, updateMode, comboBox) -- #2025_58
+	--Update the visible LSM dropdown's submenu now so the disabled state and checkbox values commit again
+	if mocCtrl == nil then mocCtrl = moc() end
+--d("[RefreshCustomScrollableMenu] - moc: " .. getControlName(mocCtrl) .. "; updateMode: " ..tos(updateMode) .. "; comboBox: " .. tos(comboBox))
+	if mocCtrl ~= nil then
+		if comboBox == nil then
+			comboBox = (mocCtrl.m_comboBox or (mocCtrl.m_owner and mocCtrl.m_owner.m_comboBox)) or nil
+		end
+		if comboBox == nil then return end
+--d(">[LSM]found combobox")
+		--Main Menu
+		if updateMode == LSM_UPDATE_MODE_BOTH or updateMode == LSM_UPDATE_MODE_MAINMENU then
+			--local owningWindow = mocCtrl.GetOwningWindow ~= nil and mocCtrl:GetOwningWindow() or nil
+			--local mainMenuDropdown = (owningWindow and owningWindow.m_dropdownObject) or nil
+			local mainMenuComboBox = (mocCtrl.m_owner ~= nil and mocCtrl.m_owner.m_comboBox) or nil
+			local mainMenuDropdown = (mainMenuComboBox ~= nil and mainMenuComboBox.m_dropdownObject) or nil
+			if mainMenuDropdown ~= nil then
+				if mainMenuComboBox:IsDropdownVisible() == true then
+					mainMenuDropdown:SubmenuOrCurrentListRefresh(mocCtrl, true, true)
+				end
+			end
+		end
 
--- API to show a context menu at a buttonGrouop where you can set all buttons in a group based on Select all, Unselect All, Invert all.
+		--Submenu
+		if updateMode == LSM_UPDATE_MODE_BOTH or updateMode == LSM_UPDATE_MODE_SUBMENU then
+			if mocCtrl.m_dropdownObject and comboBox and comboBox:IsDropdownVisible() == true then
+--d(">[LSM[refresh submenu - TRY")
+				mocCtrl.m_dropdownObject:SubmenuOrCurrentListRefresh(mocCtrl, true, false)
+			end
+		end
+	end
+end
+RefreshCustomScrollableMenu = LSM_RefreshLibScrollableMenu
+
+--Returns boolean true/false if any LSM context menu is currently showing it's dropdown
+local function LSM_IsContextMenuCurrentlyShown()
+	g_contextMenu = updateContextMenuRef()
+	if g_contextMenu == nil then return false end
+	return g_contextMenu:IsDropdownVisible()
+end
+IsCustomScrollableContextMenuShown = LSM_IsContextMenuCurrentlyShown --#2025_59
+
+local function LSM_IsLSMCurrentlyShown()
+	local LSM_menus = lib._objects
+	if ZO_IsTableEmpty(LSM_menus) then return false end
+	for _, LSM_menu in ipairs(LSM_menus) do
+		if LSM_menu ~= nil and LSM_menu.IsDropdownVisible then
+			if LSM_menu:IsDropdownVisible() then return true end
+		end
+	end
+	return LSM_IsContextMenuCurrentlyShown()
+end
+IsCustomScrollableMenuShown = LSM_IsLSMCurrentlyShown --#2025_60
+
+-- API to show a context menu at a buttonGroup where you can (un)check/invert all buttons in a group:
+-- Select all, Unselect All, Invert all.
 function buttonGroupDefaultContextMenu(comboBox, control, data)
 	local buttonGroup = comboBox.m_buttonGroup
 	if buttonGroup == nil then return end
@@ -725,3 +812,20 @@ function buttonGroupDefaultContextMenu(comboBox, control, data)
 end
 lib.SetButtonGroupState = buttonGroupDefaultContextMenu --Only for compatibilitxy (if any other addon was using 'SetButtonGroupState' already)
 lib.ButtonGroupDefaultContextMenu = buttonGroupDefaultContextMenu
+
+
+--======================================================================================================================
+--[[ Other API functions available:
+
+--]Defined in dropdown_class.lua[--
+
+--#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+--Manual call via API function UpdateCustomScrollableMenuEntryIconPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateIconPath == true
+--UpdateCustomScrollableMenuEntryIconPath(comboBox, control, data)
+
+--#2025_44 Recursively check if any entry on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+--Optional checkFunc must return a boolean true [default return value] (refresh now) or false (no refresh needed), and uses the signature:
+--> checkFunc(comboBox, control, data)
+--Manual call via API function UpdateCustomScrollableMenuEntryPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateEntryPath == true
+--UpdateCustomScrollableMenuEntryPath(comboBox, control, data, checkFunc, checkFuncParam1, checkFuncParam2, ...)
+]]

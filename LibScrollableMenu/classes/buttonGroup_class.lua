@@ -16,7 +16,7 @@ if not lib then return end
 --------------------------------------------------------------------
 -- Locals
 --------------------------------------------------------------------
-
+local tos = tostring
 
 --------------------------------------------------------------------
 --Library classes
@@ -32,7 +32,7 @@ local entryTypeConstants = constants.entryTypes
 
 
 local libUtil = lib.Util
---local getControlName = libUtil.getControlName
+local getControlName = libUtil.getControlName
 local checkIfContextMenuOpenedButOtherControlWasClicked = libUtil.checkIfContextMenuOpenedButOtherControlWasClicked
 local hideTooltip = libUtil.hideTooltip
 
@@ -131,13 +131,26 @@ function buttonGroupClass:SetButtonState(button, clickedButton, enabled, ignoreC
 end
 
 function buttonGroupClass:HandleClick(control, buttonId, ignoreCallback)
---d("HandleClick - button: " .. getControlName(control))
+	local doDebugNow = false
+	if doDebugNow then d("HandleClick - button: " .. getControlName(control)) end
 	if not self.m_enabled or self.m_clickedButton == control then
+		if doDebugNow then d("<self.m_clickedButton == control: " .. tos(self.m_clickedButton == control)) end
 		return
 	end
 
 	-- Can't click disabled buttons
 	local controlData = self.m_buttons[control]
+	if doDebugNow then
+		LSM_Debug = LSM_Debug or {}
+		LSM_Debug._buttonGroupClass_HandleClick = LSM_Debug._buttonGroupClass_HandleClick or {}
+		LSM_Debug._buttonGroupClass_HandleClick[control] = {
+			self = self,
+			control = control,
+			buttonId = buttonId,
+			ignoreCallback = ignoreCallback,
+			controlData = controlData,
+		}
+	end
 	if controlData and not controlData.isValidOption then
 		return
 	end
@@ -151,14 +164,14 @@ function buttonGroupClass:HandleClick(control, buttonId, ignoreCallback)
 		-- Set all buttons in the group to unpressed, and unlocked.
 		-- If the button is disabled externally (maybe it isn't a valid option at this time)
 		-- then set it to unpressed, but disabled.
---d(">>> for k, v in pairs(self.buttons) -> SetButtonState")
+		--d(">>> for k, v in pairs(self.buttons) -> SetButtonState")
 		for k, v in pairs(self.m_buttons) do
-		--	self:SetButtonState(k, nil, v.isValidOption)
+			--	self:SetButtonState(k, nil, v.isValidOption)
 			self:SetButtonState(k, control, v.isValidOption, ignoreCallback)
 		end
 
 		-- Set the clicked button to pressed and lock it down (so that it stays pressed.)
---		control:SetState(BSTATE_PRESSED, true)
+		--		control:SetState(BSTATE_PRESSED, true)
 		local previousControl = self.m_clickedButton
 		self.m_clickedButton = control
 
@@ -168,7 +181,7 @@ function buttonGroupClass:HandleClick(control, buttonId, ignoreCallback)
 		end
 	end
 
-	if controlData.originalHandler then
+	if controlData and controlData.originalHandler then --#2025_55 Radiobutton [ ] part clicked in a contextmenu's submenu raises a lua error user:/AddOns/LibScrollableMenu/classes/buttonGroup_class.lua:171: attempt to index a nil value
 		controlData.originalHandler(control, buttonId)
 	end
 end

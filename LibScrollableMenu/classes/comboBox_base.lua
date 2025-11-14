@@ -93,6 +93,7 @@ local subMenuArrowColor = libUtil.subMenuArrowColor
 local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
 local getEditBoxData = libUtil.getEditBoxData
 local getSliderData = libUtil.getSliderData
+local isScrollBarClicked = libUtil.isScrollBarClicked
 
 
 
@@ -509,10 +510,18 @@ local function updateIcons(control, data)
 	local anyIconWasAdded = false
 	local iconDataType = iconData ~= nil and type(iconData) or nil
 	if iconDataType ~= nil then
+--d("[LSM]updateIcons - iconData found")
 		if iconDataType ~= 'table' then
 			--If only a "any.dds" texture path or a function returning this was passed in
 			iconData = { [1] = { iconTexture = iconData } }
+		else
+			--#2025_43 Check if icon table got just 1 entry, directly starting with iconTexture etc. (wrong formatted)
+			if iconData.iconTexture ~= nil then
+				local iconDataFixed = { [1] = ZO_ShallowTableCopy(iconData) }
+				iconData = iconDataFixed
+			end
 		end
+
 		for iconIdx, singleIconData in ipairs(iconData) do
 			local l_anyIconWasAdded, l_iconWidth, l_iconHeight = updateIcon(control, data, iconIdx, singleIconData, multiIconCtrl, parentHeight)
 			if l_anyIconWasAdded == true then
@@ -529,11 +538,16 @@ local function updateIcons(control, data)
 	multiIconCtrl:SetDrawLevel(10)
 
 	if anyIconWasAdded then
-		multiIconCtrl:SetHandler("OnMouseEnter", function(...)
-			ZO_Options_OnMouseEnter(...)
-			InformationTooltipTopLevel:BringWindowToTop()
-		end)
-		multiIconCtrl:SetHandler("OnMouseExit", ZO_Options_OnMouseExit)
+--d(">icons were added")
+		if multiIconCtrl:GetHandler("OnMouseEnter") == nil then
+			multiIconCtrl:SetHandler("OnMouseEnter", function(...)
+				ZO_Options_OnMouseEnter(...)
+				InformationTooltipTopLevel:BringWindowToTop()
+			end)
+		end
+		if multiIconCtrl:GetHandler("OnMouseExit") == nil then
+			multiIconCtrl:SetHandler("OnMouseExit", ZO_Options_OnMouseExit)
+		end
 
 		multiIconCtrl:Show() --todo 20240527 Make that dependent on getValueOrCallback(data.enabled, data) ?! And update via multiIconCtrl:Hide()/multiIconCtrl:Show() on each show of menu!
 	end
@@ -958,21 +972,22 @@ end
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
 function comboBox_base:OnGlobalMouseUp(eventId, button)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(lib.preventerVars.suppressNextOnGlobalMouseUp)) end
-	--d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", container: " .. tos(getControlName(self.m_container)) .. ", suppressNextMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
---[[
-LSM_Debug = LSM_Debug or {}
-LSM_Debug._globalMouseUp = LSM_Debug._globalMouseUp or {}
-local nextGlobalMouseUp = #LSM_Debug._globalMouseUp +1
-d(">self: " ..tos(self) .. "; nextGlobalMouseUp: " .. tos(nextGlobalMouseUp))
+--d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", container: " .. tos(getControlName(self.m_container)) .. ", suppressNextMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
+	--[[
+	LSM_Debug = LSM_Debug or {}
+	LSM_Debug._globalMouseUp = LSM_Debug._globalMouseUp or {}
+	local nextGlobalMouseUp = #LSM_Debug._globalMouseUp +1
+	d(">self: " ..tos(self) .. "; nextGlobalMouseUp: " .. tos(nextGlobalMouseUp))
 
-LSM_Debug._globalMouseUp[nextGlobalMouseUp] =	{
-	button = button,
-	self = self,
-	container = self.m_container,
-	dropdown = self.m_dropdown,
-}
-]]
-
+	LSM_Debug._globalMouseUp[nextGlobalMouseUp] =	{
+		button = button,
+		self = self,
+		container = self.m_container,
+		dropdown = self.m_dropdown,
+		dropdownVisible = self:IsDropdownVisible(),
+		moc = moc(),
+	}
+	]]
 	local abortEarly = false
 	local suppressNextOnGlobalMouseUp = lib.preventerVars.suppressNextOnGlobalMouseUp
 	local suppressNextOnGlobalMouseUpType = suppressNextOnGlobalMouseUp ~= nil and type(suppressNextOnGlobalMouseUp) or nil
@@ -994,7 +1009,7 @@ LSM_Debug._globalMouseUp[nextGlobalMouseUp] =	{
 	if self:IsDropdownVisible() then
 		local isMouseOverOwningDropdown = self.m_dropdownObject:IsMouseOverControl()
 		if not isMouseOverOwningDropdown then
-			--d(">>dropdownVisible -> not IsMouseOverControl") --#2025_19 Closes a context menu if the clicked entry of the contextmenu was not above the LSM anymore -> Should not directly close if multiselection is enabled in the context menu!
+--d(">>dropdownVisible -> NO IsMouseOverControl") --#2025_19 Closes a context menu if the clicked entry of the contextmenu was not above the LSM anymore -> Should not directly close if multiselection is enabled in the context menu!
 			if self:HiddenForReasons(button, isMouseOverOwningDropdown) then
 				--d(">>>HiddenForReasons -> Hiding dropdown now")
 				return self:HideDropdown()
@@ -1158,13 +1173,13 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	end
 
 
-	local doDebugNow = false -- todo disable after testing again
+	local doDebugNow = false -- todo disable after testing again 20251023
 	if doDebugNow then
 		local tabEntryName = getControlName(mocCtrl) or "n/a"
 		d(debugPrefix .. "comboBox_base:HiddenForReasons - button: " .. tos(button) .. ", tabEntryName: " .. tos(tabEntryName))
-		LSM_debug = LSM_debug or {}
-		LSM_debug.HiddenForReasons = LSM_debug.HiddenForReasons or {}
-		LSM_debug.HiddenForReasons[tabEntryName] = {
+		LSM_Debug = LSM_Debug or {}
+		LSM_Debug.HiddenForReasons = LSM_Debug.HiddenForReasons or {}
+		LSM_Debug.HiddenForReasons[tabEntryName] = {
 			self = self,
 			owningWindow = owningWindow,
 			mocCtrlOrig = mocCtrlOrig,
@@ -1220,9 +1235,11 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	if doDebugNow then d(">ownedByCBox: " .. tos(isOwnedByComboBox) .. ", isCtxtMenVis: " .. tos(isContextMenuVisible) ..", isCtxMen: " ..tos(self.isContextMenu) .. "; cntxTxtSearchEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked) .. ", wasEditBoxClickedAtContextMenu: " .. tos(wasEditBoxClickedAtContextMenu) .. ", wasSliderClickedAtContextMenu: " .. tos(wasSliderClickedAtContextMenu) .. "; wasMultiIconClickedAtContextMenu: " .. tos(wasMultiIconClickedAtContextMenu)) end
 
 	if isOwnedByComboBox == true or wasTextSearchContextMenuEntryClicked == true or wasFilterHeaderClicked == true or wasEditBoxClickedAtContextMenu == true or wasSliderClickedAtContextMenu == true or wasMultiIconClickedAtContextMenu == true then
-		if doDebugNow then  d(">>isEmpty: " ..tos(ZO_IsTableEmpty(mocEntry)) .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled())) end
-		if ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled()) then
+		if doDebugNow then  d(">>isEmpty: " ..tos((type(mocEntry) == "table" and ZO_IsTableEmpty(mocEntry)) or "ERROR: no table!") .. ", enabled: " ..tos(mocEntry.enabled) .. ", mouseEnabled: " .. tos(mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled())) end
+		if type(mocEntry) == "table" and (ZO_IsTableEmpty(mocEntry) or (mocEntry.enabled and mocEntry.enabled ~= false) or (mocEntry.IsMouseEnabled and mocEntry:IsMouseEnabled())) then
+			if doDebugNow then d(">>1 mocEntry is a table") end
 			if button == MOUSE_BUTTON_INDEX_LEFT then
+				if doDebugNow then d(">>1 MOUSE_BUTTON_INDEX_LEFT") end
 				--do not close or keep open based on clicked entry but do checks in contextMenuClass:GetHiddenForReasons instead
 				if isContextMenuVisible == true then
 					--Is the actual mocCtrl's owner the contextMenu? Or did we click some other non-context menu entry/control?
@@ -1275,24 +1292,104 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 						return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 					end
 				else
-					if doDebugNow then d("<<returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect)) end
+					if doDebugNow then d("<<1returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect)) end
 					return wasTextSearchContextMenuEntryClickedCheck(self, mocCtrl, wasTextSearchContextMenuEntryClicked, isContextMenuVisible) --#2025_25
 					--return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
 				end
 
 			elseif button == MOUSE_BUTTON_INDEX_RIGHT then
+				if doDebugNow then d(">>1 MOUSE_BUTTON_INDEX_RIGHT") end
 				-- bypass right-clicks on the entries. Context menus will be checked and opened at the OnMouseUp handler
 				-->See local function onMouseUp called via runHandler -> from dropdownClass:OnEntrySelected
 				return false
 			end
+		else
+			if doDebugNow then d(">>1 mocEntry is NO table") end
+
+			--Context menu
+			if isContextMenuVisible == true then
+				if doDebugNow then d(">>1 Context menu visible") end
+				if wasEditBoxClickedAtContextMenu then --#2025_49 Editbox clicked at context menu's submenu will close the contextmenu
+					if doDebugNow then d("<<<returning, wasEditBoxClickedAtContextMenu = true (no mocEntry)") end
+					return false
+				elseif wasSliderClickedAtContextMenu then -- #2025_50 Slider  clicked at context menu's submenu will close the contextmenu
+					if doDebugNow then d("<<<returning, wasSliderClickedAtContextMenu = true (no mocEntry)") end
+					return false
+				elseif wasMultiIconClickedAtContextMenu then --#2025_51 Slider  clicked at context menu's submenu will close the contextmenu
+					if doDebugNow then d("<<<returning, wasMultiIconClickedAtContextMenu = true (no mocEntry)") end
+					return false
+				end
+
+				if comboBox ~= nil and mocCtrl ~= nil then
+					--#2025_47 Check if main context menu scrollbar was clicked
+					if isScrollBarClicked(comboBox.m_scroll, mocCtrl) then
+						if doDebugNow then d("<1clicked scrollbar of context menu") end
+						return false
+					end
+
+					--Submenu at contextmenu, checks
+					local submenuScroll = (comboBox.m_submenu and comboBox.m_submenu.m_scroll) or nil
+					if submenuScroll ~= nil then
+						--#2025_46 CLicked on e.g. a disabled (mouseEnabled = false) entry and thus the moc() detected is only the scrollList control -> Should not close the menu then (happens with submenus in contextmenus e.g.)!
+						if submenuScroll.contents == mocCtrl then
+							if doDebugNow then d("<1clicked scroll control of context menu submenu") end
+							return false
+							--#2025_47 Clicking a scrollbar at a contextmenu (submenu) will close the contextmenu (submenu)
+						elseif isScrollBarClicked(submenuScroll, mocCtrl) then
+							if doDebugNow then d("<1clicked scrollbar of context menu submenu") end
+							return false
+						end
+					end
+				end
+
+			else
+				--#2025_52 Checkbox [ ] part clicked in a submenu closes the submenu
+				--Is the mocEntry an LSM entryType entry?
+				local mocEntryEntryType = mocEntry.entryType
+ 				if mocEntryEntryType ~= nil then --e.g. LSM_ENTRY_TYPE_CHECKBOX
+					--Entry is enabled?
+					if mocEntry.enabled == true then
+						if doDebugNow then d("<<2returning via mouseLeft -> closeOnSelect: " ..tos(mocCtrl.closeOnSelect) .. ", multiSelection: " .. tos(self.m_enableMultiSelect) .. ", result: " .. tos(mocCtrl.closeOnSelect and not self.m_enableMultiSelect)) end
+						return wasTextSearchContextMenuEntryClickedCheck(self, mocCtrl, wasTextSearchContextMenuEntryClicked, isContextMenuVisible) --#2025_25
+						--return mocCtrl.closeOnSelect and not self.m_enableMultiSelect
+					end
+				end
+			end
 		end
 	else
+		if doDebugNow then d(">>2 NOT ownedByComboBox, no editbox/slider/etc. clicked") end
 		if button == MOUSE_BUTTON_INDEX_LEFT then
-			--If multiselection is enabled and a contextMenu is currently shown, but we clicked somewhere else: Close the contextMenu now if the clicked item does not belong to the contextMenu
-			----#2025_20 clickedEntryBelongsToContextMenu does not work for submeu entries clicked at the contextMenu!
+			if doDebugNow then d(">>2 MOUSE_BUTTON_INDEX_LEFT") end
+			--Context menu is visible
 			local clickedEntryBelongsToContextMenu = false
 			if isContextMenuVisible == true then
+				if doDebugNow then d(">>2 Context menu visible") end
+				if comboBox ~= nil and mocCtrl ~= nil then
+					--#2025_47 Check if main context menu scrollbar was clicked
+					if isScrollBarClicked(comboBox.m_scroll, mocCtrl) then
+						if doDebugNow then d("<2clicked scrollbar of context menu") end
+						return false
+					end
+
+					--Submenu at contextmenu, checks
+					local submenuScroll = (comboBox.m_submenu and comboBox.m_submenu.m_scroll) or nil
+					if submenuScroll ~= nil then
+						--#2025_46 CLicked on e.g. a disabled (mouseEnabled = false) entry and thus the moc() detected is only the scrollList control -> Should not close the menu then (happens with submenus in contextmenus e.g.)!
+						if submenuScroll.contents == mocCtrl then
+							if doDebugNow then d("<2clicked scroll control of context menu submenu") end
+							return false
+							--#2025_47 Clicking a scrollbar at a contextmenu (submenu) will close the contextmenu (submenu)
+						elseif isScrollBarClicked(submenuScroll, mocCtrl) then
+							if doDebugNow then d("<2clicked scrollbar of context menu submenu") end
+							return false
+						end
+					end
+				end
+
+				--If multiselection is enabled and a contextMenu is currently shown, but we clicked somewhere else: Close the contextMenu now if the clicked item does not belong to the contextMenu
+				----#2025_20 clickedEntryBelongsToContextMenu does not work for submeu entries clicked at the contextMenu!
 				if wasEditBoxClickedAtContextMenu == true or wasSliderClickedAtContextMenu == true or wasMultiIconClickedAtContextMenu == true then
+					if doDebugNow then d(">clicked editbox/slider/multi icon at contextmenu") end
 					clickedEntryBelongsToContextMenu = true
 				else
 					clickedEntryBelongsToContextMenu = belongsToContextMenuCheck(mocCtrl)
@@ -1535,7 +1632,7 @@ end
 
 -- used for onMouseEnter[submenu] and onMouseUp[contextMenu]
 function comboBox_base:ShowDropdownOnMouseAction(parentControl)
-	--d( debugPrefix .. 'comboBox_base:ShowDropdownOnMouseAction')
+--d( debugPrefix .. 'comboBox_base:ShowDropdownOnMouseAction')
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 105, tos(getControlName(parentControl))) end
 	if self:IsDropdownVisible() then
 		-- If submenu was currently opened, close it so it can reset.
@@ -2369,7 +2466,13 @@ d(">enabled: " .. tos(data.enabled))
 
 		--EditBox data was specified too? Custom font, height, width, etc.
 		local editBoxData = getEditBoxData(control, data)
+		--Add the editBoxCtrl to the editBoxData, as reference for the text search functionalities
+		editBoxData._EditBoxCtrl = editBoxCtrl
 		control.editBoxData = editBoxData
+		local editBoxTemplate = data.editBoxTemplate or editBoxData.editBoxTemplate
+		if editBoxTemplate then
+			ApplyTemplateToControl(control, editBoxTemplate)
+		end
 		processEditBoxData(control)
 
 		local isEnabled = data.enabled
@@ -2377,6 +2480,8 @@ d(">enabled: " .. tos(data.enabled))
 			isEnabled = control:IsEnabled()
 		end
 		editBoxCtrl:SetMouseEnabled(isEnabled)
+
+		self:UpdateHighlightTemplate(control, data, nil, nil)
 	end
 
 	--Setup row function: LSM_ENTRY_TYPE_SLIDER
@@ -2399,7 +2504,13 @@ d(">enabled: " .. tos(data.enabled))
 
 		--EditBox data was specified too? Custom font, height, width, etc.
 		local sliderData = getSliderData(control, data)
+		--Add the sliderCtrl to the sliderData, as reference for the text search functionalities
+		sliderData._SliderCtrl = sliderCtrl
 		control.sliderData = sliderData
+		local sliderTemplate = data.sliderTemplate or sliderData.sliderTemplate
+		if sliderTemplate then
+			ApplyTemplateToControl(control, sliderTemplate)
+		end
 		processSliderData(control)
 
 		local isEnabled = data.enabled
@@ -2407,6 +2518,8 @@ d(">enabled: " .. tos(data.enabled))
 			isEnabled = control:IsEnabled()
 		end
 		sliderCtrl:SetMouseEnabled(isEnabled)
+
+		self:UpdateHighlightTemplate(control, data, nil, nil)
 	end
 end
 

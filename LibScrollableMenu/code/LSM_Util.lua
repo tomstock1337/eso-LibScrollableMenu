@@ -79,11 +79,20 @@ local alreadyCheckedSubmenuOpeningItems = {}
 --------------------------------------------------------------------
 -- Controls
 --------------------------------------------------------------------
+local controlNameCache = lib.Debug.controlNameCache --Cache already determined control names, unless they are nil
+
 function libUtil.getControlName(control, alternativeControl)
+	--Check if cached controlName exists
+	if control ~= nil and controlNameCache[control] ~= nil then return controlNameCache[control] end
+	if alternativeControl ~= nil and controlNameCache[alternativeControl] ~= nil then return controlNameCache[alternativeControl]  end
+
+	--Get controlName and cache it if found
 	local ctrlName = control ~= nil and (control.name or (control.GetName ~= nil and control:GetName()))
 	if ctrlName == nil and alternativeControl ~= nil then
 		ctrlName = (alternativeControl.name or (alternativeControl.GetName ~= nil and alternativeControl:GetName()))
+		if ctrlName ~= nil then controlNameCache[alternativeControl] = ctrlName end
 	end
+	if control ~= nil and ctrlName ~= nil then controlNameCache[control] = ctrlName end
 	ctrlName = ctrlName or "n/a"
 	return ctrlName
 end
@@ -151,7 +160,7 @@ local getDataSource = libUtil.getDataSource
 -- >> data, dataEntry
 function libUtil.getControlData(control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 28, tos(getControlName(control))) end
-	local data = control.m_sortedItems or control.m_data
+	local data = control.m_sortedItems or control.m_data or control
 
 	return getDataSource(data)
 end
@@ -216,7 +225,7 @@ function libUtil.recursiveOverEntries(entry, comboBox, callback, ...)
 	]]
 
 	if endlessLoopPreventionCounter >= 5000 then
-d("[LSM]recursiveOverEntries - EEEEEEEEEEEEEEE   --ABORT ENDLESS LOOP--   EEEEEEEEEEEEEE")
+d("["..MAJOR.."]recursiveOverEntries - EEEEEEEEEEEEEEE   --ABORT ENDLESS LOOP--   EEEEEEEEEEEEEE")
 		return
 	end
 
@@ -892,6 +901,15 @@ end
 --------------------------------------------------------------------
 -- Dropdown / combobox hidden checks
 --------------------------------------------------------------------
+--#2025_47 Check if a scrollbar, up or down button is clicked
+function libUtil.isScrollBarClicked(scrollCtrl, compareCtrl)
+	if scrollCtrl == nil or compareCtrl == nil or scrollCtrl.scrollbar == nil then return false end
+	if scrollCtrl.scrollbar == compareCtrl then return true end
+	if scrollCtrl.upButton and scrollCtrl.upButton == compareCtrl then return true end
+	if scrollCtrl.downButton and scrollCtrl.downButton == compareCtrl then return true end
+	return false
+end
+
 --20250309 #2025_13 If the last comboBox_base:HiddenForReasons call closed an open contextMenu with multiSelect enabled, and we clicked on an LSM entry of another non-contextmenu
 --to close it, then just exit here and do not select the clicked entry
 function libUtil.checkNextOnEntryMouseUpShouldExecute()
@@ -961,7 +979,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 					returnValue = true
 				else
 					--Is the mocEntry an empty table (something else was clicked than a LSM entry)
-					if ZO_IsTableEmpty(entry) then
+					if type(entry) == "table" and ZO_IsTableEmpty(entry) then
 						if doDebugNow then d("<1ZO_IsTableEmpty(entry) -> true") end
 						returnValue = true
 					else
@@ -1012,7 +1030,7 @@ function libUtil.checkIfHiddenForReasons(selfVar, button, isContextMenu, owningW
 				clickedNoEntry = true
 			else
 				--Is the mocEntry an empty table (something else was clicked than a LSM entry)
-				if ZO_IsTableEmpty(entry) then
+				if type(entry) == "table" and ZO_IsTableEmpty(entry) then
 					if doDebugNow then d("<2 ZO_IsTableEmpty(entry) -> true; ctxtDropdown==mocCtrl.dropdown: " ..tos(contextMenuDropdownObject == mocCtrl.m_dropdownObject) .. "; owningWind==cntxMen: " ..tos(mocCtrl:GetOwningWindow() == g_contextMenu.m_dropdown)) end
 					-- Was e.g. a context menu's submenu search header's editBox or the refresh button left clicked?
 					if mocCtrl then

@@ -2,6 +2,8 @@ local lib = LibScrollableMenu
 local MAJOR = lib.name
 
 local debugPrefix = lib.Debug.prefix
+local libUtil = lib.Util
+local getValueOrCallback = libUtil.getValueOrCallback
 
 ------------------------------------------------------------------------------------------------------------------------
 -- For testing - Combobox with all kind of entry types (test offsets, etc.)
@@ -52,19 +54,19 @@ local function test()
 				return "Submenu hide"
 			end,
 			["OnEntryMouseEnter"] =		function(m_dropdownObject, entryControl, data, hasSubmenu)
-				local entryName = lib.GetValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
+				local entryName = getValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
 				return "Entry Mouse entered: " ..entryName .. ", hasSubmenu: " ..tostring(hasSubmenu)
 			end,
 			["OnEntryMouseExit"] =		function(m_dropdownObject, entryControl, data, hasSubmenu)
-				local entryName = lib.GetValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
+				local entryName = getValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
 				return "Entry Mouse exit: " ..entryName .. ", hasSubmenu: " ..tostring(hasSubmenu)
 			end,
 			["OnEntrySelected"] =		function(m_dropdownObject, entryControl, data, hasSubmenu)
-				local entryName = lib.GetValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
+				local entryName = getValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
 				return "Entry selected: " ..entryName .. ", hasSubmenu: " ..tostring(hasSubmenu)
 			end,
 			["OnCheckboxUpdated"] =		function(m_dropdownObject, checkboxControl, data)
-				local entryName = lib.GetValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
+				local entryName = getValueOrCallback(data.label ~= nil and data.label or data.name, data) or "n/a"
 				local isChecked = ZO_CheckButton_IsChecked(checkboxControl)
 				return "Checkbox updated: " ..entryName .. ", checked: " ..tostring(isChecked)
 			end,
@@ -80,16 +82,25 @@ local function test()
 
 
 		local function customFilterFunc(p_item, p_filterString)
+			d("[LSM Test]customFilterFunc")
 			local name = p_item.label or p_item.name
 			if p_item.customFilterFuncData ~= nil then
 				if p_item.customFilterFuncData.findMe ~= nil then
-			d(">customFilterFunc - findMe: " ..tostring(p_item.customFilterFuncData.findMe))
+			d(">findMe: " ..tostring(p_item.customFilterFuncData.findMe))
 					return zo_strlower(p_item.customFilterFuncData.findMe):find(p_filterString) ~= nil
 				end
 			end
 			return false
 		end
 
+		local function onEntryCallback_updateEntryPathCheckFunc(comboBox, control, data)
+			if data == nil then
+				d("<<ERROR: data is nil!")
+			end
+			local retVar = (data ~= nil and data.name == "Normal entry 6 1:2" and true ) or false
+			d("[LSM Test]onEntryCallback_updateEntryPathCheckFunc - name: " .. tostring(((data ~= nil and data.label) or data.name) or "n/a") .. ", retVar: " .. tostring(retVar))
+			return retVar
+		end
 
 		--==============================================================================================================
 		-- Options for the main combobox menu
@@ -108,6 +119,8 @@ local function test()
 			OnSelectionBlockedCallback = function() d(debugPrefix.."ERROR - Selection of entry was blocked!") end,
 
 			selectedSoundDisabled = false,
+			automaticRefresh = true,
+			automaticSubmenuRefresh = false,
 
 			visibleRowsDropdown = 10,
 			visibleRowsSubmenu = 10,
@@ -265,7 +278,7 @@ local function test()
 					d("I changed the editbox 1 submenu text, to: " .. tostring(text))
 				end,
 				enabled 		= true,
-				doNotFilter		= true,
+				doNotFilter = true,
 				editBoxData = {
 					hideLabel = true,
 					labelWidth = "20%",
@@ -677,7 +690,8 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				name            = "Button1",
 				tooltip         = "Button button button...",
 				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("I clicked a button with the name: " .. tostring(itemName))
+					sliderValue = 500000
+					d("I clicked a button with the name: " .. tostring(itemName) .. " and changed the slider below to " .. tostring(sliderValue))
 				end,
 				doNotFilter		= true,
 			},
@@ -724,7 +738,20 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				end,
 				enabled			= true,
 				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
-				doNotFilter		= false,
+				doNotFilter		= function(LSM_comboBox, selectedContextMenuItem, openingMenusEntries)
+					if not ZO_IsTableEmpty(openingMenusEntries) then
+						for _, entryData in ipairs(openingMenusEntries) do
+							if entryData and entryData.name then
+								if entryData.name == "EditBox1" then
+									d("[LSM Test]Found current dropdown's EditBox1! DoNotFilter it")
+									return true
+								end
+							end
+						end
+					end
+					return false
+				end,
+				--doNotFilterEntryTypes = function() return { LSM_ENTRY_TYPE_CHECKBOX } end,
 				editBoxData = {
 					hideLabel = 			false,
 					labelWidth = 			"10%",
@@ -982,9 +1009,13 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 					end
 				end,
 				--	callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
-				callback        =   function(self)
-					d("Entry with label 1!")
+				callback        =   function(comboBox, itemName, item, selectionChanged, oldItem)
+					d("Clicked: " .. tostring(getValueOrCallback(item.label)))
 				end,
+				updateEntryPathCheckFunc = onEntryCallback_updateEntryPathCheckFunc,
+				updateEntryPath = true,
+
+
 				--entries         = submenuEntries,
 				--tooltip         =
 				--type = lib.LSM_ENTRY_TYPE_CHECKBOX
@@ -1232,6 +1263,8 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 						end,
 						--tooltip         = "Submenu Entry Test 1",
 						--icon 			= nil,
+						updateEntryPathCheckFunc = onEntryCallback_updateEntryPathCheckFunc,
+						updateEntryPath = true,
 					},
 				},
 				--	tooltip         = function() return "Submenu entry 6"  end
@@ -1304,6 +1337,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 		-- This example callback is checking if the data matches a checkbox entry from this addon.
 		lib:RegisterCallback('CheckboxUpdated', function(checked, data, checkbox)
 			-- Callback is fired on checkbox checked state change
+--d("[LSM]test - Checkbox callback")
 			if entryMap[data] ~= nil then
 				-- Belongs to this addon
 			end

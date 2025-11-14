@@ -12,7 +12,7 @@ GERMAN
 ]]--
 
 local stringsDE = {
-	SI_LSM_SEARCH_FILTER_TOOLTIP = "Gib einen Suchbegriff ein, um die Einträge der Menüs und (mehrstufigen) Untermenüs zu filtern.\nSchreibe \'/\' davor, um nicht passende Untermenüs dennoch anzuzeigen.",
+	SI_LSM_SEARCH_FILTER_TOOLTIP = "Gib einen Suchbegriff ein, um die Einträge der Menüs und (mehrstufigen) Untermenüs zu filtern.\nSchreibe \'/\' davor, um nicht passende Untermenü-Einträge dennoch anzuzeigen.",
 
     SI_LSM_CNTXT_CHECK_ALL = "Alle wählen",
     SI_LSM_CNTXT_CHECK_NONE = "Keine wählen",

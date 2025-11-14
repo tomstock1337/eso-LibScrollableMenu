@@ -6,7 +6,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 lib.author = "Baertram, IsJustaGhost, tomstock, Kyoma"
-lib.version = "2.37"
+lib.version = "2.38"
 if not lib then return end
 --------------------------------------------------------------------
 
@@ -38,6 +38,9 @@ lib.preventerVars = {
 --Library's XML functions and code
 lib.XML = {}
 
+--#2025_45 ContextMenu callbacks which got registered via API function ShowCustomScrollableMenu's parameter specialCallbackData
+lib.contextMenuCallbacksRegistered = {}
+
 --Constants for the library
 lib.constants = {}
 local constants = lib.constants
@@ -49,6 +52,7 @@ local constants = lib.constants
 lib.Debug = {}
 lib.Debug.doDebug = false
 lib.Debug.doVerboseDebug = false
+lib.Debug.controlNameCache = {}
 
 local debugPrefix = "[" .. MAJOR .. "]"
 lib.Debug.prefix = debugPrefix
@@ -100,7 +104,7 @@ lib.SV = {} --will be init properly at the onAddonLoaded function
 --------------------------------------------------------------------
 -- Other Libraries
 --------------------------------------------------------------------
---LibAddonMenu2, LibDebugLogger
+--LibDebugLogger
 
 
 -----------------------------------------------------------------------
@@ -145,8 +149,9 @@ constants.throttledCallDelay = 		10
 --Handler names
 constants.handlerNames = {}
 constants.handlerNames.dropdownCallLaterHandle = 	MAJOR .. "_Timeout"
-constants.handlerNames.UINarrationName = 			MAJOR .. "_UINarration_"
-constants.handlerNames.UINarrationUpdaterName = 	MAJOR .. "_UINarrationUpdater_"
+local UINarrationName = MAJOR .. "_UINarration"
+constants.handlerNames.UINarrationName = 			UINarrationName .. "_"
+constants.handlerNames.UINarrationUpdaterName = 	UINarrationName .. "Updater_"
 constants.handlerNames.throttledCallDelayName = 	MAJOR .. '_throttledCallDelay'
 
 --ComboBox
@@ -214,15 +219,21 @@ constants.entryTypes.defaults.highlights.subAndContextMenuHighlightAnimationBrea
 
 ------------------------------------------------------------------------------------------------------------------------
 --Entry types - For the scroll list's dataType of the menus
-local LSM_ENTRY_TYPE_NORMAL = 	1
-local LSM_ENTRY_TYPE_DIVIDER = 	2
-local LSM_ENTRY_TYPE_HEADER = 	3
-local LSM_ENTRY_TYPE_SUBMENU = 	4
-local LSM_ENTRY_TYPE_CHECKBOX = 5
-local LSM_ENTRY_TYPE_BUTTON = 6
-local LSM_ENTRY_TYPE_RADIOBUTTON = 7
-local LSM_ENTRY_TYPE_EDITBOX = 8
-local LSM_ENTRY_TYPE_SLIDER = 9
+local LSM_ENTRY_TYPE_NORMAL 		= 1
+local LSM_ENTRY_TYPE_DIVIDER 		= 2
+local LSM_ENTRY_TYPE_HEADER 		= 3
+local LSM_ENTRY_TYPE_SUBMENU 		= 4
+local LSM_ENTRY_TYPE_CHECKBOX		= 5
+local LSM_ENTRY_TYPE_BUTTON 		= 6
+local LSM_ENTRY_TYPE_RADIOBUTTON 	= 7
+local LSM_ENTRY_TYPE_EDITBOX 		= 8
+local LSM_ENTRY_TYPE_SLIDER 		= 9
+
+--Updater modes for the menus (See API function RefreshCustomScrollableMenu)
+LSM_UPDATE_MODE_MAINMENU = 1
+LSM_UPDATE_MODE_SUBMENU = 2
+LSM_UPDATE_MODE_BOTH = 99
+
 
 --Constant for the divider entryType
 lib.DIVIDER = "-"
@@ -250,8 +261,8 @@ for key, value in pairs(scrollListRowTypes) do
 	_G[key] = value
 end
 
---Exclude the OnMouseup handler for these rowTypes (entryTypes) as the callbacks of an editBox/slider should not be executed
---if you click the row, but the editBox text was changed or the slider value was changed (via XML handlers!)
+--Exclude the OnMouseUp handler for these rowTypes (entryTypes) as the callbacks of an editBox/slider should not be executed
+--if you click the row, but the editBox's text/the slider's value was changed (via XML handlers!)
 local onEntryMouseUpExclude = {
 	[LSM_ENTRY_TYPE_EDITBOX] = true,
 	[LSM_ENTRY_TYPE_SLIDER] = true,
@@ -324,6 +335,23 @@ local additionalDataKeyToLSMEntryType = {
 	["isSlider"] = 		LSM_ENTRY_TYPE_SLIDER,
 }
 constants.entryTypes.additionalDataKeyToLSMEntryType = additionalDataKeyToLSMEntryType
+
+--##2025_44/2025_57 Table with entry's data key which could raise an automatic update of the entry, and all parentMenu
+--entries.
+local updateEntryPathsData = {
+	updateEntryPath = "updateEntryPath",
+	updateEntryPathCheckFunc = "updateEntryPathCheckFunc",
+	updateIconPath = "updateIconPath"
+}
+constants.entryTypes.updateEntryPathsData = updateEntryPathsData
+
+--The index of this table defines the priority -> The lower the index, the higher the priority (the higher the priority the
+--earlier this data's callback function is called)
+local dataAllowedAutomaticUpdateRaise = {
+	[1] = updateEntryPathsData.updateEntryPath,
+	[2] = updateEntryPathsData.updateIconPath,
+}
+constants.entryTypes.dataAllowedAutomaticUpdateRaise = dataAllowedAutomaticUpdateRaise
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -462,6 +490,8 @@ local comboBoxDefaults = {
 	itemYPad = 						0,
 
 	--LibScrollableMenu internal (e.g. options)
+	automaticRefresh = 				false, --#2025_42
+	automaticSubmenuRefresh =		false, --#2025_42
 	baseEntryHeight = 				ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
 	containerMinWidth = 			dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER,
 	disableFadeGradient = 			false,
@@ -492,6 +522,8 @@ constants.entryTypes.defaults.highlights.defaultHighlightColor = comboBoxDefault
 
 --The default values for dropdownHelper options -> used for non-passed in options at LSM API functions
 local defaultComboBoxOptions  = {
+	["automaticRefresh"] = 			false, --#2025_42
+	["automaticSubmenuRefresh"] =	false, --#2025_42
 	["enableFilter"] = 				false,
 	["disableFadeGradient"] = 		false,
 	["font"] = 						fonts.DEFAULT_FONT,
@@ -519,6 +551,8 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	-->e.g. options.visibleRowsDropdown -> Will be saved at comboBox.visibleRows (and if a function in table LSMOptionsToZO_ComboBoxOptionsCallbacks
 	-->is defiend below this function will be executed too).
 	-->Missing entries (even if names are the same) will relate in function comboBoxClass:SetOption not respecting the value!
+	["automaticRefresh"] =		"automaticRefresh", --#2025_42
+	["automaticSubmenuRefresh"]= "automaticSubmenuRefresh", --#2025_42
 	["disableFadeGradient"] =	"disableFadeGradient", --Used for the ZO_ScrollList of the dropdown, not the comboBox itsself
 	["disabledColor"] =			"m_disabledColor",
 	["enableFilter"] =			"enableFilter",
@@ -812,8 +846,32 @@ local filteredEntryTypes = {
 	[LSM_ENTRY_TYPE_BUTTON] = 	true,
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = true,
 	--[LSM_ENTRY_TYPE_DIVIDER] = false,
+	[LSM_ENTRY_TYPE_EDITBOX] = true,
+	[LSM_ENTRY_TYPE_SLIDER] = true,
 }
 constants.searchFilter.filteredEntryTypes = filteredEntryTypes
+
+--LSM entryTypes which should not search the LSMentry's name alone, but also another childControl of the LSMentry
+--which was added to the data table as e.g. ._EditBoxCtrl reference
+local filteredEntryTypsChildsToSearch = {
+	[LSM_ENTRY_TYPE_EDITBOX] = {
+		[1] = {
+			dataTable = "editBoxData",
+			dataName = "_EditBoxCtrl",
+			getFunc = "GetText",
+			getFuncReturnType = "string",
+		}
+	},
+	[LSM_ENTRY_TYPE_SLIDER] = {
+		[1] = {
+			dataTable = "sliderData",
+			dataName = "_SliderCtrl",
+			getFunc = "GetValue",
+			getFuncReturnType = "number",
+		}
+	},
+}
+constants.searchFilter.filteredEntryTypsChildsToSearch = filteredEntryTypsChildsToSearch
 
 --Table defines if some names of the entries count as "search them or skip them".
 --true: Item's name does not need to be searched -> skip them / false: search the item's name as usual
