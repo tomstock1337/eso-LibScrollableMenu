@@ -278,7 +278,7 @@ local function test()
 					d("I changed the editbox 1 submenu text, to: " .. tostring(text))
 				end,
 				enabled 		= true,
-				doNotFilter		= true,
+				doNotFilter = true,
 				editBoxData = {
 					hideLabel = true,
 					labelWidth = "20%",
@@ -738,7 +738,21 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				end,
 				enabled			= true,
 				icon			= { "/esoui/art/inventory/inventory_trait_ornate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_intricate_icon.dds", "EsoUI/Art/Inventory/inventory_trait_not_researched_icon.dds" },
-				doNotFilter		= false,
+				doNotFilter		= function(LSM_comboBox, selectedContextMenuItem, openingMenusEntries)
+					d("[LSM Test]EditBox1 - doNotFilter check")
+					if not ZO_IsTableEmpty(openingMenusEntries) then
+						for _, entryData in ipairs(openingMenusEntries) do
+							if entryData and entryData.name then
+								if entryData.name == "EditBox1" then
+									d(">Found current dropdown's EditBox1! DoNotFilter it")
+									return true
+								end
+							end
+						end
+					end
+					return false
+				end,
+				--doNotFilterEntryTypes = function() return { LSM_ENTRY_TYPE_CHECKBOX } end,
 				editBoxData = {
 					hideLabel = 			false,
 					labelWidth = 			"10%",

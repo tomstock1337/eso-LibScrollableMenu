@@ -282,7 +282,6 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 Max error #: 2025_61
 
 [FEATURE]
-#2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(comboBox, entry, currentDropdownEntriesTable), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
 
 [KNOWN PROBLEMS]
 #2025_61 Submenu at contextmenu (opend from another submenu) will close the submenu of the context menu automatically if the entry of the opened submenu is not above the LSM dropdown.
@@ -333,6 +332,8 @@ RefreshCustomScrollableMenu(mocCtrl, updateMode, comboBox)
 
 
 [Changed]
+#2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(LSM_comboBox, selectedContextMenuItem, openingMenusEntries), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
+--->If it's a fucntion you can also specify doNotFilterEntryTypes = table or function returning a table of LSM entryTypes which should be prefiltering the current list, before the doNotFilter function is executed on them (e.g. { LSM_ENTRY_TYPE_CHECKBOX } to only prefilter checkbox entries of the current list)
 
 [Removed]
 

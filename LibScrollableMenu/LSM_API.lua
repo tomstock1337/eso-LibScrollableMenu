@@ -600,7 +600,7 @@ LSM_Debug.cntxtMenuControlToAnchorTo = controlToAnchorTo
 end
 local showCustomScrollableMenu = ShowCustomScrollableMenu
 
---Run a callback function myAddonCallbackFunc passing in the entries of the opening menu/submneu of a clicked LSM context menu item
+--Run a callback function myAddonCallbackFunc passing in the entries of the opening menu/submenu of a clicked LSM context menu item
 -->Parameters of your function myAddonCallbackFunc must be:
 -->function myAddonCallbackFunc(userdata LSM_comboBox, userdata selectedContextMenuItem, table openingMenusEntries, ...)
 -->... can be any additional params that your function needs, and must be passed in to the ... of calling API function RunCustomScrollableMenuItemsCallback too!
@@ -658,7 +658,7 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	local sortedItems = getComboBoxsSortedItems(comboBox, fromParentMenuValue, false)
 	if ZO_IsTableEmpty(sortedItems) then
 --d("<sortedItems are empty!")
-		return false
+		return false, nil
 	end
 
 	local itemsForCallbackFunc = sortedItems

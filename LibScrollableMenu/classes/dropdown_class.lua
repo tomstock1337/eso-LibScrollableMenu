@@ -568,15 +568,21 @@ end
 --was not marked as "not to search" (always show in search results) in it's data
 --If the entryType was provided and is in the constants childControlsToSearch list (see function checkIfChildControlTextMatches) e.g. editbox or slider
 --it will also search the child controls of the item (e.g. editBoxCtrl:GetText() or sliderCtrl:GetValue()) for the search term
+local runCustomScrollableMenuItemsCallback
 local function filterResults(item, comboBox, dropdownObject)
 	local entryType = item.entryType
 	if not entryType or filteredEntryTypes[entryType] then
 		--Should the item be skipped at the search filters?
 		-->Is the doNotFilter entry a special function with signature doNotFilterFunc(comboBox, entry, currentDropdownEntriesTable)?
+		-->Used LSM API function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, filterEntryTypes, fromParentMenu, ...)
+		-->where myAddonCallbackFunc is the passed in item.doNotFilter
+		-->function's signature must be: (LSM_comboBox, selectedContextMenuItem, openingMenusEntries)
 		local doNotFilter
-		if type(item.doNotFilter) == functionType and comboBox ~= nil then --#2025_56 Check e.g. if a button entryType should only be filtered (hidden) if there is no other entry inside the table currentDropdownEntriesTable
-			local currentDropdownEntriesTable = comboBox.m_sortedItems or {} --todo 20251114 The comboBox is always the 1st passed in "mainMenu" comboBox and not the currently opened dropdown's (submenu, subsubmenu, ...) combobox :(
-			doNotFilter= item.doNotFilter(comboBox, item, currentDropdownEntriesTable) or false
+		if type(item.doNotFilter) == functionType and comboBox ~= nil then
+			local doNotFilterEntryTypes = getValueOrCallback(item.doNotFilterEntryTypes, item) or nil
+			local wasExecuted
+			runCustomScrollableMenuItemsCallback = runCustomScrollableMenuItemsCallback or RunCustomScrollableMenuItemsCallback
+			wasExecuted, doNotFilter = runCustomScrollableMenuItemsCallback(comboBox, item, item.doNotFilter, doNotFilterEntryTypes, false) --#2025_56 Check e.g. if a button entryType should only be filtered (hidden) if there is no other entry inside the table currentDropdownEntriesTable
 		else
 			doNotFilter = getValueOrCallback(item.doNotFilter, item) or false
 		end

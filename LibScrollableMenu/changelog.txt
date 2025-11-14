@@ -1,6 +1,7 @@
 -v- ---------------LSM v2.38 - 2025-11-14--------------------------------------------------------------------------- -v-
 [WORKING ON]
-#2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(comboBox, entry, currentDropdownEntriesTable), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
+#2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(LSM_comboBox, selectedContextMenuItem, openingMenusEntries), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
+--->If it's a fucntion you can also specify doNotFilterEntryTypes = table or function returning a table of LSM entryTypes which should be prefiltering the current list, before the doNotFilter function is executed on them (e.g. { LSM_ENTRY_TYPE_CHECKBOX } to only prefilter checkbox entries of the current list)
 
 
 [Fixed]
@@ -40,6 +41,10 @@ RefreshCustomScrollableMenu(mocCtrl, updateMode, comboBox)
 --Returns boolean true/false if any LSM context menu is currently showing it's dropdown
 #2025_60 Added API function IsCustomScrollableMenuShown()
 --Returns boolean true/false if any LSM menu is currently showing it's dropdown (including any LSM ContextMenu!)
+
+[Changed]
+#2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(LSM_comboBox, selectedContextMenuItem, openingMenusEntries), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
+--->If it's a fucntion you can also specify doNotFilterEntryTypes = table or function returning a table of LSM entryTypes which should be prefiltering the current list, before the doNotFilter function is executed on them (e.g. { LSM_ENTRY_TYPE_CHECKBOX } to only prefilter checkbox entries of the current list)
 
 
 
