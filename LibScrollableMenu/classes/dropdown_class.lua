@@ -568,13 +568,31 @@ end
 --was not marked as "not to search" (always show in search results) in it's data
 --If the entryType was provided and is in the constants childControlsToSearch list (see function checkIfChildControlTextMatches) e.g. editbox or slider
 --it will also search the child controls of the item (e.g. editBoxCtrl:GetText() or sliderCtrl:GetValue()) for the search term
-local function filterResults(item, comboBox)
+local function filterResults(item, comboBox, dropdownObject)
 	local entryType = item.entryType
 	if not entryType or filteredEntryTypes[entryType] then
 		--Should the item be skipped at the search filters?
-		local doNotFilter = getValueOrCallback(item.doNotFilter, item) or false
+		-->Is the doNotFilter entry a special function with signature doNotFilterFunc(comboBox, entry, currentDropdownEntriesTable)?
+		local doNotFilter
+		if type(item.doNotFilter) == functionType and comboBox ~= nil then --#2025_56 Check e.g. if a button entryType should only be filtered (hidden) if there is no other entry inside the table currentDropdownEntriesTable
+			local currentDropdownEntriesTable = comboBox.m_sortedItems or {} --todo 20251114 The comboBox is always the 1st passed in "mainMenu" comboBox and not the currently opened dropdown's (submenu, subsubmenu, ...) combobox :(
+			doNotFilter= item.doNotFilter(comboBox, item, currentDropdownEntriesTable) or false
+		else
+			doNotFilter = getValueOrCallback(item.doNotFilter, item) or false
+		end
+--[[
+LSM_Debug = LSM_Debug or {}
+LSM_Debug.filterResults = LSM_Debug.filterResults or {}
+LSM_Debug.filterResults[item] = {
+	item = item,
+	comboBox = comboBox,
+	dropdownObject = dropdownObject,
+	sortedItems = ZO_ShallowTableCopy(comboBox.m_sortedItems),
+	doNotFilter = doNotFilter,
+}
+]]
 		if doNotFilter == true then
-			return true -- always included
+			return true -- always include this entry in the search results
 		end
 		--Check for other prerequisites
 		local doSearch, searchResultChildControls = passItemToSearch(item, entryType)
@@ -594,12 +612,12 @@ end
 
 --String filter the visible results, if options.enableFilter == true
 -->if doFilter is true the text search will be executed, else textsearch is not executed -> Item should be shown directly
-local function itemPassesFilter(item, comboBox, doFilter)
+local function itemPassesFilter(item, comboBox, doFilter, dropdownObject)
 	--Check if the data.name / data.label are provided (also check all other data.* keys if functions need to be executed)
 	if verifyLabelString(item) then
 		if doFilter then
 			--Recursively check menu entries (submenu and nested submenu entries) for the matching search string
-			return recursiveOverEntries(item, comboBox, filterResults)
+			return recursiveOverEntries(item, comboBox, filterResults, dropdownObject)
 		else
 			return true
 		end
@@ -1896,7 +1914,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 		local item = itemTable[i]
 		local isLastEntry = i == numItems
 
-		local itemMatchesFilter = itemPassesFilter(item, comboBox, textSearchEnabled)
+		local itemMatchesFilter = itemPassesFilter(item, comboBox, textSearchEnabled, self)
 		if itemMatchesFilter and not anyItemMatchesFilter then
 			anyItemMatchesFilter = true
 		end

@@ -225,7 +225,7 @@ function libUtil.recursiveOverEntries(entry, comboBox, callback, ...)
 	]]
 
 	if endlessLoopPreventionCounter >= 5000 then
-d("[LSM]recursiveOverEntries - EEEEEEEEEEEEEEE   --ABORT ENDLESS LOOP--   EEEEEEEEEEEEEE")
+d("["..MAJOR.."]recursiveOverEntries - EEEEEEEEEEEEEEE   --ABORT ENDLESS LOOP--   EEEEEEEEEEEEEE")
 		return
 	end
 
