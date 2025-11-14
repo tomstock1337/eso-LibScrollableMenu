@@ -277,11 +277,11 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.38 - Updated 2025-11-12
+	CHANGELOG Current version: 2.38 - Updated 2025-11-14
 ---------------------------------------------------------------
 Max error #: 2025_61
 
-[FEATURE[
+[FEATURE]
 #2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(comboBox, entry, currentDropdownEntriesTable), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
 
 [KNOWN PROBLEMS]
@@ -291,12 +291,12 @@ Max error #: 2025_61
 
 
 [WORKING ON]
-#2025_48 Search header is not searching an editBox's text or a slider's value (only the label's text in front)
 
 
 [Fixed]
 #2025_46 Clicking a disabled entry at a contextmenu submenu will close the submenu as the control is not mouseEnabled and the scrollList control below is clicked. Detection of the scrollList's owner == LSM menu should take place then to suppress the close of the menu?
 #2025_47 Clicking a scrollbar at a contextmenu (submenu) will close the contextmenu (submenu)
+#2025_48 Search header is not searching an editBox's text or a slider's value (only the label's text in front)
 #2025_49 Editbox clicked at context menu's submenu will close the contextmenu
 #2025_50 Slider  clicked at context menu's submenu will close the contextmenu
 #2025_51 MultiIcon clicked at context menu's submenu will close the contextmenu

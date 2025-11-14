@@ -700,14 +700,15 @@ end
 --->LSM_UPDATE_MODE_BOTH		Update the submenu and the mainmenu, both
 ---Parameter comboBox is optional
 local function LSM_RefreshLibScrollableMenu(mocCtrl, updateMode, comboBox) -- #2025_58
+	--Update the visible LSM dropdown's submenu now so the disabled state and checkbox values commit again
+	if mocCtrl == nil then mocCtrl = moc() end
 --d("[RefreshCustomScrollableMenu] - moc: " .. getControlName(mocCtrl) .. "; updateMode: " ..tos(updateMode) .. "; comboBox: " .. tos(comboBox))
-    --Update the visible LSM dropdown's submenu now so the disabled state and checkbox values commit again
 	if mocCtrl ~= nil then
 		if comboBox == nil then
 			comboBox = (mocCtrl.m_comboBox or (mocCtrl.m_owner and mocCtrl.m_owner.m_comboBox)) or nil
 		end
 		if comboBox == nil then return end
-
+--d(">[LSM]found combobox")
 		--Main Menu
 		if updateMode == LSM_UPDATE_MODE_BOTH or updateMode == LSM_UPDATE_MODE_MAINMENU then
 			--local owningWindow = mocCtrl.GetOwningWindow ~= nil and mocCtrl:GetOwningWindow() or nil
@@ -724,6 +725,7 @@ local function LSM_RefreshLibScrollableMenu(mocCtrl, updateMode, comboBox) -- #2
 		--Submenu
 		if updateMode == LSM_UPDATE_MODE_BOTH or updateMode == LSM_UPDATE_MODE_SUBMENU then
 			if mocCtrl.m_dropdownObject and comboBox and comboBox:IsDropdownVisible() == true then
+--d(">[LSM[refresh submenu - TRY")
 				mocCtrl.m_dropdownObject:SubmenuOrCurrentListRefresh(mocCtrl, true, false)
 			end
 		end

@@ -1,11 +1,12 @@
--v- ---------------LSM v2.38 - 2025-11-12--------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.38 - 2025-11-14--------------------------------------------------------------------------- -v-
 [WORKING ON]
-#2025_48 Search header is not searching an editBox's text or a slider's value (only the label's text in front)
+#2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(comboBox, entry, currentDropdownEntriesTable), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
 
 
 [Fixed]
 #2025_46 Clicking a disabled entry at a contextmenu submenu will close the submenu as the control is not mouseEnabled and the scrollList control below is clicked. Detection of the scrollList's owner == LSM menu should take place then to suppress the close of the menu?
 #2025_47 Clicking a scrollbar at a contextmenu (submenu) will close the contextmenu (submenu)
+#2025_48 Search header is not searching an editBox's text or a slider's value (only the label's text in front)
 #2025_49 Editbox clicked at context menu's submenu will close the contextmenu
 #2025_50 Slider  clicked at context menu's submenu will close the contextmenu
 #2025_51 MultiIcon clicked at context menu's submenu will close the contextmenu

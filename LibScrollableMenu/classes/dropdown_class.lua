@@ -20,6 +20,7 @@ local dlog = libDebug.DebugLog
 --ZOs local speed-up/reference variables
 local EM = GetEventManager() --EVENT_MANAGER
 local tos = tostring
+local ton = tonumber
 local sfor = string.format
 local tins = table.insert
 local trem = table.remove
@@ -105,15 +106,23 @@ local checkNextOnEntryMouseUpShouldExecute = libUtil.checkNextOnEntryMouseUpShou
 local libUtil_BelongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 
 --locals
+local isBoolean = {
+	[true] = true,
+	[false] = true,
+	["true"] = true,
+	["false"] = true,
+}
+
 --Filtering
 local ignoreSubmenu 			--if using / prefix submenu entries not matching the search term should still be shown
 local lastEntryVisible  = true	--Was the last entry processed visible at the results list? Used to e.g. show the divider below too
 local filterString				--the search string
+local filterStringIsNumber		--boolean telling if the searchString is a number
+local filterStringIsBoolean		--boolean telling if the searchString is a boolean
 local filterFunc				--the filter function to use. Default is "defaultFilterFunc". Custom filterFunc can be added via options.customFilterFunc
 local throttledCallDropdownClassSetFilterStringSuffix =  "_DropdownClass_SetFilterString"
 local throttledCallDropdownClassOnTextChangedStringSuffix =  "_DropdownClass_OnTextChanged"
 local throttledCallDropdownClassOnValueChangedStringSuffix =  "_DropdownClass_OnValueChanged"
-
 
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
@@ -483,26 +492,38 @@ end
 
 --Check if a childControl of the entryType's item matches the search text, e.g.
 --a editBox's or slider's text/number value
-local function checkIfChildControlTextMatches(item, entryType) --#2025_48
+local function checkIfChildControlTextMatches(item, entryType, filterNamesExemptsCheck) --#2025_48
 --d("[LSM]checkIfChildControlTextMatches")
 	local childControlsToCheck = filteredEntryTypsChildsToSearch[entryType]
-	if ZO_IsTableEmpty(childControlsToCheck) then return false, nil end
-
+	if ZO_IsTableEmpty(childControlsToCheck) then return filterNamesExemptsCheck, nil end
+--[[
 lib._LSMDebugItem = {
 	item = item,
  	entryType = entryType,
  	filterString = filterString,
 }
+]]
 
 	for _, childControlData in ipairs(childControlsToCheck) do
 --d(">checking entryType data for: " .. tos(entryType))
 		if childControlData.dataTable ~= nil and childControlData.dataName ~= nil and childControlData.getFunc ~= nil then
+			local getFuncReturnType = childControlData.getFuncReturnType or "string"
 --d(">>found dataTable: " .. tos(childControlData.dataTable) ..", dataName: " .. tos(childControlData.dataName) .. ", getFunc: " ..tos(childControlData.getFunc))
 			local dataTable = item[childControlData.dataTable]
 			local childControl = (dataTable ~= nil and dataTable[childControlData.dataName]) or nil
 			if childControl ~= nil and childControl[childControlData.getFunc] ~= nil then
+				--Call teh getFunc on the childControl, to get the current text/value of the control
 				local textToCheck = tos(childControl[childControlData.getFunc](childControl))
-d(">>found childControl: " .. getControlName(childControl) .. ", textToCheck: " .. tos(textToCheck))
+				--Check if the return value of the getFunc is a string, number or boolean, and check if the filetrString matches that type
+				if getFuncReturnType == "number" then
+					--Entered search tearm is a number? If not we cannot compare it -> no match!
+					if not filterStringIsNumber then return filterNamesExemptsCheck, nil end
+				elseif getFuncReturnType == "boolean" then
+					--Entered search tearm is a boolean? If not we cannot compare it -> no match!
+					if not filterStringIsBoolean then return filterNamesExemptsCheck, nil end
+				end
+
+--d(">>found childControl: " .. getControlName(childControl) .. ", textToCheck: " .. tos(textToCheck))
 				--Text is missing: Do not filter
 				if textToCheck ~= nil and textToCheck ~= "nil" then
 					if not filterNamesExempts[textToCheck] then
@@ -512,7 +533,7 @@ d(">>found childControl: " .. getControlName(childControl) .. ", textToCheck: " 
 						newItem.label = textToCheck
 						newItem.name = textToCheck
 						if filterFunc(newItem, filterString) == true then
-d(">>>returning true!")
+--d(">>>returning true!")
 							return true, true
 						end
 					end
@@ -520,7 +541,7 @@ d(">>>returning true!")
 			end
 		end
 	end
-	return false, nil
+	return filterNamesExemptsCheck, nil
 end
 
 --Check if entry should be added to the search/filter of the string search of the collapsible header
@@ -531,20 +552,22 @@ local function passItemToSearch(item, entryType)
 		local name = item.label or item.name
 		--Name is missing: Do not filter
 		local doExtraEntryTypeCheck = (entryType ~= nil and true) or false
-		if name == nil and not doExtraEntryTypeCheck then return false, nil end
+		if name == nil and doExtraEntryTypeCheck == false then return false, nil end
 
-		local retVarNameAndLabelChecks = not filterNamesExempts[name]
---d("[LSM]passItemToSearch - entryType: " ..tos(entryType) .. ", retVarNameAndLabelChecks: " ..tos(retVarNameAndLabelChecks))
+		local filterNamesExemptsCheck = not filterNamesExempts[name]
+--d("[LSM]passItemToSearch - entryType: " ..tos(entryType) .. ", filterNamesExemptsCheck: " ..tos(filterNamesExemptsCheck))
 		if doExtraEntryTypeCheck == true then --#2025_48
-			return checkIfChildControlTextMatches(item, entryType) --#2025_48
+			return checkIfChildControlTextMatches(item, entryType, filterNamesExemptsCheck) --#2025_48
 		end
-		return retVarNameAndLabelChecks, nil
+		return filterNamesExemptsCheck, nil
 	end
 	return false, nil
 end
 
 --Search the item's label or name now, if the entryType of the item should be processed by text search, and if the entry
 --was not marked as "not to search" (always show in search results) in it's data
+--If the entryType was provided and is in the constants childControlsToSearch list (see function checkIfChildControlTextMatches) e.g. editbox or slider
+--it will also search the child controls of the item (e.g. editBoxCtrl:GetText() or sliderCtrl:GetValue()) for the search term
 local function filterResults(item, comboBox)
 	local entryType = item.entryType
 	if not entryType or filteredEntryTypes[entryType] then
@@ -554,12 +577,15 @@ local function filterResults(item, comboBox)
 			return true -- always included
 		end
 		--Check for other prerequisites
-		local doSearch, searchResult = passItemToSearch(item, entryType) == true
-		if doSearch == true and searchResult == nil then
-			--Not excluded, do the string comparison now (if not already done in passItemToSearch)
-			return filterFunc(item, filterString)
-		elseif searchResult ~= nil then
-			return searchResult
+		local doSearch, searchResultChildControls = passItemToSearch(item, entryType)
+		if doSearch == true then
+			--Not excluded, do the string comparison now (if not already done in passItemToSearch -> searchResultChildControls)
+			local retVar = (searchResultChildControls == nil and filterFunc(item, filterString)) or searchResultChildControls --#2025_48
+
+			if retVar == true and searchResultChildControls ~= nil then
+--d(">found item: " .. tos(item.label or item.name))
+			end
+			return retVar
 		end
 	else
 		return lastEntryVisible
@@ -1824,7 +1850,7 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 	local comboBoxObject = self.m_comboBox
 
 	-- externally defined
-	ignoreSubmenu, filterString, filterFunc = nil, nil, nil
+	ignoreSubmenu, filterString, filterFunc, filterStringIsBoolean, filterStringIsNumber = nil, nil, nil, nil, nil
 	lastEntryVisible = false
 	--options.enableFilter == true?
 	if self:IsFilterEnabled() then
@@ -1834,6 +1860,9 @@ function dropdownClass:Show(comboBox, itemTable, minWidth, maxWidth, maxHeight, 
 		self:ResetFilters(comboBoxObject.m_dropdown)
 	end
 	filterString = filterString or ''
+	filterStringIsNumber = 	(filterString ~= '' and type(ton(filterString)) == "number" and true) or false
+	filterStringIsBoolean = isBoolean[filterString] or false
+
 	-- Convert ignoreSubmenu to bool
 	-->If ignoreSubmenu == true: Show submenu entries even if they do not match the search term (as long as the submenu name matches the search term)
 	ignoreSubmenu = ignoreSubmenu == '/'

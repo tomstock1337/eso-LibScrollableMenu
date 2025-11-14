@@ -859,6 +859,7 @@ local filteredEntryTypsChildsToSearch = {
 			dataTable = "editBoxData",
 			dataName = "_EditBoxCtrl",
 			getFunc = "GetText",
+			getFuncReturnType = "string",
 		}
 	},
 	[LSM_ENTRY_TYPE_SLIDER] = {
@@ -866,6 +867,7 @@ local filteredEntryTypsChildsToSearch = {
 			dataTable = "sliderData",
 			dataName = "_SliderCtrl",
 			getFunc = "GetValue",
+			getFuncReturnType = "number",
 		}
 	},
 }
