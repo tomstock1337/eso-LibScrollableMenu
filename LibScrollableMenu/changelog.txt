@@ -1,8 +1,5 @@
 -v- ---------------LSM v2.38 - 2025-11-14--------------------------------------------------------------------------- -v-
 [WORKING ON]
-#2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(LSM_comboBox, selectedContextMenuItem, openingMenusEntries), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
---->If it's a fucntion you can also specify doNotFilterEntryTypes = table or function returning a table of LSM entryTypes which should be prefiltering the current list, before the doNotFilter function is executed on them (e.g. { LSM_ENTRY_TYPE_CHECKBOX } to only prefilter checkbox entries of the current list)
-
 
 [Fixed]
 #2025_46 Clicking a disabled entry at a contextmenu submenu will close the submenu as the control is not mouseEnabled and the scrollList control below is clicked. Detection of the scrollList's owner == LSM menu should take place then to suppress the close of the menu?
@@ -25,7 +22,7 @@
 --Manual call via API function UpdateCustomScrollableMenuEntryPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateEntryPath == true
 --UpdateCustomScrollableMenuEntryPath(comboBox, control, data, checkFunc, checkFuncParam1, checkFuncParam2, ...)
 #2025_45 Register special contextMenu OnShow and/or OnHide callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.onHideCallback e.g.)
---#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
 --Manual call via API function UpdateCustomScrollableMenuEntryIconsPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateIconPath == true
 --UpdateCustomScrollableMenuEntryIconsPath(comboBox, control, data)
 #2025_58 API to refresh a dropdown's submenu or mainmenu or an entry control visually (e.g. if you click an entry, called from the callback function)

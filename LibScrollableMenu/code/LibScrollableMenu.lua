@@ -307,7 +307,7 @@ Max error #: 2025_61
 [Added]
 #2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a (sub)menu, if e.g. any other entry was clicked
 #2025_43 Automatically fix wrong formated .icon table format
---#2025_44 Recursively check if any entry on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
+#2025_44 Recursively check if any entry on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
 --Optional checkFunc must return a boolean true [default return value] (refresh now) or false (no refresh needed), and uses the signature:
 --> checkFunc(comboBox, control, data)
 --Manual call via API function UpdateCustomScrollableMenuEntryPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateEntryPath == true
