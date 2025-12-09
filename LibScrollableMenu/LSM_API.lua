@@ -130,6 +130,7 @@ end
 --		number titleTextAlignment:optional		Number or function returning a number: The title's vertical alignment, e.g. TEXT_ALIGN_CENTER
 --		userdata customHeaderControl:optional	Userdata or function returning Userdata: A custom control thta should be shown above the dropdown entries
 --		boolean headerCollapsible			 	Boolean or function returning boolean if the header control should show a collapse/expand button
+--		boolean headerCollapsed			 		Boolean or function returning boolean if the header control should always be collapsed as the dropdown is opened. If this is false (default) the last state will be saved in LSM SavedVariables (per dropdown box name)
 -->  === Dropdown text search & filter =================================================================================
 --		boolean enableFilter:optional			Boolean or function returning boolean which controls if the text search/filter editbox at the dropdown header is shown
 --		function customFilterFunc				A function returning a boolean true: show item / false: hide item. Signature of function: customFilterFunc(item, filterString)
@@ -216,7 +217,7 @@ GetCustomScrollableMenuRowData = libUtil.getControlData
 --A new context menu should be using ClearCustomScrollableMenu() before it adds the first entries (to hide other contextmenus and clear the new one).
 --After that use either AddCustomScrollableMenuEntry to add single entries, AddCustomScrollableMenuEntries to add a whole entries table/function
 --returning a table, or even directly use AddCustomScrollableMenu and pass in the entrie/function to get entries.
---And after adding all entries, call ShowCustomScrollableMenu(parentControl) to show the menu at the parentControl. If no control is provided
+--And after adding all entries, call ShowCustomScrollableMenu(controlToAnchorTo, options, specialCallbackData) to show the menu at the parentControl. If no control is provided
 --moc() (control below mouse cursor) will be used
 -->Attention: ClearCustomScrollableMenu() will clear and hide ALL LSM contextmenus at any time! So we cannot have an LSM context menu to show at another
 --LSM context menu entry (similar to ZO_Menu).
@@ -545,7 +546,7 @@ end
 --If controlToAnchorTo is nil it will be anchored to the current control's position below the mouse, like ZO_Menu does
 --Optional table specialCallbackData can be used to register an onShowCallback or onHideCallback function for your unqiue addon name,
 --so you can react on an "Show" and/or "Hide" of this particular context menu. Registered callback functions will be executed in order of register!
---You can pass in any other variable with the same table. The whole tablr will passed to the callback function's signature, and to the uniqueAddonName generating function.
+--You can pass in any other variable with the same table. The whole table will passed to the callback function's signature, and to the uniqueAddonName generating function.
 -- The signature of the table must follow this example:
 --  { addonName = string or function returning a string "UniqueString", onShowCallback = function(comboBox, openingControl, specialData) end, onHideCallback = function(comboBox, openingControl, specialData) end, anyOtherVariableToPassInToTheCallback=anyValue, ... }
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)

@@ -115,7 +115,8 @@ libUtil.MapEntries = mapEntries
 ------------------------------------------------------------------------------------------------------------------------
 
 --Called from XML at e.g. the collapsible header's editbox, and other controls
---Used for event handlers like OnMouseUp and OnChanged etc.
+--Used for event handlers like OnMouseUp, OnClicked and OnChanged etc.
+-->Calls the function owningWindowFunctionName inside the refVar, and passes in the parameters ...
 function lib.XML.OnXMLControlEventHandler(owningWindowFunctionName, refVar, ...)
 	--d(debugPrefix .. "lib.XML.OnXMLControlEventHandler - owningWindowFunctionName: " .. tos(owningWindowFunctionName))
 	if refVar == nil or owningWindowFunctionName == nil then return end
@@ -279,61 +280,20 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 ---------------------------------------------------------------
 	CHANGELOG Current version: 2.38 - Updated 2025-11-14
 ---------------------------------------------------------------
-Max error #: 2025_61
+Max error #: 2025_62
 
 [FEATURE]
 
 [KNOWN PROBLEMS]
-#2025_61 Submenu at contextmenu (opend from another submenu) will close the submenu of the context menu automatically if the entry of the opened submenu is not above the LSM dropdown.
---e.g. LSM test -> Normal entry 6 1:1 - ContextMenu with divider tests -> ContextMenu -> Submenu ContextMenu at Submenu Entry6 1:1 - 5 ->
--->  Submenu Entry 6 -> Move mouse above any opened submenu entry which is not above the LSM dropdowns anymore -> Submenu closes (if mouse is not moved anymore; as long as you move it fast enough above any new submenu it still opens them)
-
 
 [WORKING ON]
 
-
 [Fixed]
-#2025_46 Clicking a disabled entry at a contextmenu submenu will close the submenu as the control is not mouseEnabled and the scrollList control below is clicked. Detection of the scrollList's owner == LSM menu should take place then to suppress the close of the menu?
-#2025_47 Clicking a scrollbar at a contextmenu (submenu) will close the contextmenu (submenu)
-#2025_48 Search header is not searching an editBox's text or a slider's value (only the label's text in front)
-#2025_49 Editbox clicked at context menu's submenu will close the contextmenu
-#2025_50 Slider  clicked at context menu's submenu will close the contextmenu
-#2025_51 MultiIcon clicked at context menu's submenu will close the contextmenu
-#2025_52 Checkbox [ ] part clicked in a submenu closes the submenu
-#2025_53 Checkbox label or [ ] part clicked in a contextmenu's submenu closes the submenu
-#2025_54 Radiobutton label or [ ] part clicked in a contextmenu's submenu closes the submenu
-#2025_55 Radiobutton [ ] part clicked in a contextmenu's submenu raises a lua error user:/AddOns/LibScrollableMenu/classes/buttonGroup_class.lua:171: attempt to index a nil value
+#2025_62 headerCollapsed is not working and making the search header always collapsed on open (it still uses last used state as it seems)
 
 [Added]
-#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a (sub)menu, if e.g. any other entry was clicked
-#2025_43 Automatically fix wrong formated .icon table format
-#2025_44 Recursively check if any entry on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
---Optional checkFunc must return a boolean true [default return value] (refresh now) or false (no refresh needed), and uses the signature:
---> checkFunc(comboBox, control, data)
---Manual call via API function UpdateCustomScrollableMenuEntryPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateEntryPath == true
---UpdateCustomScrollableMenuEntryPath(comboBox, control, data, checkFunc, checkFuncParam1, checkFuncParam2, ...)
-#2025_45 Register special contextMenu OnShow and/or OnHide callback for registered contextMenus (done at ShowCustomScrollableMenu, last parameter specialCallbackData.addonName and specialCallbackData.onHideCallback e.g.)
---#2025_57 Recursively check if any icon on the current submenu's path, up to the main menu (via the parentMenus), needs an update.
---Manual call via API function UpdateCustomScrollableMenuEntryIconsPath (e.g. from any callback of an entry) or automatic call if submenuEntry.updateIconPath == true
---UpdateCustomScrollableMenuEntryIconsPath(comboBox, control, data)
-#2025_58 API to refresh a dropdown's submenu or mainmenu or an entry control visually (e.g. if you click an entry, called from the callback function)
--->Parameter updateMode can be left empty, then the system will automatically determine if a submenu exists and the item belongs to that, and refresh that,
---or it will update the mainmenu if it exists.
---Or you specify one of the following updateModes:
---->LSM_UPDATE_MODE_MAINMENU	Only update the mainmenu visually
---->LSM_UPDATE_MODE_SUBMENU		Only update the submenu visually
---->LSM_UPDATE_MODE_BOTH		Update the submenu and the mainmenu, both
----Parameter comboBox is optional
-RefreshCustomScrollableMenu(mocCtrl, updateMode, comboBox)
-#2025_59 Added API function IsCustomScrollableContextMenuShown()
---Returns boolean true/false if any LSM context menu is currently showing it's dropdown
-#2025_60 Added API function IsCustomScrollableMenuShown()
---Returns boolean true/false if any LSM menu is currently showing it's dropdown (including any LSM ContextMenu!)
-
 
 [Changed]
-#2025_56 Change entry's data.doNotFilter: If it's a function it's signature now is doNotFilterFunc(LSM_comboBox, selectedContextMenuItem, openingMenusEntries), so one can e.g. make a button entryType only filter if there is no other entry inside the table currentDropdownEntriesTable
---->If it's a fucntion you can also specify doNotFilterEntryTypes = table or function returning a table of LSM entryTypes which should be prefiltering the current list, before the doNotFilter function is executed on them (e.g. { LSM_ENTRY_TYPE_CHECKBOX } to only prefilter checkbox entries of the current list)
 
 [Removed]
 
