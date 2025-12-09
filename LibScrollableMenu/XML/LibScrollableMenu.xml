@@ -670,9 +670,10 @@
 							<OnInitialized>
 								local owningWindow = self:GetOwningWindow()
 								owningWindow.toggleButton = self
+								---This toggleFunction will be called from LibScrollableMenu.XML.OnXMLControlEventHandler("ToggleHeader", self, self) -> ZO_CheckButton_OnClicked
 								self.toggleFunction = function(button, checked)
 									if owningWindow.object and owningWindow.object.m_comboBox then
-										owningWindow.object.m_comboBox:UpdateDropdownHeader(self)
+										owningWindow.object.m_comboBox:UpdateDropdownHeader(self, true)
 									end
 								end
 								
@@ -706,8 +707,7 @@
 							</OnMouseExit>
 
 							<OnClicked>
-								ZO_Tooltips_HideTextTooltip()
-								ZO_CheckButton_OnClicked(self)
+								LibScrollableMenu.XML.OnXMLControlEventHandler("ToggleHeader", self, self)
 							</OnClicked>
 						</Button>
 
@@ -731,11 +731,12 @@
 							</OnMouseExit>
 
 							<OnClicked>
-								ZO_Tooltips_HideTextTooltip()
+								--ZO_Tooltips_HideTextTooltip()
 
 								local owningWindow = self:GetOwningWindow()
 								local toggleButton = owningWindow.toggleButton
-								ZO_CheckButton_OnClicked(toggleButton)
+								--ZO_CheckButton_OnClicked(toggleButton)
+								LibScrollableMenu.XML.OnXMLControlEventHandler("ToggleHeader", self, toggleButton)
 							</OnClicked>
 						</Button>
 					</Controls>

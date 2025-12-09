@@ -464,13 +464,15 @@ function comboBoxClass:SetupDropdownHeader()
 
 	local options = self:GetOptions()
 	if options.headerCollapsible then
-		local headerCollapsed = (options and options.headerCollapsed)
-
+		local headerCollapsed = (options and options.headerCollapsed) -- #2025_62
+--d("[LSM]headerCollapsed: " ..tos(headerCollapsed))
 		if headerCollapsed == nil then
 			headerCollapsed = getSavedVariable("collapsedHeaderState", getHeaderToggleStateControlSavedVariableName(self))
+--d(">from SV headerCollapsed: " ..tos(headerCollapsed))
 		end
 		if headerCollapsed ~= nil then
 			if dropdownControl.toggleButton then
+--d("Updating ZO_CheckButton with headerCollapsed: " ..tos(headerCollapsed))
 				ZO_CheckButton_SetCheckState(dropdownControl.toggleButton, headerCollapsed)
 			end
 		end
@@ -478,10 +480,11 @@ function comboBoxClass:SetupDropdownHeader()
 end
 
 --Toggle function called as the collapsible header is clicked
-function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 139, tos(self.options), tos(toggleButtonCtrl)) end
+local allowedHeaderCollapsedValues = { [false] = true, [true] = true }
+function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl, toggleFuncUsed)
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 139, tos(self.options), tos(toggleButtonCtrl), tos(toggleFuncUsed)) end
 
---d(debugPrefix .. "comboBoxClass:UpdateDropdownHeader")
+--d("comboBoxClass:UpdateDropdownHeader - toggleFuncUsed: " .. tos(toggleFuncUsed))
 
 	local headerControl, dropdownControl = getHeaderControl(self)
 	if headerControl == nil then return end
@@ -495,16 +498,29 @@ function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl)
 			headerCollapsed = ZO_CheckButton_IsChecked(toggleButtonCtrl)
 
 			if options.headerCollapsed == nil then
---d(">updateSavedVariable collapsedHeaderState: " ..tos(getHeaderToggleStateControlSavedVariableName(self)))
+--d(">updateSavedVariable headerCollapsed: " .. tos(headerCollapsed) ..", collapsedHeaderState: " ..tos(getHeaderToggleStateControlSavedVariableName(self)))
 				-- No need in saving state if we are going to force state by options.headerCollapsed
 				updateSavedVariable("collapsedHeaderState", headerCollapsed, getHeaderToggleStateControlSavedVariableName(self))
+			else
+				--Check we manually clicked the header and should skip the options.headerCollapsed then?
+				-->todo Update the header's collapse button state (if e.g. it does not match the options.headerCollapsed state on new open of the dropdown)
+				--> Description of problem: Manully toggling the button will visually once show everything fine but 2nd try it just changes the ^v button but does not exand/collapse the header anymore?
+
+				if not toggleFuncUsed then
+					headerCollapsed = getValueOrCallback(options.headerCollapsed, options)  --#2025_62
+					if headerCollapsed == nil or not allowedHeaderCollapsedValues[headerCollapsed] then --#2025_62
+						headerCollapsed = true --default fallback value
+					end
+	--d(">using options.headerCollapsed: " .. tos(headerCollapsed))
+					ZO_CheckButton_SetCheckState(dropdownControl.toggleButton, headerCollapsed)
+				end
 			end
 		end
 	end
 --d(">headerCollapsed: " ..tos(headerCollapsed))
 
-	--d(debugPrefix.."comboBoxClass:UpdateDropdownHeader - headerCollapsed: " ..tos(headerCollapsed))
-	refreshDropdownHeader(self, headerControl, self.options, headerCollapsed)
+--d(">>headerCollapsed now is: " ..tos(headerCollapsed))
+	refreshDropdownHeader(self, headerControl, headerCollapsed) --#2025_62
 	self:UpdateWidth(dropdownControl) --> Update self.m_containerWidth properly for self:Show (in self:UpdateHeight) call (including the now, in refreshDropdownHeader, updated header's width)
 	self:UpdateHeight(dropdownControl) --> Update self.m_height properly for self:Show call (including the now, in refreshDropdownHeader, updated header's height)
 --d(">new height: " ..tos(self.m_height))

@@ -1192,10 +1192,12 @@ do
 		return false
 	end
 
-	refreshDropdownHeader = function(comboBox, headerControl, options, collapsed)
+	refreshDropdownHeader = function(comboBox, headerControl, collapsed)
 --d(debugPrefix .. "refreshDropdownHeader - collapsed: " ..tos(collapsed))
 
 		local controls = headerControl.controls
+		local options = comboBox.options
+		local headerIsCollapsible = getValueOrCallback(options.headerCollapsible, options)
 
 		headerControl:SetHidden(true)
 		headerControl:SetHeight(0)
@@ -1215,8 +1217,8 @@ do
 		local isFilterEnabled = comboBox:IsFilterEnabled()
 		refreshResults[FILTER_CONTAINER] = 				header_processData(controls[FILTER_CONTAINER], isFilterEnabled, collapsed)
 		refreshResults[CUSTOM_CONTROL] = 				header_processControl(controls[CUSTOM_CONTROL], getValueOrCallback(options.customHeaderControl, options), collapsed)
-		refreshResults[TOGGLE_BUTTON] = 				header_processData(controls[TOGGLE_BUTTON], getValueOrCallback(options.headerCollapsible, options))
-		refreshResults[TOGGLE_BUTTON_CLICK_EXTENSION] = header_processData(controls[TOGGLE_BUTTON_CLICK_EXTENSION], getValueOrCallback(options.headerCollapsible, options))
+		refreshResults[TOGGLE_BUTTON] = 				header_processData(controls[TOGGLE_BUTTON], headerIsCollapsible)
+		refreshResults[TOGGLE_BUTTON_CLICK_EXTENSION] = header_processData(controls[TOGGLE_BUTTON_CLICK_EXTENSION], headerIsCollapsible)
 
 		headerControl:SetDimensionConstraints(MIN_WIDTH_WITHOUT_SEARCH_HEADER, 0)
 		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled)
@@ -2291,3 +2293,12 @@ function dropdownClass:OnSliderValueChanged(slider)
 		end, 250, throttledCallDropdownClassOnValueChangedStringSuffix)
 	end
 end
+
+--XML handler for collapsible header clicked  #2025_62
+function dropdownClass:ToggleHeader(toggleButtonControl)
+	ZO_Tooltips_HideTextTooltip()
+	--Calls the toggleFunction of the ZO_CheckButton which was defined at XML -> <Button name="$(parent)ToggleHeader" -> <OnInitialized
+	--> which then calls comboBoxClass:UpdateDropdownHeader with 2nd param "toggleFuncUsed = true"
+	ZO_CheckButton_OnClicked(toggleButtonControl)
+end
+
