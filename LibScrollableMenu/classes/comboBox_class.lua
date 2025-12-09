@@ -511,7 +511,7 @@ function comboBoxClass:UpdateDropdownHeader(toggleButtonCtrl, toggleFuncUsed)
 					if headerCollapsed == nil or not allowedHeaderCollapsedValues[headerCollapsed] then --#2025_62
 						headerCollapsed = true --default fallback value
 					end
-					d(">using options.headerCollapsed: " .. tos(headerCollapsed))
+	--d(">using options.headerCollapsed: " .. tos(headerCollapsed))
 					ZO_CheckButton_SetCheckState(dropdownControl.toggleButton, headerCollapsed)
 				end
 			end
