@@ -460,6 +460,7 @@
 							[headerControls.CUSTOM_CONTROL] 	= self:GetNamedChild("CustomControl"),
 							[headerControls.TOGGLE_BUTTON] 		= self:GetNamedChild("ToggleHeader"),
 							[headerControls.TOGGLE_BUTTON_CLICK_EXTENSION] 		= self:GetNamedChild("ToggleHeaderClickExtension"),
+							[headerControls.TOGGLE_ICON] 		= self:GetNamedChild("ToggleHeaderIcon"),
 						}
 						self:GetParent().header = self
 
@@ -731,14 +732,25 @@
 							</OnMouseExit>
 
 							<OnClicked>
-								--ZO_Tooltips_HideTextTooltip()
-
 								local owningWindow = self:GetOwningWindow()
 								local toggleButton = owningWindow.toggleButton
-								--ZO_CheckButton_OnClicked(toggleButton)
 								LibScrollableMenu.XML.OnXMLControlEventHandler("ToggleHeader", self, toggleButton)
 							</OnClicked>
 						</Button>
+
+						<Texture name="$(parent)ToggleHeaderIcon" inherits="ZO_MultiIcon">
+							<!--Dimensions x="25"  y="25"/> -->
+							<DimensionConstraints x="0" maxX="95%" y="0" maxY="95%" />
+							<Anchor point="CENTER"/>
+
+							<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
+								ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
+							</OnMouseEnter>
+
+							<OnMouseExit name="ZO_PropagateMouseOverBehavior">
+								ZO_PropagateHandlerToNearestAncestor("OnMouseExit", ...)
+							</OnMouseExit>
+						</Texture>
 					</Controls>
 				</Control>
 				

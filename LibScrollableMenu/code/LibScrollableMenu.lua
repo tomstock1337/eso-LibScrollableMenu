@@ -287,7 +287,7 @@ Max error #: 2025_63
 [KNOWN PROBLEMS]
 
 [WORKING ON]
-#2025_63 Add options.headerDefaultIcon
+#2025_63 Add options.headerIcon
 
 [Fixed]
 
