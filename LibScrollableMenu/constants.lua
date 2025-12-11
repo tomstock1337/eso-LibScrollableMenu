@@ -561,6 +561,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["headerCollapsed"] = 		"headerCollapsed",
 	["headerColor"] =			"headerColor",
 	["headerFont"] =			"headerFont",
+	["headerIcon"] = 			"headerIcon",
 	["highlightContextMenuOpeningControl"] = "highlightContextMenuOpeningControl",
 	["maxNumSelections"] =		"m_maxNumSelections",
 	["maxNumSelectionsErrorText"] = "m_overrideMaxSelectionsErrorText",
@@ -779,6 +780,7 @@ local submenuClass_exposedVariables = {
 	-- LibScrollableMenu
 	["headerCollapsed"] = false,		--Header: Currently not available separately for a submenu
 	["headerCollapsible"] = false, 		--Header: Currently not available separately for a submenu
+	["headerIcon"] = false, 			--Header: Currently not available separately for a submenu
 	---------------------------------------
 	["disableFadeGradient"] = true,
 	["headerFont"] = true,

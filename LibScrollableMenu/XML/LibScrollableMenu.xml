@@ -364,11 +364,11 @@
 
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
-					<DimensionConstraints x="5" maxX="90%" />
+					<DimensionConstraints minX="5" maxX="90%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 				</Label>
 				<Control name="$(parent)SliderContainer">
-					<DimensionConstraints x="100%" maxX="100%" />
+					<DimensionConstraints minx="5" maxX="100%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)Label" relativePoint="TOPRIGHT" offsetX="4"/>
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-2"/>
 					<Controls>
@@ -578,83 +578,6 @@
 									</Controls>
 								</Backdrop>
 
-								<!--
-								<Button name="$(parent)Settings" inherits="ZO_ButtonBehaviorClickSound">
-									<Dimensions x="32" y="32" />
-									<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="0" />
-
-									<Textures normal="esoui/art/chatwindow/chat_options_up.dds"
-									  pressed="esoui/art/chatwindow/chat_options_down.dds"
-									  mouseOver="esoui/art/chatwindow/chat_options_over.dds"/>
-
-									<OnMouseEnter>
-										ZO_Tooltips_ShowTextTooltip(self, BOTTOM, GetString(SI_GAME_MENU_SETTINGS))
-										InformationTooltipTopLevel:BringWindowToTop()
-									</OnMouseEnter>
-
-									<OnMouseExit>
-										ZO_Tooltips_HideTextTooltip()
-									</OnMouseExit>
-
-									<OnClicked>
-										ZO_Tooltips_HideTextTooltip()
-										local owningWindow = self:GetOwningWindow()
-										if owningWindow.object then
-											owningWindow.object:ShowFilterSettings(owningWindow, self)
-										end
-									</OnClicked>
-								</Button>
-								-->
-
-								<!--Button name="$(parent)Include" inherits="ZO_DefaultTextButton" text="S">
-									<Dimensions x="32" y="32" />
-									<Anchor point="LEFT" relativeTo="$(parent)Filter" relativePoint="RIGHT" offsetX="-8" offsetY="0" />
-
-									<OnInitialized>
-										self.uncheckedText = 'S'
-										self.checkedText = 'l'
-
-										self.toggleFunction = function(button, checked)
-											local owningWindow = self:GetOwningWindow()
-											if owningWindow.object then
-												owningWindow.object:SetFilterIgnore(checked)
-											end
-										end
-
-									</OnInitialized>
-
-									<OnClicked>
-										ZO_CheckButton_OnClicked(self, button)
-
-										- Show updated tooltip on click
-										ClearTooltip(InformationTooltip)
-										InitializeTooltip(InformationTooltip, self, BOTTOM, 0, 0)
-										SetTooltipText(InformationTooltip, GetString('LIBSCROLLABLEMENU_SI_MATCHTOOLTIP', self:GetState()))
-										InformationTooltipTopLevel:BringWindowToTop()
-
-										- Can't remember what one is 0 and 1
-										- LIBSCROLLABLEMENU_SI_MATCHTOOLTIP0 = 'Strict'
-										- LIBSCROLLABLEMENU_SI_MATCHTOOLTIP1 = 'Loose'
-									</OnClicked>
-
-									<OnEffectivelyShown>
-										local bState = self:GetState()
-										local checked = bState == BSTATE_PRESSED
-										- get saved button state
-										ZO_CheckButton_SetCheckState(self, checked)
-									</OnEffectivelyShown>
-
-									<OnMouseEnter>
-										InitializeTooltip(InformationTooltip, self, BOTTOM, 0, 0)
-										SetTooltipText(InformationTooltip, GetString('LIBSCROLLABLEMENU_SI_MATCHTOOLTIP', self:GetState()))
-										InformationTooltipTopLevel:BringWindowToTop()
-									</OnMouseEnter>
-
-									<OnMouseExit>
-										ClearTooltip(InformationTooltip)
-									</OnMouseExit>
-								</Button-->
-
 							</Controls>
 						</Control>
 
@@ -666,7 +589,7 @@
 						</Control>
 
 						<Button name="$(parent)ToggleHeader" inherits="ZO_ButtonBehaviorClickSound" hidden="true">
-							<DimensionConstraints minY="24" maxY="24" minX="24" />
+							<DimensionConstraints minY="24" maxY="100%" minX="24" />
 
 							<OnInitialized>
 								local owningWindow = self:GetOwningWindow()
@@ -712,8 +635,13 @@
 							</OnClicked>
 						</Button>
 
-						<Button name="$(parent)ToggleHeaderClickExtension" inherits="ZO_ButtonBehaviorClickSound" hidden="true">
-							<DimensionConstraints minY="0" maxY="24" minX="0" />
+						<Texture name="$(parent)ToggleHeaderIcon" inherits="ZO_MultiIcon" mouseEnabled="false" hidden="true" level="2">
+							<DimensionConstraints minX="0" maxX="95%" minY="0" maxY="32" />
+							<Anchor point="CENTER"/>
+						</Texture>
+
+						<Button name="$(parent)ToggleHeaderClickExtension" inherits="ZO_ButtonBehaviorClickSound" hidden="true" level="5">
+							<DimensionConstraints minX="0" maxX="100%" minY="0" maxY="100%" />
 
 							<OnInitialized>
 								local owningWindow = self:GetOwningWindow()
@@ -737,20 +665,6 @@
 								LibScrollableMenu.XML.OnXMLControlEventHandler("ToggleHeader", self, toggleButton)
 							</OnClicked>
 						</Button>
-
-						<Texture name="$(parent)ToggleHeaderIcon" inherits="ZO_MultiIcon">
-							<!--Dimensions x="25"  y="25"/> -->
-							<DimensionConstraints x="0" maxX="95%" y="0" maxY="95%" />
-							<Anchor point="CENTER"/>
-
-							<OnMouseEnter name="ZO_PropagateMouseOverBehavior">
-								ZO_PropagateHandlerToNearestAncestor("OnMouseEnter", ...)
-							</OnMouseEnter>
-
-							<OnMouseExit name="ZO_PropagateMouseOverBehavior">
-								ZO_PropagateHandlerToNearestAncestor("OnMouseExit", ...)
-							</OnMouseExit>
-						</Texture>
 					</Controls>
 				</Control>
 				

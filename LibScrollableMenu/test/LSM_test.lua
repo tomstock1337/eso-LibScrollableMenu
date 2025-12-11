@@ -141,7 +141,8 @@ local function test()
 			--subtitleText = "Custom sub title",
 			enableFilter = function() return true end,
 			headerCollapsible = true,
-			headerCollapsed = true,
+			--headerCollapsed = true,
+			headerIcon = function() return { iconTexture="/esoui/art/inventory/inventory_trait_ornate_icon.dds", width=24, height=24 } end,
 
 			--customFilterFunc = customFilterFunc
 

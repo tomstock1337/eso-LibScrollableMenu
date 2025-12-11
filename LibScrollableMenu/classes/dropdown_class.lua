@@ -999,7 +999,7 @@ do
 	local CUSTOM_CONTROL	= headerControls.CUSTOM_CONTROL
 	local TOGGLE_BUTTON		= headerControls.TOGGLE_BUTTON
 	local TOGGLE_BUTTON_CLICK_EXTENSION	= headerControls.TOGGLE_BUTTON_CLICK_EXTENSION
-	local TOGGLE_ICON = headerControls.TOGGLE_ICON
+	local TOGGLE_ICON 		= headerControls.TOGGLE_ICON --#2025_63
 
 	local DEFAULT_CONTROLID = CENTER_BASELINE
 
@@ -1024,7 +1024,8 @@ do
 	local anchors = {
 		[TOGGLE_BUTTON]		= 				{ Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0) },
 		--Show a control left of the toggle button: We can click this to expand the header again, and after that the control resizes to 0pixels and hides
-		[TOGGLE_BUTTON_CLICK_EXTENSION]	=	{ Anchor:New(BOTTOMRIGHT, TOGGLE_BUTTON, BOTTOMLEFT, 0, 0), Anchor:New(BOTTOMLEFT, PARENT, BOTTOMLEFT, -ROW_OFFSET_Y, 0) },
+		--20251211 working [TOGGLE_BUTTON_CLICK_EXTENSION]	=	{ Anchor:New(BOTTOMRIGHT, TOGGLE_BUTTON, BOTTOMLEFT, 0, 0), Anchor:New(BOTTOMLEFT, PARENT, BOTTOMLEFT, -ROW_OFFSET_Y, 0) },
+		[TOGGLE_BUTTON_CLICK_EXTENSION]	=	{ Anchor:New(TOPLEFT, PARENT, TOPLEFT, 2, 2), Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -2, -2) }, --span the extension toggle button over the whole width and height of the header to make it easy to click
 		[DIVIDER_SIMPLE]	= 				{ Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y), Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) }, -- ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y
 		[DEFAULT_ANCHOR]	= 				{ Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, 0), Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) },
 		[TOGGLE_ICON]		= 				{ Anchor:New(CENTER, PARENT, CENTER, 0, 0) }, --#2025_63
@@ -1060,11 +1061,12 @@ do
 
 		if controlId == TOGGLE_BUTTON then
 			-- We want to keep height if collapsed, but not add height for the button if not collapsed.
+			-- It should stay bottom right with fixed height so the texture on the button does not stretch
 			height = collapsed and height or 0
-			--The control processed is the collapsed header's toggle button "click extension"
+		--The control processed is the collapsed header's toggle button "click extension" (rectangle spanning the collapsed header for an easier click to toggle)
 		elseif controlId == TOGGLE_BUTTON_CLICK_EXTENSION then
 			--Always fixed header height addition = 0 as the toggleButton already provided the extra height for the header
-			--and this click extensikon control only is placed on the left to make it easier to expand the header again
+			--and this click extension control only is placed on the left to make it easier to expand the header again
 			height = 0
 			if collapsed then
 				control:SetHidden(false)
@@ -1159,6 +1161,22 @@ do
 		control:SetFont(font)
 	end
 
+	local function header_iconSetTexture(control, textureData) --#2025_63
+		if control == nil then return end
+		control:ClearIcons()
+		control:SetMouseEnabled(false) --Only let the clickExtension button be clickable
+		if ZO_IsTableEmpty(textureData) or textureData.iconTexture == nil then
+			control:SetDimensions(0, 0)
+			return
+		end
+		local width = getValueOrCallback(textureData.width, textureData) or 18
+		local height = zo_clamp(getValueOrCallback(textureData.height, textureData) or 18, 8, 32)
+		local tint = getValueOrCallback(textureData.iconTint, textureData)
+		control:SetDimensions(width, height)
+		control:AddIcon(getValueOrCallback(textureData.iconTexture, textureData), nil, nil)
+		control:Show()
+	end
+
 	local function header_processData(control, data, collapsed)
 		-- if collapsed is true then this is hidden
 		if collapsed or control == nil then
@@ -1208,8 +1226,9 @@ do
 
 		--Check options for a texture
 		local options = comboBox.options
-		local toggleHeaderIconpath = getValueOrCallback(options.headerIcon, options)
-		return libUtil_checkIfValidTexturePath(toggleHeaderIconpath), toggleHeaderIconpath
+		local toggleHeaderIconData = getValueOrCallback(options.headerIcon, options)
+		local toggleHeaderIconpath = (toggleHeaderIconData and toggleHeaderIconData.iconTexture) or nil
+		return libUtil_checkIfValidTexturePath(toggleHeaderIconpath), toggleHeaderIconData
 	end
 	--libUtil.checkShowHeaderIcon = checkShowHeaderIcon
 
@@ -1221,7 +1240,11 @@ do
 		local controls = headerControl.controls
 		local options = comboBox.options
 		local headerIsCollapsible = getValueOrCallback(options.headerCollapsible, options)
-		local showToggleHeaderIcon = checkShowHeaderIcon(comboBox, headerIsCollapsible, collapsed)
+		local showToggleHeaderIcon, toggleHeaderIconData = checkShowHeaderIcon(comboBox, headerIsCollapsible, collapsed) --#2025_63
+--d(">showToggleHeaderIcon: " ..tos(showToggleHeaderIcon) .. "; toggleHeaderIconPath: " ..tos(toggleHeaderIconData ~= nil and toggleHeaderIconData.iconTexture or "nil"))
+		if showToggleHeaderIcon == true then
+			header_iconSetTexture(controls[TOGGLE_ICON], toggleHeaderIconData)
+		end
 
 		headerControl:SetHidden(true)
 		headerControl:SetHeight(0)
