@@ -278,7 +278,7 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.40 - Updated 2025-12-10
+	CHANGELOG Current version: 2.40 - Updated 2025-12-11
 ---------------------------------------------------------------
 Max error #: 2025_63
 
@@ -287,9 +287,7 @@ Max error #: 2025_63
 [KNOWN PROBLEMS]
 
 [WORKING ON]
-#2025_63 Add options.headerIcon and options.headerTitle
---		table headerIcon						table or function returning a table of signature { iconTexture = "path/to/textureName.dds", iconTint=ZO_ColorDef, width=number, height=number, align=LEFT|CENTER(default)|RIGHT, offSetX=12, offSetY=-12 }: Icon shown as the header is collapsed (e.g. a magnifying glass to show you can expand it to get a search). Default value is nil. Height is capped at 32!
---		table headerTitle						table or function returning a table of signature { text = "Click to search", color=ZO_ColorDef, align=LEFT|CENTER(default)|RIGHT, offSetX=12, offSetY=-12 }: Title text shown as the header is collapsed (e.g. a text to show you can expand the section and see the search). Default value is nil.
+#2025_63 Add options.headerCollapsedIcon and options.headerCollapsedTitle
 
 
 [Fixed]

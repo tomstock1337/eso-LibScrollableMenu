@@ -1274,7 +1274,7 @@ do
 
 		--Check options for a texture
 		local options               = comboBox.options
-		local toggleHeaderTitleData = getValueOrCallback(options.headerTitle, options)
+		local toggleHeaderTitleData = getValueOrCallback(options.headerCollapsedTitle, options)
 		local toggleHeaderTitleText = (toggleHeaderTitleData and toggleHeaderTitleData.text) or nil
 		return type(toggleHeaderTitleText) == stringType and toggleHeaderTitleText ~= "", toggleHeaderTitleData
 	end
@@ -1285,7 +1285,7 @@ do
 
 		--Check options for a texture
 		local options = comboBox.options
-		local toggleHeaderIconData = getValueOrCallback(options.headerIcon, options)
+		local toggleHeaderIconData = getValueOrCallback(options.headerCollapsedIcon, options)
 		local toggleHeaderIconpath = (toggleHeaderIconData and toggleHeaderIconData.iconTexture) or nil
 		return libUtil_checkIfValidTexturePath(toggleHeaderIconpath), toggleHeaderIconData
 	end

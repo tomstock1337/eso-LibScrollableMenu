@@ -142,7 +142,7 @@ local function test()
 			enableFilter = function() return true end,
 			headerCollapsible = true,
 			--headerCollapsed = true,
-			headerIcon = function() return {
+			headerCollapsedIcon = function() return {
 				iconTexture="/esoui/art/miscellaneous/search_icon.dds",
 				width=20,
 				height=20,
@@ -151,7 +151,7 @@ local function test()
 				offsetX = 100,
 				offSetY = 100,
 			} end,
-			headerTitle = {
+			headerCollapsedTitle = {
 				text = "Click me to show the search",
 				color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
 				--font = "ZO_Game"
