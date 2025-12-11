@@ -1303,13 +1303,13 @@ do
 		if showToggleHeaderIcon == true then
 			header_iconSetTexture(controls[TOGGLE_ICON], toggleHeaderIconData)
 			toggleHeaderData = {}
-			toggleHeaderData[TOGGLE_ICON] = toggleHeaderData
+			toggleHeaderData[TOGGLE_ICON] = toggleHeaderIconData
 		end
 		local showToggleHeaderTitle, toggleHeaderTitleData = checkShowHeaderTitle(comboBox, headerIsCollapsible, collapsed) --#2025_63
 		if showToggleHeaderTitle == true then
 			header_titleSetTextAndLook(controls[TOGGLE_TITLE], toggleHeaderTitleData)
 			toggleHeaderData = toggleHeaderData or {}
-			toggleHeaderData[TOGGLE_TITLE] = toggleHeaderData
+			toggleHeaderData[TOGGLE_TITLE] = toggleHeaderTitleData
 		end
 
 		headerControl:SetHidden(true)
