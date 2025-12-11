@@ -144,21 +144,21 @@ local function test()
 			--headerCollapsed = true,
 			headerCollapsedIcon = function() return {
 				iconTexture="/esoui/art/miscellaneous/search_icon.dds",
-				width=20,
-				height=20,
+				width=24,
+				height=24,
 				iconTint=CUSTOM_HIGHLIGHT_TEXT_COLOR,
 				align = LEFT,
-				offsetX = 100,
-				offSetY = -20,
+				offsetX = 50,
+				offSetY = 0,
 			} end,
 			--[[
 			headerCollapsedTitle = {
 				text = "Click me to show the search",
 				color = HEADER_TEXT_COLOR_RED,
 				--font = "ZO_Game"
-				align = LEFT,
-				offsetX = 20,
-				offSetY = -20,
+				align = RIGHT,
+				offsetX = -10,
+				offSetY = 0,
 			},
 			]]
 
