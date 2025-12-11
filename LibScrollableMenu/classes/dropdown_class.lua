@@ -1096,7 +1096,7 @@ do
 				control:ClearAnchors()
 				control:SetDimensions(0, 0)
 			end
-		elseif controlId == TOGGLE_ICON then --#2025_63
+		elseif controlsAtCollapsedHeaderUsingSpecialAnchors[controlId] then --#2025_63
 			--The toggle icon (e.g. a magnifying glass for the default search filter) should only show if the header is collapsed
 			height = collapsed and height or 0
 		end
@@ -1124,7 +1124,7 @@ do
 
 			local hidden = not refreshResults[controlId]
 			-- There are no other header controls showing, so hide the toggle button, and it's extension, and the icon
-			if not collapsed and (controlId == TOGGLE_BUTTON or controlId == TOGGLE_BUTTON_CLICK_EXTENSION or controlId == TOGGLE_ICON) --#2025_63
+			if not collapsed and (controlId == TOGGLE_BUTTON or controlId == TOGGLE_BUTTON_CLICK_EXTENSION or controlsAtCollapsedHeaderUsingSpecialAnchors[controlId]) --#2025_63
 					and g_currentBottomLeftHeader == DEFAULT_CONTROLID then
 				hidden = true
 			end
@@ -1215,7 +1215,6 @@ do
 			control:SetDimensions(0, 0)
 			return
 		end
-
 		local color = getValueOrCallback(titleData.color, titleData) or defaultColorText
 		header_setFont(control, getValueOrCallback(titleData.font, titleData), fontConstants.HeaderCollapsedTitle)
 		control:SetText(getValueOrCallback(titleData.text, titleData))
@@ -1334,6 +1333,7 @@ do
 		refreshResults[TOGGLE_BUTTON] = 				header_processData(controls[TOGGLE_BUTTON], headerIsCollapsible)
 		refreshResults[TOGGLE_BUTTON_CLICK_EXTENSION] = header_processData(controls[TOGGLE_BUTTON_CLICK_EXTENSION], headerIsCollapsible)
 		refreshResults[TOGGLE_ICON] = 					header_processData(controls[TOGGLE_ICON], showToggleHeaderIcon) --#2025_63
+		refreshResults[TOGGLE_TITLE] = 					header_processData(controls[TOGGLE_TITLE], showToggleHeaderTitle) --#2025_63
 
 		headerControl:SetDimensionConstraints(MIN_WIDTH_WITHOUT_SEARCH_HEADER, 0)
 		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled, showToggleHeaderIcon or showToggleHeaderTitle, toggleHeaderData)

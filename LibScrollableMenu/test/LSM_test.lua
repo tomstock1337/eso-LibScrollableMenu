@@ -149,16 +149,18 @@ local function test()
 				iconTint=CUSTOM_HIGHLIGHT_TEXT_COLOR,
 				align = LEFT,
 				offsetX = 100,
-				offSetY = 100,
+				offSetY = -20,
 			} end,
+			--[[
 			headerCollapsedTitle = {
 				text = "Click me to show the search",
-				color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				color = HEADER_TEXT_COLOR_RED,
 				--font = "ZO_Game"
 				align = LEFT,
 				offsetX = 20,
 				offSetY = -20,
 			},
+			]]
 
 			--customFilterFunc = customFilterFunc
 
