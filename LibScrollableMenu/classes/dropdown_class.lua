@@ -68,6 +68,7 @@ local handlerNameConstants = constants.handlerNames
 local submenuConstants = constants.submenu
 local dropdownConstants = constants.dropdown
 local fontConstants = constants.fonts
+local defaultColorText = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL))
 local onEntryMouseUpExcludeEntryTypes = entryTypeConstants.onEntryMouseUpExclude
 
 local dropdownDefaults = dropdownConstants.defaults
@@ -984,6 +985,7 @@ local headerControls = {
 	TOGGLE_BUTTON		= 6,
 	TOGGLE_BUTTON_CLICK_EXTENSION = 7, -- control that anchors to the toggle buttons left to make the whole header's width clickable to toggle the collapsed state
 	TOGGLE_ICON = 8, --the small icon shown at the toggle header (if options.headerIcon is used)
+	TOGGLE_TITLE = 9, --the title text shown at the toggle header (if options.headerTitle is used)
 }
 lib.XML.headerControls = headerControls --Needed for XML
 
@@ -1000,6 +1002,7 @@ do
 	local TOGGLE_BUTTON		= headerControls.TOGGLE_BUTTON
 	local TOGGLE_BUTTON_CLICK_EXTENSION	= headerControls.TOGGLE_BUTTON_CLICK_EXTENSION
 	local TOGGLE_ICON 		= headerControls.TOGGLE_ICON --#2025_63
+	local TOGGLE_TITLE		= headerControls.TOGGLE_TITLE --#2025_63
 
 	local DEFAULT_CONTROLID = CENTER_BASELINE
 
@@ -1020,23 +1023,34 @@ do
 
 	local DEFAULT_ANCHOR = 100
 
-	local allowedIconAlignments = { [LEFT]=true,[CENTER]=true,[RIGHT]=true, }
-	local toggleIconAnchors = {
-		[LEFT] = { Anchor:New(LEFT, PARENT, LEFT, 10, 0) },
-		[CENTER] = { Anchor:New(CENTER, PARENT, CENTER, 0, 0) },
-		[RIGHT] = { Anchor:New(RIGHT, PARENT, RIGHT, -10, 0) },
+	local controlsAtCollapsedHeaderUsingSpecialAnchors = {
+		[TOGGLE_ICON] = true,
+		[TOGGLE_TITLE] = true,
+	}
+	local allowedIconAlignments        = { [LEFT]=true,[CENTER]=true,[RIGHT]=true, }
+	local toggleHeaderCollapsedAnchors = {
+		[LEFT] = 	{ Anchor:New(LEFT, PARENT, LEFT, 10, 0) },
+		[CENTER] = 	{ Anchor:New(CENTER, PARENT, CENTER, 0, 0) },
+		[RIGHT] = 	{ Anchor:New(RIGHT, PARENT, RIGHT, -10, 0) },
 	}
 	-- {point, relativeTo_controlId, relativePoint, offsetX, offsetY}
-	local anchors = {
+	local anchors                      = {
 		[TOGGLE_BUTTON]		= 				{ Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0) },
 		--Show a control left of the toggle button: We can click this to expand the header again, and after that the control resizes to 0pixels and hides
 		--20251211 working [TOGGLE_BUTTON_CLICK_EXTENSION]	=	{ Anchor:New(BOTTOMRIGHT, TOGGLE_BUTTON, BOTTOMLEFT, 0, 0), Anchor:New(BOTTOMLEFT, PARENT, BOTTOMLEFT, -ROW_OFFSET_Y, 0) },
 		[TOGGLE_BUTTON_CLICK_EXTENSION]	=	{ Anchor:New(TOPLEFT, PARENT, TOPLEFT, 2, 2), Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -2, -2) }, --span the extension toggle button over the whole width and height of the header to make it easy to click
 		[DIVIDER_SIMPLE]	= 				{ Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y), Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) }, -- ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y
 		[DEFAULT_ANCHOR]	= 				{ Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, 0), Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) },
-		[TOGGLE_ICON]		= 				toggleIconAnchors[CENTER], --#2025_63 Anchors are first set here as a base centered, and then dynamically applied from options again
+		[TOGGLE_ICON]		= 				toggleHeaderCollapsedAnchors[CENTER], --#2025_63 Anchors are first set here as a base centered, and then dynamically applied from options again
+		[TOGGLE_TITLE]		=				toggleHeaderCollapsedAnchors[CENTER], --#2025_63 Anchors are first set here as a base centered, and then dynamically applied from options again
 	}
-	-- {point, relativeTo_controlId, relativePoint, offsetX, offsetY}
+
+	local function getHeaderCollapsedAnchor(align, offsetX, offsetY)
+		if (offsetX == nil or offsetX == 0) and (offsetY == nil or offsetY == 0) then
+			return toggleHeaderCollapsedAnchors[align]
+		end
+		return { Anchor:New(align, PARENT, align, offsetX, offsetY) }
+	end
 
 	local function header_applyAnchorToControl(headerControl, anchorData, controlId, control)
 		if headerControl:IsHidden() then headerControl:SetHidden(false) end
@@ -1096,14 +1110,15 @@ do
 		return false
 	end
 
-	local function header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled, showToggleHeaderIcon, toggleHeaderIconData)
-		--d(debugPrefix .. "header_updateAnchors - collapsed: " ..tos(collapsed) .. "; isFilterEnabled: " ..tos(isFilterEnabled) .. ", showToggleHeaderIcon: " .. tos(showToggleHeaderIcon))
+	local function header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled, showToggleHeaderControls, toggleHeaderControlData)
+		--d(debugPrefix .. "header_updateAnchors - collapsed: " ..tos(collapsed) .. "; isFilterEnabled: " ..tos(isFilterEnabled) .. ", showToggleHeaderControl: " .. tos(showToggleHeaderControl))
 		--local headerHeight = collapsed and 0 or 17
 		local headerHeight = 0
 		local controls = headerControl.controls
 		g_currentBottomLeftHeader = DEFAULT_CONTROLID
 
 		for controlId, control in ipairs(controls) do
+
 			control:ClearAnchors()
 			control:SetHidden(true)
 
@@ -1122,10 +1137,11 @@ do
 
 				local anchorSet = anchors[controlId] or anchors[DEFAULT_ANCHOR]
 				--Special anchroing of the header icon texture?
-				if collapsed == true and showToggleHeaderIcon == true and controlId == TOGGLE_ICON and toggleHeaderIconData ~= nil and toggleHeaderIconData.align ~= nil then
-					local anchorAlign = getValueOrCallback(toggleHeaderIconData.align, toggleHeaderIconData) or nil
+				if collapsed == true and showToggleHeaderControls == true and controlsAtCollapsedHeaderUsingSpecialAnchors[controlId] and toggleHeaderControlData[controlId] ~= nil then
+					local controlToggleHeaderData = toggleHeaderControlData[controlId]
+					local anchorAlign = getValueOrCallback(controlToggleHeaderData.align, controlToggleHeaderData) or nil
 					if allowedIconAlignments[anchorAlign] then
-						anchorSet = toggleIconAnchors[anchorAlign]
+						anchorSet = getHeaderCollapsedAnchor(anchorAlign, getValueOrCallback(controlToggleHeaderData.offsetX, controlToggleHeaderData), getValueOrCallback(controlToggleHeaderData.offsetY, controlToggleHeaderData))
 					end
 				end
 				headerHeight = headerHeight + header_applyAnchorSetToControl(headerControl, anchorSet, controlId, collapsed)
@@ -1191,6 +1207,24 @@ do
 		control:Show()
 	end
 
+	local function header_titleSetTextAndLook(control, titleData) --#2025_63
+		if control == nil then return end
+		control:SetHidden(true)
+		control:SetMouseEnabled(false) --Only let the clickExtension button be clickable
+		if ZO_IsTableEmpty(titleData) or titleData.text == nil or titleData.text == "" then
+			control:SetDimensions(0, 0)
+			return
+		end
+
+		local color = getValueOrCallback(titleData.color, titleData) or defaultColorText
+		header_setFont(control, getValueOrCallback(titleData.font, titleData), fontConstants.HeaderCollapsedTitle)
+		control:SetText(getValueOrCallback(titleData.text, titleData))
+		control:SetColor(color:UnpackRGBA())
+
+		control:SetHidden(false)
+	end
+
+
 	local function header_processData(control, data, collapsed)
 		-- if collapsed is true then this is hidden
 		if collapsed or control == nil then
@@ -1233,6 +1267,17 @@ do
 		return false
 	end
 
+	--Check if the header should show a title text if in collapsed state
+	local function checkShowHeaderTitle(comboBox, headerIsCollapsible, collapsed) --#2025_63
+		--Only show the header title text as the header is collapsed and if the header is enabled to be collapsible
+		if not headerIsCollapsible or not collapsed then return false end
+
+		--Check options for a texture
+		local options               = comboBox.options
+		local toggleHeaderTitleData = getValueOrCallback(options.headerTitle, options)
+		local toggleHeaderTitleText = (toggleHeaderTitleData and toggleHeaderTitleData.text) or nil
+		return type(toggleHeaderTitleText) == stringType and toggleHeaderTitleText ~= "", toggleHeaderTitleData
+	end
 	--Check if the header should show an icon if in collapsed state
 	local function checkShowHeaderIcon(comboBox, headerIsCollapsible, collapsed) --#2025_63
 		--Only show the header icon as the header is collapsed and if the header is enabled to be collapsible
@@ -1244,7 +1289,6 @@ do
 		local toggleHeaderIconpath = (toggleHeaderIconData and toggleHeaderIconData.iconTexture) or nil
 		return libUtil_checkIfValidTexturePath(toggleHeaderIconpath), toggleHeaderIconData
 	end
-	--libUtil.checkShowHeaderIcon = checkShowHeaderIcon
 
 	--Refresh the dropdown's collapsible header control, if it should be shown, if any custom control was added, or an icon etc.
 	--Reanchor all controls and change the height etc. of them based on the isCollapsible and collapsed state
@@ -1254,10 +1298,19 @@ do
 		local controls = headerControl.controls
 		local options = comboBox.options
 		local headerIsCollapsible = getValueOrCallback(options.headerCollapsible, options)
+		local toggleHeaderData
 		local showToggleHeaderIcon, toggleHeaderIconData = checkShowHeaderIcon(comboBox, headerIsCollapsible, collapsed) --#2025_63
 		--After default anchors have been set, update the header icon texture and anchor from options
 		if showToggleHeaderIcon == true then
 			header_iconSetTexture(controls[TOGGLE_ICON], toggleHeaderIconData)
+			toggleHeaderData = {}
+			toggleHeaderData[TOGGLE_ICON] = toggleHeaderData
+		end
+		local showToggleHeaderTitle, toggleHeaderTitleData = checkShowHeaderTitle(comboBox, headerIsCollapsible, collapsed) --#2025_63
+		if showToggleHeaderTitle == true then
+			header_titleSetTextAndLook(controls[TOGGLE_TITLE], toggleHeaderTitleData)
+			toggleHeaderData = toggleHeaderData or {}
+			toggleHeaderData[TOGGLE_TITLE] = toggleHeaderData
 		end
 
 		headerControl:SetHidden(true)
@@ -1283,7 +1336,7 @@ do
 		refreshResults[TOGGLE_ICON] = 					header_processData(controls[TOGGLE_ICON], showToggleHeaderIcon) --#2025_63
 
 		headerControl:SetDimensionConstraints(MIN_WIDTH_WITHOUT_SEARCH_HEADER, 0)
-		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled, showToggleHeaderIcon, toggleHeaderIconData)
+		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled, showToggleHeaderIcon or showToggleHeaderTitle, toggleHeaderData)
 	end
 	lib.Util.refreshDropdownHeader = refreshDropdownHeader
 end

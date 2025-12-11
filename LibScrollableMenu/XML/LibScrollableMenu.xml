@@ -461,6 +461,7 @@
 							[headerControls.TOGGLE_BUTTON] 		= self:GetNamedChild("ToggleHeader"),
 							[headerControls.TOGGLE_BUTTON_CLICK_EXTENSION] 		= self:GetNamedChild("ToggleHeaderClickExtension"),
 							[headerControls.TOGGLE_ICON] 		= self:GetNamedChild("ToggleHeaderIcon"),
+							[headerControls.TOGGLE_TITLE] 		= self:GetNamedChild("ToggleHeaderTitle"),
 						}
 						self:GetParent().header = self
 
@@ -501,9 +502,9 @@
 						</Control>
 
 						<!--Label name="$(parent)Title" inherits="ZO_GamepadScreenHeaderTitleTextTemplate" excludeFromResizeToFitExtents="true" -->
-						<Label name="$(parent)Title" hidden="true"/>
+						<Label name="$(parent)Title" hidden="true" level="3" />
 						<!--Label name="$(parent)SubTitle" inherits="ZO_GamepadHeaderLabelTextTemplate" horizontalAlignment="CENTER" excludeFromResizeToFitExtents="true" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"-->
-						<Label name="$(parent)SubTitle" horizontalAlignment="CENTER" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"/>
+						<Label name="$(parent)SubTitle" level="3" horizontalAlignment="CENTER" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"/>
 
 						<Control name="$(parent)DividerSimple" hidden="true">
 							<Dimensions y="16" />
@@ -639,6 +640,11 @@
 							<DimensionConstraints minX="0" maxX="95%" minY="0" maxY="32" />
 							<Anchor point="CENTER"/>
 						</Texture>
+
+						<Label name="$(parent)ToggleHeaderTitle" hidden="true" level="3">
+							<DimensionConstraints minX="0" maxX="95%" minY="0" maxY="32" />
+							<Anchor point="CENTER"/>
+						</Label>
 
 						<Button name="$(parent)ToggleHeaderClickExtension" inherits="ZO_ButtonBehaviorClickSound" hidden="true" level="5">
 							<DimensionConstraints minX="0" maxX="100%" minY="0" maxY="100%" />

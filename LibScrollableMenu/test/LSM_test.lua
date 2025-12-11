@@ -148,7 +148,17 @@ local function test()
 				height=20,
 				iconTint=CUSTOM_HIGHLIGHT_TEXT_COLOR,
 				align = LEFT,
+				offsetX = 100,
+				offSetY = 100,
 			} end,
+			headerTitle = {
+				text = "Click me to show the search",
+				color = CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				--font = "ZO_Game"
+				align = LEFT,
+				offsetX = 20,
+				offSetY = -20,
+			},
 
 			--customFilterFunc = customFilterFunc
 

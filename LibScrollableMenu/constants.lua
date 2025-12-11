@@ -187,6 +187,7 @@ constants.fonts = {}
 constants.fonts.DEFAULT_FONT = 					"ZoFontGame"
 constants.fonts.HeaderFontTitle = 				"ZoFontHeader3"
 constants.fonts.HeaderFontSubtitle = 			"ZoFontHeader2"
+constants.fonts.HeaderCollapsedTitle =			"ZoFontHeader2"
 local fonts = constants.fonts
 
 --Colors
