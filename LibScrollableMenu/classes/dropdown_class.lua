@@ -1020,6 +1020,12 @@ do
 
 	local DEFAULT_ANCHOR = 100
 
+	local allowedIconAlignments = { [LEFT]=true,[CENTER]=true,[RIGHT]=true, }
+	local toggleIconAnchors = {
+		[LEFT] = { Anchor:New(LEFT, PARENT, LEFT, 10, 0) },
+		[CENTER] = { Anchor:New(CENTER, PARENT, CENTER, 0, 0) },
+		[RIGHT] = { Anchor:New(RIGHT, PARENT, RIGHT, -10, 0) },
+	}
 	-- {point, relativeTo_controlId, relativePoint, offsetX, offsetY}
 	local anchors = {
 		[TOGGLE_BUTTON]		= 				{ Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -ROW_OFFSET_Y, 0) },
@@ -1028,7 +1034,7 @@ do
 		[TOGGLE_BUTTON_CLICK_EXTENSION]	=	{ Anchor:New(TOPLEFT, PARENT, TOPLEFT, 2, 2), Anchor:New(BOTTOMRIGHT, PARENT, BOTTOMRIGHT, -2, -2) }, --span the extension toggle button over the whole width and height of the header to make it easy to click
 		[DIVIDER_SIMPLE]	= 				{ Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, ROW_OFFSET_Y), Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) }, -- ZO_GAMEPAD_CONTENT_TITLE_DIVIDER_PADDING_Y
 		[DEFAULT_ANCHOR]	= 				{ Anchor:New(TOPLEFT, nil, BOTTOMLEFT, 0, 0), Anchor:New(TOPRIGHT, nil, BOTTOMRIGHT, 0, 0) },
-		[TOGGLE_ICON]		= 				{ Anchor:New(CENTER, PARENT, CENTER, 0, 0) }, --#2025_63
+		[TOGGLE_ICON]		= 				toggleIconAnchors[CENTER], --#2025_63 Anchors are first set here as a base centered, and then dynamically applied from options again
 	}
 	-- {point, relativeTo_controlId, relativePoint, offsetX, offsetY}
 
@@ -1090,8 +1096,8 @@ do
 		return false
 	end
 
-	local function header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled)
-		--d(debugPrefix .. "header_updateAnchors - collapsed: " ..tos(collapsed) .. "; isFilterEnabled: " ..tos(isFilterEnabled))
+	local function header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled, showToggleHeaderIcon, toggleHeaderIconData)
+		--d(debugPrefix .. "header_updateAnchors - collapsed: " ..tos(collapsed) .. "; isFilterEnabled: " ..tos(isFilterEnabled) .. ", showToggleHeaderIcon: " .. tos(showToggleHeaderIcon))
 		--local headerHeight = collapsed and 0 or 17
 		local headerHeight = 0
 		local controls = headerControl.controls
@@ -1115,7 +1121,15 @@ do
 				end
 
 				local anchorSet = anchors[controlId] or anchors[DEFAULT_ANCHOR]
+				--Special anchroing of the header icon texture?
+				if collapsed == true and showToggleHeaderIcon == true and controlId == TOGGLE_ICON and toggleHeaderIconData ~= nil and toggleHeaderIconData.align ~= nil then
+					local anchorAlign = getValueOrCallback(toggleHeaderIconData.align, toggleHeaderIconData) or nil
+					if allowedIconAlignments[anchorAlign] then
+						anchorSet = toggleIconAnchors[anchorAlign]
+					end
+				end
 				headerHeight = headerHeight + header_applyAnchorSetToControl(headerControl, anchorSet, controlId, collapsed)
+
 			end
 		end
 
@@ -1173,7 +1187,7 @@ do
 		local height = zo_clamp(getValueOrCallback(textureData.height, textureData) or 18, 8, 32)
 		local tint = getValueOrCallback(textureData.iconTint, textureData)
 		control:SetDimensions(width, height)
-		control:AddIcon(getValueOrCallback(textureData.iconTexture, textureData), nil, nil)
+		control:AddIcon(getValueOrCallback(textureData.iconTexture, textureData), tint, nil) --narration is last param
 		control:Show()
 	end
 
@@ -1241,7 +1255,7 @@ do
 		local options = comboBox.options
 		local headerIsCollapsible = getValueOrCallback(options.headerCollapsible, options)
 		local showToggleHeaderIcon, toggleHeaderIconData = checkShowHeaderIcon(comboBox, headerIsCollapsible, collapsed) --#2025_63
---d(">showToggleHeaderIcon: " ..tos(showToggleHeaderIcon) .. "; toggleHeaderIconPath: " ..tos(toggleHeaderIconData ~= nil and toggleHeaderIconData.iconTexture or "nil"))
+		--After default anchors have been set, update the header icon texture and anchor from options
 		if showToggleHeaderIcon == true then
 			header_iconSetTexture(controls[TOGGLE_ICON], toggleHeaderIconData)
 		end
@@ -1269,7 +1283,7 @@ do
 		refreshResults[TOGGLE_ICON] = 					header_processData(controls[TOGGLE_ICON], showToggleHeaderIcon) --#2025_63
 
 		headerControl:SetDimensionConstraints(MIN_WIDTH_WITHOUT_SEARCH_HEADER, 0)
-		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled)
+		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled, showToggleHeaderIcon, toggleHeaderIconData)
 	end
 	lib.Util.refreshDropdownHeader = refreshDropdownHeader
 end

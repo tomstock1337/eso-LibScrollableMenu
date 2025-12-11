@@ -142,7 +142,13 @@ local function test()
 			enableFilter = function() return true end,
 			headerCollapsible = true,
 			--headerCollapsed = true,
-			headerIcon = function() return { iconTexture="/esoui/art/inventory/inventory_trait_ornate_icon.dds", width=24, height=24 } end,
+			headerIcon = function() return {
+				iconTexture="/esoui/art/miscellaneous/search_icon.dds",
+				width=20,
+				height=20,
+				iconTint=CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				align = LEFT,
+			} end,
 
 			--customFilterFunc = customFilterFunc
 
