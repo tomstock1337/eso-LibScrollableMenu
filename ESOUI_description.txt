@@ -95,11 +95,19 @@ API syntax:
 --		number titleTextAlignment:optional		Number or function returning a number: The title's vertical alignment, e.g. TEXT_ALIGN_CENTER
 --		userdata customHeaderControl:optional	Userdata or function returning Userdata: A custom control thta should be shown above the dropdown entries
 --		boolean headerCollapsible			 	Boolean or function returning boolean if the header control should show a collapse/expand button
+--		boolean headerCollapsed			 		Boolean or function returning boolean if the header control should always be collapsed as the dropdown is opened. If this is false (default) the last state will be saved in LSM SavedVariables (per dropdown box name)
+--		string headerToggleTooltip				String or function returning a string: Tooltip text for the collapse/expand buttons. Function signature function(state). Default: returns "Collapse"/"Expand" strings from vanilla ESOUI, depending on the current state
+--		table headerCollapsedIcon				table or function returning a table of signature { iconTexture = "path/to/textureName.dds", iconTint=ZO_ColorDef, width=number, height=number, align=LEFT|CENTER(default)|RIGHT, offSetX=12, offSetY=-12 }: Icon shown as the header is collapsed (e.g. a magnifying glass to show you can expand it to get a search). Default value is nil. Height is capped at 32!
+--		table headerCollapsedTitle				table or function returning a table of signature { text = "Click to search", color=ZO_ColorDef, font="FontNameHere", align=LEFT|CENTER(default)|RIGHT, offSetX=12, offSetY=-12 }: Title text shown as the header is collapsed (e.g. a text to show you can expand the section and see the search). Default value is nil.
 -->  === Dropdown text search & filter =================================================================================
 --		boolean enableFilter:optional			Boolean or function returning boolean which controls if the text search/filter editbox at the dropdown header is shown
 --		function customFilterFunc				A function returning a boolean true: show item / false: hide item. Signature of function: customFilterFunc(item, filterString)
 --->  === Dropdown callback functions
 -- 		function preshowDropdownFn:optional 	function function(ctrl) codeHere end: to run before the dropdown shows
+--		boolean automaticRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the normal scrolllist should happen, if you click/change any entry's value. This would be needed
+--												e.g. if you want the entry B to react on entry A's value (e.g. checkboxes -> enabled state). Default value is false
+--		boolean automaticSubmenuRefresh:optional		Boolean or function returning boolean which controls if the automatic refresh of the submenu's scrolllist should happen, if you click/change any entry's value. This would be needed
+--												e.g. if you want the entry B to react on entry A's value (e.g. checkboxes -> enabled state). Default value is false
 --->  === Dropdown's Custom XML virtual row/entry templates ============================================================
 --		boolean useDefaultHighlightForSubmenuWithCallback	Boolean or function returning a boolean if always the default ZO_ComboBox highlight XML template should be used for an entry having a submenu AND a callback function. If false the highlight 'LibScrollableMenu_Highlight_Green' will be used
 --		table XMLRowTemplates:optional			Table or function returning a table with key = row type of lib.scrollListRowTypes and the value = subtable having

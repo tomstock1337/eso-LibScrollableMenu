@@ -141,7 +141,33 @@ local function test()
 			--subtitleText = "Custom sub title",
 			enableFilter = function() return true end,
 			headerCollapsible = true,
-			headerCollapsed = true,
+			--headerCollapsed = function() return false end,
+			headerToggleTooltip = function(state)
+				if state == BSTATE_PRESSED then
+					return "Click to expand and show the search editbox"
+				else
+					return GetString(SI_ITEM_SETS_BOOK_HEADER_COLLAPSE)
+				end
+			end,
+			headerCollapsedIcon = function() return {
+				iconTexture="/esoui/art/miscellaneous/search_icon.dds",
+				width=24,
+				height=24,
+				--iconTint=CUSTOM_HIGHLIGHT_TEXT_COLOR,
+				align = LEFT,
+				offsetX = 20,
+				offSetY = 0,
+			} end,
+			--[[
+			headerCollapsedTitle = {
+				text = "Click me to show the search",
+				color = HEADER_TEXT_COLOR_RED,
+				--font = "ZO_Game"
+				align = RIGHT,
+				offsetX = -10,
+				offSetY = 0,
+			},
+			]]
 
 			--customFilterFunc = customFilterFunc
 

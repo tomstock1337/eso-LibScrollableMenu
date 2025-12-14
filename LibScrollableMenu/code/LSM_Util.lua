@@ -21,11 +21,15 @@ local AM = GetAnimationManager() --ANIMATION_MANAGER
 local EM = GetEventManager() --EVENT_MANAGER
 local tos = tostring
 local sfor = string.format
+local strsub = string.sub
+local strlow = string.lower
 
 local functionType = "function"
 local userdataType = "userdata"
 local stringType = "string"
 local tableType = "table"
+
+local ddsExtensionStr = ".dds"
 
 
 -----------------------------------------------------------------------
@@ -75,6 +79,23 @@ local checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect
 
 --local levelChecked = 0
 local alreadyCheckedSubmenuOpeningItems = {}
+
+--------------------------------------------------------------------
+-- Strings
+--------------------------------------------------------------------
+function libUtil.endsWith(haystack, needle) --#2025_63
+	local suffix = strlow(strsub(haystack, -(#needle)))
+	return suffix == strlow(needle)
+end
+local endsWith = libUtil.endsWith
+
+
+--Check if the an iconPath is a valid string ending on .dds
+function libUtil.checkIfValidTexturePath(texturePath) --#2025_63
+	if type(texturePath) ~= stringType then return false end
+	local endsOnDDS = endsWith(texturePath, ddsExtensionStr)
+	return endsOnDDS
+end
 
 --------------------------------------------------------------------
 -- Controls
