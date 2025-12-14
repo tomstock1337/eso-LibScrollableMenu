@@ -287,12 +287,12 @@ Max error #: 2025_63
 [KNOWN PROBLEMS]
 
 [WORKING ON]
-#2025_63 Add options.headerCollapsedIcon and options.headerCollapsedTitle
 
 
 [Fixed]
 
 [Added]
+#2025_63 Add options.headerCollapsedIcon and options.headerCollapsedTitle
 
 [Changed]
 

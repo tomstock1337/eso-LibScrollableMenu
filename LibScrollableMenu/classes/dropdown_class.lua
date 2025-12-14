@@ -50,7 +50,6 @@ local zo_comboBoxDropdown_onMouseEnterEntry = ZO_ComboBoxDropdown_Keyboard.OnMou
 --LSM library locals
 --------------------------------------------------------------------
 local g_contextMenu
-local refreshDropdownHeader
 
 local has_submenu = true
 local no_submenu = false
@@ -1267,10 +1266,7 @@ do
 	end
 
 	--Check if the header should show a title text if in collapsed state
-	local function checkShowHeaderTitle(comboBox, headerIsCollapsible, collapsed) --#2025_63
-		--Only show the header title text as the header is collapsed and if the header is enabled to be collapsible
-		if not headerIsCollapsible or not collapsed then return false end
-
+	local function checkShowHeaderTitle(comboBox) --#2025_63
 		--Check options for a texture
 		local options               = comboBox.options
 		local toggleHeaderTitleData = getValueOrCallback(options.headerCollapsedTitle, options)
@@ -1278,10 +1274,7 @@ do
 		return type(toggleHeaderTitleText) == stringType and toggleHeaderTitleText ~= "", toggleHeaderTitleData
 	end
 	--Check if the header should show an icon if in collapsed state
-	local function checkShowHeaderIcon(comboBox, headerIsCollapsible, collapsed) --#2025_63
-		--Only show the header icon as the header is collapsed and if the header is enabled to be collapsible
-		if not headerIsCollapsible or not collapsed then return false end
-
+	local function checkShowHeaderIcon(comboBox) --#2025_63
 		--Check options for a texture
 		local options = comboBox.options
 		local toggleHeaderIconData = getValueOrCallback(options.headerCollapsedIcon, options)
@@ -1291,26 +1284,35 @@ do
 
 	--Refresh the dropdown's collapsible header control, if it should be shown, if any custom control was added, or an icon etc.
 	--Reanchor all controls and change the height etc. of them based on the isCollapsible and collapsed state
-	refreshDropdownHeader = function(comboBox, headerControl, collapsed)
---d(debugPrefix .. "refreshDropdownHeader - collapsed: " ..tos(collapsed))
+	local refreshDropdownHeader = function(comboBox, headerControl, collapsed)
+		--d(debugPrefix .. "refreshDropdownHeader - collapsed: " ..tos(collapsed))
 
 		local controls = headerControl.controls
 		local options = comboBox.options
 		local headerIsCollapsible = getValueOrCallback(options.headerCollapsible, options)
+
+		-- -v- #2025_63 Only show the header icon/title text  as the header is collapsed and if the header is enabled to be collapsible
+		local showToggleHeaderControls = false
 		local toggleHeaderData
-		local showToggleHeaderIcon, toggleHeaderIconData = checkShowHeaderIcon(comboBox, headerIsCollapsible, collapsed) --#2025_63
-		--After default anchors have been set, update the header icon texture and anchor from options
+		local showToggleHeaderIcon, toggleHeaderIconData, showToggleHeaderTitle, toggleHeaderTitleData
+		if headerIsCollapsible and collapsed == true then
+			showToggleHeaderIcon, toggleHeaderIconData = checkShowHeaderIcon(comboBox)
+			showToggleHeaderTitle, toggleHeaderTitleData = checkShowHeaderTitle(comboBox)
+		end
+		--Update the header icon texture, texts (color, font, etc.) and anchor from options
 		if showToggleHeaderIcon == true then
 			header_iconSetTexture(controls[TOGGLE_ICON], toggleHeaderIconData)
-			toggleHeaderData = {}
+			toggleHeaderData = toggleHeaderData or {}
 			toggleHeaderData[TOGGLE_ICON] = toggleHeaderIconData
+			showToggleHeaderControls = true
 		end
-		local showToggleHeaderTitle, toggleHeaderTitleData = checkShowHeaderTitle(comboBox, headerIsCollapsible, collapsed) --#2025_63
 		if showToggleHeaderTitle == true then
 			header_titleSetTextAndLook(controls[TOGGLE_TITLE], toggleHeaderTitleData)
 			toggleHeaderData = toggleHeaderData or {}
 			toggleHeaderData[TOGGLE_TITLE] = toggleHeaderTitleData
+			showToggleHeaderControls = true
 		end
+		-- -^- #2025_63
 
 		headerControl:SetHidden(true)
 		headerControl:SetHeight(0)
@@ -1336,7 +1338,7 @@ do
 		refreshResults[TOGGLE_TITLE] = 					header_processData(controls[TOGGLE_TITLE], showToggleHeaderTitle) --#2025_63
 
 		headerControl:SetDimensionConstraints(MIN_WIDTH_WITHOUT_SEARCH_HEADER, 0)
-		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled, showToggleHeaderIcon or showToggleHeaderTitle, toggleHeaderData)
+		header_updateAnchors(headerControl, refreshResults, collapsed, isFilterEnabled, showToggleHeaderControls, toggleHeaderData) --#2025_63
 	end
 	lib.Util.refreshDropdownHeader = refreshDropdownHeader
 end
