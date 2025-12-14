@@ -278,20 +278,21 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.38 - Updated 2025-11-14
+	CHANGELOG Current version: 2.40 - Updated 2025-12-14
 ---------------------------------------------------------------
-Max error #: 2025_62
+Max error #: 2025_64
 
 [FEATURE]
 
 [KNOWN PROBLEMS]
 
 [WORKING ON]
+#2025_64 options.headerToggleTooltip
 
 [Fixed]
-#2025_62 headerCollapsed is not working and making the search header always collapsed on open (it still uses last used state as it seems)
 
 [Added]
+#2025_63 Add options.headerCollapsedIcon and options.headerCollapsedTitle
 
 [Changed]
 

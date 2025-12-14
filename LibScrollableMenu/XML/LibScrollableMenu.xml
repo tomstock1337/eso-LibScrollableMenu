@@ -364,11 +364,11 @@
 
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
-					<DimensionConstraints x="5" maxX="90%" />
+					<DimensionConstraints minX="5" maxX="90%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 				</Label>
 				<Control name="$(parent)SliderContainer">
-					<DimensionConstraints x="100%" maxX="100%" />
+					<DimensionConstraints minx="5" maxX="100%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)Label" relativePoint="TOPRIGHT" offsetX="4"/>
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-2"/>
 					<Controls>
@@ -460,6 +460,8 @@
 							[headerControls.CUSTOM_CONTROL] 	= self:GetNamedChild("CustomControl"),
 							[headerControls.TOGGLE_BUTTON] 		= self:GetNamedChild("ToggleHeader"),
 							[headerControls.TOGGLE_BUTTON_CLICK_EXTENSION] 		= self:GetNamedChild("ToggleHeaderClickExtension"),
+							[headerControls.TOGGLE_ICON] 		= self:GetNamedChild("ToggleHeaderIcon"),
+							[headerControls.TOGGLE_TITLE] 		= self:GetNamedChild("ToggleHeaderTitle"),
 						}
 						self:GetParent().header = self
 
@@ -500,9 +502,9 @@
 						</Control>
 
 						<!--Label name="$(parent)Title" inherits="ZO_GamepadScreenHeaderTitleTextTemplate" excludeFromResizeToFitExtents="true" -->
-						<Label name="$(parent)Title" hidden="true"/>
+						<Label name="$(parent)Title" hidden="true" level="3" />
 						<!--Label name="$(parent)SubTitle" inherits="ZO_GamepadHeaderLabelTextTemplate" horizontalAlignment="CENTER" excludeFromResizeToFitExtents="true" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"-->
-						<Label name="$(parent)SubTitle" horizontalAlignment="CENTER" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"/>
+						<Label name="$(parent)SubTitle" level="3" horizontalAlignment="CENTER" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" hidden="true"/>
 
 						<Control name="$(parent)DividerSimple" hidden="true">
 							<Dimensions y="16" />
@@ -577,83 +579,6 @@
 									</Controls>
 								</Backdrop>
 
-								<!--
-								<Button name="$(parent)Settings" inherits="ZO_ButtonBehaviorClickSound">
-									<Dimensions x="32" y="32" />
-									<Anchor point="RIGHT" relativeTo="$(parent)" relativePoint="RIGHT" offsetX="-ZO_SCROLLABLE_COMBO_BOX_LIST_PADDING_Y" offsetY="0" />
-
-									<Textures normal="esoui/art/chatwindow/chat_options_up.dds"
-									  pressed="esoui/art/chatwindow/chat_options_down.dds"
-									  mouseOver="esoui/art/chatwindow/chat_options_over.dds"/>
-
-									<OnMouseEnter>
-										ZO_Tooltips_ShowTextTooltip(self, BOTTOM, GetString(SI_GAME_MENU_SETTINGS))
-										InformationTooltipTopLevel:BringWindowToTop()
-									</OnMouseEnter>
-
-									<OnMouseExit>
-										ZO_Tooltips_HideTextTooltip()
-									</OnMouseExit>
-
-									<OnClicked>
-										ZO_Tooltips_HideTextTooltip()
-										local owningWindow = self:GetOwningWindow()
-										if owningWindow.object then
-											owningWindow.object:ShowFilterSettings(owningWindow, self)
-										end
-									</OnClicked>
-								</Button>
-								-->
-
-								<!--Button name="$(parent)Include" inherits="ZO_DefaultTextButton" text="S">
-									<Dimensions x="32" y="32" />
-									<Anchor point="LEFT" relativeTo="$(parent)Filter" relativePoint="RIGHT" offsetX="-8" offsetY="0" />
-
-									<OnInitialized>
-										self.uncheckedText = 'S'
-										self.checkedText = 'l'
-
-										self.toggleFunction = function(button, checked)
-											local owningWindow = self:GetOwningWindow()
-											if owningWindow.object then
-												owningWindow.object:SetFilterIgnore(checked)
-											end
-										end
-
-									</OnInitialized>
-
-									<OnClicked>
-										ZO_CheckButton_OnClicked(self, button)
-
-										- Show updated tooltip on click
-										ClearTooltip(InformationTooltip)
-										InitializeTooltip(InformationTooltip, self, BOTTOM, 0, 0)
-										SetTooltipText(InformationTooltip, GetString('LIBSCROLLABLEMENU_SI_MATCHTOOLTIP', self:GetState()))
-										InformationTooltipTopLevel:BringWindowToTop()
-
-										- Can't remember what one is 0 and 1
-										- LIBSCROLLABLEMENU_SI_MATCHTOOLTIP0 = 'Strict'
-										- LIBSCROLLABLEMENU_SI_MATCHTOOLTIP1 = 'Loose'
-									</OnClicked>
-
-									<OnEffectivelyShown>
-										local bState = self:GetState()
-										local checked = bState == BSTATE_PRESSED
-										- get saved button state
-										ZO_CheckButton_SetCheckState(self, checked)
-									</OnEffectivelyShown>
-
-									<OnMouseEnter>
-										InitializeTooltip(InformationTooltip, self, BOTTOM, 0, 0)
-										SetTooltipText(InformationTooltip, GetString('LIBSCROLLABLEMENU_SI_MATCHTOOLTIP', self:GetState()))
-										InformationTooltipTopLevel:BringWindowToTop()
-									</OnMouseEnter>
-
-									<OnMouseExit>
-										ClearTooltip(InformationTooltip)
-									</OnMouseExit>
-								</Button-->
-
 							</Controls>
 						</Control>
 
@@ -665,7 +590,7 @@
 						</Control>
 
 						<Button name="$(parent)ToggleHeader" inherits="ZO_ButtonBehaviorClickSound" hidden="true">
-							<DimensionConstraints minY="24" maxY="24" minX="24" />
+							<DimensionConstraints minY="24" maxY="100%" minX="24" />
 
 							<OnInitialized>
 								local owningWindow = self:GetOwningWindow()
@@ -679,10 +604,21 @@
 								
 								self.GetTooltipText = function()
 									local currentState = self:GetState()
-									if currentState == BSTATE_PRESSED then
-										return GetString(SI_ITEM_SETS_BOOK_HEADER_EXPAND) -- "Expand"
-									elseif currentState == BSTATE_NORMAL then
-										return GetString(SI_ITEM_SETS_BOOK_HEADER_COLLAPSE) -- "Collapse"
+									-- -v- #2025_64
+									local owningWindow = self:GetOwningWindow()
+									if owningWindow and owningWindow.object and owningWindow.object.m_comboBox then
+										local options = owningWindow.object.m_comboBox:GetOptions()
+										local customToogleHeaderTooltipText = (options ~= nil and LibScrollableMenu.Util.getValueOrCallback(options.headerToggleTooltip, currentState)) or nil
+										if type(customToogleHeaderTooltipText) == "string" then
+											return customToogleHeaderTooltipText
+										end
+									else
+									-- -^- #2025_64
+										if currentState == BSTATE_PRESSED then
+											return GetString(SI_ITEM_SETS_BOOK_HEADER_EXPAND) -- "Expand"
+										elseif currentState == BSTATE_NORMAL then
+											return GetString(SI_ITEM_SETS_BOOK_HEADER_COLLAPSE) -- "Collapse"
+										end
 									end
 									return ''
 								end
@@ -711,8 +647,18 @@
 							</OnClicked>
 						</Button>
 
-						<Button name="$(parent)ToggleHeaderClickExtension" inherits="ZO_ButtonBehaviorClickSound" hidden="true">
-							<DimensionConstraints minY="0" maxY="24" minX="0" />
+						<Texture name="$(parent)ToggleHeaderIcon" inherits="ZO_MultiIcon" mouseEnabled="false" hidden="true" level="2">
+							<DimensionConstraints minX="0" maxX="95%" minY="0" maxY="32" />
+							<Anchor point="CENTER"/>
+						</Texture>
+
+						<Label name="$(parent)ToggleHeaderTitle" hidden="true" level="3">
+							<DimensionConstraints minX="0" maxX="95%" minY="0" maxY="32" />
+							<Anchor point="CENTER"/>
+						</Label>
+
+						<Button name="$(parent)ToggleHeaderClickExtension" inherits="ZO_ButtonBehaviorClickSound" hidden="true" level="5">
+							<DimensionConstraints minX="0" maxX="100%" minY="0" maxY="100%" />
 
 							<OnInitialized>
 								local owningWindow = self:GetOwningWindow()
@@ -731,11 +677,8 @@
 							</OnMouseExit>
 
 							<OnClicked>
-								--ZO_Tooltips_HideTextTooltip()
-
 								local owningWindow = self:GetOwningWindow()
 								local toggleButton = owningWindow.toggleButton
-								--ZO_CheckButton_OnClicked(toggleButton)
 								LibScrollableMenu.XML.OnXMLControlEventHandler("ToggleHeader", self, toggleButton)
 							</OnClicked>
 						</Button>

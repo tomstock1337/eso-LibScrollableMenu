@@ -6,7 +6,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 lib.author = "Baertram, IsJustaGhost, tomstock, Kyoma"
-lib.version = "2.39"
+lib.version = "2.40"
 if not lib then return end
 --------------------------------------------------------------------
 
@@ -187,6 +187,7 @@ constants.fonts = {}
 constants.fonts.DEFAULT_FONT = 					"ZoFontGame"
 constants.fonts.HeaderFontTitle = 				"ZoFontHeader3"
 constants.fonts.HeaderFontSubtitle = 			"ZoFontHeader2"
+constants.fonts.HeaderCollapsedTitle =			"ZoFontGamepad18"
 local fonts = constants.fonts
 
 --Colors
@@ -561,6 +562,7 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = {
 	["headerCollapsed"] = 		"headerCollapsed",
 	["headerColor"] =			"headerColor",
 	["headerFont"] =			"headerFont",
+	["headerIcon"] = 			"headerIcon",
 	["highlightContextMenuOpeningControl"] = "highlightContextMenuOpeningControl",
 	["maxNumSelections"] =		"m_maxNumSelections",
 	["maxNumSelectionsErrorText"] = "m_overrideMaxSelectionsErrorText",
@@ -779,6 +781,7 @@ local submenuClass_exposedVariables = {
 	-- LibScrollableMenu
 	["headerCollapsed"] = false,		--Header: Currently not available separately for a submenu
 	["headerCollapsible"] = false, 		--Header: Currently not available separately for a submenu
+	["headerIcon"] = false, 			--Header: Currently not available separately for a submenu
 	---------------------------------------
 	["disableFadeGradient"] = true,
 	["headerFont"] = true,
