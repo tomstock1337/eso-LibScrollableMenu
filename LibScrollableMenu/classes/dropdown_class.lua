@@ -2374,7 +2374,6 @@ function dropdownClass:ShowTextTooltip(control, side, tooltipText, owningWindow)
 	InformationTooltipTopLevel:BringWindowToTop()
 end
 
-
 --XML handler for editBox rows: OnTextChanged should trigger the callback function
 function dropdownClass:OnEditBoxTextChanged(editBox)
 	ZO_Tooltips_HideTextTooltip()

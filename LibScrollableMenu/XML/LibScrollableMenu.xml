@@ -604,10 +604,21 @@
 								
 								self.GetTooltipText = function()
 									local currentState = self:GetState()
-									if currentState == BSTATE_PRESSED then
-										return GetString(SI_ITEM_SETS_BOOK_HEADER_EXPAND) -- "Expand"
-									elseif currentState == BSTATE_NORMAL then
-										return GetString(SI_ITEM_SETS_BOOK_HEADER_COLLAPSE) -- "Collapse"
+									-- -v- #2025_64
+									local owningWindow = self:GetOwningWindow()
+									if owningWindow and owningWindow.object and owningWindow.object.m_comboBox then
+										local options = owningWindow.object.m_comboBox:GetOptions()
+										local customToogleHeaderTooltipText = (options ~= nil and LibScrollableMenu.Util.getValueOrCallback(options.headerToggleTooltip, currentState)) or nil
+										if type(customToogleHeaderTooltipText) == "string" then
+											return customToogleHeaderTooltipText
+										end
+									else
+									-- -^- #2025_64
+										if currentState == BSTATE_PRESSED then
+											return GetString(SI_ITEM_SETS_BOOK_HEADER_EXPAND) -- "Expand"
+										elseif currentState == BSTATE_NORMAL then
+											return GetString(SI_ITEM_SETS_BOOK_HEADER_COLLAPSE) -- "Collapse"
+										end
 									end
 									return ''
 								end

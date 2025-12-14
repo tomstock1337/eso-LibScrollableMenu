@@ -278,16 +278,16 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.40 - Updated 2025-12-11
+	CHANGELOG Current version: 2.40 - Updated 2025-12-14
 ---------------------------------------------------------------
-Max error #: 2025_63
+Max error #: 2025_64
 
 [FEATURE]
 
 [KNOWN PROBLEMS]
 
 [WORKING ON]
-
+#2025_64 options.headerToggleTooltip
 
 [Fixed]
 
