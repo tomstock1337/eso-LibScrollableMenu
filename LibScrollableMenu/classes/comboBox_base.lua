@@ -486,6 +486,7 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 			--Icon's narration
 			local iconNarration = (iconDataGotMoreParams and getValueOrCallback(singleIconDataOrTab.iconNarration, data)) or nil
 			multiIconCtrl:AddIcon(iconValue, iconTint, iconNarration)
+--d(debugPrefix .. "updateIcon - Adding icon: " .. tos(iconValue))
 			if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 26, tos(iconIdx), tos(visible), tos(iconValue), tos(iconTint), tos(iconWidth), tos(iconHeight), tos(iconNarration)) end
 		end
 
@@ -511,7 +512,7 @@ local function updateIcons(control, data)
 	local iconDataType = iconData ~= nil and type(iconData) or nil
 	if iconDataType ~= nil then
 --d("[LSM]updateIcons - iconData found")
-		if iconDataType ~= 'table' then
+		if iconDataType ~= "table" then
 			--If only a "any.dds" texture path or a function returning this was passed in
 			iconData = { [1] = { iconTexture = iconData } }
 		else
@@ -548,7 +549,6 @@ local function updateIcons(control, data)
 		if multiIconCtrl:GetHandler("OnMouseExit") == nil then
 			multiIconCtrl:SetHandler("OnMouseExit", ZO_Options_OnMouseExit)
 		end
-
 		multiIconCtrl:Show() --todo 20240527 Make that dependent on getValueOrCallback(data.enabled, data) ?! And update via multiIconCtrl:Hide()/multiIconCtrl:Show() on each show of menu!
 	end
 
@@ -2309,6 +2309,7 @@ d(">enabled: " .. tos(data.enabled))
 	function comboBox_base:SetupEntryLabel(control, data, list, realEntryType)
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 115, tos(getControlName(control)), tos(list)) end
 		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL
+--d("[LSM]SetupEntryLabel - " .. tos(getValueOrCallback(data.label) or getValueOrCallback(data.name) or "n/a"))
 		addIcon(control, data, list)
 		addLabel(control, data, list)
 		self:SetupEntryLabelBase(control, data, list)

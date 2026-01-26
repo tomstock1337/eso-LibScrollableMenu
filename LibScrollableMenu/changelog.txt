@@ -1,4 +1,13 @@
 -v- ---------------LSM v2.40 - 2025-12-14--------------------------------------------------------------------------- -v-
+[KNOWN PROBLEMS]
+#2026_01 After a LSM contextMenu was shown and a checkbox was clicked (on the checkbox's label!), the next opened contextMenu's checkbox label
+  is not changing the checkbox state (as if the first click is not accepted?), only the 2nd click does. (noticed during BMU LCM -> LSM changes at 2026-01-25)
+
+[Fixed]
+--#2026_02 Nil error at combobox header collapsed state SavedVariables
+
+
+-v- ---------------LSM v2.40 - 2025-12-14--------------------------------------------------------------------------- -v-
 [Added]
 #2025_63 Add options.headerCollapsedIcon and options.headerCollapsedTitle
 --		table headerCollapsedIcon				table or function returning a table of signature { iconTexture = "path/to/textureName.dds", iconTint=ZO_ColorDef, width=number, height=number, align=LEFT|CENTER(default)|RIGHT, offSetX=12, offSetY=-12 }: Icon shown as the header is collapsed (e.g. a magnifying glass to show you can expand it to get a search). Default value is nil. Height is capped at 32!

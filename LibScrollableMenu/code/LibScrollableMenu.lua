@@ -280,19 +280,22 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 ---------------------------------------------------------------
 	CHANGELOG Current version: 2.40 - Updated 2025-12-14
 ---------------------------------------------------------------
-Max error #: 2025_64
+Max error #: 2026_02
 
 [FEATURE]
 
 [KNOWN PROBLEMS]
+#2026_01 After a LSM contextMenu was shown and a checkbox was clicked (on the checkbox's label!), the next opened contextMenu's checkbox label
+  is not changing the checkbox state (as if the first click is not accepted?), only the 2nd click does. (noticed during BMU LCM -> LSM changes at 2026-01-25)
 
 [WORKING ON]
-#2025_64 options.headerToggleTooltip
+
 
 [Fixed]
+--#2026_02 Nil error at combobox header collapsed state SavedVariables
 
 [Added]
-#2025_63 Add options.headerCollapsedIcon and options.headerCollapsedTitle
+
 
 [Changed]
 
