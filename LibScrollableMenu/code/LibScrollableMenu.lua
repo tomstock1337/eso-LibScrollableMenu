@@ -278,15 +278,16 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.40 - Updated 2025-12-14
+	CHANGELOG Current version: 2.41 - Updated 2026-01-27
 ---------------------------------------------------------------
-Max error #: 2026_02
+Max error #: 2026_03
 
 [FEATURE]
 
 [KNOWN PROBLEMS]
-#2026_01 After a LSM contextMenu was shown and a checkbox was clicked (on the checkbox's label!), the next opened contextMenu's checkbox label
+-#2026_01 After a LSM contextMenu was shown and a checkbox was clicked (on the checkbox's label!), the next opened contextMenu's checkbox label
   is not changing the checkbox state (as if the first click is not accepted?), only the 2nd click does. (noticed during BMU LCM -> LSM changes at 2026-01-25)
+-#2026_03 Search header contextMenu for last searched does not work on BeamMeUp item filter header?
 
 [WORKING ON]
 
