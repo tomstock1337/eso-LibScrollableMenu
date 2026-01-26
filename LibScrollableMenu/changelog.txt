@@ -1,4 +1,4 @@
--v- ---------------LSM v2.40 - 2025-12-14--------------------------------------------------------------------------- -v-
+-v- ---------------LSM v2.41 - 2026-01-27--------------------------------------------------------------------------- -v-
 [KNOWN PROBLEMS]
 #2026_01 After a LSM contextMenu was shown and a checkbox was clicked (on the checkbox's label!), the next opened contextMenu's checkbox label
   is not changing the checkbox state (as if the first click is not accepted?), only the 2nd click does. (noticed during BMU LCM -> LSM changes at 2026-01-25)
