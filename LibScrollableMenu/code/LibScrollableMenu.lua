@@ -294,6 +294,7 @@ Max error #: 2026_03
 
 [Fixed]
 --#2026_02 Nil error at combobox header collapsed state SavedVariables
+--#2026_04 Added missing additonalData to API function AddCustomScrollableSubMenuEntry
 
 [Added]
 

@@ -6,7 +6,7 @@
 
 [Fixed]
 --#2026_02 Nil error at combobox header collapsed state SavedVariables
-
+--#2026_04 Added missing additonalData to API function AddCustomScrollableSubMenuEntry
 
 -v- ---------------LSM v2.40 - 2025-12-14--------------------------------------------------------------------------- -v-
 [Added]

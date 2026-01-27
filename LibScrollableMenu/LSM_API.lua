@@ -374,9 +374,9 @@ local addCustomScrollableMenuEntry = AddCustomScrollableMenuEntry
 --> See examples for the table "entries" values above AddCustomScrollableMenuEntry
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
-function AddCustomScrollableSubMenuEntry(text, entries, callbackFunc)
+function AddCustomScrollableSubMenuEntry(text, entries, callbackFunc, additionalData) --#2026_04
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 163, tos(text), tos(entries)) end
-	return addCustomScrollableMenuEntry(text, callbackFunc, entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU, entries, nil)
+	return addCustomScrollableMenuEntry(text, callbackFunc, entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU, entries, additionalData) --#2026_04
 end
 
 --Adds a divider line to the context menu entries
