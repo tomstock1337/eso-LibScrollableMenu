@@ -2269,7 +2269,16 @@ do -- Row setup functions
 
 		control.callback = data.callback
 		control.contextMenuCallback = data.contextMenuCallback
-		control.closeOnSelect = (control.selectable and type(data.callback) == 'function') or false
+
+		--#2026_06 control.closeOnSelect must be passed in from additionalData.closeOnSelect so normal (submenu) entries can keep an LSM oepned, even if selectable and clicked
+		local closeOnSelect = (control.selectable and type(data.callback) == 'function') or false
+		if closeOnSelect == true then
+			local additionalData = data.additionalData
+			if additionalData ~= nil then
+				closeOnSelect = getValueOrCallback(additionalData.closeOnSelect, additionalData)
+			end
+		end
+		control.closeOnSelect = closeOnSelect
 
 		--[[
 		--#2025_26 lastEntry is clickable (if no entries found after filtering): noEntriesResults.enabled = false, so why can I click it?

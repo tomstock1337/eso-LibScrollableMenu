@@ -21,8 +21,9 @@ local dlog = libDebug.DebugLog
 local tos = tostring
 local sfor = string.format
 local tins = table.insert
-local tabType = "table"
-local boolType = "boolean"
+
+local tableType   = "table"
+local booleanType = "boolean"
 
 
 --------------------------------------------------------------------
@@ -287,7 +288,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 
 	--Additional data table was passed in? e.g. containing  gotAdditionalData.isNew = function or boolean
 	local addDataType = additionalData ~= nil and type(additionalData) or nil
-	local isAddDataTypeTable = (addDataType ~= nil and addDataType == tabType and true) or false
+	local isAddDataTypeTable = (addDataType ~= nil and addDataType == tableType and true) or false
 
 	--Determine the entryType based on text, passed in entryType, and/or additionalData table
 	entryType = checkEntryType(text, entryType, additionalData, isAddDataTypeTable, options)
@@ -586,7 +587,7 @@ LSM_Debug.cntxtMenuControlToAnchorTo = controlToAnchorTo
 	end
 
 	--#2025_45 Register special callback functions for this contextMenu?
-	if type(specialCallbackData) == tabType then
+	if type(specialCallbackData) == tableType then
 		local uniqueAddonName = getValueOrCallback(specialCallbackData.addonName, specialCallbackData)
 		assert(uniqueAddonName ~= nil and uniqueAddonName ~= "", sfor("["..MAJOR.."-ShowCustomScrollableMenu]specialCallbackData.addonName: Unique string expected, got %q", tos(uniqueAddonName)))
 		if specialCallbackData.onShowCallback ~= nil then
@@ -646,14 +647,14 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	local gotFilterEntryTypes = filterEntryTypes ~= nil and true or false
 	local filterEntryTypesTable = (gotFilterEntryTypes == true and getValueOrCallback(filterEntryTypes, options)) or nil
 	local filterEntryTypesTableType = (filterEntryTypesTable ~= nil and type(filterEntryTypesTable)) or nil
-	assert(gotFilterEntryTypes == false or (gotFilterEntryTypes == true and filterEntryTypesTableType == tabType), sfor("["..MAJOR..":"..assertFuncName.."] filterEntryTypes: table or function returning a table expected, got %q", tos(filterEntryTypesTableType)))
+	assert(gotFilterEntryTypes == false or (gotFilterEntryTypes == true and filterEntryTypesTableType == tableType), sfor("["..MAJOR..":"..assertFuncName.."] filterEntryTypes: table or function returning a table expected, got %q", tos(filterEntryTypesTableType)))
 
 	local fromParentMenuValue
 	if fromParentMenu == nil then
 		fromParentMenuValue = false
 	else
 		fromParentMenuValue = getValueOrCallback(fromParentMenu, options)
-		assert(type(fromParentMenuValue) == boolType, sfor("["..MAJOR..":"..assertFuncName.."] fromParentMenu: boolean expected, got %q", tos(type(fromParentMenu))))
+		assert(type(fromParentMenuValue) == booleanType, sfor("["..MAJOR..":"..assertFuncName.."] fromParentMenu: boolean expected, got %q", tos(type(fromParentMenu))))
 	end
 
 --d(debugPrefix .. ""..assertFuncName.." - filterEntryTypes: " ..tos(gotFilterEntryTypes) .. ", type: " ..tos(filterEntryTypesTableType) ..", fromParentMenu: " ..tos(fromParentMenuValue))
