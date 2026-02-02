@@ -278,9 +278,9 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.41 - Updated 2026-01-27
+	CHANGELOG Current version: 2.41 - Updated 2026-02-02
 ---------------------------------------------------------------
-Max error #: 2026_03
+Max error #: 2026_05
 
 [FEATURE]
 
@@ -295,6 +295,9 @@ Max error #: 2026_03
 [Fixed]
 --#2026_02 Nil error at combobox header collapsed state SavedVariables
 --#2026_04 Added missing additonalData to API function AddCustomScrollableSubMenuEntry
+--#2026_05 API function lib.ButtonGroupDefaultContextMenu / lib.SetButtonGroupState got a new 4th param "use_ZO_Menu" which, if set true, will make the contextMenu
+--at the checkbox/radiobutton group just use ZO_Menu instead of LSM contextMenu. It autodetects that: If a LSM contextMenu is already shown, ZO_Menu will be used automatically.
+--This allows ZO_Menu contextMenu with "Select all"/"Deselect all"/"Invert" at any LSM contextMenu entry's data.contextMenuCallback function
 
 [Added]
 

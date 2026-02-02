@@ -21,6 +21,8 @@ local dlog = libDebug.DebugLog
 local tos = tostring
 local sfor = string.format
 local tins = table.insert
+local tabType = "table"
+local boolType = "boolean"
 
 
 --------------------------------------------------------------------
@@ -285,7 +287,7 @@ function AddCustomScrollableMenuEntry(text, callback, entryType, entries, additi
 
 	--Additional data table was passed in? e.g. containing  gotAdditionalData.isNew = function or boolean
 	local addDataType = additionalData ~= nil and type(additionalData) or nil
-	local isAddDataTypeTable = (addDataType ~= nil and addDataType == "table" and true) or false
+	local isAddDataTypeTable = (addDataType ~= nil and addDataType == tabType and true) or false
 
 	--Determine the entryType based on text, passed in entryType, and/or additionalData table
 	entryType = checkEntryType(text, entryType, additionalData, isAddDataTypeTable, options)
@@ -584,7 +586,7 @@ LSM_Debug.cntxtMenuControlToAnchorTo = controlToAnchorTo
 	end
 
 	--#2025_45 Register special callback functions for this contextMenu?
-	if type(specialCallbackData) == "table" then
+	if type(specialCallbackData) == tabType then
 		local uniqueAddonName = getValueOrCallback(specialCallbackData.addonName, specialCallbackData)
 		assert(uniqueAddonName ~= nil and uniqueAddonName ~= "", sfor("["..MAJOR.."-ShowCustomScrollableMenu]specialCallbackData.addonName: Unique string expected, got %q", tos(uniqueAddonName)))
 		if specialCallbackData.onShowCallback ~= nil then
@@ -644,14 +646,14 @@ function RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFun
 	local gotFilterEntryTypes = filterEntryTypes ~= nil and true or false
 	local filterEntryTypesTable = (gotFilterEntryTypes == true and getValueOrCallback(filterEntryTypes, options)) or nil
 	local filterEntryTypesTableType = (filterEntryTypesTable ~= nil and type(filterEntryTypesTable)) or nil
-	assert(gotFilterEntryTypes == false or (gotFilterEntryTypes == true and filterEntryTypesTableType == "table"), sfor("["..MAJOR..":"..assertFuncName.."] filterEntryTypes: table or function returning a table expected, got %q", tos(filterEntryTypesTableType)))
+	assert(gotFilterEntryTypes == false or (gotFilterEntryTypes == true and filterEntryTypesTableType == tabType), sfor("["..MAJOR..":"..assertFuncName.."] filterEntryTypes: table or function returning a table expected, got %q", tos(filterEntryTypesTableType)))
 
 	local fromParentMenuValue
 	if fromParentMenu == nil then
 		fromParentMenuValue = false
 	else
 		fromParentMenuValue = getValueOrCallback(fromParentMenu, options)
-		assert(type(fromParentMenuValue) == "boolean", sfor("["..MAJOR..":"..assertFuncName.."] fromParentMenu: boolean expected, got %q", tos(type(fromParentMenu))))
+		assert(type(fromParentMenuValue) == boolType, sfor("["..MAJOR..":"..assertFuncName.."] fromParentMenu: boolean expected, got %q", tos(type(fromParentMenu))))
 	end
 
 --d(debugPrefix .. ""..assertFuncName.." - filterEntryTypes: " ..tos(gotFilterEntryTypes) .. ", type: " ..tos(filterEntryTypesTableType) ..", fromParentMenu: " ..tos(fromParentMenuValue))
@@ -759,7 +761,11 @@ IsCustomScrollableMenuShown = LSM_IsLSMCurrentlyShown --#2025_60
 
 -- API to show a context menu at a buttonGroup where you can (un)check/invert all buttons in a group:
 -- Select all, Unselect All, Invert all.
-function buttonGroupDefaultContextMenu(comboBox, control, data)
+function buttonGroupDefaultContextMenu(comboBox, control, data, useZO_Menu)
+	if useZO_Menu == nil then
+		--Try to auto detect if we cannot use LSM here (because another LSM contextMenu is already opened)
+		useZO_Menu = LSM_IsContextMenuCurrentlyShown()
+	end
 	local buttonGroup = comboBox.m_buttonGroup
 	if buttonGroup == nil then return end
 	local groupIndex = getValueOrCallback(data.buttonGroup, data)
@@ -767,52 +773,92 @@ function buttonGroupDefaultContextMenu(comboBox, control, data)
 	local entryType = getValueOrCallback(data.entryType, data)
 	if entryType == nil then return end
 
---d(debugPrefix .. "setButtonGroupState - comboBox: " .. tos(comboBox) .. ", control: " .. tos(getControlName(control)) .. ", entryType: " .. tos(entryType) .. ", groupIndex: " .. tos(groupIndex))
+	--d(debugPrefix .. "setButtonGroupState - comboBox: " .. tos(comboBox) .. ", control: " .. tos(getControlName(control)) .. ", entryType: " .. tos(entryType) .. ", groupIndex: " .. tos(groupIndex))
 
-	local buttonGroupSetAll = {
-		{ -- LSM_ENTRY_TYPE_NORMAL selecct and close.
-			name = GetString(SI_LSM_CNTXT_CHECK_ALL), --Check All
-			--entryType = LSM_ENTRY_TYPE_BUTTON,
-			entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL,
-			--additionalData = {
+	if useZO_Menu == true then
+		--Use ZO_Menu
+		ClearMenu()
+
+		local buttonGroupSetAll = {
+			{
+				name = GetString(SI_LSM_CNTXT_CHECK_ALL), --Check All
+				callback = function()
+					local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
+					if buttonGroupOfEntryType == nil then return end
+					return buttonGroupOfEntryType:SetChecked(control, true, data.ignoreCallback) -- Sets all as selected
+				end,
+			},
+			{
+				name = GetString(SI_LSM_CNTXT_CHECK_NONE),-- Check none
+				callback = function()
+					local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
+					if buttonGroupOfEntryType == nil then return end
+					return buttonGroupOfEntryType:SetChecked(control, false, data.ignoreCallback) -- Sets all as unselected
+				end,
+			},
+			{
+				name = GetString(SI_LSM_CNTXT_CHECK_INVERT), -- Invert
+				callback = function()
+					local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
+					if buttonGroupOfEntryType == nil then return end
+					return buttonGroupOfEntryType:SetInverse(control, data.ignoreCallback) -- sets all as oposite of what they currently are set to.
+				end,
+			},
+		}
+		for _, entryData in ipairs(buttonGroupSetAll) do
+			AddMenuItem(entryData.name, entryData.callback)
+		end
+
+		--d(debugPrefix .. "°°°°°°°°°°°°°°°° ShowMenu checkbox context menu - ZO_Menu")
+		lib.preventLSMClosingZO_Menu = true --mandatory to keep LSM open!
+		ShowMenu()
+	else
+		--use LibScrollableMenu (does not work as context Menu at an already opened LibScrollableMenu context menu!)
+		local buttonGroupSetAll = {
+			{ -- LSM_ENTRY_TYPE_NORMAL selecct and close.
+				name = GetString(SI_LSM_CNTXT_CHECK_ALL), --Check All
+				--entryType = LSM_ENTRY_TYPE_BUTTON,
+				entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL,
+				--additionalData = {
 				--horizontalAlignment = TEXT_ALIGN_CENTER,
 				--selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
 				-- ignoreCallback = true -- Just a thought
-			--},
-			callback = function()
-				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
-				if buttonGroupOfEntryType == nil then return end
-				return buttonGroupOfEntryType:SetChecked(control, true, data.ignoreCallback) -- Sets all as selected
-			end,
-		},
-		{
-			name = GetString(SI_LSM_CNTXT_CHECK_NONE),-- Check none
-			entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL,
-			--additionalData = {
+				--},
+				callback = function()
+					local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
+					if buttonGroupOfEntryType == nil then return end
+					return buttonGroupOfEntryType:SetChecked(control, true, data.ignoreCallback) -- Sets all as selected
+				end,
+			},
+			{
+				name = GetString(SI_LSM_CNTXT_CHECK_NONE),-- Check none
+				entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL,
+				--additionalData = {
 				--horizontalAlignment = TEXT_ALIGN_CENTER,
 				--selectedSound = origSoundComboClicked, -- not working? I want it to sound like a button.
-			--},
-			callback = function()
-				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
-				if buttonGroupOfEntryType == nil then return end
-				return buttonGroupOfEntryType:SetChecked(control, false, data.ignoreCallback) -- Sets all as unselected
-			end,
-		},
-		{ -- LSM_ENTRY_TYPE_BUTTON allows for, invert, undo, invert, undo
-			name = GetString(SI_LSM_CNTXT_CHECK_INVERT), -- Invert
-			entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL,
-			callback = function()
-				local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
-				if buttonGroupOfEntryType == nil then return end
-				return buttonGroupOfEntryType:SetInverse(control, data.ignoreCallback) -- sets all as oposite of what they currently are set to.
-			end,
-		},
-	}
+				--},
+				callback = function()
+					local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
+					if buttonGroupOfEntryType == nil then return end
+					return buttonGroupOfEntryType:SetChecked(control, false, data.ignoreCallback) -- Sets all as unselected
+				end,
+			},
+			{ -- LSM_ENTRY_TYPE_BUTTON allows for, invert, undo, invert, undo
+				name = GetString(SI_LSM_CNTXT_CHECK_INVERT), -- Invert
+				entryType = entryTypeConstants.LSM_ENTRY_TYPE_NORMAL,
+				callback = function()
+					local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
+					if buttonGroupOfEntryType == nil then return end
+					return buttonGroupOfEntryType:SetInverse(control, data.ignoreCallback) -- sets all as oposite of what they currently are set to.
+				end,
+			},
+		}
 
-	clearCustomScrollableMenu()
-	addCustomScrollableMenuEntries(buttonGroupSetAll)
---d(debugPrefix .. "°°°°°°°°°°°°°°°° showCustomScrollableMenu checkbox context menu")
-	showCustomScrollableMenu(nil, nil)
+		clearCustomScrollableMenu()
+		addCustomScrollableMenuEntries(buttonGroupSetAll)
+		--d(debugPrefix .. "°°°°°°°°°°°°°°°° showCustomScrollableMenu checkbox context menu")
+		showCustomScrollableMenu(nil, nil)
+	end
 end
 lib.SetButtonGroupState = buttonGroupDefaultContextMenu --Only for compatibilitxy (if any other addon was using 'SetButtonGroupState' already)
 lib.ButtonGroupDefaultContextMenu = buttonGroupDefaultContextMenu
