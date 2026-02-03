@@ -54,6 +54,7 @@ local svConstants = lib.SVConstans
 --Called from ZO_Menu's ShowMenu, if preventing the call via lib.preventLSMClosingZO_Menu == true is not enabled
 --and called if the SCENE_MANAGER shows a scene
 local function hideCurrentlyOpenedLSMAndContextMenu()
+--d("[LSM]hideCurrentlyOpenedLSMAndContextMenu")
 	local openMenu = lib.openMenu
 	if openMenu and openMenu:IsDropdownVisible() then
 		ClearCustomScrollableMenu()

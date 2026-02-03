@@ -72,6 +72,14 @@ local function updateContextMenuRef()
 	return g_contextMenu
 end
 
+--Prevent the clsoe of the currently shown LSM, for the next click on any entry or elsewhere (e.g. a ZO_Menu click used in "Check all" / "Uncheck all" / "Invert" contextmenu)
+local function oneTimeSuppressLSMCLose()
+	local preventerVars = LibScrollableMenu.preventerVars
+	preventerVars.suppressNextOnEntryMouseUp = true
+	preventerVars.suppressNextOnGlobalMouseUp = true
+	preventerVars.suppressNextOnEntryMouseUpDisableCounter = 1
+end
+
 
 --------------------------------------------------------------------
 -- Public API functions
@@ -784,6 +792,7 @@ function buttonGroupDefaultContextMenu(comboBox, control, data, useZO_Menu)
 			{
 				name = GetString(SI_LSM_CNTXT_CHECK_ALL), --Check All
 				callback = function()
+					oneTimeSuppressLSMCLose()
 					local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 					if buttonGroupOfEntryType == nil then return end
 					return buttonGroupOfEntryType:SetChecked(control, true, data.ignoreCallback) -- Sets all as selected
@@ -792,6 +801,7 @@ function buttonGroupDefaultContextMenu(comboBox, control, data, useZO_Menu)
 			{
 				name = GetString(SI_LSM_CNTXT_CHECK_NONE),-- Check none
 				callback = function()
+					oneTimeSuppressLSMCLose()
 					local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 					if buttonGroupOfEntryType == nil then return end
 					return buttonGroupOfEntryType:SetChecked(control, false, data.ignoreCallback) -- Sets all as unselected
@@ -800,6 +810,7 @@ function buttonGroupDefaultContextMenu(comboBox, control, data, useZO_Menu)
 			{
 				name = GetString(SI_LSM_CNTXT_CHECK_INVERT), -- Invert
 				callback = function()
+					oneTimeSuppressLSMCLose()
 					local buttonGroupOfEntryType = getButtonGroupOfEntryType(comboBox, groupIndex, entryType)
 					if buttonGroupOfEntryType == nil then return end
 					return buttonGroupOfEntryType:SetInverse(control, data.ignoreCallback) -- sets all as oposite of what they currently are set to.
