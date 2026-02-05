@@ -45,6 +45,11 @@ local comboBoxDefaults = comboBoxConstants.defaults
 
 local libDivider = lib.DIVIDER
 
+local LSM_UPDATE_MODE_SUBMENU 	= LSM_UPDATE_MODE_SUBMENU
+local LSM_UPDATE_MODE_MAINMENU 	= LSM_UPDATE_MODE_MAINMENU
+local LSM_UPDATE_MODE_BOTH 		= LSM_UPDATE_MODE_BOTH
+
+
 local libraryAllowedEntryTypes = entryTypeConstants.libraryAllowedEntryTypes
 local allowedEntryTypesForContextMenu = entryTypeConstants.allowedEntryTypesForContextMenu
 local entryTypesForContextMenuWithoutMandatoryCallback = entryTypeConstants.entryTypesForContextMenuWithoutMandatoryCallback
@@ -839,7 +844,7 @@ function buttonGroupDefaultContextMenu(comboBox, control, data, useZO_Menu)
 		end
 
 		--d(debugPrefix .. "°°°°°°°°°°°°°°°° ShowMenu checkbox context menu - ZO_Menu")
-		lib.preventLSMClosingZO_Menu = true --mandatory to keep LSM open!
+		preventCustomScrollableContextMenuHide() --mandatory to keep LSM open!
 		ShowMenu()
 	else
 		--use LibScrollableMenu (does not work as context Menu at an already opened LibScrollableMenu context menu!)
