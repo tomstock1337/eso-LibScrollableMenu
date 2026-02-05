@@ -72,14 +72,6 @@ local function updateContextMenuRef()
 	return g_contextMenu
 end
 
---Prevent the clsoe of the currently shown LSM, for the next click on any entry or elsewhere (e.g. a ZO_Menu click used in "Check all" / "Uncheck all" / "Invert" contextmenu)
-local function oneTimeSuppressLSMCLose()
-	local preventerVars = LibScrollableMenu.preventerVars
-	preventerVars.suppressNextOnEntryMouseUp = true
-	preventerVars.suppressNextOnGlobalMouseUp = true
-	preventerVars.suppressNextOnEntryMouseUpDisableCounter = 1
-end
-
 
 --------------------------------------------------------------------
 -- Public API functions
@@ -281,7 +273,7 @@ GetCustomScrollableMenuRowData = libUtil.getControlData
 --		->		}
 --		isNew = false, --  optional booelan or function returning a boolean Is this entry a new entry and thus shows the "New" icon?
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
---		contextMenuCallback = function(ctrl) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
+--		contextMenuCallback = function(comboBox, control, data) ... end, -- optional function for a right click action, e.g. show a scrollable context menu at the menu entry
 -- }
 --}, --[[additionalData]]
 --	 	{ isNew = true, normalColor = ZO_ColorDef, highlightColor = ZO_ColorDef, disabledColor = ZO_ColorDef, highlightTemplate = "ZO_SelectionHighlight",
@@ -767,6 +759,31 @@ local function LSM_IsLSMCurrentlyShown()
 	return LSM_IsContextMenuCurrentlyShown()
 end
 IsCustomScrollableMenuShown = LSM_IsLSMCurrentlyShown --#2025_60
+
+
+--API to keep the LSM opened even if a contextMenu is opened (via ZO_Menu e.g.)
+function PreventCustomScrollableContextMenuHide()
+	lib.preventLSMClosingZO_Menu = true
+end
+local preventCustomScrollableContextMenuHide = PreventCustomScrollableContextMenuHide
+
+--API to keep the LSM opened even if a contextMenu (at a ZO_Menu contextMenu showing above an LSM entry e.g.) entry was clicked
+--Mandatory parameter clickCount controls how many clicks it will stay open
+function PreventCustomScrollableContextMenuEntryClickHide(clickCount)
+	if clickCount ~= nil then
+		local preventerVars = LibScrollableMenu.preventerVars
+		preventerVars.suppressNextOnEntryMouseUp = true
+		preventerVars.suppressNextOnGlobalMouseUp = true
+		preventerVars.suppressNextOnEntryMouseUpDisableCounter = clickCount
+	end
+end
+local preventCustomScrollableContextMenuEntryClickHide = PreventCustomScrollableContextMenuEntryClickHide
+
+
+--Prevent the clsoe of the currently shown LSM, for the next click on any entry or elsewhere (e.g. a ZO_Menu click used in "Check all" / "Uncheck all" / "Invert" contextmenu)
+local function oneTimeSuppressLSMCLose()
+	preventCustomScrollableContextMenuEntryClickHide(1)
+end
 
 -- API to show a context menu at a buttonGroup where you can (un)check/invert all buttons in a group:
 -- Select all, Unselect All, Invert all.

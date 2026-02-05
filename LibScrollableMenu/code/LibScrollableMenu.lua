@@ -279,20 +279,16 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.41 - Updated 2026-02-02
+	CHANGELOG Current version: 2.41 - Updated 2026-02-05
 ---------------------------------------------------------------
 Max error #: 2026_06
 
 [FEATURE]
 
 [KNOWN PROBLEMS]
--#2026_01 After a LSM contextMenu was shown and a checkbox was clicked (on the checkbox's label!), the next opened contextMenu's checkbox label
+#2026_01 After a LSM contextMenu was shown and a checkbox was clicked (on the checkbox's label!), the next opened contextMenu's checkbox label
   is not changing the checkbox state (as if the first click is not accepted?), only the 2nd click does. (noticed during BMU LCM -> LSM changes at 2026-01-25)
--#2026_03 Search header contextMenu for last searched does not work on BeamMeUp item filter header?
--#2026_06 control.closeOnSelect must be passed in from additionalData.closeOnSelect so normal (submenu) entries can keep an LSM oepned, even if selectable and clicked
-
-[WORKING ON]
-
+#2026_03 Search header contextMenu for last searched does not work on BeamMeUp item filter header?
 
 [Fixed]
 --#2026_02 Nil error at combobox header collapsed state SavedVariables
@@ -302,6 +298,15 @@ Max error #: 2026_06
 --This allows ZO_Menu contextMenu with "Select all"/"Deselect all"/"Invert" at any LSM contextMenu entry's data.contextMenuCallback function
 
 [Added]
+--#2026_06 control.closeOnSelect must be passed in from additionalData.closeOnSelect so normal (submenu) entries can keep an LSM oepned, even if selectable and clicked
+
+New API functions:
+--API to keep the LSM opened even if a contextMenu is opened (via ZO_Menu e.g.)
+function PreventCustomScrollableContextMenuHide()
+
+--API to keep the LSM opened even if a contextMenu (at a ZO_Menu contextMenu showing above an LSM entry e.g.) entry was clicked
+--Mandatory parameter clickCount controls how many clicks it will stay open
+function PreventCustomScrollableContextMenuEntryClickHide(clickCount)
 
 
 [Changed]

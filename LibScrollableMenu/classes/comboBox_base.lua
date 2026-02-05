@@ -1882,6 +1882,7 @@ do -- Row setup functions
 			buttonGroup:SetButtonState(buttonControl, data.clicked, isEnabled, IGNORECALLBACK)
 			--	buttonGroup:SetButtonIsValidOption(buttonControl, isEnabled)
 
+			--Set a default right click / contextMenu with "Select all", "Deselect all" and "Invert selection" if no custom context menu was passed in
 			if entryType == entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX and data.rightClickCallback == nil and data.contextMenuCallback == nil then
 				buttonGroupDefaultContextMenu = buttonGroupDefaultContextMenu or lib.ButtonGroupDefaultContextMenu
 				data.rightClickCallback = buttonGroupDefaultContextMenu
