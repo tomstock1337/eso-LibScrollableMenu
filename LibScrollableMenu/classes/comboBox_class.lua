@@ -79,9 +79,9 @@ local function getHeaderToggleStateControlSavedVariableName(selfVar)
 	local openingControlOrComboBoxName = selfVar:GetUniqueName()
 	if openingControlOrComboBoxName then
 		local openingControlOrComboBoxCtrl = _G[openingControlOrComboBoxName]
-		local parentCtrl = openingControlOrComboBoxCtrl:GetParent()
+		local parentCtrl = (openingControlOrComboBoxCtrl ~= nil and openingControlOrComboBoxCtrl:GetParent()) or nil --#2026_02
 		--Parent control is a scrollList -> then save the parent as SV entry name, and not each single row of the scrollList
-		if parentCtrl and parentCtrl.GetType and headerToggleControlTypesSaveTheParent[parentCtrl:GetType()] then
+		if parentCtrl ~= nil and parentCtrl.GetType and headerToggleControlTypesSaveTheParent[parentCtrl:GetType()] then
 --d(">parentName: " ..tos(getControlName(parentCtrl)))
 			return getControlName(parentCtrl)
 		end

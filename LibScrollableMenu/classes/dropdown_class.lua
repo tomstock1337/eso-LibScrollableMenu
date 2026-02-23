@@ -106,6 +106,8 @@ local checkNextOnEntryMouseUpShouldExecute = libUtil.checkNextOnEntryMouseUpShou
 local libUtil_BelongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 local libUtil_checkIfValidTexturePath   = libUtil.checkIfValidTexturePath
 
+local preventCustomScrollableContextMenuHide
+
 
 --locals
 local isBoolean = {
@@ -1883,10 +1885,13 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 				local rightClickCallback = data.contextMenuCallback or data.rightClickCallback
 				if rightClickCallback and not g_contextMenu.m_dropdownObject:IsOwnedByComboBox(comboBox) then
 					--#2025_22 Check if the openingControl is another contextMenu -> We cannot show a contextMenu on a contextMenu
+					--->#2026-02-05  Now we can! It's e.g. allowed Via ZO_Menu / LibCustomMenu. Only LSM contextMenu on LSM contextMenu is not allowed!
+					--[[
 					if libUtil_BelongsToContextMenuCheck(control:GetOwningWindow()) then
-						--d("<ABOER: contextMenu opening at a contextMenu entry -> Not allowed!")
+						--d("[LSM]ABORT: contextMenu opening at a contextMenu entry -> Not allowed!")
 						return
 					end
+					]]
 
 					if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 72) end
 					--d(">setting g_contextMenu.contextMenuIssuingControl: " ..tos(control and control:GetName() or "???"))
@@ -2313,7 +2318,8 @@ function dropdownClass:ShowFilterEditBoxHistory(filterBox)
 			end)
 
 			--Prevent LSM Hook at ShowMenu() to close the LSM below the cursor!!!
-			lib.preventLSMClosingZO_Menu = true
+			preventCustomScrollableContextMenuHide = preventCustomScrollableContextMenuHide or PreventCustomScrollableContextMenuHide
+			preventCustomScrollableContextMenuHide() --lib.preventLSMClosingZO_Menu = true
 --d(">preventLSMClosingZO_Menu: " ..tos(lib.preventLSMClosingZO_Menu))
 			ShowMenu(filterBox)
 			ZO_Tooltips_HideTextTooltip()

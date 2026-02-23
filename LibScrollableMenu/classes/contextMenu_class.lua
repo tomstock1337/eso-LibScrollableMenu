@@ -97,8 +97,9 @@ function contextMenuClass:GetUniqueName()
 	end
 end
 
--- Renamed from AddItem since AddItem can be the same as base. This function is only to pre-set data for updating on show,
-function contextMenuClass:AddContextMenuItem(itemEntry)
+-- Renamed from AddItem since AddItem can be the same as base. This function is only to pre-set data for updating the used
+-- self.data at ShowContextMenu method
+ function contextMenuClass:AddContextMenuItem(itemEntry)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 150, tos(itemEntry)) end
 --d(debugPrefix .. 'contextMenuClass:AddContextMenuItem - name: ' ..tos(itemEntry.label or itemEntry.name))
 

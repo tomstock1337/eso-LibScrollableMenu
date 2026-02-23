@@ -6,7 +6,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 lib.author = "Baertram, IsJustaGhost, tomstock, Kyoma"
-lib.version = "2.40"
+lib.version = "2.41"
 if not lib then return end
 --------------------------------------------------------------------
 
