@@ -279,9 +279,9 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.41 - Updated 2026-02-05
+	CHANGELOG Current version: 2.41 - Updated 2026-02-23
 ---------------------------------------------------------------
-Max error #: 2026_06
+Max error #: 2026_07
 
 [FEATURE]
 
@@ -289,6 +289,29 @@ Max error #: 2026_06
 #2026_01 After a LSM contextMenu was shown and a checkbox was clicked (on the checkbox's label!), the next opened contextMenu's checkbox label
   is not changing the checkbox state (as if the first click is not accepted?), only the 2nd click does. (noticed during BMU LCM -> LSM changes at 2026-01-25)
 #2026_03 Search header contextMenu for last searched does not work on BeamMeUp item filter header?
+#2026_07 If you enter a search in the contextMenu header editbox which uses specal characters like a (, e.g. d(, you get this error:
+	pattern parsing error
+	|rstack traceback:
+	[C]: in function 'string.find'
+	user:/AddOns/LibScrollableMenu/classes/comboBox_base.lua:122: in function 'defaultFilterFunc'
+	|caaaaaa<Locals> p_item = [table:1]{name = "Row actions - #15", isNew = F, font = "ZoFontGame", isDivider = F, hasSubmenu = F, isCheckbox = F, isButton = F, customEntryTemplate = "LibScrollableMenu_ComboBoxHead...", enabled = T, entryType = 3, isRadioButton = F, isHeader = T}, p_filterString = "d(", name = "Row actions - #15" </Locals>|r
+	user:/AddOns/LibScrollableMenu/classes/dropdown_class.lua:611: in function 'filterResults'
+	|caaaaaa<Locals> item = [table:1], comboBox = [table:2]{enableFilter = T, optionsChanged = T, m_name = "LibScrollableMenu_ContextMenu...", multiSelectionTextFormatter = 910, isContextMenu = T, m_sortOrder = T, filterString = "d(", itemYPad = 0, breadcrumbName = "ContextmenuBreadcrumb", automaticSubmenuRefresh = F, disableFadeGradient = F, headerCollapsible = T, m_containerWidth = 264.95202636719, currentSelectedItemText = "", m_isDropdownVisible = T, m_font = "ZoFontGame", m_enableMultiSelect = F, automaticRefresh = F, m_maxNumSelectionsErrorText = "Maximum selections reached.", m_nextFree = 2, headerFont = "ZoFontGame", m_highlightTemplate = "ZO_SelectionHighlight", noSelectionText = "No Entries Selected", visibleRowsSubmenu = 15, m_sortsItems = F, horizontalAlignment = 0, baseEntryHeight = 25, m_spacing = 0, visibleRows = 15, containerMinWidth = 50, headerCollapsed = F, m_height = 437}, dropdownObject = [table:3]{nextScrollTypeId = 21, spacing = 0}, entryType = 3, doNotFilter = F, doSearch = T </Locals>|r
+	user:/AddOns/LibScrollableMenu/code/LSM_Util.lua:240: in function 'libUtil.recursiveOverEntries'
+	|caaaaaa<Locals> entry = [table:1], comboBox = [table:2], callback = user:/AddOns/LibScrollableMenu/classes/dropdown_class.lua:576 </Locals>|r
+	(tail call): ?
+	user:/AddOns/LibScrollableMenu/classes/dropdown_class.lua:2047: in function 'dropdownClass:Show'
+	|caaaaaa<Locals> self = [table:3], comboBox = [table:2], itemTable = [table:4]{}, minWidth = 50, maxWidth = 264.95202636719, maxHeight = 437, spacing = 0, comboBoxObject = [table:2], textSearchEnabled = T, control = ud, scrollControl = ud, numItems = 21, largestEntryWidth = 0, dataList = [table:5]{}, allItemsHeight = 52, anyItemMatchesFilter = F, i = 1, item = [table:1], isLastEntry = F </Locals>|r
+	user:/AddOns/LibScrollableMenu/classes/comboBox_base.lua:1629: in function 'comboBox_base:Show'
+	|caaaaaa<Locals> self = [table:2] </Locals>|r
+	user:/AddOns/LibScrollableMenu/classes/comboBox_class.lua:445: in function 'comboBoxClass:UpdateResults'
+	|caaaaaa<Locals> self = [table:2], comingFromFilters = T </Locals>|r
+	user:/AddOns/LibScrollableMenu/classes/comboBox_class.lua:234: in function 'comboBoxClass:SetFilterString'
+	|caaaaaa<Locals> self = [table:2], filterBox = ud, newText = "d(" </Locals>|r
+	user:/AddOns/LibScrollableMenu/classes/dropdown_class.lua:2280: in function 'callback'
+	|caaaaaa<Locals> text = "d(" </Locals>|r
+	user:/AddOns/LibScrollableMenu/code/LSM_Util.lua:641: in function '(anonymous)'
+
 
 [Fixed]
 --#2026_02 Nil error at combobox header collapsed state SavedVariables
