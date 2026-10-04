@@ -3,6 +3,7 @@ if not lib then return end
 
 local MAJOR = lib.name
 
+local LSM_ENTRY_TYPE_COLORPICKER = LSM_ENTRY_TYPE_COLORPICKER
 
 --------------------------------------------------------------------
 -- For debugging and logging
@@ -1664,6 +1665,15 @@ function comboBox_base:RunItemCallback(item, ignoreCallback, ...)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 102) end
 
 	if item.callback and not ignoreCallback then
+		local entryType = item.entryType
+		if entryType and entryType == LSM_ENTRY_TYPE_COLORPICKER then --#2026_21 ColorPicker?
+			local control = item.callback(self, item.name, item, ...)
+			if control ~= nil then
+				lib.ShowColorPicker(control)
+			end
+			return
+		end
+		--Other entryTypes
 		return item.callback(self, item.name, item, ...)
 	end
 	return false

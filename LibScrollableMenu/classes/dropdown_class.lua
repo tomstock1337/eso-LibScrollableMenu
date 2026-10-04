@@ -1927,10 +1927,10 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 
 
 				if not ignoreHandler and runHandler(self, handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
-					--d(">>OnEntrySelected")
+	--d(">>OnEntrySelected")
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
-					--d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
+	--d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
 					self:RunItemCallback(data, data.ignoreCallback)
 				end
 

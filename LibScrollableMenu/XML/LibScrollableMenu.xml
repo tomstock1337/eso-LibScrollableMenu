@@ -158,6 +158,30 @@
 			</OnMouseUp>
 		</Control>
 
+		<Control name="LibScrollableMenu_ComboBoxColorPickerEntry_Behavior" level="3" mouseEnabled="true" virtual="true">
+			<OnMouseEnter> <!-- name="BaseHandler"-->
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+				dropdown:OnMouseEnterEntry(self)
+				end
+			</OnMouseEnter>
+
+			<OnMouseExit>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+				dropdown:OnMouseExitEntry(self)
+				end
+			</OnMouseExit>
+
+			<OnMouseUp>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+				dropdown:OnEntryMouseUp(self, button, upInside, false, ctrl, alt, shift, LSM_ENTRY_TYPE_COLORPICKER)
+				end
+			</OnMouseUp>
+		</Control>
+
+
 		<!-- Row templates -->
 
 		<!-- Header | no handlers-->
@@ -383,7 +407,7 @@
 		</Control>
 
 		<!-- ColorPicker entry -->
-		<Control name="LibScrollableMenu_ComboBoxColorPickerEntry" inherits="LibScrollableMenu_IconEntry_Template LibScrollableMenu_ComboBoxEntry_Behavior" mouseEnabled="true" virtual="true">
+		<Control name="LibScrollableMenu_ComboBoxColorPickerEntry" inherits="LibScrollableMenu_IconEntry_Template LibScrollableMenu_ComboBoxColorPickerEntry_Behavior" mouseEnabled="true" virtual="true">
 			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
 			<OnInitialized>
 				<!-- Is this still needed? -->
