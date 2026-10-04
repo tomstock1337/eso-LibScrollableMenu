@@ -844,6 +844,14 @@ local function getDefaultXMLTemplates(selfVar)
 				selfVar:SetupEntrySlider(control, data, list)
 			end,
 		},
+		[entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER] = {
+			template = 'LibScrollableMenu_ComboBoxColorPickerEntry',
+			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			setupFunc = function(control, data, list)
+				selfVar:SetupEntryColorPicker(control, data, list)
+			end,
+		},
 	}
 
 	--The virtual XML highlight templates (mouse moved above an antry), for the different row types
@@ -888,6 +896,11 @@ local function getDefaultXMLTemplates(selfVar)
 			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = {
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
+		},
+		[entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER] = {
 			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
 			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
 			color = entryTypeDefaultsHighlights.defaultHighlightColor,
@@ -995,7 +1008,18 @@ function comboBox_base:AddCustomEntryTemplates(options, isContextMenu)
 	local normalEntryHeight = XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL].rowHeight
 	-- We will use this, per-comboBox, to set max rows.
 	self.baseEntryHeight = normalEntryHeight
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 89, tos(normalEntryHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_HEADER].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON].rowHeight)) end
+	if libDebug.doDebug then
+		dlog(libDebug.LSM_LOGTYPE_VERBOSE, 89, tos(normalEntryHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_HEADER].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER].rowHeight)
+		)
+	end
 end
 
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
@@ -2022,6 +2046,13 @@ do -- Row setup functions
 		control.m_label:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
 	end
 
+	--Color Picker
+	local function addColorPickerLabel(control, data, list)
+		control.m_label = control.m_label or control:GetNamedChild("Label")
+		local labelText = data.label or data.name
+		control.m_label:SetText(GetString(SI_WINDOW_TITLE_COLOR_PICKER) .. ": " .. labelText) --#2026_21
+	end
+
 	-- CHECKBOX / RADIOBUTTON
 	local function addCheckButton(comboBox, control, data, toggleFunction)
 		local entryType = control.typeId
@@ -2754,6 +2785,17 @@ d(">enabled: " .. tos(data.enabled))
 			isEnabled = control:IsEnabled()
 		end
 		sliderCtrl:SetMouseEnabled(isEnabled)
+
+		self:UpdateHighlightTemplate(control, data, nil, nil)
+	end
+
+	--Setup row function: LSM_ENTRY_TYPE_COLORPICKER
+	function comboBox_base:SetupEntryColorPicker(control, data, list)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 198, tos(getControlName(control)), tos(list)) end
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER
+		addIcon(control, data, list)
+		addColorPickerLabel(control, data, list)
+		self:SetupEntryLabelBase(control, data, list)
 
 		self:UpdateHighlightTemplate(control, data, nil, nil)
 	end

@@ -129,7 +129,7 @@ local debugLogMessagePatterns = {
 	[86] = "comboBox_base:AddCustomEntryTemplate - entryTemplate: %s, entryHeight: %s, setupFunction: %s, widthPadding: %s",
 	[87] = "getTemplateData - entryType: %s, template: %s",
 	[88] = "comboBox_base:AddCustomEntryTemplates - options: %s",
-	[89] = ">NORMAL_ENTRY_HEIGHT %s, DIVIDER_ENTRY_HEIGHT: %s, HEADER_ENTRY_HEIGHT: %s, CHECKBOX_ENTRY_HEIGHT: %s, BUTTON_ENTRY_HEIGHT: %s, RADIOBUTTON_ENTRY_HEIGHT: %s",
+	[89] = ">NORMAL_ENTRY_HEIGHT %s, DIVIDER_ENTRY_HEIGHT: %s, HEADER_ENTRY_HEIGHT: %s, CHECKBOX_ENTRY_HEIGHT: %s, BUTTON_ENTRY_HEIGHT: %s, RADIOBUTTON_ENTRY_HEIGHT: %s, EDITBOX_ENTRY_HEIGHT: %s, SLIDER_ENTRY_HEIGHT: %s, COLORPICKER_ENTRY_HEIGHT: %s",
 	[90] = "comboBox_base:OnGlobalMouseUp-button: %s, suppressNextMouseUp: %s",
 	[91] = "comboBox_base:GetBaseHeight - control: %s, gotHeader: %s, height: %s",
 	[92] = "comboBox_base:GetMaxDropdownHeight - maxDropdownHeight: %s",
@@ -238,6 +238,7 @@ local debugLogMessagePatterns = {
 	[195] = "FireCallbacks: IconUpdated - control:  %s",
 	[196] = "onEntryCallbackUpdateEntryPath - control:  %s",
 	[197] = "checkIfEntryRaisesAutomaticUpdate - control:  %s, checkFuncForRefresh: %s",
+	[198] = "comboBox_base:SetupEntryColorPicker - control: %s, list: %s",
 }
 
 

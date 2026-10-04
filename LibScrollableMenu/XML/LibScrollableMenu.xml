@@ -382,6 +382,23 @@
 			</Controls>
 		</Control>
 
+		<!-- ColorPicker entry -->
+		<Control name="LibScrollableMenu_ComboBoxColorPickerEntry" inherits="LibScrollableMenu_IconEntry_Template LibScrollableMenu_ComboBoxEntry_Behavior" mouseEnabled="true" virtual="true">
+			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
+			<OnInitialized>
+				<!-- Is this still needed? -->
+				self.selectable = true <!-- Denotes this is a selectable entry.   -->
+			</OnInitialized>
+
+			<Controls>
+				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
+					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+				</Label>
+			</Controls>
+		</Control>
+
+
 		<!-- The genuine Dropdown control. The scroll list container.
 			TLC so it can be forced above other dropdowns without having to consider layering
 			Since some UI panels have layering set, we set it as overlay high, so it will be above those

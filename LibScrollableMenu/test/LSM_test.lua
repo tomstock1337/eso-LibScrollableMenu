@@ -8,7 +8,7 @@ local getValueOrCallback = libUtil.getValueOrCallback
 ------------------------------------------------------------------------------------------------------------------------
 -- For testing - Combobox with all kind of entry types (test offsets, etc.)
 ------------------------------------------------------------------------------------------------------------------------
-local function test()
+local function test(...)
 	if lib.testComboBoxContainer == nil then
 		local testSV = ZO_SavedVars:NewAccountWide("LibScrollableMenu_SavedVars", 1, "LSM_Test",
 				{ cbox1 = false, cbox2 = false, cbox3 = false,
@@ -28,7 +28,7 @@ local function test()
 		local comboBox          = ZO_ComboBox_ObjectFromContainer(comboBoxContainer)
 		lib.testComboBoxContainer = comboBoxContainer
 
-		comboBoxContainer:SetAnchor(LEFT, testTLC, LEFT, 10, 0)
+		comboBoxContainer:SetAnchor(CENTER, testTLC, CENTER, 0, 0)
 		comboBoxContainer:SetHeight(24)
 		comboBoxContainer:SetWidth(250)
 		comboBoxContainer:SetMovable(true)
@@ -733,6 +733,17 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 					d("I clicked a button with the name: " .. tostring(itemName) .. " and changed the slider below to " .. tostring(sliderValue))
 				end,
 				doNotFilter		= true,
+			},
+			{
+				entryType		= LSM_ENTRY_TYPE_COLORPICKER,
+				label			= "DebuglogViewer FilterButtonLevelD",
+				name            = "Colorpicker1",
+				tooltip         = "Color picker ...",
+				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
+					--LibScrollableMenu.ShowColorPicker(DebugLogViewerMainWindowToolbarLevelFilterButtonsLevelDColor)
+					return DebugLogViewerMainWindowToolbarLevelFilterButtonsLevelDColor
+				end,
+				doNotFilter		= false,
 			},
 			{
 				entryType		= LSM_ENTRY_TYPE_SLIDER,
@@ -1463,13 +1474,19 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 
 
 	local testTLC = lib.testComboBoxContainer:GetOwningWindow()
-	--local testTLC = comboBox:GetParent()
-	if testTLC:IsHidden() then
-		testTLC:SetHidden(false)
-		testTLC:SetMouseEnabled(true)
+
+	local params = {...}
+	if not ZO_IsTableEmpty(params) and params[1] == "reset" then
+		testTLC:ClearAnchors()
+		testTLC:SetAnchor(CENTER, GuiRoot, CENTER, 0, 0)
 	else
-		testTLC:SetHidden(true)
-		testTLC:SetMouseEnabled(false)
+		if testTLC:IsHidden() then
+			testTLC:SetHidden(false)
+			testTLC:SetMouseEnabled(true)
+		else
+			testTLC:SetHidden(true)
+			testTLC:SetMouseEnabled(false)
+		end
 	end
 end
 lib.Test = test
@@ -1510,7 +1527,7 @@ lib.Test2 = test2
 --	/script LibScrollableMenu.Test()
 
 --Create LSM test UI and TLC
-SLASH_COMMANDS["/lsmtest"] = function() lib.Test() end
+SLASH_COMMANDS["/lsmtest"] = function(...) lib.Test(...) end
 
 --Update LSM test UI combobox with new options
 SLASH_COMMANDS["/lsmtest2"] = function() lib.Test2() end
