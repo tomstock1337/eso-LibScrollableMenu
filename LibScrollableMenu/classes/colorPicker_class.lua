@@ -1,5 +1,5 @@
 -- -----------------------------------------------------------------------------
--- live color picker (cloned ZOS keyboard widgets) - idea Dakjaniels (addon: LibScrollableMenu)
+-- live color picker (cloned ZOS keyboard widgets) - idea Dakjaniels (addon: HUDitor Tools)
 -- -----------------------------------------------------------------------------
 
 local lib = LibScrollableMenu
@@ -59,7 +59,7 @@ function colorPickerClass:Initialize(control)
     self.suppressApply = false
     self.isUpdatingColors = false
 
-    self.controlToColorize = nil --used to store the control refeernce that should get the color applied
+    self.controlToColorize = nil --used to store the control reference that should get the color applied
     self.resetToColors = nil --used to store the default current colors of the control to colorize (for the reset function)
 
     control:SetDrawTier(DT_HIGH)
