@@ -1479,6 +1479,8 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 	if not ZO_IsTableEmpty(params) and params[1] == "reset" then
 		testTLC:ClearAnchors()
 		testTLC:SetAnchor(CENTER, GuiRoot, CENTER, 0, 0)
+		lib.testComboBoxContainer:ClearAnchors()
+		lib.testComboBoxContainer:SetAnchor(CENTER, testTLC, CENTER, 0, 0)
 	else
 		if testTLC:IsHidden() then
 			testTLC:SetHidden(false)
