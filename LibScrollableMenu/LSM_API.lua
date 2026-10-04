@@ -288,6 +288,7 @@ GetCustomScrollableMenuRowData = libUtil.getControlData
 --					width = "80%",								-- optional string/number or function returning a string/number The width of the slider
 --					contextMenuCallback = function(comboBox, selfSlider, data) end,	-- optional function to open a contextMenu at the slider (if right clicked)
 --		->		}
+--		isColorPicker = false, -- optional boolean or function returning a boolean Is this entry a clickable control that will open a color picker?
 --		enabled = false, -- optional boolean or function isEnabled(comboBox, data) returning a boolean. Is this entry enabled (mouse over & clickable)
 --		isNew = false, --  optional boolean or function returning a boolean Is this entry a new entry and thus shows the "New" icon?
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
@@ -480,6 +481,17 @@ function AddCustomScrollableMenuSlider(text, callback, sliderData, additionalDat
 	end
 	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_SLIDER, nil, additionalData)
 end
+
+--Adds a color picker to the context menu entries
+--Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
+-->Clicking the line does call the callback and the callback MUST provide the control for the colorpicker!
+-->If a valid control was returned by the callback the colorpicker will be shown and the current color loaded
+---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
+function AddCustomScrollableMenuColorPicker(text, callback, additionalData) --#2026_21
+	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 199, tos(text)) end
+	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER, nil, additionalData)
+end
+
 
 --Set the options (visible rows max, etc.) for the scrollable context menu, or any passed in 2nd param comboBoxContainer
 -->See possible options above AddCustomScrollableComboBoxDropdownMenu

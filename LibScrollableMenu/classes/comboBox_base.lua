@@ -1670,6 +1670,7 @@ function comboBox_base:RunItemCallback(item, ignoreCallback, ...)
 			local control = item.callback(self, item.name, item, ...)
 			if control ~= nil then
 				lib.ShowColorPicker(control)
+				lib.AnchorColorPickerToMouse()
 			end
 			return
 		end

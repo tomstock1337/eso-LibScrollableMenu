@@ -239,6 +239,7 @@ local debugLogMessagePatterns = {
 	[196] = "onEntryCallbackUpdateEntryPath - control:  %s",
 	[197] = "checkIfEntryRaisesAutomaticUpdate - control:  %s, checkFuncForRefresh: %s",
 	[198] = "comboBox_base:SetupEntryColorPicker - control: %s, list: %s",
+	[199] = "AddCustomScrollableMenuColorPicker-text: %s",
 }
 
 

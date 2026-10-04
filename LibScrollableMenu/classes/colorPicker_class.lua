@@ -261,24 +261,19 @@ function colorPickerClass:Reset()
 end
 
 function colorPickerClass:ApplySavedAnchor()
-d("ApplySavedAnchor")
-
+--d("ApplySavedAnchor")
     local colorPickerSV = lib.SV.colorPicker
-    local parentControl = self.control:GetParent()
-    parentControl:ClearAnchors()
-    if type(colorPickerSV.OffsetX) == "number" and type(colorPickerSV.OffsetY) == "number" then
-        parentControl:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, colorPickerSV.OffsetX, colorPickerSV.OffsetY)
-    else
-        parentControl:SetAnchor(BOTTOMLEFT, GuiRoot, BOTTOMLEFT, DEFAULT_ANCHOR_OFFSET_X, DEFAULT_ANCHOR_OFFSET_Y)
-    end
+    local control = self.control
+    control:ClearAnchors()
+    control:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, colorPickerSV.OffsetX or DEFAULT_ANCHOR_OFFSET_X, colorPickerSV.OffsetY or DEFAULT_ANCHOR_OFFSET_Y)
 end
 
 function colorPickerClass:SaveAnchor()
-d("SaveAnchor")
-    local parentControl = self.control:GetParent()
+--d("SaveAnchor")
+    local control = self.control
     local colorPickerSV = lib.SV.colorPicker
-    colorPickerSV.OffsetX = parentControl:GetLeft()
-    colorPickerSV.OffsetY = parentControl:GetTop()
+    colorPickerSV.OffsetX = control:GetLeft()
+    colorPickerSV.OffsetY = control:GetTop()
 end
 
 function colorPickerClass:SetHidden(hidden)
@@ -289,9 +284,35 @@ function colorPickerClass:SetHidden(hidden)
 
     if not hidden then
         parent:BringWindowToTop()
-        parent:SetMovable(true)
+        control:SetMovable(true)
+        control:SetMouseEnabled(true)
         self:LoadColors()
     end
+end
+
+function colorPickerClass:AnchorToMouse()
+    local mocCtrl = moc()
+    if mocCtrl == nil then return end
+    local control = self.control
+    local screenWidth = GuiRoot:GetWidth()
+    local screenHeight = GuiRoot:GetHeight()
+    local mocLeft = mocCtrl:GetLeft()
+    local mocTop = mocCtrl:GetTop()
+    local controlWidth = control:GetWidth()
+    local controlHeight = control:GetHeight()
+    local xOffset = mocLeft - ( controlWidth + 20 )
+    if xOffset <= 0 then
+        xOffset = mocLeft + mocCtrl:GetWidth() + 20
+        if xOffset >= screenWidth then return end
+    end
+    local yOffset = mocTop
+    if ( screenHeight - yOffset ) <= controlHeight then
+        yOffset = screenHeight - controlHeight - 20
+    end
+
+    control:ClearAnchors()
+    control:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, yOffset, yOffset)
+    control:ClearAnchors()
 end
 
 
@@ -319,6 +340,13 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 -- ColorPicker Use API
 ------------------------------------------------------------------------------------------------------------------------
+function lib.AnchorColorPickerToMouse()
+    local picker = GetPicker()
+    if picker then
+        picker:AnchorToMouse()
+    end
+end
+
 function lib.ShowColorPicker(control)
     if not control then return end
 --d("[LSM]ShowColorPicker for " .. tos(control and control.GetName and control:GetName() or ""))
