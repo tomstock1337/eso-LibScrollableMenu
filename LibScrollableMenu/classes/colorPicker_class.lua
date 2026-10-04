@@ -311,8 +311,7 @@ function colorPickerClass:AnchorToMouse()
     end
 
     control:ClearAnchors()
-    control:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, yOffset, yOffset)
-    control:ClearAnchors()
+    control:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, xOffset, yOffset)
 end
 
 
