@@ -85,7 +85,6 @@ function colorPickerClass:Initialize(control)
     end)
 
     control:SetHandler("OnMoveStop", function ()
-d("Move stop")
         self:SaveAnchor()
     end)
 

@@ -3,8 +3,9 @@
 -->
 <GuiXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/DakJaniels/esoui_gui_xsd/main/esoui_gui_xml.xsd">
   <Controls>
-    <TopLevelControl name="LibScrollableMenu_ColorPicker_TLC" clampedToScreen="true" resizeToFitDescendents="true" hidden="true" mouseEnabled="true" movable="true">
-      <DimensionConstraints minX="400" maxX="400" minY="320" maxY="320"/>
+    <TopLevelControl name="LibScrollableMenu_ColorPicker_TLC" clampedToScreen="true" hidden="true" mouseEnabled="true" movable="true">
+      <DimensionConstraints minX="0" maxX="0" minY="0" maxY="0"/>
+      <Anchor point="TOPLEFT" />
     </TopLevelControl>
 
     <Control name="LibScrollableMenu_ColorPickerPanel"
