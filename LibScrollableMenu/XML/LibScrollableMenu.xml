@@ -1,4 +1,4 @@
-<GuiXml>
+<GuiXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/DakJaniels/esoui_gui_xsd/main/esoui_gui_xml.xsd">
 	<Controls>
 		<!-- Highlight for ZO_SortFilterList entries where a submenu got a callback function - Light green
 			Normal highlight is ZO_SelectionHighlight  -light blue -->
@@ -325,7 +325,7 @@
 
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
-					<DimensionConstraints x="5" maxX="75%" />
+					<DimensionConstraints minX="5" maxX="75%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 				</Label>
 				<Backdrop name="$(parent)Edit" hidden="false" tier="HIGH" inherits="LibScrollableMenu_SingleLineEditBackdrop_Keyboard">
@@ -360,7 +360,7 @@
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 				</Label>
 				<Control name="$(parent)SliderContainer">
-					<DimensionConstraints minx="5" maxX="100%" />
+					<DimensionConstraints minX="5" maxX="100%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)Label" relativePoint="TOPRIGHT" offsetX="4"/>
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-2"/>
 					<Controls>

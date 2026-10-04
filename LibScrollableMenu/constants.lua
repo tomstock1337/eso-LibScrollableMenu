@@ -6,7 +6,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 lib.author = "Baertram, IsJustaGhost, tomstock, Kyoma"
-lib.version = "2.45"
+lib.version = "2.46"
 if not lib then return end
 --------------------------------------------------------------------
 
@@ -92,6 +92,7 @@ local dlog = libDebug.DebugLog --nil here, will be updated upon usage within fun
 local lsmSVDefaults = {
 	textSearchHistory = {},
 	collapsedHeaderState = {},
+	colorPicker = {},
 }
 lib.SVConstans = {
     name =      "LibScrollableMenu_SavedVars",
