@@ -740,9 +740,14 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				name            = "Colorpicker1",
 				tooltip         = "Color picker ...",
 				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
-					--LibScrollableMenu.ShowColorPicker(DebugLogViewerMainWindowToolbarLevelFilterButtonsLevelDColor)
-					return DebugLogViewerMainWindowToolbarLevelFilterButtonsLevelDColor
+					d("ColorPicker callback fired...")
 				end,
+				colorPickerData = {
+					controlToColorize = DebugLogViewerMainWindowToolbarLevelFilterButtonsLevelDColor,
+					OnColorUpdateFunc = function(r, g, b, a)
+						d(ZO_ColorizeString(r, g, b, "Colored text"))
+					end
+				},
 				doNotFilter		= false,
 			},
 			{
