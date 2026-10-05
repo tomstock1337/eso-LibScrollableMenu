@@ -745,7 +745,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				colorPickerData = {
 					controlToColorize = DebugLogViewerMainWindowToolbarLevelFilterButtonsLevelDColor,
 					OnColorUpdateFunc = function(r, g, b, a)
-						d(ZO_ColorizeString(r, g, b, "Colored text"))
+						d("[LSM]" .. string.format("|c%.2x%.2x%.2x%s|r", math.floor(r * 255), math.floor(g * 255), math.floor(b * 255), "Colorpicker's colored text"))
 					end
 				},
 				doNotFilter		= false,

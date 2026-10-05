@@ -486,7 +486,8 @@ function AddCustomScrollableMenuSlider(text, callback, sliderData, additionalDat
 	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_SLIDER, nil, additionalData)
 end
 
---Adds a color picker to the context menu entries
+--Adds a color picker to the context menu entries -> The entry opens the stand-alone movable colorpicker. Menu will close
+--once the color picker is used (on any click outside of the menu, as usual)
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
 -->Clicking the line does call the callback AFTER the colorPicker has been opened!
 -->The colorPickerData table needs to either specify a control via controlToColorize, or a OnColorUpdateFunc function(r, g, b, a)
