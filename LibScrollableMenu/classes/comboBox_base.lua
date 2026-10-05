@@ -1661,21 +1661,50 @@ function comboBox_base:RefreshSortedItems(parentControl)
 	end
 end
 
-function comboBox_base:RunItemCallback(item, ignoreCallback, ...)
+function comboBox_base:CheckIfEntryTypeNeedsSpecialItemCallback(item, control)
+	local entryType = item.entryType
+	if entryType then
+		return entryType == LSM_ENTRY_TYPE_COLORPICKER --#2026_21 ColorPicker uses special item callback
+	end
+	return false
+end
+
+function comboBox_base:RunSpecialItemCallback(item, ignoreCallback, control)
+	local entryType = item.entryType
+	if entryType then
+		if entryType == LSM_ENTRY_TYPE_COLORPICKER then --#2026_21 ColorPicker?
+			local controlToColorize = item.callback(self, item.name, item, control)
+			if controlToColorize ~= nil then
+				local previewControl = nil
+				--Try to get the previewControl
+				if control and control.isColorPicker and control.m_data then
+					if control.m_currentColor ~= nil then
+						local dataSource = control.m_data:GetDataSource()
+						if dataSource and dataSource.name and dataSource.name == item.name then
+							--d(">dataSource matches: " .. tostring(item.name))
+							previewControl = control.m_currentColor
+						end
+					end
+				end
+				lib.ShowColorPicker(controlToColorize, previewControl)
+				lib.AnchorColorPickerToMouse()
+				return true
+			end
+		end
+	end
+	return false
+end
+
+
+function comboBox_base:RunItemCallback(item, ignoreCallback, control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 102) end
 
 	if item.callback and not ignoreCallback then
-		local entryType = item.entryType
-		if entryType and entryType == LSM_ENTRY_TYPE_COLORPICKER then --#2026_21 ColorPicker?
-			local control = item.callback(self, item.name, item, ...)
-			if control ~= nil then
-				lib.ShowColorPicker(control)
-				lib.AnchorColorPickerToMouse()
-			end
-			return
+		if self:CheckIfEntryTypeNeedsSpecialItemCallback(item, control) then
+			return self:RunSpecialItemCallback(item, ignoreCallback, control)
 		end
 		--Other entryTypes
-		return item.callback(self, item.name, item, ...)
+		return item.callback(self, item.name, item, control)
 	end
 	return false
 end
@@ -2058,10 +2087,27 @@ do -- Row setup functions
 	end
 
 	--Color Picker
-	local function addColorPickerLabel(control, data, list)
+	local function addColorPickerLabelAndTexture(control, data, list) --#2026_21
 		control.m_label = control.m_label or control:GetNamedChild("Label")
 		local labelText = data.label or data.name
 		control.m_label:SetText(GetString(SI_WINDOW_TITLE_COLOR_PICKER) .. ": " .. labelText) --#2026_21
+
+		control.m_colorContainer = control.m_colorContainer or control:GetNamedChild("CurrentColorContainer")
+		control.m_colorContainer:SetHidden(false)
+		local currentColor = control.m_colorContainer:GetNamedChild("Color")
+		control.m_currentColor = currentColor
+		currentColor:SetColor(0, 0, 0, 0)
+		currentColor:SetHidden(true)
+
+		local borderChildName = currentColor:GetName() .. "Border"
+		if control.m_currentColorBorder == nil and GetControl(borderChildName) == nil then
+			local currentColorBorder = CreateControl(borderChildName, currentColor, CT_TEXTURE)
+			currentColorBorder:SetTexture("EsoUI\\Art\\ChatWindow\\chatOptions_bgColSwatch_frame.dds")
+			currentColorBorder:SetTextureCoords(0, .625, 0, .8125)
+			currentColorBorder:SetDimensions(24, 18)
+			currentColorBorder:SetAnchor(CENTER, currentColor, CENTER, 0, 0)
+			control.m_currentColorBorder = currentColorBorder
+		end
 	end
 
 	-- CHECKBOX / RADIOBUTTON
@@ -2801,12 +2847,27 @@ d(">enabled: " .. tos(data.enabled))
 	end
 
 	--Setup row function: LSM_ENTRY_TYPE_COLORPICKER
-	function comboBox_base:SetupEntryColorPicker(control, data, list)
+	function comboBox_base:SetupEntryColorPicker(control, data, list) --#2026_21
 		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 198, tos(getControlName(control)), tos(list)) end
 		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER
+		control.isColorPicker = true
 		addIcon(control, data, list)
-		addColorPickerLabel(control, data, list)
+		addColorPickerLabelAndTexture(control, data, list)
 		self:SetupEntryLabelBase(control, data, list)
+
+		--Do not close the dropdown if row is clicked
+		control.closeOnSelect = false
+
+		--Update the color texture with the control's current color
+		local currentColor = control.m_currentColor
+		if currentColor ~= nil then
+			local dataSource = data:GetDataSource()
+			local controlToColorize = dataSource.callback(self, dataSource.name, dataSource, false, nil)
+			if controlToColorize ~= nil and controlToColorize.GetColor ~= nil then
+				currentColor:SetColor(controlToColorize:GetColor())
+				currentColor:SetHidden(false)
+			end
+		end
 
 		self:UpdateHighlightTemplate(control, data, nil, nil)
 	end

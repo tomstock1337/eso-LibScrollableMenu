@@ -60,6 +60,7 @@ function colorPickerClass:Initialize(control)
     self.isUpdatingColors = false
 
     self.controlToColorize = nil --used to store the control reference that should get the color applied
+    self.previewControlToColorize = nil --used to store the control reference to any small preview control that shows the color (e.g. at LSM entry)
     self.resetToColors = nil --used to store the default current colors of the control to colorize (for the reset function)
 
     control:SetDrawTier(DT_HIGH)
@@ -155,9 +156,10 @@ function colorPickerClass:InitializePickerWidgets()
     end)
 end
 
-function colorPickerClass:Show(controlToColorize)
+function colorPickerClass:Show(controlToColorize, previewControlToColorize)
     if controlToColorize == nil then return end
     self:SetControlToColorize(controlToColorize)
+    self:SetPreviewControlToColorize(previewControlToColorize)
 
     self:SetHidden(false)
 end
@@ -175,8 +177,16 @@ function colorPickerClass:SetControlToColorize(control)
     self:SetResetToColors()
 end
 
+function colorPickerClass:SetPreviewControlToColorize(control)
+    self.previewControlToColorize = control
+end
+
 function colorPickerClass:GetControlToColorize()
     return self.controlToColorize
+end
+
+function colorPickerClass:GetPreviewControlToColorize()
+    return self.previewControlToColorize
 end
 
 function colorPickerClass:SetResetToColors()
@@ -238,6 +248,11 @@ function colorPickerClass:ApplyLiveColor(r, g, b, a)
     local controlToColorize = self:GetControlToColorize()
     if controlToColorize and controlToColorize.SetColor then
         controlToColorize:SetColor(r, g, b, a)
+    end
+
+    local previewControlToColorize = self:GetPreviewControlToColorize()
+    if previewControlToColorize and previewControlToColorize.SetColor then
+        previewControlToColorize:SetColor(r, g, b, a)
     end
 end
 
@@ -345,12 +360,12 @@ function lib.AnchorColorPickerToMouse()
     end
 end
 
-function lib.ShowColorPicker(control)
+function lib.ShowColorPicker(control, previewControl)
     if not control then return end
 --d("[LSM]ShowColorPicker for " .. tos(control and control.GetName and control:GetName() or ""))
     local picker = GetPicker()
     if picker then
-        picker:Show(control)
+        picker:Show(control, previewControl)
     end
 end
 

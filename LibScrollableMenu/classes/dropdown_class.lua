@@ -1931,7 +1931,7 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
 	--d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
-					self:RunItemCallback(data, data.ignoreCallback)
+					self:RunItemCallback(data, data.ignoreCallback, control)
 				end
 
 				--Show context menu at the entry?
@@ -1983,11 +1983,11 @@ function dropdownClass:SelectItemByIndex(index, ignoreCallback)
 	end
 end
 
-function dropdownClass:RunItemCallback(item, ignoreCallback)
+function dropdownClass:RunItemCallback(item, ignoreCallback, control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 74, tos(item), tos(ignoreCallback)) end
 	if self.owner then
 		playSelectedSoundCheck(self, item.entryType)
-		return self.owner:RunItemCallback(item, ignoreCallback) --calls comboBox_base:RunItemCallback
+		return self.owner:RunItemCallback(item, ignoreCallback, control) --calls comboBox_base:RunItemCallback
 	end
 end
 

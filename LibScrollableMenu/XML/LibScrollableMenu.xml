@@ -415,9 +415,19 @@
 			</OnInitialized>
 
 			<Controls>
+				<Control name="$(parent)CurrentColorContainer">
+					<Anchor point="RIGHT" offsetX="0"/>
+					<Dimensions x="24" />
+					<Controls>
+						<Texture name="$(parent)Color">
+							<Dimensions x="22" y="16" />
+							<Anchor point="CENTER" />
+						</Texture>
+					</Controls>
+				</Control>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
-					<Anchor point="RIGHT" offsetX="ZO_COMBO_BOX_ENTRY_TEMPLATE_LABEL_PADDING" />
+					<Anchor point="RIGHT" relativeTo="$(parent)CurrentColorContainer" relativePoint="LEFT" />
 				</Label>
 			</Controls>
 		</Control>
