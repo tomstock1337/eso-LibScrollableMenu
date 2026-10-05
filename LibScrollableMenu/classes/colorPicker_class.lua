@@ -36,6 +36,7 @@ local entryTypeConstants = constants.entryTypes
 
 
 local libUtil = lib.Util
+local getValueOrCallback = libUtil.getValueOrCallback
 local getControlName = libUtil.getControlName
 local checkIfContextMenuOpenedButOtherControlWasClicked = libUtil.checkIfContextMenuOpenedButOtherControlWasClicked
 local hideTooltip = libUtil.hideTooltip
@@ -59,9 +60,10 @@ function colorPickerClass:Initialize(control)
     self.suppressApply = false
     self.isUpdatingColors = false
 
-    self.controlToColorize = nil --used to store the control reference that should get the color applied
+    self.controlToColorize = nil        --used to store the control reference that should get the color applied directly
     self.previewControlToColorize = nil --used to store the control reference to any small preview control that shows the color (e.g. at LSM entry)
-    self.resetToColors = nil --used to store the default current colors of the control to colorize (for the reset function)
+    self.resetToColors = nil            --used to store the default current colors of the control to colorize (for the reset function)
+    self.OnColorUpdateFunc = nil        --used to store the updateFunction(r, g, b, a) which is called as the color is selected (the function is provided in the entry's colorPickerData and used to e.g. update SavedVariables instead of changing the color directly at any control)
 
     control:SetDrawTier(DT_HIGH)
     control:SetDrawLevel(10)
@@ -156,9 +158,16 @@ function colorPickerClass:InitializePickerWidgets()
     end)
 end
 
-function colorPickerClass:Show(controlToColorize, previewControlToColorize)
-    if controlToColorize == nil then return end
+function colorPickerClass:Show(colorPickerData, previewControlToColorize)
+    if colorPickerData == nil then return end
+
+    --Shall we colorize a control directly?
+    local controlToColorize = getValueOrCallback(colorPickerData.controlToColorize, colorPickerData)
     self:SetControlToColorize(controlToColorize)
+
+    --Shall we update any SavedVariables etc. by calling a callback function?
+    self:SetColorUpdateFunc(colorPickerData.OnColorUpdateFunc)
+
     self:SetPreviewControlToColorize(previewControlToColorize)
 
     self:SetHidden(false)
@@ -181,12 +190,24 @@ function colorPickerClass:SetPreviewControlToColorize(control)
     self.previewControlToColorize = control
 end
 
+function colorPickerClass:SetColorUpdateFunc(func) --func uses the signature updateFunction(r, g, b, a)
+    if type(func) == "function" then
+        self.OnColorUpdateFunc = func
+    else
+        self.OnColorUpdateFunc = nil
+    end
+end
+
 function colorPickerClass:GetControlToColorize()
     return self.controlToColorize
 end
 
 function colorPickerClass:GetPreviewControlToColorize()
     return self.previewControlToColorize
+end
+
+function colorPickerClass:GetColorUpdateFunc()
+    return self.OnColorUpdateFunc
 end
 
 function colorPickerClass:SetResetToColors()
@@ -253,6 +274,11 @@ function colorPickerClass:ApplyLiveColor(r, g, b, a)
     local previewControlToColorize = self:GetPreviewControlToColorize()
     if previewControlToColorize and previewControlToColorize.SetColor then
         previewControlToColorize:SetColor(r, g, b, a)
+    end
+
+    local OnColorUpdateFunc = self:GetColorUpdateFunc()
+    if OnColorUpdateFunc ~= nil then
+        OnColorUpdateFunc(r, g, b, a)
     end
 end
 
@@ -360,12 +386,11 @@ function lib.AnchorColorPickerToMouse()
     end
 end
 
-function lib.ShowColorPicker(control, previewControl)
-    if not control then return end
---d("[LSM]ShowColorPicker for " .. tos(control and control.GetName and control:GetName() or ""))
+function lib.ShowColorPicker(colorPickerData, previewControl)
+    if ZO_IsTableEmpty(colorPickerData) then return end
     local picker = GetPicker()
     if picker then
-        picker:Show(control, previewControl)
+        picker:Show(colorPickerData, previewControl)
     end
 end
 

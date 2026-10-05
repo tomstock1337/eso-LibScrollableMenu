@@ -246,6 +246,16 @@ function libUtil.getSliderData(control, data)
 	return
 end
 
+function libUtil.getColorPickerData(control, data)
+	--ColorPicker data was specified too?
+	local colorPickerData = getValueOrCallback(data.colorPickerData, data)
+	if type(colorPickerData) == "table" then
+		return colorPickerData
+	end
+	return
+end
+
+
 function libUtil.compareDropdownDataList(selfVar, scrollControl, item)
 	local dataList = ZO_ScrollList_GetDataList(scrollControl)
 

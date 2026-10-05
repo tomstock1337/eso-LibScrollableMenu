@@ -289,6 +289,10 @@ GetCustomScrollableMenuRowData = libUtil.getControlData
 --					contextMenuCallback = function(comboBox, selfSlider, data) end,	-- optional function to open a contextMenu at the slider (if right clicked)
 --		->		}
 --		isColorPicker = false, -- optional boolean or function returning a boolean Is this entry a clickable control that will open a color picker?
+--		-> --ONLY for colorPicker control type:	colorPickerData = { table or function returning a table providing the colorPicker's visuals, control to colorize or callback function OnColorUpdateFunc that fires as the color is chosen
+--					controlToColorize = userdata:controlHer,	-- optional control or function returning the control that should be colorized as the color is chosen in the color picker
+--					OnColorUpdateFunc = function(r, g, b, a) end,--optional function doing somethign with the r, g, b, a values as the color is chosen in the color picker (e.g. write them to your SavedVariables)
+--		->		}
 --		enabled = false, -- optional boolean or function isEnabled(comboBox, data) returning a boolean. Is this entry enabled (mouse over & clickable)
 --		isNew = false, --  optional boolean or function returning a boolean Is this entry a new entry and thus shows the "New" icon?
 --		entries = { ... see above ... }, -- optional table containing nested submenu entries in this submenu -> This entry opens a new nested submenu then. Contents of entries use the same values as shown in this example here
@@ -484,11 +488,16 @@ end
 
 --Adds a color picker to the context menu entries
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
--->Clicking the line does call the callback and the callback MUST provide the control for the colorpicker!
--->If a valid control was returned by the callback the colorpicker will be shown and the current color loaded
+-->Clicking the line does call the callback AFTER the colorPicker has been opened!
+-->The colorPickerData table needs to either specify a control via controlToColorize, or a OnColorUpdateFunc function(r, g, b, a)
+-->which is called as the color picker's color is updated (to e.g. write the r,g,b,a values to the SavedVariables).
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
-function AddCustomScrollableMenuColorPicker(text, callback, additionalData) --#2026_21
+function AddCustomScrollableMenuColorPicker(text, callback, colorPickerData, additionalData) --#2026_21
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 199, tos(text)) end
+	if colorPickerData ~= nil then
+		additionalData = additionalData or {}
+		additionalData.colorPickerData = colorPickerData
+	end
 	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER, nil, additionalData)
 end
 
