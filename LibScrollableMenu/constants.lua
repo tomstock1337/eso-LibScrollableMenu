@@ -6,7 +6,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 lib.author = "Baertram, IsJustaGhost, tomstock, Kyoma"
-lib.version = "2.45"
+lib.version = "2.46"
 if not lib then return end
 --------------------------------------------------------------------
 
@@ -92,6 +92,7 @@ local dlog = libDebug.DebugLog --nil here, will be updated upon usage within fun
 local lsmSVDefaults = {
 	textSearchHistory = {},
 	collapsedHeaderState = {},
+	colorPicker = {},
 }
 lib.SVConstans = {
     name =      "LibScrollableMenu_SavedVars",
@@ -230,6 +231,7 @@ local LSM_ENTRY_TYPE_BUTTON 		= 6
 local LSM_ENTRY_TYPE_RADIOBUTTON 	= 7
 local LSM_ENTRY_TYPE_EDITBOX 		= 8
 local LSM_ENTRY_TYPE_SLIDER 		= 9
+local LSM_ENTRY_TYPE_COLORPICKER	= 10
 
 --Updater modes for the menus (See API function RefreshCustomScrollableMenu)
 LSM_UPDATE_MODE_MAINMENU = 1
@@ -251,6 +253,7 @@ lib.scrollListRowTypes = {
 	["LSM_ENTRY_TYPE_RADIOBUTTON"] = 	LSM_ENTRY_TYPE_RADIOBUTTON,
 	["LSM_ENTRY_TYPE_EDITBOX"] = 		LSM_ENTRY_TYPE_EDITBOX,
 	["LSM_ENTRY_TYPE_SLIDER"] =			LSM_ENTRY_TYPE_SLIDER,
+	["LSM_ENTRY_TYPE_COLORPICKER"] =	LSM_ENTRY_TYPE_COLORPICKER,
 }
 local scrollListRowTypes = lib.scrollListRowTypes
 
@@ -298,6 +301,7 @@ local libraryAllowedEntryTypes = {
 	[LSM_ENTRY_TYPE_RADIOBUTTON] =	true,
 	[LSM_ENTRY_TYPE_EDITBOX] = 		true,
 	[LSM_ENTRY_TYPE_SLIDER] = 		true,
+	[LSM_ENTRY_TYPE_COLORPICKER] = 	true,
 }
 constants.entryTypes.libraryAllowedEntryTypes = libraryAllowedEntryTypes
 lib.AllowedEntryTypes = libraryAllowedEntryTypes
@@ -313,6 +317,7 @@ local allowedEntryTypesForContextMenu = {
 	[LSM_ENTRY_TYPE_RADIOBUTTON] = 	true,
 	[LSM_ENTRY_TYPE_EDITBOX] = 		true,
 	[LSM_ENTRY_TYPE_SLIDER] = 		true,
+	[LSM_ENTRY_TYPE_COLORPICKER] =	true,
 }
 constants.entryTypes.allowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
 lib.AllowedEntryTypesForContextMenu = allowedEntryTypesForContextMenu
@@ -335,6 +340,7 @@ local additionalDataKeyToLSMEntryType = {
 	["isRadioButton"] = LSM_ENTRY_TYPE_RADIOBUTTON,
 	["isEditBox"] = 	LSM_ENTRY_TYPE_EDITBOX,
 	["isSlider"] = 		LSM_ENTRY_TYPE_SLIDER,
+	["isColorPicker"] = LSM_ENTRY_TYPE_COLORPICKER,
 }
 constants.entryTypes.additionalDataKeyToLSMEntryType = additionalDataKeyToLSMEntryType
 
@@ -852,12 +858,13 @@ local filteredEntryTypes = {
 	--[LSM_ENTRY_TYPE_DIVIDER] = false,
 	[LSM_ENTRY_TYPE_EDITBOX] = true,
 	[LSM_ENTRY_TYPE_SLIDER] = true,
+	[LSM_ENTRY_TYPE_COLORPICKER] = true,
 }
 constants.searchFilter.filteredEntryTypes = filteredEntryTypes
 
 --LSM entryTypes which should not search the LSMentry's name alone, but also another childControl of the LSMentry
 --which was added to the data table as e.g. ._EditBoxCtrl reference
-local filteredEntryTypsChildsToSearch = {
+local filteredEntryTypesChildsToSearch                 = {
 	[LSM_ENTRY_TYPE_EDITBOX] = {
 		[1] = {
 			dataTable = "editBoxData",
@@ -875,7 +882,7 @@ local filteredEntryTypsChildsToSearch = {
 		}
 	},
 }
-constants.searchFilter.filteredEntryTypsChildsToSearch = filteredEntryTypsChildsToSearch
+constants.searchFilter.filteredEntryTypesChildsToSearch = filteredEntryTypesChildsToSearch
 
 --Table defines if some names of the entries count as "search them or skip them".
 --true: Item's name does not need to be searched -> skip them / false: search the item's name as usual
@@ -912,6 +919,9 @@ local entryTypeToSilenceSoundName = {
 	[LSM_ENTRY_TYPE_CHECKBOX]	=	defaultClick,
 	[LSM_ENTRY_TYPE_BUTTON] 	= 	defaultClick,
 	[LSM_ENTRY_TYPE_RADIOBUTTON]= 	defaultClick,
+	[LSM_ENTRY_TYPE_EDITBOX]    = 	defaultClick,
+	[LSM_ENTRY_TYPE_SLIDER]     = 	defaultClick,
+	[LSM_ENTRY_TYPE_COLORPICKER]= 	defaultClick,
 }
 constants.sounds.entryTypeToSilenceSoundName = entryTypeToSilenceSoundName
 
@@ -921,6 +931,9 @@ local entryTypeToOriginalSelectedSound = {
 	[LSM_ENTRY_TYPE_CHECKBOX]	= origSoundDefaultClicked,
 	[LSM_ENTRY_TYPE_BUTTON] 	= origSoundDefaultClicked,
 	[LSM_ENTRY_TYPE_RADIOBUTTON]= origSoundDefaultClicked,
+	[LSM_ENTRY_TYPE_EDITBOX]    = origSoundDefaultClicked,
+	[LSM_ENTRY_TYPE_SLIDER]     = origSoundDefaultClicked,
+	[LSM_ENTRY_TYPE_COLORPICKER]= origSoundDefaultClicked,
 }
 constants.sounds.entryTypeToOriginalSelectedSound = entryTypeToOriginalSelectedSound
 

@@ -74,7 +74,7 @@ local onEntryMouseUpExcludeEntryTypes = entryTypeConstants.onEntryMouseUpExclude
 local dropdownDefaults = dropdownConstants.defaults
 local noEntriesResults = searchFilterConstants.noEntriesResults
 local filteredEntryTypes = searchFilterConstants.filteredEntryTypes
-local filteredEntryTypsChildsToSearch = searchFilterConstants.filteredEntryTypsChildsToSearch
+local filteredEntryTypesChildsToSearch = searchFilterConstants.filteredEntryTypesChildsToSearch
 local filterNamesExempts = searchFilterConstants.filterNamesExempts
 
 local MIN_WIDTH_WITHOUT_SEARCH_HEADER = dropdownDefaults.MIN_WIDTH_WITHOUT_SEARCH_HEADER
@@ -517,7 +517,7 @@ end
 --a editBox's or slider's text/number value
 local function checkIfChildControlTextMatches(item, entryType, filterNamesExemptsCheck) --#2025_48
 --d("[LSM]checkIfChildControlTextMatches")
-	local childControlsToCheck = filteredEntryTypsChildsToSearch[entryType]
+	local childControlsToCheck = filteredEntryTypesChildsToSearch[entryType]
 	if ZO_IsTableEmpty(childControlsToCheck) then return filterNamesExemptsCheck, nil end
 --[[
 lib._LSMDebugItem = {
@@ -778,6 +778,10 @@ local handlerFunctions  = {
 			-- Return true to skip the default handler to prevent row highlight.
 			return false --not control.closeOnSelect
 		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER] = function(selfVar, control, data, ...)
+			onMouseEnter(control, data, no_submenu)
+			return false --not control.closeOnSelect
+		end,
 	},
 
 	--return false to run default ZO_ComboBox OnMouseExit handler + tooltip / true to skip original ZO:ComboBox handler and only show tooltip
@@ -819,6 +823,10 @@ local handlerFunctions  = {
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = function(selfVar, control, data, ...)
 			-- Return true to skip the default handler to prevent row highlight.
+			return false --not control.closeOnSelect
+		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER] = function(selfVar, control, data, ...)
+			onMouseExit(control, data, no_submenu)
 			return false --not control.closeOnSelect
 		end,
 	},
@@ -867,6 +875,10 @@ local handlerFunctions  = {
 			return false
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
+			onMouseUp(control, data, no_submenu)
+			return false
+		end,
+		[entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER] = function(selfVar, control, data, button, upInside, ctrl, alt, shift)
 			onMouseUp(control, data, no_submenu)
 			return false
 		end,
@@ -1915,11 +1927,11 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 
 
 				if not ignoreHandler and runHandler(self, handlerFunctions["onMouseUp"], control, data, button, upInside, ctrl, alt, shift) then
-					--d(">>OnEntrySelected")
+	--d(">>OnEntrySelected")
 					self:OnEntrySelected(control) --self (= dropdown).owner (= combobox):SetSelected -> self.SelectItem
 				else
-					--d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
-					self:RunItemCallback(data, data.ignoreCallback)
+	--d(">>RunItemCallback - ignoreHandler: " ..tos(ignoreHandler))
+					self:RunItemCallback(data, data.ignoreCallback, control)
 				end
 
 				--Show context menu at the entry?
@@ -1971,11 +1983,11 @@ function dropdownClass:SelectItemByIndex(index, ignoreCallback)
 	end
 end
 
-function dropdownClass:RunItemCallback(item, ignoreCallback)
+function dropdownClass:RunItemCallback(item, ignoreCallback, control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 74, tos(item), tos(ignoreCallback)) end
 	if self.owner then
 		playSelectedSoundCheck(self, item.entryType)
-		return self.owner:RunItemCallback(item, ignoreCallback) --calls comboBox_base:RunItemCallback
+		return self.owner:RunItemCallback(item, ignoreCallback, control) --calls comboBox_base:RunItemCallback
 	end
 end
 

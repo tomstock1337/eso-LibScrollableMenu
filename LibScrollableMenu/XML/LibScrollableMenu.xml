@@ -1,4 +1,4 @@
-<GuiXml>
+<GuiXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/DakJaniels/esoui_gui_xsd/main/esoui_gui_xml.xsd">
 	<Controls>
 		<!-- Highlight for ZO_SortFilterList entries where a submenu got a callback function - Light green
 			Normal highlight is ZO_SelectionHighlight  -light blue -->
@@ -157,6 +157,30 @@
 				end
 			</OnMouseUp>
 		</Control>
+
+		<Control name="LibScrollableMenu_ComboBoxColorPickerEntry_Behavior" level="3" mouseEnabled="true" virtual="true">
+			<OnMouseEnter> <!-- name="BaseHandler"-->
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+				dropdown:OnMouseEnterEntry(self)
+				end
+			</OnMouseEnter>
+
+			<OnMouseExit>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+				dropdown:OnMouseExitEntry(self)
+				end
+			</OnMouseExit>
+
+			<OnMouseUp>
+				local dropdown = self.m_dropdownObject
+				if dropdown then
+				dropdown:OnEntryMouseUp(self, button, upInside, false, ctrl, alt, shift, LSM_ENTRY_TYPE_COLORPICKER)
+				end
+			</OnMouseUp>
+		</Control>
+
 
 		<!-- Row templates -->
 
@@ -325,7 +349,7 @@
 
 			<Controls>
 				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
-					<DimensionConstraints x="5" maxX="75%" />
+					<DimensionConstraints minX="5" maxX="75%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 				</Label>
 				<Backdrop name="$(parent)Edit" hidden="false" tier="HIGH" inherits="LibScrollableMenu_SingleLineEditBackdrop_Keyboard">
@@ -360,7 +384,7 @@
 					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
 				</Label>
 				<Control name="$(parent)SliderContainer">
-					<DimensionConstraints minx="5" maxX="100%" />
+					<DimensionConstraints minX="5" maxX="100%" />
 					<Anchor point="TOPLEFT" relativeTo="$(parent)Label" relativePoint="TOPRIGHT" offsetX="4"/>
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-2"/>
 					<Controls>
@@ -381,6 +405,33 @@
 				</Control>
 			</Controls>
 		</Control>
+
+		<!-- ColorPicker entry -->
+		<Control name="LibScrollableMenu_ComboBoxColorPickerEntry" inherits="LibScrollableMenu_IconEntry_Template LibScrollableMenu_ComboBoxColorPickerEntry_Behavior" mouseEnabled="true" virtual="true">
+			<Dimensions y="ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT" />
+			<OnInitialized>
+				<!-- Is this still needed? -->
+				self.selectable = true <!-- Denotes this is a selectable entry.   -->
+			</OnInitialized>
+
+			<Controls>
+				<Control name="$(parent)CurrentColorContainer">
+					<Anchor point="RIGHT" offsetX="0"/>
+					<Dimensions x="24" />
+					<Controls>
+						<Texture name="$(parent)Color">
+							<Dimensions x="22" y="16" />
+							<Anchor point="CENTER" />
+						</Texture>
+					</Controls>
+				</Control>
+				<Label name="$(parent)Label" verticalAlignment="CENTER" wrapMode="ELLIPSIS" maxLineCount="1">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)IconContainer" relativePoint="TOPRIGHT" offsetX="1" />
+					<Anchor point="RIGHT" relativeTo="$(parent)CurrentColorContainer" relativePoint="LEFT" />
+				</Label>
+			</Controls>
+		</Control>
+
 
 		<!-- The genuine Dropdown control. The scroll list container.
 			TLC so it can be forced above other dropdowns without having to consider layering

@@ -3,6 +3,7 @@ if not lib then return end
 
 local MAJOR = lib.name
 
+local LSM_ENTRY_TYPE_COLORPICKER = LSM_ENTRY_TYPE_COLORPICKER
 
 --------------------------------------------------------------------
 -- For debugging and logging
@@ -25,6 +26,11 @@ local strfor = string.format
 local zostrlow = zo_strlower
 local tins = table.insert
 
+local funcType 		= "function"
+local stringType	= "string"
+local numberType	= "number"
+local booleanType	= "boolean"
+local userDataType	= "userdata"
 
 --------------------------------------------------------------------
 --Library classes
@@ -95,6 +101,7 @@ local subMenuArrowColor = libUtil.subMenuArrowColor
 local playSelectedSoundCheck = libUtil.playSelectedSoundCheck
 local getEditBoxData = libUtil.getEditBoxData
 local getSliderData = libUtil.getSliderData
+local getColorPickerData = libUtil.getColorPickerData
 local isScrollBarClicked = libUtil.isScrollBarClicked
 local libUtil_getEntryTypeControl = libUtil.getEntryTypeControl
 
@@ -488,7 +495,7 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 			local iconTint
 			if iconDataGotMoreParams then
 				iconTint = getValueOrCallback(singleIconDataOrTab.iconTint, data)
-				if type(iconTint) == "string" then
+				if type(iconTint) == stringType then
 					local iconColorDef = ZO_ColorDef:New(iconTint)
 					iconTint = iconColorDef
 				end
@@ -844,6 +851,14 @@ local function getDefaultXMLTemplates(selfVar)
 				selfVar:SetupEntrySlider(control, data, list)
 			end,
 		},
+		[entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER] = {
+			template = 'LibScrollableMenu_ComboBoxColorPickerEntry',
+			rowHeight = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			widthPadding = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT,
+			setupFunc = function(control, data, list)
+				selfVar:SetupEntryColorPicker(control, data, list)
+			end,
+		},
 	}
 
 	--The virtual XML highlight templates (mouse moved above an antry), for the different row types
@@ -888,6 +903,11 @@ local function getDefaultXMLTemplates(selfVar)
 			color = entryTypeDefaultsHighlights.defaultHighlightColor,
 		},
 		[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER] = {
+			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
+			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
+			color = entryTypeDefaultsHighlights.defaultHighlightColor,
+		},
+		[entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER] = {
 			template = entryTypeDefaultsHighlights.defaultHighlightTemplate,
 			templateContextMenuOpeningControl = entryTypeDefaultsHighlights.defaultHighlightTemplate, --template for an entry providing a contextMenu
 			color = entryTypeDefaultsHighlights.defaultHighlightColor,
@@ -995,7 +1015,18 @@ function comboBox_base:AddCustomEntryTemplates(options, isContextMenu)
 	local normalEntryHeight = XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_NORMAL].rowHeight
 	-- We will use this, per-comboBox, to set max rows.
 	self.baseEntryHeight = normalEntryHeight
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 89, tos(normalEntryHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_HEADER].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON].rowHeight), tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON].rowHeight)) end
+	if libDebug.doDebug then
+		dlog(libDebug.LSM_LOGTYPE_VERBOSE, 89, tos(normalEntryHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_DIVIDER].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_HEADER].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_BUTTON].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_RADIOBUTTON].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_EDITBOX].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_SLIDER].rowHeight),
+				tos(XMLrowTemplatesToUse[entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER].rowHeight)
+		)
+	end
 end
 
 --Called from ZO_ComboBox:ShowDropdownInternal() -> self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
@@ -1024,10 +1055,10 @@ function comboBox_base:OnGlobalMouseUp(eventId, button)
 	local suppressNextOnGlobalMouseUpType = suppressNextOnGlobalMouseUp ~= nil and type(suppressNextOnGlobalMouseUp) or nil
 	if suppressNextOnGlobalMouseUpType ~= nil then
 		--Supress all next clicks (boolean true)
-		if suppressNextOnGlobalMouseUpType == "boolean" and suppressNextOnGlobalMouseUp == true then
+		if suppressNextOnGlobalMouseUpType == booleanType and suppressNextOnGlobalMouseUp == true then
 			abortEarly = true
 		--Supress only e.g. a left click, but not a right click?
-		elseif suppressNextOnGlobalMouseUpType == "number" and suppressNextOnGlobalMouseUp == button then
+		elseif suppressNextOnGlobalMouseUpType == numberType and suppressNextOnGlobalMouseUp == button then
 			abortEarly = true
 		end
 	end
@@ -1561,7 +1592,7 @@ function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 	local narrateData = self.narrateData
 	if eventName == nil or isAccessibilityUIReaderEnabled() == false or narrateData == nil then return end
 	local narrateCallbackFuncForEvent = narrateData[eventName]
-	if narrateCallbackFuncForEvent == nil or type(narrateCallbackFuncForEvent) ~= "function" then return end
+	if narrateCallbackFuncForEvent == nil or type(narrateCallbackFuncForEvent) ~= funcType then return end
 	local selfVar = self
 
 	--The function parameters signature for the different narration callbacks
@@ -1586,7 +1617,7 @@ function comboBox_base:Narrate(eventName, ctrl, data, hasSubmenu, anchorPoint)
 
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 100, tos(narrateText), tos(stopCurrent)) end
 	--Didn't the addon take care of the narration itsself? So this library here should narrate the text returned
-	if type(narrateText) == "string" then
+	if type(narrateText) == stringType then
 		local narrateFuncOfLibrary = narrationEventToLibraryNarrateFunction[eventName]
 		if narrateFuncOfLibrary == nil then return end
 		narrateFuncOfLibrary(narrateText, stopCurrent)
@@ -1636,11 +1667,70 @@ function comboBox_base:RefreshSortedItems(parentControl)
 	end
 end
 
-function comboBox_base:RunItemCallback(item, ignoreCallback, ...)
+
+local specialItemCallbackFunctionsPerEntryType = {  --#2026_21
+	[LSM_ENTRY_TYPE_COLORPICKER] = "RunSpecialItemCallbackForColorPicker",
+}
+
+function comboBox_base:RunSpecialItemCallbackForColorPicker(item, control) --#2026_21
+	--[[ Old version: the item.callback function returned a control to colorize.
+	--New version: We are using a passed in colorPickerData table which contains the colorPicker callback function that
+	--should be used once the color in the color picker was selected -> e.g. update a control directly or just save the
+	--color to a SavedVariables table entry?
+	--The item.callback is just a normal callback function that is fired "on top", if needed
+	]]
+
+	--Try to get the previewControl (small texture at the LSM entry of a ColorPicker row)
+	local previewControl = nil
+	if control and control.isColorPicker and control.m_data then
+		if control.m_currentColor ~= nil then
+			--Assure we got the correct control by comparing the item.name with the control's dataSource.name
+			local dataSource = control.m_data:GetDataSource()
+			if dataSource and dataSource.name and dataSource.name == item.name then
+				previewControl = control.m_currentColor
+			end
+		end
+	end
+
+	--Show the color picker and pass in the colorPickerData table and the optionally used previewControl
+	local colorPickerData = control.colorPickerData or item.colorPickerData
+	if colorPickerData ~= nil then
+		lib.ShowColorPicker(colorPickerData, previewControl)
+		lib.AnchorColorPickerToMouse()
+	end
+
+	---Run the normal item.callback function now
+	return item.callback(self, item.name, item, control)
+end
+
+function comboBox_base:CheckIfEntryTypeNeedsSpecialItemCallback(entryType)  --#2026_21
+	if entryType and specialItemCallbackFunctionsPerEntryType[entryType] ~= nil then
+		return true
+	end
+	return false
+end
+
+function comboBox_base:RunSpecialItemCallback(item, control) --#2026_21
+	local entryType = item.entryType
+	if entryType then
+		local specialItemCallbackForEntryTypeFunc = self[specialItemCallbackFunctionsPerEntryType[entryType]]
+		if type(specialItemCallbackForEntryTypeFunc) == funcType then
+			return specialItemCallbackForEntryTypeFunc(self, item, control) --calls e.g. comboBox_base:RunSpecialItemCallbackForColorPicker for colorPicker entryType
+		end
+	end
+	return false
+end
+
+
+function comboBox_base:RunItemCallback(item, ignoreCallback, control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 102) end
 
 	if item.callback and not ignoreCallback then
-		return item.callback(self, item.name, item, ...)
+		if self:CheckIfEntryTypeNeedsSpecialItemCallback(item.entryType) then	--#2026_21
+			return self:RunSpecialItemCallback(item, control)					--#2026_21
+		end
+		--Other entryTypes
+		return item.callback(self, item.name, item, control)
 	end
 	return false
 end
@@ -2022,6 +2112,29 @@ do -- Row setup functions
 		control.m_label:SetText(data.label or data.name) -- Use alternative passed in label string, or the default mandatory name string
 	end
 
+	--Color Picker label and color preview texture
+	local function addColorPickerLabelAndPreviewTexture(control, data, list) --#2026_21
+		control.m_label = control.m_label or control:GetNamedChild("Label")
+		control.m_label:SetText(data.label or data.name)
+
+		control.m_colorContainer = control.m_colorContainer or control:GetNamedChild("CurrentColorContainer")
+		control.m_colorContainer:SetHidden(false)
+		local colorPreview = control.m_currentColor or control.m_colorContainer:GetNamedChild("Color")
+		control.m_currentColor = colorPreview
+		colorPreview:SetColor(0, 0, 0, 0)
+		colorPreview:SetHidden(true)
+
+		local borderChildName = colorPreview:GetName() .. "Border"
+		if control.m_currentColorBorder == nil and GetControl(borderChildName) == nil then
+			local currentColorBorder = CreateControl(borderChildName, colorPreview, CT_TEXTURE)
+			control.m_currentColorBorder = currentColorBorder
+			currentColorBorder:SetTexture("EsoUI\\Art\\ChatWindow\\chatOptions_bgColSwatch_frame.dds")
+			currentColorBorder:SetTextureCoords(0, .625, 0, .8125)
+			currentColorBorder:SetDimensions(24, 18)
+			currentColorBorder:SetAnchor(CENTER, colorPreview, CENTER, 0, 0)
+		end
+	end
+
 	-- CHECKBOX / RADIOBUTTON
 	local function addCheckButton(comboBox, control, data, toggleFunction)
 		local entryType = control.typeId
@@ -2043,7 +2156,7 @@ do -- Row setup functions
 		local buttonGroup
 		local groupIndex = getValueOrCallback(data.buttonGroup, data)
 
-		if type(groupIndex) == "number" then
+		if type(groupIndex) == numberType then
 			-- Prepare buttonGroup
 			comboBox.m_buttonGroup = comboBox.m_buttonGroup or {}
 			comboBox.m_buttonGroup[entryType] = comboBox.m_buttonGroup[entryType] or {}
@@ -2052,11 +2165,11 @@ do -- Row setup functions
 
 			--d(debugPrefix .. "setupFunc RB - addButton, groupIndex: " ..tos(groupIndex))
 
-			if type(data.buttonGroupOnSelectionChangedCallback) == "function" then
+			if type(data.buttonGroupOnSelectionChangedCallback) == funcType then
 				buttonGroup:SetSelectionChangedCallback(data.buttonGroupOnSelectionChangedCallback)
 			end
 
-			if type(data.buttonGroupOnStateChangedCallback) == "function" then
+			if type(data.buttonGroupOnStateChangedCallback) == funcType then
 				buttonGroup:SetStateChangedCallback(data.buttonGroupOnStateChangedCallback)
 			end
 
@@ -2102,7 +2215,7 @@ do -- Row setup functions
 		if not hideLabel then
 			local labelWidth = getValueOrCallback(editBoxData.labelWidth, editBoxData)
 			if labelWidth ~= nil then
-				if type(labelWidth) == "number" and labelWidth <= 0 then labelWidth = 5 end
+				if type(labelWidth) == numberType and labelWidth <= 0 then labelWidth = 5 end
 				labelCtrl:SetWidth(labelWidth)
 			end
 		end
@@ -2119,7 +2232,7 @@ do -- Row setup functions
 		local editBoxWidth = getValueOrCallback(editBoxData.width, editBoxData)
 		if editBoxWidth ~= nil then
 			--d(">>editBoxData.width: " .. tos(editBoxWidth) .. "; maxWidth: " .. tos(width))
-			if type(editBoxWidth) == "number" then
+			if type(editBoxWidth) == numberType then
 				width = zo_clamp(editBoxWidth, 5, width)
 			else
 				width = editBoxWidth
@@ -2128,7 +2241,7 @@ do -- Row setup functions
 		end
 		local editBoxHeight = getValueOrCallback(editBoxData.height, editBoxData)
 		if editBoxHeight ~= nil then
-			if type(editBoxHeight) == "number" then
+			if type(editBoxHeight) == numberType then
 				height = zo_clamp(editBoxHeight, 5, height)
 			else
 				height = editBoxHeight
@@ -2181,7 +2294,7 @@ do -- Row setup functions
 
 		--textType
 		local textType = getValueOrCallback(editBoxData.textType, editBoxData)
-		if textType ~= nil and type(textType) == "number" then
+		if textType ~= nil and type(textType) == numberType then
 			editBoxCtrl:SetTextType(textType)
 		else
 			editBoxCtrl:SetTextType(TEXT_TYPE_ALL)
@@ -2189,7 +2302,7 @@ do -- Row setup functions
 
 		--maxInputCharacters
 		local maxInputCharacters = getValueOrCallback(editBoxData.maxInputCharacters, editBoxData)
-		if maxInputCharacters ~= nil and type(maxInputCharacters) == "number" and maxInputCharacters >= 0 then
+		if maxInputCharacters ~= nil and type(maxInputCharacters) == numberType and maxInputCharacters >= 0 then
 			editBoxCtrl:SetMaxInputChars(maxInputCharacters)
 		else
 			editBoxCtrl:SetMaxInputChars(MAX_TEXT_CHAT_INPUT_CHARACTERS)
@@ -2212,7 +2325,7 @@ do -- Row setup functions
 		labelCtrl:SetMouseEnabled(false) --#2026_08
 		--contextMenuCallback -- ContextMenu at the editBox
 		local contextMenuCallback = editBoxData.contextMenuCallback
-		if type(contextMenuCallback) == "function" then
+		if type(contextMenuCallback) == funcType then
 			local function showEditBoxContextMenu(p_comboBox, p_editBox, p_data)
 				ZO_Tooltips_HideTextTooltip()
 				--Show the contextMenu now
@@ -2277,7 +2390,7 @@ do -- Row setup functions
 		if not hideLabel then
 			local labelWidth = getValueOrCallback(sliderData.labelWidth, sliderData)
 			if labelWidth ~= nil then
-				if type(labelWidth) == "number" and labelWidth <= 0 then labelWidth = 5 end
+				if type(labelWidth) == numberType and labelWidth <= 0 then labelWidth = 5 end
 				labelCtrl:SetWidth(labelWidth)
 			end
 		end
@@ -2320,13 +2433,13 @@ do -- Row setup functions
 
 		--valueLabelFont
 		local valueLabelFont = getValueOrCallback(sliderData.valueLabelFont, sliderData)
-		if type(valueLabelFont) ~= "string" then valueLabelFont = "ZoFontWinH5" end
+		if type(valueLabelFont) ~= stringType then valueLabelFont = "ZoFontWinH5" end
 		sliderValueLabel:SetFont(valueLabelFont)
 
 		--Dimensions
 		local sliderWidth = getValueOrCallback(sliderData.width, sliderData)
 		if sliderWidth ~= nil then
-			if type(sliderWidth) == "number" then
+			if type(sliderWidth) == numberType then
 				width = zo_clamp(sliderWidth, 5, width)
 			else
 				width = sliderWidth
@@ -2335,7 +2448,7 @@ do -- Row setup functions
 		end
 		local sliderHeight = getValueOrCallback(sliderData.height, sliderData)
 		if sliderHeight ~= nil then
-			if type(sliderHeight) == "number" then
+			if type(sliderHeight) == numberType then
 				height = zo_clamp(sliderHeight, 5, height)
 			else
 				height = sliderHeight
@@ -2429,7 +2542,7 @@ do -- Row setup functions
 
 		--contextMenuCallback -- ContextMenu at the slider
 		local contextMenuCallback = sliderData.contextMenuCallback
-		if type(contextMenuCallback) ~= "function" then
+		if type(contextMenuCallback) ~= funcType then
 			contextMenuCallback = nil
 		end
 
@@ -2471,7 +2584,7 @@ do -- Row setup functions
 
 		if not sliderCtrl.onMouseUpFunc then
 			local sliderOnMouseUpCallback = sliderCtrl:GetHandler("OnMouseUp")
-			if type(sliderOnMouseUpCallback) == "function" then
+			if type(sliderOnMouseUpCallback) == funcType then
 				ZO_PostHookHandler(sliderCtrl, "OnMouseUp", onSliderMouseUp)
 			else
 				sliderCtrl:SetHandler("OnMouseUp", onSliderMouseUp)
@@ -2754,6 +2867,51 @@ d(">enabled: " .. tos(data.enabled))
 			isEnabled = control:IsEnabled()
 		end
 		sliderCtrl:SetMouseEnabled(isEnabled)
+
+		self:UpdateHighlightTemplate(control, data, nil, nil)
+	end
+
+
+	local function processColorPickerData(comboBox, control, data) --#2026_21 todo: if needed add width and height and preview color control on/off settings to colorPickerData table?
+		local colorPickerData = control.colorPickerData
+		if type(colorPickerData) ~= "table" then return end
+
+		--local labelCtrl  = control.m_label
+		--local previewColorContainerCtrl  = control.m_currentColorContainer
+		local previewColorCtrl  = control.m_currentColor
+
+		--Update the color preview texture with the control's current color (if there is any control to colorize provided)
+		if previewColorCtrl ~= nil then
+			previewColorCtrl:SetHidden(true)
+			local controlToColorize = getValueOrCallback(colorPickerData.controlToColorize, colorPickerData)
+			if type(controlToColorize) == userDataType and controlToColorize.GetColor ~= nil then
+				previewColorCtrl:SetColor(controlToColorize:GetColor())
+				previewColorCtrl:SetHidden(false)
+			end
+		end
+	end
+
+	--Setup row function: LSM_ENTRY_TYPE_COLORPICKER
+	function comboBox_base:SetupEntryColorPicker(control, data, list) --#2026_21
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 198, tos(getControlName(control)), tos(list)) end
+		control.typeId = entryTypeConstants.LSM_ENTRY_TYPE_COLORPICKER
+		control.isColorPicker = true
+		addIcon(control, data, list)
+		addColorPickerLabelAndPreviewTexture(control, data, list)
+		self:SetupEntryLabelBase(control, data, list)
+
+		--Do not close the dropdown if row is clicked
+		control.closeOnSelect = false
+
+		--ColorPicker data was specified too? Custom OnColorUpdateFunc or controlToColorize?
+		local colorPickerData        = getColorPickerData(control, data)
+		--Add the editBoxCtrl to the editBoxData, as reference for the text search functionalities
+		control.colorPickerData      = colorPickerData
+		local colorPickerTemplate    = data.colorPickerTemplate or colorPickerData.colorPickerTemplate
+		if colorPickerTemplate then
+			ApplyTemplateToControl(control, colorPickerTemplate)
+		end
+		processColorPickerData(self, control, data)
 
 		self:UpdateHighlightTemplate(control, data, nil, nil)
 	end
