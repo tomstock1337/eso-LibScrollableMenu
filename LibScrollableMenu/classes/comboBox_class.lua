@@ -463,12 +463,22 @@ function comboBoxClass:ShowDropdown()
 	self:ShowDropdownInternal() --> Usually calls ZO_ComboBox:ShowDropdownInternal()
 end
 
+function comboBoxClass:RegisterGlobalMouseUpEvent()
+--d("[LSM] ------> comboBoxClass:RegisterGlobalMouseUpEvent()")
+	self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
+end
+
+function comboBoxClass:UnregisterGlobalMouseUpEvent()
+--d("[LSM] <------ comboBoxClass:UnregisterGlobalMouseUpEvent()")
+	self.m_container:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
+end
+
 function comboBoxClass:ShowDropdownInternal()
 --d("[LSM]comboBoxClass:ShowDropdownInternal - Register EVENT_GLOBAL_MOUSE_UP")
 	-- Just set the global mouse up handler here... we want the combo box to exhibit the same behvaior
 	-- as a context menu, which is dismissed when the user clicks outside the menu or on a menu item
 	-- (but not in the menu otherwise)
-	self.m_container:RegisterForEvent(EVENT_GLOBAL_MOUSE_UP, function(...) self:OnGlobalMouseUp(...) end)
+	self:RegisterGlobalMouseUpEvent()
 end
 
 --function comboBoxClass:OnGlobalMouseUp(eventCode, button) --#2026_14 20260606 See comboBox_base:OnGlobalMouseUp -> is calling self:HiddenForReasons to prevent GlobalMouseUp click handler closing opened submenus if a checkbox/radiobutton was clicked (and many more circumstances)
@@ -483,7 +493,7 @@ function comboBoxClass:ShowDropdownOnMouseUp()
 	else
 --d("<Unregister EVENT_GLOBAL_MOUSE_UP")
 		--If we get here, that means the dropdown was disabled after the request to show it was made, so just cancel showing entirely
-		self.m_container:UnregisterForEvent(EVENT_GLOBAL_MOUSE_UP)
+		self:UnregisterGlobalMouseUpEvent()
 	end
 end
 

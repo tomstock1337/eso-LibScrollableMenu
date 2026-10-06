@@ -1839,7 +1839,7 @@ function dropdownClass:OnMouseExitTimeout(control)
 	end)
 end
 
---Calls comboBox_class:SetSelected
+--Calls comboBox_class:SetSelected -> comboBox_base:SetSelected
 function dropdownClass:OnEntrySelected(control)
 --d(debugPrefix .."dropdownClass:OnEntrySelected-"  .. tos(getControlName(control)))
     if self.owner then
@@ -1885,9 +1885,9 @@ LSM_Debug._OnEntryMouseUp[#LSM_Debug._OnEntryMouseUp +1] = {
 
 
 				if checkIfContextMenuOpenedButOtherControlWasClicked(control, comboBox, button) == true then
-					--d("3??? Setting suppressNextOnGlobalMouseUp = true ???")
+--d("3??? Setting suppressNextOnGlobalMouseUp = true ???")
 					lib.preventerVars.suppressNextOnGlobalMouseUp = true
-					--d("<ABORT -> [dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
+--d("<ABORT -> [dropdownClass:OnEntryMouseUp]MOUSE_BUTTON_INDEX_LEFT -> suppressNextOnGlobalMouseUp: " ..tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
 					return
 				end
 
@@ -2391,21 +2391,32 @@ end
 function dropdownClass:OnFilterEditBoxMouseUp(filterBox, button, upInside, ctrl, alt, shift)
 	--Only react on right click
 	ZO_Tooltips_HideTextTooltip()
-	if not upInside or button ~= MOUSE_BUTTON_INDEX_RIGHT then return end
 
+	if not upInside then return end
+	if self.m_comboBox then
+		self.m_comboBox:CheckIfOtherLSMControlsNeedToBeHidden(nil, true, true)									--#2026_22
+	end
+
+	if button ~= MOUSE_BUTTON_INDEX_RIGHT then return end
 	self:ShowFilterEditBoxHistory(filterBox)
+end
+
+local function closeLSMContextMenuFromFilterHeader(comboBox)
+	if not comboBox.isContextMenu then --#2025_23 replaced by self.m_comboBox.isContextMenu -> self.m_comboBox.openingControl == nil then
+		--d(">>calling ClearCustomScrollableMenu")
+		clearCustomScrollableMenu = clearCustomScrollableMenu or ClearCustomScrollableMenu
+		clearCustomScrollableMenu()
+	end
 end
 
 function dropdownClass:ResetFilters(owningWindow)
 --d(debugPrefix .. "dropdownClass:ResetFilters")
 	--If not showing the filters at a contextmenu
 	-->Close any opened contextmenu
-	if self.m_comboBox ~= nil then
-		if not self.m_comboBox.isContextMenu then --#2025_23 replaced by self.m_comboBox.isContextMenu -> self.m_comboBox.openingControl == nil then
-			--d(">>calling ClearCustomScrollableMenu")
-			clearCustomScrollableMenu = clearCustomScrollableMenu or ClearCustomScrollableMenu
-			clearCustomScrollableMenu()
-		end
+	local comboBox = self.m_comboBox
+	if comboBox ~= nil then
+		closeLSMContextMenuFromFilterHeader(comboBox)
+		comboBox:CheckIfOtherLSMControlsNeedToBeHidden(nil, true, true)									--#2026_22
 	end
 
 	ZO_Tooltips_HideTextTooltip()
@@ -2428,11 +2439,9 @@ function dropdownClass:Sort(owningWindow, sortUp)  --#2026_10
 	-->Close any opened contextmenu
 	local comboBox = self.m_comboBox
 	if comboBox ~= nil then
-		if not comboBox.isContextMenu then --#2025_23 replaced by self.m_comboBox.isContextMenu -> self.m_comboBox.openingControl == nil then
-			--d(">>calling ClearCustomScrollableMenu")
-			clearCustomScrollableMenu = clearCustomScrollableMenu or ClearCustomScrollableMenu
-			clearCustomScrollableMenu()
-		end
+		closeLSMContextMenuFromFilterHeader(comboBox)
+		comboBox:CheckIfOtherLSMControlsNeedToBeHidden(nil, true, true)									--#2026_22
+
 		--Call the sort function of the opened dropdown's comboBox now -> Via UpdateItems function, with parameter enableSort = true
 		if sortUp == nil then sortUp = true end
 		comboBox.m_sortOrder = (sortUp and ZO_SORT_ORDER_UP) or ZO_SORT_ORDER_DOWN
@@ -2479,11 +2488,21 @@ function dropdownClass:ShowTextTooltip(control, side, tooltipText, owningWindow)
 	InformationTooltipTopLevel:BringWindowToTop()
 end
 
+--XML handler for editBox rows: OnMouseUp should trigger the callback function
+function dropdownClass:OnEditBoxMouseUp(editBox, button, upInside, ctrl, alt, shift)
+	local selfVar = self
+	local comboBox = selfVar.m_comboBox
+	if comboBox and editBox then
+		comboBox:CheckIfOtherLSMControlsNeedToBeHidden(nil, true)												--#2026_22
+	end
+end
+
 --XML handler for editBox rows: OnTextChanged should trigger the callback function
 function dropdownClass:OnEditBoxTextChanged(editBox)
 	ZO_Tooltips_HideTextTooltip()
 	local selfVar = self
-	if selfVar.m_comboBox and editBox then
+	local comboBox = selfVar.m_comboBox
+	if comboBox and editBox then
 		local callbackFunc = editBox.callback
 		if callbackFunc == nil then return end
 
@@ -2491,7 +2510,7 @@ function dropdownClass:OnEditBoxTextChanged(editBox)
 		throttledCall(function()
 			local text = editBox:GetText()
 --d(">throttledCall 1 - text: " ..tos(text))
-			callbackFunc(selfVar.m_comboBox, editBox, text) --comboBox, filterBox, text
+			callbackFunc(comboBox, editBox, text) --comboBox, filterBox, text
 			self:SubmenuOrCurrentListRefresh(editBox)
 		end, 250, throttledCallDropdownClassOnTextChangedStringSuffix)
 	end
@@ -2501,15 +2520,18 @@ end
 function dropdownClass:OnSliderValueChanged(slider)
 	ZO_Tooltips_HideTextTooltip()
 	local selfVar = self
-	if selfVar.m_comboBox and slider then
+	local comboBox = selfVar.m_comboBox
+	if comboBox and slider then
+		comboBox:CheckIfOtherLSMControlsNeedToBeHidden(nil, true)												--#2026_22
+
 		local callbackFunc = slider.callback
 		if callbackFunc == nil then return end
 
-		-- It probably does not need this but, added it to prevent lagging from fast typing.
+		-- It probably does not need this but, added it to prevent lagging
 		throttledCall(function()
 			local value = slider:GetValue()
 --d(">throttledCall 1 - value: " ..tos(value))
-			callbackFunc(selfVar.m_comboBox, slider, value) --comboBox, slider, value
+			callbackFunc(comboBox, slider, value) --comboBox, slider, value
 			self:SubmenuOrCurrentListRefresh(slider)
 		end, 250, throttledCallDropdownClassOnValueChangedStringSuffix)
 	end

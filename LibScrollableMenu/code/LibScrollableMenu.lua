@@ -190,7 +190,7 @@ function libXML.XMLButtonOnInitialize(control, entryType)
 		control:SetHandler('OnClicked', function(p_control, buttonId, ignoreCallback, skipHiddenForReasonsCheck, ...)
 --d(debugPrefix .. "XML-OnClicked - buttonId: " .. tos(buttonId) .. ", skipHiddenForReasonsCheck: " ..tos(skipHiddenForReasonsCheck))
 			skipHiddenForReasonsCheck = skipHiddenForReasonsCheck or false
-local prevVars = lib.preventerVars --#2026_01
+--local prevVars = lib.preventerVars --#2026_01
 --d("PreventerVars-skipNextOnMouseUp: " .. tos(prevVars.suppressNextOnEntryMouseUp) .. ", skipNextGlobalMouseUp: " ..tos(prevVars.suppressNextOnGlobalMouseUp) .. ", skipNextGlobalMouseUp: " ..tos(prevVars.suppressNextOnEntryMouseUpDisableCounter))
 
 			if not skipHiddenForReasonsCheck then
@@ -314,6 +314,7 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 Max error/feature #: 2026_22
 
 
+
 [WORKING ON]
 --#2026_22 More colorpicker features
 
@@ -326,22 +327,28 @@ Max error/feature #: 2026_22
 --#2026_01 After a LSM contextMenu was shown and a checkbox was clicked (on the checkbox's label, not the icon!), the next opened contextMenu's checkbox label
   is not changing the checkbox state (as if the first click is not accepted?), only the 2nd click does. (noticed during BMU LCM -> LSM changes at 2026-01-25)
 --#2026_03 Search header contextMenu for last searched does not work on BeamMeUp item filter header?
-
 --======================================================================================================================
 
 
 [Fixed]
+-- ColorPicker closes if any non-colorPicker raising entry is clicked, a contextMenu is opened, etc.
 
 [Added]
+--ColorPicker fires the following callbacks now:
+LibScrollableMenu_ColorPicker_OnShown			-	Parameters: ColorPickerObject, comboBox, LSMEntryControl, colorPickerData
+LibScrollableMenu_ColorPicker_OnHidden			-	Parameters:	ColorPickerObject
+LibScrollableMenu_ColorPicker_OnColorSelected	-	Parameters: ColorPickerObject, comboBox, LSMEntryControl, colorPickerData, newColorTable
+LibScrollableMenu_ColorPicker_OnColorReset		-	Parameters: ColorPickerObject, comboBox, LSMEntryControl, colorPickerData, resetColorTable
 
 [Changed]
---Added parameter "colorPickerData" to the API function colorPickerData.OnColorUpdateFunc signature: OnColorUpdateFunc(r, g, b, a, colorPickerData)
---->The colorPickerData contains all values that the entry had specified plus the "previewControl" reference was added too, in case you need them
+--Added parameter "comboBox, colorPickerData" to the API function colorPickerData.OnColorUpdateFunc signature: OnColorUpdateFunc(comboBox, r, g, b, a, colorPickerData)
 --Added new possible values to colorPickerData table:
---					OnColorGetFunc = function(colorPickerData) return r, g, b, a end,	--optional function returning the r, g, b, a values of the current color e.g. from SavedVariables -> Will only be used if no controlToColorize was provided where that could be read from automatically
---					defaultColor = { r=1, g=1, b=1, a=1 },		--optional color table or function returning a color table: The default color that the colorPicker should reset to
---					hidePreview =	false,						--optional boolean or function returning a boolean: Hide the previewControl (texture) that shows the current color
---					title = "Text here", 						--optional string or function buildTitle(colorPickerData) returning a string for the color picker title. If not specified the title will be the label of the LSM entry clicked on to open the colorpicker. That entry label text is present in colorPickerData.LSMEntryLabel (once the entry was clicked) and can be used that way in your title callback function!
+--					previewControl = userdata:control,			--optional control or function(comboBox, LSMEntryControl, colorPickerData) returning the control that should be colorized as the color is chosen in the color picker, and shows the preview of the color. By default this is the LSM entry's previewControl but you can specify any you want, including the LSM label of the entry e.g.
+--					OnColorGetFunc = function(colorPickerData) return r, g, b, a end,	--optional function(comboBox, colorPickerData) returning the r, g, b, a values of the current color e.g. from SavedVariables -> Will only be used if no controlToColorize was provided where that could be read from automatically
+--					defaultColor = { r=1, g=1, b=1, a=1 },		--optional color table or function(colorPickerData) returning a color table: The default color that the colorPicker should reset to
+--					hidePreview =	false,						--optional boolean or function(colorPickerData) returning a boolean: Hide the previewControl (texture) that shows the current color
+--					title = "Text here", 						--optional string or function(colorPickerData) returning a string for the color picker title. If not specified the title will be the label of the LSM entry clicked on to open the colorpicker. That entry label text is present in colorPickerData.LSMEntryLabel (once the entry was clicked) and can be used that way in your title callback function!
+--					snapToOpeningControl = false,				--optional boolean or function(colorPickerData) returning a boolean: Snap the color picker UI to the LSM entry that opened it? Default: true
 
 [Removed]
 

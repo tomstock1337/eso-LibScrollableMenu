@@ -290,13 +290,14 @@ GetCustomScrollableMenuRowData = libUtil.getControlData
 --		->		}
 --		isColorPicker = false, -- optional boolean or function returning a boolean Is this entry a clickable control that will open a color picker?
 --		-> --ONLY for colorPicker control type:	colorPickerData = { table or function returning a table providing the colorPicker's visuals, control to colorize or callback function OnColorUpdateFunc that fires as the color is chosen
---					controlToColorize = userdata:control,		-- optional control or function returning the control that should be colorized as the color is chosen in the color picker
---					OnColorUpdateFunc = function(r, g, b, a, colorPickerData) end,		--optional function doing something with the r, g, b, a values as the color is chosen in the color picker (e.g. write them to your SavedVariables)
---					OnColorGetFunc = function(colorPickerData) return r, g, b, a end,	--optional function returning the r, g, b, a values of the current color e.g. from SavedVariables -> Will only be used if no controlToColorize was provided where that could be read from automatically
---					defaultColor = { r=1, g=1, b=1, a=1 },		--optional color table or function returning a color table: The default color that the colorPicker should reset to
---					hidePreview =	false,						--optional boolean or function returning a boolean: Hide the previewControl (texture) that shows the current color
---					title = "Text here", 						--optional string or function buildTitle(colorPickerData) returning a string for the color picker title. If not specified the title will be the label of the LSM entry clicked on to open the colorpicker. That entry label text is present in colorPickerData.LSMEntryLabel (once the entry was clicked) and can be used that way in your title callback function!
---					snapToOpeningControl = false,				--optional boolean or function returning a boolean: Snap the color picker UI to the LSM entry that opened it? Default: true
+--					OnColorUpdateFunc = function (comboBox, r, g, b, a, colorPickerData) end, -- optional function which is called as you pick a new color with the color picker. You can use it to update the color of controls or to store the color to your SavedVariables e.g.
+--					controlToColorize = userdata:control,		-- optional control or function(colorPickerData) returning the control that should be colorized as the color is chosen in the color picker
+--					previewControl = userdata:control,			--optional control or function(comboBox, LSMEntryControl, colorPickerData) returning the control that should be colorized as the color is chosen in the color picker, and shows the preview of the color. By default this is the LSM entry's previewControl but you can specify any you want, including the LSM label of the entry e.g.
+--					OnColorGetFunc = function(comboBox, colorPickerData) return r, g, b, a end,	--optional function(comboBox, colorPickerData) returning the r, g, b, a values of the current color e.g. from SavedVariables -> Will only be used if no controlToColorize was provided where that could be read from automatically
+--					defaultColor = { r=1, g=1, b=1, a=1 },		--optional color table or function(colorPickerData) returning a color table: The default color that the colorPicker should reset to
+--					hidePreview =	false,						--optional boolean or function(colorPickerData) returning a boolean: Hide the default previewControl (texture) that shows the current color at the LSM entry. This will not hide any custom passed in previewControl!
+--					title = "Text here", 						--optional string or function(colorPickerData) returning a string for the color picker title. If not specified the title will be the label of the LSM entry clicked on to open the colorpicker. That entry label text is present in colorPickerData.LSMEntryLabel (once the entry was clicked) and can be used that way in your title callback function!
+--					snapToOpeningControl = true,				--optional boolean or function(colorPickerData) returning a boolean: Snap the color picker UI to the LSM entry that opened it? Default: true
 --		->		}
 --		enabled = false, -- optional boolean or function isEnabled(comboBox, data) returning a boolean. Is this entry enabled (mouse over & clickable)
 --		isNew = false, --  optional boolean or function returning a boolean Is this entry a new entry and thus shows the "New" icon?
@@ -491,12 +492,15 @@ function AddCustomScrollableMenuSlider(text, callback, sliderData, additionalDat
 	return addCustomScrollableMenuEntry(text, callback, entryTypeConstants.LSM_ENTRY_TYPE_SLIDER, nil, additionalData)
 end
 
---Adds a color picker to the context menu entries -> The entry opens the stand-alone movable colorpicker. Menu will close
---once the color picker is used (on any click outside of the menu, as usual)
+--Adds a color picker to the context menu entries -> The entry opens the stand-alone movable colorPicker UI. Menu will close
+--once the color picker is used (on any click outside of the menu, as usual). The colorPicker will close if you click any entry
+--that is no colorPicker or does not belong to the colorPicker UI itsself, or if you close the menu.
+-->Clicking the entry  does call the callback AFTER the colorPicker has been opened!
+-->The colorPickerData table needs to either specify a control via userdata:controlToColorize (must have methods GetColor and SetColor!),
+--> or an OnColorUpdateFunc function(comboBox, r, g, b, a, colorPickerData) --> which is called as the color picker's color is updated (to e.g. write the r,g,b,a values to the SavedVariables)
+--> and an OnColorGetFunc function(colorPickerData) return r, g, b, a end -> which is called to get the current color (from your SVs e.g.)
 --Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
--->Clicking the line does call the callback AFTER the colorPicker has been opened!
--->The colorPickerData table needs to either specify a control via controlToColorize, or a OnColorUpdateFunc function(r, g, b, a)
--->which is called as the color picker's color is updated (to e.g. write the r,g,b,a values to the SavedVariables).
+--callback function signature:  comboBox, itemName, item, selectionChanged, oldItem
 ---> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 function AddCustomScrollableMenuColorPicker(text, callback, colorPickerData, additionalData) --#2026_21
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG, 199, tos(text)) end

@@ -23,6 +23,8 @@ if not lib then return end
 local tos = tostring
 local funcType = "function"
 
+local CM = CALLBACK_MANAGER
+
 --------------------------------------------------------------------
 --Library classes
 --------------------------------------------------------------------
@@ -44,7 +46,7 @@ local hideTooltip = libUtil.hideTooltip
 
 --------------------------------------------------------------------
 
-local colorPickerClass = ZO_InitializingObject:Subclass() --#2026_21
+local colorPickerClass = ZO_InitializingCallbackObject:Subclass() --#2026_21
 classes.colorPickerClass = colorPickerClass
 
 
@@ -61,6 +63,8 @@ function colorPickerClass:Initialize(control)
     self.suppressApply = false
     self.isUpdatingColors = false
 
+    self.lastComboBoxOpenedFrom = nil   --the combobox of the LSM entry that opened the colorpicker -> so we can re-register the global mouse up event for the still opened LSM
+    self.LSMEntryControlOpenedFrom = nil          --the LSM entry control that the color picker was opened for
     self.controlToColorize = nil        --used to store the control reference that should get the color applied directly
     self.previewControlToColorize = nil --used to store the control reference to any small preview control that shows the color (e.g. at LSM entry)
     self.resetToColors = nil            --used to store the default current colors of the control to colorize (for the reset function)
@@ -230,6 +234,8 @@ function colorPickerClass:UpdateColors(r, g, b, a)
 
     if not self.suppressApply then
         self:ApplyLiveColor(r, g, b, a)
+
+        self:FireCallbacks("LibScrollableMenu_ColorPicker_OnColorSelected", self, self:GetComboBox(), self:GetLSMEntryControl(), self:GetColorPickerData(), { r=r, g=g, b=b, a=a })
     end
 end
 
@@ -238,10 +244,20 @@ function colorPickerClass:Reset()
     if resetToColorTable == nil then return end
     self:ApplyLiveColor(resetToColorTable.r, resetToColorTable.g, resetToColorTable.b, resetToColorTable.a)
     self:LoadColors()
+
+    self:FireCallbacks("LibScrollableMenu_ColorPicker_OnColorReset", self, self:GetComboBox(), self:GetLSMEntryControl(), self:GetColorPickerData(), resetToColorTable)
 end
 
 
 --- GETTER -------------------------------------------------------------------------------------------------------------
+function colorPickerClass:GetComboBox()
+    return self.lastComboBoxOpenedFrom
+end
+
+function colorPickerClass:GetLSMEntryControl()
+    return self.LSMEntryControlOpenedFrom
+end
+
 function colorPickerClass:GetTitleString()                                                                  --#2026_22
     local colorPickerTitleStr = ""
     local colorPickerData = self:GetColorPickerData()
@@ -264,7 +280,7 @@ function colorPickerClass:GetControlToColorize()
 end
 
 function colorPickerClass:GetPreviewControlToColorize()
-    return getValueOrCallback(self.previewControlToColorize, self:GetColorPickerData())
+    return getValueOrCallback(self.previewControlToColorize, self:GetComboBox(), self:GetLSMEntryControl(), self:GetColorPickerData())
 end
 
 function colorPickerClass:GetDefaultColor()                                         --#2026_22
@@ -307,7 +323,7 @@ function colorPickerClass:GetCurrentControlColors(isResetColorSave)
         local OnColorGetFunc = self:GetOnColorGetFunc()
         if type(OnColorGetFunc) == funcType then
             currentColors = {}
-            currentColors.r, currentColors.g, currentColors.b, currentColors.a = OnColorGetFunc(self:GetColorPickerData())
+            currentColors.r, currentColors.g, currentColors.b, currentColors.a = OnColorGetFunc(self:GetComboBox(), self:GetColorPickerData())
             return currentColors
         end
     else
@@ -326,12 +342,13 @@ end
 
 function colorPickerClass:LoadColors()
     local colorTable = self:GetCurrentControlColors()
-    if colorTable == nil then
-        return
-    end
+    if colorTable == nil then return end
+
+    local r, g, b, a = colorTable.r, colorTable.g, colorTable.b, colorTable.a
     self.suppressApply = true
-    self:SetColor(colorTable.r, colorTable.g, colorTable.b, colorTable.a)
-    self.previewInitialTexture:SetColor(colorTable.r, colorTable.g, colorTable.b, colorTable.a)
+    self:SetColor(r, g, b, a)
+    self.previewInitialTexture:SetColor(r, g, b, a)
+    self:ApplyLiveColorToPreviewControl(r, g, b, a)
     self.suppressApply = false
 end
 
@@ -364,7 +381,7 @@ function colorPickerClass:AnchorToMouse()
     local controlHeight = control:GetHeight()
     local xOffset = mocLeft - ( controlWidth + 20 )
     if xOffset <= 0 then
-        xOffset = mocLeft + mocCtrl:GetWidth() + 20
+        xOffset = mocLeft + mocCtrl:GetWidth() + 30 --+20 would anchor it directly to the side of the scrollbar (if any)
         if xOffset >= screenWidth then return end
     end
     local yOffset = mocTop
@@ -376,26 +393,27 @@ function colorPickerClass:AnchorToMouse()
     control:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, xOffset, yOffset)
 end
 
+function colorPickerClass:ApplyLiveColorToPreviewControl(r, g, b, a)
+    local previewControlToColorize = self:GetPreviewControlToColorize()
+    if previewControlToColorize and previewControlToColorize.SetColor then
+        previewControlToColorize:SetColor(r, g, b, a)
+    end
+end
 
---- Callback - Set color if value changed/clciked ----------------------------------------------------------------------
+
+--- Callback - Set color if value changed/clicked ----------------------------------------------------------------------
 --Set's the color to the controlToColorize, the previewColorCOntrol and/or calls the callback function OnColorUpdateFunc
 function colorPickerClass:ApplyLiveColor(r, g, b, a)
-    local colorPickerData = self:GetColorPickerData()                               --#2026_22
-
     local controlToColorize = self:GetControlToColorize()
     if controlToColorize and controlToColorize.SetColor then
         controlToColorize:SetColor(r, g, b, a)
     end
 
-    local previewControlToColorize = self:GetPreviewControlToColorize()
-    if previewControlToColorize and previewControlToColorize.SetColor then
-        colorPickerData.previewControl = previewControlToColorize                   --#2026_22
-        previewControlToColorize:SetColor(r, g, b, a)
-    end
+    self:ApplyLiveColorToPreviewControl(r, g, b, a)
 
     local OnColorUpdateFunc = self:GetOnColorUpdateFunc()
     if OnColorUpdateFunc ~= nil then
-        OnColorUpdateFunc(r, g, b, a, colorPickerData)                              --#2026_22
+        OnColorUpdateFunc(self:GetComboBox(), r, g, b, a, self:GetColorPickerData())                              --#2026_22
     end
 end
 
@@ -426,48 +444,65 @@ function colorPickerClass:SetHidden(hidden)
     control:SetMovable(mouseEnabled)
     control:SetMouseEnabled(mouseEnabled)
     if mouseEnabled then
-        parent:BringWindowToTop()
         --Get, build and set the title of the color picker UI
         self:SetTitle()                                                                                     --#2026_22
         --Set the default / currentColor now
         self:LoadColors()
+        parent:BringWindowToTop()
     end
 end
 
 --- UI -----------------------------------------------------------------------------------------------------------------
-function colorPickerClass:Show(colorPickerData, previewControlToColorize)
+function colorPickerClass:Show(comboBox, LSMEntryControl, colorPickerData)        --#2026_22
     if colorPickerData == nil then return end
-    colorPickerData.previewControl = colorPickerData.previewControl or previewControlToColorize             --#2026_22
+    self.lastComboBoxOpenedFrom = comboBox                                                                  --#2026_22
+    self.LSMEntryControlOpenedFrom = LSMEntryControl                                                        --#2026_22
 
     self:SetColorPickerData(colorPickerData)                                                                --#2026_22
-
     --Set the default color that should be used for the color picker (will be applied to the controlToColorize, if specified, automatically!) --#2026_22
     self:SetDefaultColor(colorPickerData.defaultColor)                                                      --#2026_22
-
     --Any function provided to get the color's r, g, b, a values from (only if controlToColorize is missing)--#2026_22
     self:SetOnColorGetFunc(colorPickerData.OnColorGetFunc)
-
     --Shall we update any SavedVariables (or any control(s)) etc. by calling a callback function as the color changes?
     self:SetOnColorUpdateFunc(colorPickerData.OnColorUpdateFunc)
-
     --Shall we colorize a control directly?
     self:SetControlToColorize(colorPickerData.controlToColorize)
-
     --Backup the current controlToColorize (or use the OnColorGetFunc()) color -> for the reset functionality
     self:SetResetToColors()
-
     --Is a preview control provided where the color changes should be shown as they happen (default is the texture control at the LSM colorPicker entry)
-    self:SetPreviewControlToColorize(previewControlToColorize)
+    self:SetPreviewControlToColorize(colorPickerData.previewControl)
 
     --Show the ColorPicker UI and set it's default/current color now
     self:SetHidden(false)
+
+    self:FireCallbacks("LibScrollableMenu_ColorPicker_OnShown", self, comboBox, LSMEntryControl, colorPickerData)
 end
 
-function colorPickerClass:Hide()
+function colorPickerClass:Hide(noNextGlobalMouseUpSkip)
+--d("[LSM]ColorPicker:Hide - noNextGlobalMouseUpSkip: "..tos(noNextGlobalMouseUpSkip) .. ", suppressNextOnGlobalMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
     self:SetHidden(true)
 
+    --Re-register the global mouse up event again so we can close the LSM normally once clicked outside
+    -->if the dropdown is still opened
+    local comboBox = self.lastComboBoxOpenedFrom
+    if comboBox ~= nil then
+        comboBox.colorPickerOpened = nil
+        if not noNextGlobalMouseUpSkip and comboBox:IsDropdownVisible() then
+            lib.preventerVars.suppressNextOnGlobalMouseUp = true --Skip the next click which happens as the RegisterGlobalMouseUpEvent is registered, as it seems
+        end
+    end
+
+    self.lastComboBoxOpenedFrom = nil
+    self.LSMEntryControlOpenedFrom = nil
     self.controlToColorize = nil
+    self.previewControlToColorize = nil
     self.resetToColors = nil
+    self.OnColorUpdateFunc = nil
+    self.colorPickerData = nil
+    self.defaultColor = nil
+    self.OnColorGetFunc = nil
+
+    self:FireCallbacks("LibScrollableMenu_ColorPicker_OnHidden", self)
 end
 
 
@@ -489,6 +524,7 @@ function lib.InstallColorPicker()
     sharedPicker = colorPickerClass:New(control)
 
     lib.ColorPicker = sharedPicker
+    lib.ColorPickerTLC = parentControl
 end
 
 
@@ -502,17 +538,26 @@ function lib.AnchorColorPickerToMouse()
     end
 end
 
-function lib.ShowColorPicker(colorPickerData, previewControl)
+function lib.ShowColorPicker(comboBox, LSMEntryControl, colorPickerData)
     if ZO_IsTableEmpty(colorPickerData) then return end
     local picker = GetPicker()
     if picker then
-        picker:Show(colorPickerData, previewControl)
+        picker:Show(comboBox, LSMEntryControl, colorPickerData)
     end
 end
 
-function lib.HideColorPicker()
+function lib.HideColorPicker(noNextGlobalMouseUpSkip)
     local picker = GetPicker()
     if picker then
-        picker:Hide()
+        picker:Hide(noNextGlobalMouseUpSkip)
     end
+end
+
+function lib.IsColorPickerVisible()
+    local picker = GetPicker()
+    if picker then
+        local control = picker.control
+        return (control ~= nil and not control:IsHidden()) or false
+    end
+    return false
 end

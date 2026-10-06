@@ -220,10 +220,13 @@ function contextMenuClass:ShowContextMenu(parentControl)
 	-- To prevent the context menu from overlapping a submenu it is not opened from:
 	-- If the opening control is a dropdown and has a submenu visible, close the submenu.
 	local comboBox = getComboBox(parentControl)
-	if comboBox and comboBox.m_submenu and comboBox.m_submenu:IsDropdownVisible() then
---d("-->Hiding opened submenu's dropdown")
-		comboBox.m_submenu:HideDropdown()
+	if comboBox then
+		if comboBox.m_submenu and comboBox.m_submenu:IsDropdownVisible() then
+			--d("-->Hiding opened submenu's dropdown")
+			comboBox.m_submenu:HideDropdown()
+		end
 	end
+	self:CheckIfOtherLSMControlsNeedToBeHidden(nil, true)														--#2026_22
 
 	if self:IsDropdownVisible() then
 --d("-->Hiding opened dropdown")

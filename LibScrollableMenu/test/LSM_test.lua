@@ -748,12 +748,12 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 				name            = "Colorpicker1",
 				tooltip         = "Color picker ...",
 				callback 		= function(comboBox, itemName, item, selectionChanged, oldItem)
-					d("ColorPicker callback fired...")
+					d("ColorPicker entry - OnClick fired...")
 				end,
 				colorPickerData = {
 					hidePreview = function() return false end,
 					--controlToColorize = DebugLogViewerMainWindowToolbarLevelFilterButtonsLevelDColor,
-					OnColorUpdateFunc = function(r, g, b, a, colorPickerData)
+					OnColorUpdateFunc = function(comboBox, r, g, b, a, colorPickerData)
 						d("[LSM]Test ColorPicker - " .. string.format("|c%.2x%.2x%.2x%s|r", math.floor(r * 255), math.floor(g * 255), math.floor(b * 255), "OnColorUpdateFunc"))
 
 						testSv.colorPicker.r = r
@@ -761,7 +761,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 						testSv.colorPicker.b = b
 						testSv.colorPicker.a = a
 					end,
-					OnColorGetFunc = function(colorPickerData)
+					OnColorGetFunc = function(comboBox, colorPickerData)
 						d("[LSM]Test ColorPicker - OnColorGetFunc")
 						return testSv.colorPicker.r, testSv.colorPicker.g, testSv.colorPicker.b, testSv.colorPicker.a
 					end,
@@ -955,32 +955,58 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 					--AddCustomScrollableSubMenuEntry("Context menu entry 1", subEntries)
 					AddCustomScrollableMenuHeader("Header test in context menu", nil)
 
+					AddCustomScrollableMenuColorPicker("DebuglogViewer FilterButtonLevelD", function() d("ContextMenu colorpicker ...") end, {
+						previewControl = function(comboBox, LSMEntryControl, colorPickerData)
+							--Get the label control of the LSM entry and update the color of the label directly
+							if LSMEntryControl and LSMEntryControl.isColorPicker and LSMEntryControl.m_label then
+								return LSMEntryControl.m_label
+							end
+						end,
+						hidePreview = function(colorPickerData) return true end,
+						--controlToColorize = DebugLogViewerMainWindowToolbarLevelFilterButtonsLevelDColor,
+						OnColorUpdateFunc = function(comboBox, r, g, b, a, colorPickerData)
+							--d("[LSM]Test ContextMenu ContextMenu ColorPicker - " .. string.format("|c%.2x%.2x%.2x%s|r", math.floor(r * 255), math.floor(g * 255), math.floor(b * 255), "OnColorUpdateFunc"))
+
+							testSv.colorPicker.r = r
+							testSv.colorPicker.g = g
+							testSv.colorPicker.b = b
+							testSv.colorPicker.a = a
+						end,
+						OnColorGetFunc = function(comboBox, colorPickerData)
+							d("[LSM]Test ColorPicker ContextMenu - OnColorGetFunc")
+							return testSv.colorPicker.r, testSv.colorPicker.g, testSv.colorPicker.b, testSv.colorPicker.a
+						end,
+						defaultColor = { r = 1, g = 0, b = 0, a = 1 },
+						title = "Test LSM color picker 1 - context menu",
+						snapToOpeningControl = false,
+					}, nil)
+
 					AddCustomScrollableSubMenuEntry("Context menu entry1 opening a submenu", submenuEntriesForContextMenu)
 
 					AddCustomScrollableMenuEntry("RunCustomScrollableMenuItemsCallback (Parent, Checkboxes)", function(comboBox, itemName, item, selectionChanged, oldItem)
-						d('Context menu Normal entry 1')
+					d('Context menu Normal entry 1')
 
 
-						local function myAddonCallbackFunc(p_comboBox, p_item, entriesFound, ...) --... will be filled with customParams
-							--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
-							d(debugPrefix .. "Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
-							for k, v in ipairs(entriesFound) do
-								local name = v.label or v.name
-								d(">name of checkbox: " .. tostring(name).. ", checked: " .. tostring(v.checked))
-							end
+					local function myAddonCallbackFunc(p_comboBox, p_item, entriesFound, ...) --... will be filled with customParams
+					--Loop at entriesFound, get it's .data.dataSource etc and check SavedVAriables etc.
+					d(debugPrefix .. "Context menu - Normal entry 1->RunCustomScrollableMenuItemsCallback: WAS EXECUTED!")
+					for k, v in ipairs(entriesFound) do
+					local name = v.label or v.name
+					d(">name of checkbox: " .. tostring(name).. ", checked: " .. tostring(v.checked))
+					end
 
-						end
+					end
 
-						--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
-						RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, { LSM_ENTRY_TYPE_CHECKBOX }, true, "customParam1", "customParam2")
+					--Use LSM API func to get the opening control's list and m_sorted items properly so addons do not have to take care of that again and again on their own
+					RunCustomScrollableMenuItemsCallback(comboBox, item, myAddonCallbackFunc, { LSM_ENTRY_TYPE_CHECKBOX }, true, "customParam1", "customParam2")
 					end)
 
 					AddCustomScrollableMenuEntry("Context menu Normal entry 2", function() d('Context menu Normal entry 2') end, nil, nil, {
-						normalColor =		GetClassColor(GetUnitClassId("player")),
-						disabledColor =		CUSTOM_DISABLED_TEXT_COLOR,
-						highlightColor =	CUSTOM_HIGHLIGHT_TEXT_COLOR,
-						highlightTemplate =	"ZO_TallListSelectedHighlight",
-						font = function() return "ZoFontBookLetter" end,
+					normalColor =		GetClassColor(GetUnitClassId("player")),
+					disabledColor =		CUSTOM_DISABLED_TEXT_COLOR,
+					highlightColor =	CUSTOM_HIGHLIGHT_TEXT_COLOR,
+					highlightTemplate =	"ZO_TallListSelectedHighlight",
+					font = function() return "ZoFontBookLetter" end,
 					})
 
 					AddCustomScrollableMenuEntry("Context menu Normal entry 3", function() d('Context menu Normal entry 3') end)
@@ -990,16 +1016,16 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 					AddCustomScrollableMenuEntry("Context menu Normal entry 5", function() d('Context menu Normal entry 5') end)
 
 					ShowCustomScrollableMenu(nil, {
-						--titleText = "Context menu",
-						--titleFont = function() return "ZoFontGameSmall" end,
-						--subtitleText = function() return "Test 1" end,
-						--subtitleFont = "ZoFontHeader3", --Same font size as title
-						enableFilter = true,
-						--headerColor = HEADER_TEXT_COLOR_RED,
-						visibleRowsDropdown = 5,
-						visibleRowsSubmenu = 4,
-						--maxDropdownHeight = 250,
-						--sortEntries = false,
+					--titleText = "Context menu",
+					--titleFont = function() return "ZoFontGameSmall" end,
+					--subtitleText = function() return "Test 1" end,
+					--subtitleFont = "ZoFontHeader3", --Same font size as title
+					enableFilter = true,
+					--headerColor = HEADER_TEXT_COLOR_RED,
+					visibleRowsDropdown = 5,
+					visibleRowsSubmenu = 4,
+					--maxDropdownHeight = 250,
+					--sortEntries = false,
 					})
 				end,
 				icon			= "EsoUI/Art/TradingHouse/Tradinghouse_Weapons_Staff_Frost_Up.dds",

@@ -364,6 +364,9 @@
 							<OnTextChanged>
 								LibScrollableMenu.XML.OnXMLControlEventHandler("OnEditBoxTextChanged", self, self)
 							</OnTextChanged>
+							<OnMouseUp>
+								LibScrollableMenu.XML.OnXMLControlEventHandler("OnEditBoxMouseUp", self, self, button, upInside, ctrl, alt, shift)
+							</OnMouseUp>
 						</EditBox>
 					</Controls>
 				</Backdrop>
@@ -947,8 +950,10 @@
 								owningWindow.toggleButton = self
 								---This toggleFunction will be called from LibScrollableMenu.XML.OnXMLControlEventHandler("ToggleHeader", self, self) -> ZO_CheckButton_OnClicked
 								self.toggleFunction = function(button, checked)
-									if owningWindow.object and owningWindow.object.m_comboBox then
-										owningWindow.object.m_comboBox:UpdateDropdownHeader(self, true)
+								    local comboBox = (owningWindow and owningWindow.object and owningWindow.object.m_comboBox) or nil
+									if comboBox then
+										comboBox:UpdateDropdownHeader(self, true)
+										comboBox:CheckIfOtherLSMControlsNeedToBeHidden(nil, true, true)
 									end
 								end
 								
