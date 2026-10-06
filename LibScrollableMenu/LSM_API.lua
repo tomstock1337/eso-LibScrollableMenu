@@ -293,8 +293,10 @@ GetCustomScrollableMenuRowData = libUtil.getControlData
 --					controlToColorize = userdata:control,		-- optional control or function returning the control that should be colorized as the color is chosen in the color picker
 --					OnColorUpdateFunc = function(r, g, b, a, colorPickerData) end,		--optional function doing something with the r, g, b, a values as the color is chosen in the color picker (e.g. write them to your SavedVariables)
 --					OnColorGetFunc = function(colorPickerData) return r, g, b, a end,	--optional function returning the r, g, b, a values of the current color e.g. from SavedVariables -> Will only be used if no controlToColorize was provided where that could be read from automatically
---					defaultColor = { r=1, g=1, b=1, a=1 },		--optional color table or function returning a color table: The default color that the colorPicker should use. If a controlToColorize is specified too, that control will get this default color!
+--					defaultColor = { r=1, g=1, b=1, a=1 },		--optional color table or function returning a color table: The default color that the colorPicker should reset to
 --					hidePreview =	false,						--optional boolean or function returning a boolean: Hide the previewControl (texture) that shows the current color
+--					title = "Text here", 						--optional string or function buildTitle(colorPickerData) returning a string for the color picker title. If not specified the title will be the label of the LSM entry clicked on to open the colorpicker. That entry label text is present in colorPickerData.LSMEntryLabel (once the entry was clicked) and can be used that way in your title callback function!
+--					snapToOpeningControl = false,				--optional boolean or function returning a boolean: Snap the color picker UI to the LSM entry that opened it? Default: true
 --		->		}
 --		enabled = false, -- optional boolean or function isEnabled(comboBox, data) returning a boolean. Is this entry enabled (mouse over & clickable)
 --		isNew = false, --  optional boolean or function returning a boolean Is this entry a new entry and thus shows the "New" icon?

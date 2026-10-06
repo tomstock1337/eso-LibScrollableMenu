@@ -466,9 +466,9 @@
 							offsetY="5" />
 				</Button>
 				<Label name="$(parent)Title"
-					   font="ZoFontWinH3"
+					   font="ZoFontWinT2"
 					   color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED"
-					   modifyTextType="UPPERCASE"
+					   maxLineCount="2"
 					   mouseEnabled="true"
 					   movable="true">
 					<Anchor point="TOPLEFT"

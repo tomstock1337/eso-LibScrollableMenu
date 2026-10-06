@@ -78,6 +78,7 @@ function colorPickerClass:Initialize(control)
 
     local titleLabel = control:GetNamedChild("Title")
     titleLabel:SetText(GetString(SI_WINDOW_TITLE_COLOR_PICKER))
+    self.titleCtrl = titleLabel                                                                            --#2026_22
 
     local closeButton = control:GetNamedChild("Close")
     closeButton:SetDrawLevel(INTERACTABLE_LEVEL)
@@ -164,6 +165,10 @@ end
 
 
 --- SETTER -------------------------------------------------------------------------------------------------------------
+function colorPickerClass:SetTitle()                                                                       --#2026_22
+    self.titleCtrl:SetText(self:GetTitleString())
+end
+
 function colorPickerClass:SetColorPickerData(colorPickerData)
     self.colorPickerData = colorPickerData
 end
@@ -176,8 +181,8 @@ function colorPickerClass:SetPreviewControlToColorize(controlOrFunc)
     self.previewControlToColorize = controlOrFunc
 end
 
-function colorPickerClass:SetDefaultColor(defaultColor)                                                     --#2026_22
-    self.defaultColor = defaultColor
+function colorPickerClass:SetDefaultColor(colorOrFunc)                                                     --#2026_22
+    self.defaultColor = colorOrFunc
 end
 
 function colorPickerClass:SetOnColorUpdateFunc(func) --func uses the signature updateFunction(r, g, b, a, colorPickerData)
@@ -237,6 +242,19 @@ end
 
 
 --- GETTER -------------------------------------------------------------------------------------------------------------
+function colorPickerClass:GetTitleString()                                                                  --#2026_22
+    local colorPickerTitleStr = ""
+    local colorPickerData = self:GetColorPickerData()
+    local colorPickerCustomTitle = getValueOrCallback(colorPickerData.title, colorPickerData)
+    if colorPickerCustomTitle ~= nil and colorPickerCustomTitle ~= "" then
+        --Use custom title
+        colorPickerTitleStr = colorPickerCustomTitle
+    else
+        colorPickerTitleStr = "|cC0C0C0" .. GetString(SI_WINDOW_TITLE_COLOR_PICKER) .. "|r" .. ((colorPickerData.LSMEntryLabel ~= nil and ": " .. colorPickerData.LSMEntryLabel) or "")
+    end
+    return colorPickerTitleStr
+end
+
 function colorPickerClass:GetColorPickerData()
     return self.colorPickerData
 end
@@ -266,7 +284,8 @@ function colorPickerClass:GetOnColorGetFunc()                                   
 end
 
 
---Get the controlToColorize's current color, or if that is missing use the OnColorGetFunc(colorPickerData) to get the r, g, b, a values for the color picker UI
+--Get the controlToColorize's current color, or if that is missing use the OnColorGetFunc(colorPickerData) to get the
+--r, g, b, a values for the color picker UI. If a defaultColor was specified save that to be applied by the "reset" button
 local noColorSpecifiedTable = { r = 1, g = 1, b = 1, a = 1 }
 function colorPickerClass:GetCurrentControlColors(isResetColorSave)
     local defaultColor
@@ -401,13 +420,15 @@ end
 function colorPickerClass:SetHidden(hidden)
     local control = self.control
     local parent = control:GetParent() --should be LibScrollableMenu_ColorPicker_TLC
+    local mouseEnabled = not hidden
     parent:SetHidden(hidden)
     control:SetHidden(hidden)
-
-    if not hidden then
+    control:SetMovable(mouseEnabled)
+    control:SetMouseEnabled(mouseEnabled)
+    if mouseEnabled then
         parent:BringWindowToTop()
-        control:SetMovable(true)
-        control:SetMouseEnabled(true)
+        --Get, build and set the title of the color picker UI
+        self:SetTitle()                                                                                     --#2026_22
         --Set the default / currentColor now
         self:LoadColors()
     end
@@ -416,13 +437,14 @@ end
 --- UI -----------------------------------------------------------------------------------------------------------------
 function colorPickerClass:Show(colorPickerData, previewControlToColorize)
     if colorPickerData == nil then return end
+    colorPickerData.previewControl = colorPickerData.previewControl or previewControlToColorize             --#2026_22
 
-    self:SetColorPickerData(colorPickerData)                        --#2026_22
+    self:SetColorPickerData(colorPickerData)                                                                --#2026_22
 
     --Set the default color that should be used for the color picker (will be applied to the controlToColorize, if specified, automatically!) --#2026_22
-    self:SetDefaultColor(colorPickerData.defaultColor)              --#2026_22
+    self:SetDefaultColor(colorPickerData.defaultColor)                                                      --#2026_22
 
-    --Any function provided to get the color's r, g, b, a values from (only if controlToColorize is missing)    --#2026_22
+    --Any function provided to get the color's r, g, b, a values from (only if controlToColorize is missing)--#2026_22
     self:SetOnColorGetFunc(colorPickerData.OnColorGetFunc)
 
     --Shall we update any SavedVariables (or any control(s)) etc. by calling a callback function as the color changes?

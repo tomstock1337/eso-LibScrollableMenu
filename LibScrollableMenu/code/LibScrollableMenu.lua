@@ -334,8 +334,14 @@ Max error/feature #: 2026_22
 
 [Added]
 
-
 [Changed]
+--Added parameter "colorPickerData" to the API function colorPickerData.OnColorUpdateFunc signature: OnColorUpdateFunc(r, g, b, a, colorPickerData)
+--->The colorPickerData contains all values that the entry had specified plus the "previewControl" reference was added too, in case you need them
+--Added new possible values to colorPickerData table:
+--					OnColorGetFunc = function(colorPickerData) return r, g, b, a end,	--optional function returning the r, g, b, a values of the current color e.g. from SavedVariables -> Will only be used if no controlToColorize was provided where that could be read from automatically
+--					defaultColor = { r=1, g=1, b=1, a=1 },		--optional color table or function returning a color table: The default color that the colorPicker should reset to
+--					hidePreview =	false,						--optional boolean or function returning a boolean: Hide the previewControl (texture) that shows the current color
+--					title = "Text here", 						--optional string or function buildTitle(colorPickerData) returning a string for the color picker title. If not specified the title will be the label of the LSM entry clicked on to open the colorpicker. That entry label text is present in colorPickerData.LSMEntryLabel (once the entry was clicked) and can be used that way in your title callback function!
 
 [Removed]
 

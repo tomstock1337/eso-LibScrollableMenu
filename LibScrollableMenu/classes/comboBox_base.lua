@@ -1681,7 +1681,7 @@ function comboBox_base:RunSpecialItemCallbackForColorPicker(item, control) --#20
 	]]
 
 	--Try to get the previewControl (small texture at the LSM entry of a ColorPicker row)
-	local previewControl = nil
+	local previewControl
 	if control and control.isColorPicker and control.m_data then
 		if control.m_currentColor ~= nil then
 			--Assure we got the correct control by comparing the item.name with the control's dataSource.name
@@ -1695,8 +1695,16 @@ function comboBox_base:RunSpecialItemCallbackForColorPicker(item, control) --#20
 	--Show the color picker and pass in the colorPickerData table and the optionally used previewControl
 	local colorPickerData = control.colorPickerData or item.colorPickerData
 	if colorPickerData ~= nil then
+		--Add the currently clicked LSM entry's data to the colorPickerData.LSMEntryLabel -> For the title of the colorpicker		--#2026_22
+		colorPickerData.LSMEntryLabel = item.label or item.name
+		colorPickerData.previewControl = previewControl
 		lib.ShowColorPicker(colorPickerData, previewControl)
-		lib.AnchorColorPickerToMouse()
+
+		local snapToOpeningControl = getValueOrCallback(colorPickerData.snapToOpeningControl, colorPickerData)						--#2026_22
+		if snapToOpeningControl == nil then snapToOpeningControl = true end
+		if snapToOpeningControl then
+			lib.AnchorColorPickerToMouse()
+		end
 	end
 
 	---Run the normal item.callback function now
@@ -2118,11 +2126,10 @@ do -- Row setup functions
 		control.m_label:SetText(data.label or data.name)
 
 		control.m_colorContainer = control.m_colorContainer or control:GetNamedChild("CurrentColorContainer")
-		control.m_colorContainer:SetHidden(false)
+		control.m_colorContainer:SetHidden(true)
 		local colorPreview = control.m_currentColor or control.m_colorContainer:GetNamedChild("Color")
 		control.m_currentColor = colorPreview
 		colorPreview:SetColor(0, 0, 0, 0)
-		colorPreview:SetHidden(true)
 
 		local borderChildName = colorPreview:GetName() .. "Border"
 		if control.m_currentColorBorder == nil and GetControl(borderChildName) == nil then
@@ -2133,6 +2140,7 @@ do -- Row setup functions
 			currentColorBorder:SetDimensions(24, 18)
 			currentColorBorder:SetAnchor(CENTER, colorPreview, CENTER, 0, 0)
 		end
+		colorPreview:SetHidden(true)
 	end
 
 	-- CHECKBOX / RADIOBUTTON
@@ -2877,14 +2885,14 @@ d(">enabled: " .. tos(data.enabled))
 		if type(colorPickerData) ~= "table" then return end
 
 		--local labelCtrl  = control.m_label
-		local previewColorContainerCtrl  = control.m_currentColorContainer
+		local previewColorContainerCtrl  = control.m_colorContainer
 		local previewColorCtrl  = control.m_currentColor
 
 		--Update the color preview texture with the control's current color (if there is any control to colorize provided)
 		--or use the OnColorGetFunc (if provided).
 		--Or: Hide the preview control if that is requested
 		if previewColorCtrl ~= nil then
-			local hidePreview = getValueOrCallback(colorPickerData.data, data) or false
+			local hidePreview = getValueOrCallback(colorPickerData.hidePreview, data) or false
 			if not hidePreview then
 				previewColorContainerCtrl:SetWidth(30)
 				local controlToColorize = getValueOrCallback(colorPickerData.controlToColorize, colorPickerData)

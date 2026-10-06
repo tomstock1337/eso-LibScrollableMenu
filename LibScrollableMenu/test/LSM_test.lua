@@ -764,7 +764,9 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 					OnColorGetFunc = function(colorPickerData)
 						d("[LSM]Test ColorPicker - OnColorGetFunc")
 						return testSv.colorPicker.r, testSv.colorPicker.g, testSv.colorPicker.b, testSv.colorPicker.a
-					end
+					end,
+					defaultColor = { r = 1, g = 0, b = 0, a = 1 },
+					--title = "Farbwahl für LSM Test Eintrag 1",
 				},
 				doNotFilter		= false,
 			},
