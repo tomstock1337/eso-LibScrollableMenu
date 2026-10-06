@@ -39,6 +39,9 @@ local classes = lib.classes
 local buttonGroupClass = classes.buttonGroupClass
 local dropdownClass = classes.dropdownClass
 
+local LSM_colorPicker = lib.ColorPicker
+local lib_IsColorPickerVisible = lib.IsColorPickerVisible
+
 
 --------------------------------------------------------------------
 --ZO_ComboBox function references
@@ -1033,7 +1036,7 @@ end
 function comboBox_base:OnGlobalMouseUp(eventId, button)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 90, tos(button), tos(lib.preventerVars.suppressNextOnGlobalMouseUp)) end
 --d(debugPrefix .. "comboBox_base:OnGlobalMouseUp-button: " ..tos(button) .. ", container: " .. tos(getControlName(self.m_container)) .. ", suppressNextMouseUp: " .. tos(lib.preventerVars.suppressNextOnGlobalMouseUp))
-	--[[
+--[[
 	LSM_Debug = LSM_Debug or {}
 	LSM_Debug._globalMouseUp = LSM_Debug._globalMouseUp or {}
 	local nextGlobalMouseUp = #LSM_Debug._globalMouseUp +1
@@ -1047,8 +1050,7 @@ function comboBox_base:OnGlobalMouseUp(eventId, button)
 		dropdownVisible = self:IsDropdownVisible(),
 		moc = moc(),
 	}
-	]]
-
+]]
 	--Check if any particular mouse button was set to be sekipped in next global mouse up event, or if any mouse button should be skipped once
 	local abortEarly = false
 	local suppressNextOnGlobalMouseUp = lib.preventerVars.suppressNextOnGlobalMouseUp
@@ -1251,10 +1253,22 @@ function comboBox_base:HiddenForReasons(button, isMouseOverOwningDropdown)
 	local isContextMenuVisible = g_contextMenu:IsDropdownVisible()
 	local isOwnedByComboBox = dropdownObject:IsOwnedByComboBox(comboBox)
 	local wasTextSearchContextMenuEntryClicked = dropdownObject:WasTextSearchContextMenuEntryClicked()
+	local isColorPickerVisible = self:IsColorPickerVisible()													--#2026_22
 	local wasFilterHeaderClicked = false
 	local wasEditBoxClickedAtContextMenu = false
 	local wasSliderClickedAtContextMenu = false
 	local wasMultiIconClickedAtContextMenu = false --#2025_39
+
+	if isColorPickerVisible and not isMouseOverOwningDropdown and not wasTextSearchContextMenuEntryClicked then	--#2026_22
+		--Did we click the color picker's controls while we had requested it to be opened for an LSM entry?
+		if owningWindow == lib.ColorPickerTLC then
+			--We clicked a color picker's control, and do not want to close the LSM due to that
+			--Closing the colorPicker UI makes the LSM close normal again (or opening a submenu or contextMenu or clicking any other
+			--LSM entry
+			return false
+		end
+	end
+
 	if isContextMenuVisible and not wasTextSearchContextMenuEntryClicked then
 		wasTextSearchContextMenuEntryClicked = g_contextMenu.m_dropdownObject:WasTextSearchContextMenuEntryClicked()
 		if doDebugNow then d(">wasTextSearchContextMenuEntryClicked: " .. tos(wasTextSearchContextMenuEntryClicked)) end
@@ -1566,6 +1580,8 @@ function comboBox_base:HideDropdown()
 	if self.m_submenu and self.m_submenu:IsDropdownVisible() then
 		-- Close all open descendants.
 		self.m_submenu:HideDropdown()
+	else
+		self:CheckIfOtherLSMControlsNeedToBeHidden(nil, true, true)											--#2026_22
 	end
 
 --	lib.openMenu = nil
@@ -1672,6 +1688,38 @@ local specialItemCallbackFunctionsPerEntryType = {  --#2026_21
 	[LSM_ENTRY_TYPE_COLORPICKER] = "RunSpecialItemCallbackForColorPicker",
 }
 
+function comboBox_base:IsColorPickerVisible()
+	--ContextMenus/submenus do not have the self.colorPickerOpened = true if you had opened the coloricker from an entry
+	--of their parent dropdown e.g.
+	return self.colorPickerOpened == true or lib_IsColorPickerVisible()											--#2026_22
+end
+
+function comboBox_base:CheckIfColorPickerIsVisibleForClickedEntry(mocCtrl, doOverrideClose, noNextGlobalMouseUpSkip)	--#2026_22
+	LSM_colorPicker = LSM_colorPicker or lib.ColorPicker
+	if not self:IsColorPickerVisible() then return end
+
+	--Was the colorpicker opened for the currently clicked LSM entry? Or any other? If other: close the colorPicker
+	local openedForCurrentlyClickedLSMControl
+	if not doOverrideClose then
+		mocCtrl = mocCtrl or moc()
+		local LSMEntryControlOpenedFrom = LSM_colorPicker:GetLSMEntryControl()
+		openedForCurrentlyClickedLSMControl = ( LSMEntryControlOpenedFrom ~= nil and mocCtrl == LSMEntryControlOpenedFrom and true ) or false
+	else
+		openedForCurrentlyClickedLSMControl = false
+	end
+	--The colorpicker was opened for any other LSM control? Hide the colorPicker now!
+	if not openedForCurrentlyClickedLSMControl then
+		self.colorPickerOpened = nil
+		lib.HideColorPicker(noNextGlobalMouseUpSkip)
+	end
+end
+
+function comboBox_base:CheckIfOtherLSMControlsNeedToBeHidden(mocCtrl, doOverrideClose, noNextGlobalMouseUpSkip)		--#2026_22
+--d("!°°°°°°°°°°°°°°°°°°°°°°°°° CheckIfOtherLSMControlsNeedToBeHidden")
+	--Any ColorPicker still opened?
+	self:CheckIfColorPickerIsVisibleForClickedEntry(mocCtrl, doOverrideClose, noNextGlobalMouseUpSkip)
+end
+
 function comboBox_base:RunSpecialItemCallbackForColorPicker(item, control) --#2026_21
 	--[[ Old version: the item.callback function returned a control to colorize.
 	--New version: We are using a passed in colorPickerData table which contains the colorPicker callback function that
@@ -1681,7 +1729,7 @@ function comboBox_base:RunSpecialItemCallbackForColorPicker(item, control) --#20
 	]]
 
 	--Try to get the previewControl (small texture at the LSM entry of a ColorPicker row)
-	local previewControl = nil
+	local previewControl
 	if control and control.isColorPicker and control.m_data then
 		if control.m_currentColor ~= nil then
 			--Assure we got the correct control by comparing the item.name with the control's dataSource.name
@@ -1695,8 +1743,22 @@ function comboBox_base:RunSpecialItemCallbackForColorPicker(item, control) --#20
 	--Show the color picker and pass in the colorPickerData table and the optionally used previewControl
 	local colorPickerData = control.colorPickerData or item.colorPickerData
 	if colorPickerData ~= nil then
-		lib.ShowColorPicker(colorPickerData, previewControl)
-		lib.AnchorColorPickerToMouse()
+		--Add the currently clicked LSM entry's data to the colorPickerData.LSMEntryLabel -> For the title of the colorpicker		--#2026_22
+		colorPickerData.LSMEntryLabel = item.label or item.name
+		--Use the passed in previewControl or function, or if that is missing use the build in default previewControl
+		if previewControl ~= nil and colorPickerData.previewControl == nil then colorPickerData.previewControl = previewControl end
+
+		--Let the global mouse up event still be registered but check in it's callback comboBox_base:OnGlobalMouseUp
+		--if a colorpicker is currently shown and if the owningwindow of the moc() clicked is the LSM color picker
+		---> then leave the current LSM dropdown opened
+		self.colorPickerOpened = true --will be reset in colorPickerClass:Hide()
+		lib.ShowColorPicker(self, control, colorPickerData)																	--#2026_22
+
+		local snapToOpeningControl = getValueOrCallback(colorPickerData.snapToOpeningControl, colorPickerData)						--#2026_22
+		if snapToOpeningControl == nil then snapToOpeningControl = true end
+		if snapToOpeningControl then
+			lib.AnchorColorPickerToMouse()
+		end
 	end
 
 	---Run the normal item.callback function now
@@ -1721,13 +1783,16 @@ function comboBox_base:RunSpecialItemCallback(item, control) --#2026_21
 	return false
 end
 
-
+--Called from checkbox or radiobutton or from any other control that is not selectable itsself
+---> from dropdownClass:OnEntryMouseUp
 function comboBox_base:RunItemCallback(item, ignoreCallback, control)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 102) end
 
 	if item.callback and not ignoreCallback then
-		if self:CheckIfEntryTypeNeedsSpecialItemCallback(item.entryType) then	--#2026_21
-			return self:RunSpecialItemCallback(item, control)					--#2026_21
+		self:CheckIfOtherLSMControlsNeedToBeHidden(moc())														--#2026_22
+
+		if self:CheckIfEntryTypeNeedsSpecialItemCallback(item.entryType) then									--#2026_21
+			return self:RunSpecialItemCallback(item, control)													--#2026_21
 		end
 		--Other entryTypes
 		return item.callback(self, item.name, item, control)
@@ -2118,11 +2183,10 @@ do -- Row setup functions
 		control.m_label:SetText(data.label or data.name)
 
 		control.m_colorContainer = control.m_colorContainer or control:GetNamedChild("CurrentColorContainer")
-		control.m_colorContainer:SetHidden(false)
+		control.m_colorContainer:SetHidden(true)
 		local colorPreview = control.m_currentColor or control.m_colorContainer:GetNamedChild("Color")
 		control.m_currentColor = colorPreview
 		colorPreview:SetColor(0, 0, 0, 0)
-		colorPreview:SetHidden(true)
 
 		local borderChildName = colorPreview:GetName() .. "Border"
 		if control.m_currentColorBorder == nil and GetControl(borderChildName) == nil then
@@ -2133,6 +2197,7 @@ do -- Row setup functions
 			currentColorBorder:SetDimensions(24, 18)
 			currentColorBorder:SetAnchor(CENTER, colorPreview, CENTER, 0, 0)
 		end
+		colorPreview:SetHidden(true)
 	end
 
 	-- CHECKBOX / RADIOBUTTON
@@ -2877,17 +2942,34 @@ d(">enabled: " .. tos(data.enabled))
 		if type(colorPickerData) ~= "table" then return end
 
 		--local labelCtrl  = control.m_label
-		--local previewColorContainerCtrl  = control.m_currentColorContainer
+		local previewColorContainerCtrl  = control.m_colorContainer
 		local previewColorCtrl  = control.m_currentColor
 
 		--Update the color preview texture with the control's current color (if there is any control to colorize provided)
+		--or use the OnColorGetFunc (if provided).
+		--Or: Hide the preview control if that is requested
 		if previewColorCtrl ~= nil then
-			previewColorCtrl:SetHidden(true)
-			local controlToColorize = getValueOrCallback(colorPickerData.controlToColorize, colorPickerData)
-			if type(controlToColorize) == userDataType and controlToColorize.GetColor ~= nil then
-				previewColorCtrl:SetColor(controlToColorize:GetColor())
-				previewColorCtrl:SetHidden(false)
+			local hidePreview = getValueOrCallback(colorPickerData.hidePreview, data) or false
+			if not hidePreview then
+				previewColorContainerCtrl:SetWidth(30)
+				local controlToColorize = getValueOrCallback(colorPickerData.controlToColorize, colorPickerData)
+				--We got a control to get the current color from?
+				if type(controlToColorize) == userDataType and controlToColorize.GetColor ~= nil then
+					previewColorCtrl:SetColor(controlToColorize:GetColor())
+				else
+					--We got a function to get the current color from? --#2026_22
+					local OnColorGetFunc = colorPickerData.OnColorGetFunc
+					if type(OnColorGetFunc) == funcType then
+						local previewColor = {}
+						previewColor.r, previewColor.g, previewColor.b, previewColor.a = OnColorGetFunc(comboBox, colorPickerData)
+						previewColorCtrl:SetColor(previewColor.r, previewColor.g, previewColor.b, previewColor.a)
+					end
+				end
+			else
+				previewColorContainerCtrl:SetWidth(0)
 			end
+			previewColorCtrl:SetHidden(hidePreview)
+			previewColorContainerCtrl:SetHidden(hidePreview)
 		end
 	end
 
@@ -2978,6 +3060,10 @@ end
 function comboBox_base:SelectItem(item, ignoreCallback)
 --d(debugPrefix .. "comboBox_base:SelectItem - item: " .. tos(item and item.label or item.name) ..", enabled: " ..tos(item and item.enabled) ..", ignoreCallback: " .. tos(ignoreCallback))
 	if not item then return end
+
+	--This "SelectItem" cannot happen for the LSM colorpicker entries (which open a colorPicker) so we can override it
+	--here to close the colorPicker!
+	self:CheckIfOtherLSMControlsNeedToBeHidden(nil, true)														--#2026_22
 
 	--No multiselection
 	if not self.m_enableMultiSelect then
