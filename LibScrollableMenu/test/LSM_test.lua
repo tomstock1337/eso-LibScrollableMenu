@@ -762,7 +762,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 						testSv.colorPicker.a = a
 					end,
 					OnColorGetFunc = function(comboBox, colorPickerData)
-						d("[LSM]Test ColorPicker - OnColorGetFunc")
+						--d("[LSM]Test ColorPicker - OnColorGetFunc")
 						return testSv.colorPicker.r, testSv.colorPicker.g, testSv.colorPicker.b, testSv.colorPicker.a
 					end,
 					defaultColor = { r = 1, g = 0, b = 0, a = 1 },
@@ -973,7 +973,7 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 							testSv.colorPicker.a = a
 						end,
 						OnColorGetFunc = function(comboBox, colorPickerData)
-							d("[LSM]Test ColorPicker ContextMenu - OnColorGetFunc")
+							--d("[LSM]Test ColorPicker ContextMenu - OnColorGetFunc")
 							return testSv.colorPicker.r, testSv.colorPicker.g, testSv.colorPicker.b, testSv.colorPicker.a
 						end,
 						defaultColor = { r = 1, g = 0, b = 0, a = 1 },
