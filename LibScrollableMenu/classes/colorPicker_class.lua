@@ -21,6 +21,7 @@ if not lib then return end
 -- Locals
 --------------------------------------------------------------------
 local tos = tostring
+local funcType = "function"
 
 --------------------------------------------------------------------
 --Library classes
@@ -54,7 +55,7 @@ local INTERACTABLE_LEVEL = ZO_HUD_EDITOR_KEYBOARD_INFO_BOX_INTERACTABLE_ELEMENT_
 
 local sharedPicker
 
-
+--- INITIALIZE ---------------------------------------------------------------------------------------------------------
 function colorPickerClass:Initialize(control)
     self.control = control
     self.suppressApply = false
@@ -64,6 +65,9 @@ function colorPickerClass:Initialize(control)
     self.previewControlToColorize = nil --used to store the control reference to any small preview control that shows the color (e.g. at LSM entry)
     self.resetToColors = nil            --used to store the default current colors of the control to colorize (for the reset function)
     self.OnColorUpdateFunc = nil        --used to store the updateFunction(r, g, b, a) which is called as the color is selected (the function is provided in the entry's colorPickerData and used to e.g. update SavedVariables instead of changing the color directly at any control)
+    self.colorPickerData = nil          --used to store the colorPickerData table of the entry currently processed
+    self.defaultColor = nil             --used to store the default color for the color picker
+    self.OnColorGetFunc = nil           --used to store the funciton the returns the r, g, b, a values for the color (from e.g. SavedVariables) -> only if controlToColorize is not specified!
 
     control:SetDrawTier(DT_HIGH)
     control:SetDrawLevel(10)
@@ -158,64 +162,50 @@ function colorPickerClass:InitializePickerWidgets()
     end)
 end
 
-function colorPickerClass:Show(colorPickerData, previewControlToColorize)
-    if colorPickerData == nil then return end
 
-    --Shall we colorize a control directly?
-    local controlToColorize = getValueOrCallback(colorPickerData.controlToColorize, colorPickerData)
-    self:SetControlToColorize(controlToColorize)
-
-    --Shall we update any SavedVariables etc. by calling a callback function?
-    self:SetColorUpdateFunc(colorPickerData.OnColorUpdateFunc)
-
-    self:SetPreviewControlToColorize(previewControlToColorize)
-
-    self:SetHidden(false)
+--- SETTER -------------------------------------------------------------------------------------------------------------
+function colorPickerClass:SetColorPickerData(colorPickerData)
+    self.colorPickerData = colorPickerData
 end
 
-function colorPickerClass:Hide()
-    self:SetHidden(true)
-
-    self.controlToColorize = nil
-    self.resetToColors = nil
+function colorPickerClass:SetControlToColorize(controlOrFunc)
+    self.controlToColorize = controlOrFunc
 end
 
-function colorPickerClass:SetControlToColorize(control)
-    self.controlToColorize = control
-    --Backup the current control's color as default, for the reset
-    self:SetResetToColors()
+function colorPickerClass:SetPreviewControlToColorize(controlOrFunc)
+    self.previewControlToColorize = controlOrFunc
 end
 
-function colorPickerClass:SetPreviewControlToColorize(control)
-    self.previewControlToColorize = control
+function colorPickerClass:SetDefaultColor(defaultColor)                                                     --#2026_22
+    self.defaultColor = defaultColor
 end
 
-function colorPickerClass:SetColorUpdateFunc(func) --func uses the signature updateFunction(r, g, b, a)
-    if type(func) == "function" then
+function colorPickerClass:SetOnColorUpdateFunc(func) --func uses the signature updateFunction(r, g, b, a, colorPickerData)
+    if type(func) == funcType then
         self.OnColorUpdateFunc = func
     else
         self.OnColorUpdateFunc = nil
     end
 end
 
-function colorPickerClass:GetControlToColorize()
-    return self.controlToColorize
+function colorPickerClass:SetOnColorGetFunc(func)  --func uses the signature updateFunction(colorPickerData) and returns r, g, b, a --#2026_22
+    if type(func) == funcType then
+        self.OnColorGetFunc = func
+    else
+        self.OnColorGetFunc = nil
+    end
 end
 
-function colorPickerClass:GetPreviewControlToColorize()
-    return self.previewControlToColorize
-end
-
-function colorPickerClass:GetColorUpdateFunc()
-    return self.OnColorUpdateFunc
-end
 
 function colorPickerClass:SetResetToColors()
-    self.resetToColors = self:GetCurrentControlColors()
+    self.resetToColors = self:GetCurrentControlColors(true)
 end
 
-function colorPickerClass:GetResetToColors()
-    return self.resetToColors
+function colorPickerClass:SetColor(r, g, b, a)
+    self.colorSelect:SetColorAsRGB(r, g, b)
+    self.valueSlider:SetValue(1 - self.colorSelect:GetValue())
+    self.alphaSlider:SetValue(a or 1)
+    self:UpdateColors(r, g, b, a or 1)
 end
 
 function colorPickerClass:UpdateColors(r, g, b, a)
@@ -238,48 +228,81 @@ function colorPickerClass:UpdateColors(r, g, b, a)
     end
 end
 
-function colorPickerClass:OnColorSet(r, g, b)
-    self:UpdateColors(r, g, b, self.alphaSlider:GetValue())
+function colorPickerClass:Reset()
+    local resetToColorTable = self:GetResetToColors()
+    if resetToColorTable == nil then return end
+    self:ApplyLiveColor(resetToColorTable.r, resetToColorTable.g, resetToColorTable.b, resetToColorTable.a)
+    self:LoadColors()
 end
 
-function colorPickerClass:OnValueSet(value)
-    self.colorSelect:SetValue(value)
+
+--- GETTER -------------------------------------------------------------------------------------------------------------
+function colorPickerClass:GetColorPickerData()
+    return self.colorPickerData
 end
 
-function colorPickerClass:OnAlphaSet(value)
-    local r, g, b = self.colorSelect:GetColorAsRGB()
-    self:UpdateColors(r, g, b, value)
+function colorPickerClass:GetControlToColorize()
+    return getValueOrCallback(self.controlToColorize, self:GetColorPickerData())
 end
 
-function colorPickerClass:SetColor(r, g, b, a)
-    self.colorSelect:SetColorAsRGB(r, g, b)
-    self.valueSlider:SetValue(1 - self.colorSelect:GetValue())
-    self.alphaSlider:SetValue(a or 1)
-    self:UpdateColors(r, g, b, a or 1)
+function colorPickerClass:GetPreviewControlToColorize()
+    return getValueOrCallback(self.previewControlToColorize, self:GetColorPickerData())
 end
 
-function colorPickerClass:GetCurrentControlColors()
+function colorPickerClass:GetDefaultColor()                                         --#2026_22
+    return getValueOrCallback(self.defaultColor, self:GetColorPickerData())
+end
+
+function colorPickerClass:GetResetToColors()
+    return self.resetToColors
+end
+
+function colorPickerClass:GetOnColorUpdateFunc()
+    return self.OnColorUpdateFunc
+end
+
+function colorPickerClass:GetOnColorGetFunc()                                       --#2026_22
+    return self.OnColorGetFunc
+end
+
+
+--Get the controlToColorize's current color, or if that is missing use the OnColorGetFunc(colorPickerData) to get the r, g, b, a values for the color picker UI
+local noColorSpecifiedTable = { r = 1, g = 1, b = 1, a = 1 }
+function colorPickerClass:GetCurrentControlColors(isResetColorSave)
+    local defaultColor
+    if isResetColorSave == true then
+        defaultColor = self:GetDefaultColor()                                                         --#2026_22
+        --Are we saving the resetToColor on showing of the color picker? If we got any defaultColor defined, use that one as resetToColor!
+        if not ZO_IsTableEmpty(defaultColor) then
+            return defaultColor
+        end
+    end
+
+    local currentColors
+
+    --Do we have a control to read the current color from? Use that
     local controlToColorize = self:GetControlToColorize()
-    if not controlToColorize or controlToColorize.GetColor == nil then return end
-    local currentColors = { controlToColorize:GetColor() }
-    return { r = currentColors[1], g = currentColors[2], b = currentColors[3], a = currentColors[4] }
-end
-
-function colorPickerClass:ApplyLiveColor(r, g, b, a)
-    local controlToColorize = self:GetControlToColorize()
-    if controlToColorize and controlToColorize.SetColor then
-        controlToColorize:SetColor(r, g, b, a)
+    if not controlToColorize or controlToColorize.GetColor == nil then
+        --#2026_22 Added colorPickerData.OnColorGetFunc = function() return r, g, b, a end Return the color values e.g. from SavedVariables, but only if colorPickerData.controlToColorize wasn't provided!
+        --Do we have any OnColorGetFunc callback defined? Use that to get the color values
+        local OnColorGetFunc = self:GetOnColorGetFunc()
+        if type(OnColorGetFunc) == funcType then
+            currentColors = {}
+            currentColors.r, currentColors.g, currentColors.b, currentColors.a = OnColorGetFunc(self:GetColorPickerData())
+            return currentColors
+        end
+    else
+        --Use control
+        currentColors = { controlToColorize:GetColor() }
+        return { r = currentColors[1], g = currentColors[2], b = currentColors[3], a = currentColors[4] }
     end
 
-    local previewControlToColorize = self:GetPreviewControlToColorize()
-    if previewControlToColorize and previewControlToColorize.SetColor then
-        previewControlToColorize:SetColor(r, g, b, a)
+    --No control and no OnColorGetFunc? Return the defaultColor if specified, or a dummy black value
+    defaultColor = defaultColor or self:GetDefaultColor()                                                     --#2026_22
+    if not ZO_IsTableEmpty(defaultColor) then
+        return defaultColor
     end
-
-    local OnColorUpdateFunc = self:GetColorUpdateFunc()
-    if OnColorUpdateFunc ~= nil then
-        OnColorUpdateFunc(r, g, b, a)
-    end
+    return noColorSpecifiedTable
 end
 
 function colorPickerClass:LoadColors()
@@ -293,43 +316,23 @@ function colorPickerClass:LoadColors()
     self.suppressApply = false
 end
 
-function colorPickerClass:Reset()
-    local resetToColorTable = self:GetResetToColors()
-    if resetToColorTable == nil then return end
-    self:ApplyLiveColor(resetToColorTable.r, resetToColorTable.g, resetToColorTable.b, resetToColorTable.a)
-    self:LoadColors()
+
+--- Event handlers -----------------------------------------------------------------------------------------------------
+function colorPickerClass:OnColorSet(r, g, b)
+    self:UpdateColors(r, g, b, self.alphaSlider:GetValue())
 end
 
-function colorPickerClass:ApplySavedAnchor()
---d("ApplySavedAnchor")
-    local colorPickerSV = lib.SV.colorPicker
-    local control = self.control
-    control:ClearAnchors()
-    control:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, colorPickerSV.OffsetX or DEFAULT_ANCHOR_OFFSET_X, colorPickerSV.OffsetY or DEFAULT_ANCHOR_OFFSET_Y)
+function colorPickerClass:OnValueSet(value)
+    self.colorSelect:SetValue(value)
 end
 
-function colorPickerClass:SaveAnchor()
---d("SaveAnchor")
-    local control = self.control
-    local colorPickerSV = lib.SV.colorPicker
-    colorPickerSV.OffsetX = control:GetLeft()
-    colorPickerSV.OffsetY = control:GetTop()
+function colorPickerClass:OnAlphaSet(value)
+    local r, g, b = self.colorSelect:GetColorAsRGB()
+    self:UpdateColors(r, g, b, value)
 end
 
-function colorPickerClass:SetHidden(hidden)
-    local control = self.control
-    local parent = control:GetParent() --should be LibScrollableMenu_ColorPicker_TLC
-    parent:SetHidden(hidden)
-    control:SetHidden(hidden)
 
-    if not hidden then
-        parent:BringWindowToTop()
-        control:SetMovable(true)
-        control:SetMouseEnabled(true)
-        self:LoadColors()
-    end
-end
-
+--- Utility ------------------------------------------------------------------------------------------------------------
 function colorPickerClass:AnchorToMouse()
     local mocCtrl = moc()
     if mocCtrl == nil then return end
@@ -352,6 +355,97 @@ function colorPickerClass:AnchorToMouse()
 
     control:ClearAnchors()
     control:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, xOffset, yOffset)
+end
+
+
+--- Callback - Set color if value changed/clciked ----------------------------------------------------------------------
+--Set's the color to the controlToColorize, the previewColorCOntrol and/or calls the callback function OnColorUpdateFunc
+function colorPickerClass:ApplyLiveColor(r, g, b, a)
+    local colorPickerData = self:GetColorPickerData()                               --#2026_22
+
+    local controlToColorize = self:GetControlToColorize()
+    if controlToColorize and controlToColorize.SetColor then
+        controlToColorize:SetColor(r, g, b, a)
+    end
+
+    local previewControlToColorize = self:GetPreviewControlToColorize()
+    if previewControlToColorize and previewControlToColorize.SetColor then
+        colorPickerData.previewControl = previewControlToColorize                   --#2026_22
+        previewControlToColorize:SetColor(r, g, b, a)
+    end
+
+    local OnColorUpdateFunc = self:GetOnColorUpdateFunc()
+    if OnColorUpdateFunc ~= nil then
+        OnColorUpdateFunc(r, g, b, a, colorPickerData)                              --#2026_22
+    end
+end
+
+
+--- Anchoring & Hidden state -------------------------------------------------------------------------------------------
+function colorPickerClass:ApplySavedAnchor()
+    --d("ApplySavedAnchor")
+    local colorPickerSV = lib.SV.colorPicker
+    local control = self.control
+    control:ClearAnchors()
+    control:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, colorPickerSV.OffsetX or DEFAULT_ANCHOR_OFFSET_X, colorPickerSV.OffsetY or DEFAULT_ANCHOR_OFFSET_Y)
+end
+
+function colorPickerClass:SaveAnchor()
+    --d("SaveAnchor")
+    local control = self.control
+    local colorPickerSV = lib.SV.colorPicker
+    colorPickerSV.OffsetX = control:GetLeft()
+    colorPickerSV.OffsetY = control:GetTop()
+end
+
+function colorPickerClass:SetHidden(hidden)
+    local control = self.control
+    local parent = control:GetParent() --should be LibScrollableMenu_ColorPicker_TLC
+    parent:SetHidden(hidden)
+    control:SetHidden(hidden)
+
+    if not hidden then
+        parent:BringWindowToTop()
+        control:SetMovable(true)
+        control:SetMouseEnabled(true)
+        --Set the default / currentColor now
+        self:LoadColors()
+    end
+end
+
+--- UI -----------------------------------------------------------------------------------------------------------------
+function colorPickerClass:Show(colorPickerData, previewControlToColorize)
+    if colorPickerData == nil then return end
+
+    self:SetColorPickerData(colorPickerData)                        --#2026_22
+
+    --Set the default color that should be used for the color picker (will be applied to the controlToColorize, if specified, automatically!) --#2026_22
+    self:SetDefaultColor(colorPickerData.defaultColor)              --#2026_22
+
+    --Any function provided to get the color's r, g, b, a values from (only if controlToColorize is missing)    --#2026_22
+    self:SetOnColorGetFunc(colorPickerData.OnColorGetFunc)
+
+    --Shall we update any SavedVariables (or any control(s)) etc. by calling a callback function as the color changes?
+    self:SetOnColorUpdateFunc(colorPickerData.OnColorUpdateFunc)
+
+    --Shall we colorize a control directly?
+    self:SetControlToColorize(colorPickerData.controlToColorize)
+
+    --Backup the current controlToColorize (or use the OnColorGetFunc()) color -> for the reset functionality
+    self:SetResetToColors()
+
+    --Is a preview control provided where the color changes should be shown as they happen (default is the texture control at the LSM colorPicker entry)
+    self:SetPreviewControlToColorize(previewControlToColorize)
+
+    --Show the ColorPicker UI and set it's default/current color now
+    self:SetHidden(false)
+end
+
+function colorPickerClass:Hide()
+    self:SetHidden(true)
+
+    self.controlToColorize = nil
+    self.resetToColors = nil
 end
 
 

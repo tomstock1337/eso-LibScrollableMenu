@@ -2877,17 +2877,34 @@ d(">enabled: " .. tos(data.enabled))
 		if type(colorPickerData) ~= "table" then return end
 
 		--local labelCtrl  = control.m_label
-		--local previewColorContainerCtrl  = control.m_currentColorContainer
+		local previewColorContainerCtrl  = control.m_currentColorContainer
 		local previewColorCtrl  = control.m_currentColor
 
 		--Update the color preview texture with the control's current color (if there is any control to colorize provided)
+		--or use the OnColorGetFunc (if provided).
+		--Or: Hide the preview control if that is requested
 		if previewColorCtrl ~= nil then
-			previewColorCtrl:SetHidden(true)
-			local controlToColorize = getValueOrCallback(colorPickerData.controlToColorize, colorPickerData)
-			if type(controlToColorize) == userDataType and controlToColorize.GetColor ~= nil then
-				previewColorCtrl:SetColor(controlToColorize:GetColor())
-				previewColorCtrl:SetHidden(false)
+			local hidePreview = getValueOrCallback(colorPickerData.data, data) or false
+			if not hidePreview then
+				previewColorContainerCtrl:SetWidth(30)
+				local controlToColorize = getValueOrCallback(colorPickerData.controlToColorize, colorPickerData)
+				--We got a control to get the current color from?
+				if type(controlToColorize) == userDataType and controlToColorize.GetColor ~= nil then
+					previewColorCtrl:SetColor(controlToColorize:GetColor())
+				else
+					--We got a function to get the current color from? --#2026_22
+					local OnColorGetFunc = colorPickerData.OnColorGetFunc
+					if type(OnColorGetFunc) == funcType then
+						local previewColor = {}
+						previewColor.r, previewColor.g, previewColor.b, previewColor.a = OnColorGetFunc(colorPickerData)
+						previewColorCtrl:SetColor(previewColor.r, previewColor.g, previewColor.b, previewColor.a)
+					end
+				end
+			else
+				previewColorContainerCtrl:SetWidth(0)
 			end
+			previewColorCtrl:SetHidden(hidePreview)
+			previewColorContainerCtrl:SetHidden(hidePreview)
 		end
 	end
 

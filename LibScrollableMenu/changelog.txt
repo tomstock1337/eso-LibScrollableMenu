@@ -1,3 +1,14 @@
+-v- ---------------LSM v2.47 - 2026-10-06--------------------------------------------------------------------------- -v-
+[Changed]
+--Added parameter "colorPickerData" to the API function colorPickerData.OnColorUpdateFunc signature: OnColorUpdateFunc(r, g, b, a, colorPickerData)
+--->The colorPickerData contains all values that the entry had specified plus the "previewControl" reference was added too, in case you need them
+--Added new possible values to colorPickerData table:
+--					OnColorGetFunc = function(colorPickerData) return r, g, b, a end,	--optional function returning the r, g, b, a values of the current color e.g. from SavedVariables -> Will only be used if no controlToColorize was provided where that could be read from automatically
+--					defaultColor = { r=1, g=1, b=1, a=1 },		--optional color table or function returning a color table: The default color that the colorPicker should use. If a controlToColorize is specified too, that control will get this default color!
+--					hidePreview =	false,						--optional boolean or function returning a boolean: Hide the previewControl (texture) that shows the current color
+
+
+
 -v- ---------------LSM v2.46 - 2026-10-05--------------------------------------------------------------------------- -v-
 [Added]
 --#2026_21 Add color picker entry type
@@ -11,7 +22,6 @@
 ---->which is called as the color picker's color is updated (to e.g. write the r,g,b,a values to the SavedVariables).
 -----> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
 --function AddCustomScrollableMenuColorPicker(text, callback, colorPickerData, additionalData)
-
 
 -v- ---------------LSM v2.45 - 2026-08-10--------------------------------------------------------------------------- -v-
 [Fixed]

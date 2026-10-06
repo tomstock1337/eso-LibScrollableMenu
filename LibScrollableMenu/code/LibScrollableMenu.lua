@@ -309,13 +309,13 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.46 - Updated 2026-10-04
+	CHANGELOG Current version: 2.47 - Updated 2026-10-06
 ---------------------------------------------------------------
-Max error #: 2026_21
+Max error/feature #: 2026_22
 
 
 [WORKING ON]
-
+--#2026_22 More colorpicker features
 
 [FEATURE]
 
@@ -333,17 +333,6 @@ Max error #: 2026_21
 [Fixed]
 
 [Added]
---#2026_21 Add color picker entry type
---Added new API function AddCustomScrollableMenuColorPicker
-
---Adds a color picker to the context menu entries -> The entry opens the stand-alone movable colorpicker. Menu will close
-----once the color picker is used (on any click outside of the menu, as usual)
-----Existing context menu entries will be kept (until ClearCustomScrollableMenu will be called)
----->Clicking the line does call the callback AFTER the colorPicker has been opened!
----->The colorPickerData table needs to either specify a control via controlToColorize, or a OnColorUpdateFunc function(r, g, b, a)
----->which is called as the color picker's color is updated (to e.g. write the r,g,b,a values to the SavedVariables).
------> returns nilable:number indexOfNewAddedEntry, nilable:table newEntryData
---function AddCustomScrollableMenuColorPicker(text, callback, colorPickerData, additionalData)
 
 
 [Changed]

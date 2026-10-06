@@ -5,6 +5,14 @@ local debugPrefix = lib.Debug.prefix
 local libUtil = lib.Util
 local getValueOrCallback = libUtil.getValueOrCallback
 
+local testSv = {
+	colorPicker = {
+		r = 1,
+		g = 1,
+		b = 1,
+		a = 1,
+	}
+}
 ------------------------------------------------------------------------------------------------------------------------
 -- For testing - Combobox with all kind of entry types (test offsets, etc.)
 ------------------------------------------------------------------------------------------------------------------------
@@ -743,9 +751,19 @@ d(debugPrefix .. "Context menu submenu 2 - Custom menu 2 Normal entry 1->RunCust
 					d("ColorPicker callback fired...")
 				end,
 				colorPickerData = {
-					controlToColorize = DebugLogViewerMainWindowToolbarLevelFilterButtonsLevelDColor,
-					OnColorUpdateFunc = function(r, g, b, a)
-						d("[LSM]" .. string.format("|c%.2x%.2x%.2x%s|r", math.floor(r * 255), math.floor(g * 255), math.floor(b * 255), "Colorpicker's colored text"))
+					hidePreview = function() return false end,
+					--controlToColorize = DebugLogViewerMainWindowToolbarLevelFilterButtonsLevelDColor,
+					OnColorUpdateFunc = function(r, g, b, a, colorPickerData)
+						d("[LSM]Test ColorPicker - " .. string.format("|c%.2x%.2x%.2x%s|r", math.floor(r * 255), math.floor(g * 255), math.floor(b * 255), "OnColorUpdateFunc"))
+
+						testSv.colorPicker.r = r
+						testSv.colorPicker.g = g
+						testSv.colorPicker.b = b
+						testSv.colorPicker.a = a
+					end,
+					OnColorGetFunc = function(colorPickerData)
+						d("[LSM]Test ColorPicker - OnColorGetFunc")
+						return testSv.colorPicker.r, testSv.colorPicker.g, testSv.colorPicker.b, testSv.colorPicker.a
 					end
 				},
 				doNotFilter		= false,

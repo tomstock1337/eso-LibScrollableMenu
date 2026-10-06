@@ -290,8 +290,11 @@ GetCustomScrollableMenuRowData = libUtil.getControlData
 --		->		}
 --		isColorPicker = false, -- optional boolean or function returning a boolean Is this entry a clickable control that will open a color picker?
 --		-> --ONLY for colorPicker control type:	colorPickerData = { table or function returning a table providing the colorPicker's visuals, control to colorize or callback function OnColorUpdateFunc that fires as the color is chosen
---					controlToColorize = userdata:controlHer,	-- optional control or function returning the control that should be colorized as the color is chosen in the color picker
---					OnColorUpdateFunc = function(r, g, b, a) end,--optional function doing somethign with the r, g, b, a values as the color is chosen in the color picker (e.g. write them to your SavedVariables)
+--					controlToColorize = userdata:control,		-- optional control or function returning the control that should be colorized as the color is chosen in the color picker
+--					OnColorUpdateFunc = function(r, g, b, a, colorPickerData) end,		--optional function doing something with the r, g, b, a values as the color is chosen in the color picker (e.g. write them to your SavedVariables)
+--					OnColorGetFunc = function(colorPickerData) return r, g, b, a end,	--optional function returning the r, g, b, a values of the current color e.g. from SavedVariables -> Will only be used if no controlToColorize was provided where that could be read from automatically
+--					defaultColor = { r=1, g=1, b=1, a=1 },		--optional color table or function returning a color table: The default color that the colorPicker should use. If a controlToColorize is specified too, that control will get this default color!
+--					hidePreview =	false,						--optional boolean or function returning a boolean: Hide the previewControl (texture) that shows the current color
 --		->		}
 --		enabled = false, -- optional boolean or function isEnabled(comboBox, data) returning a boolean. Is this entry enabled (mouse over & clickable)
 --		isNew = false, --  optional boolean or function returning a boolean Is this entry a new entry and thus shows the "New" icon?
