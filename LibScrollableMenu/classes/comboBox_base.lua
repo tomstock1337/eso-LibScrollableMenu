@@ -1145,9 +1145,10 @@ function comboBox_base:GetOptions()
 end
 
 -- Get or create submenu
-function comboBox_base:GetSubmenu()
+function comboBox_base:GetSubmenu(doNotCreateNew) --#2026_23
+	doNotCreateNew = doNotCreateNew or false --#2026_23
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 95) end
-	if not self.m_submenu then
+	if not self.m_submenu and not doNotCreateNew then --#2026_23
 		self.m_submenu = submenuClass:New(self, self.m_container, self:GetOptions(), self.m_nextFree)
 	end
 	return self.m_submenu

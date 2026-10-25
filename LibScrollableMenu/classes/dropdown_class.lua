@@ -2187,10 +2187,25 @@ function dropdownClass:IsAutomaticRefreshEnabled()
 	end
 end
 
+function dropdownClass:CloseAndReShowDropdown(comboBox, isSubMenu, openingControl)	--#2026_23
+	if comboBox then
+		--Do not close any opened contextMenu, jsut keep it opened so it looks like we did not change the comboBox's state
+		lib.preventerVars.suppressNextHideContextMenu = true
+		comboBox:HideDropdown()
+		lib.preventerVars.suppressNextHideContextMenu = nil
+
+		if isSubMenu then
+			comboBox:ShowSubmenu(openingControl)
+		else
+			comboBox:Show()
+		end
+	end
+end
 
 --#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a (sub)menu, if e.g. any other entry was clicked
 function dropdownClass:SubmenuOrCurrentListRefresh(control, override, refreshMainMenuOrSubmenu)
 	override = override or false
+	local selfVar = self 															--#2026_23
 --d("[LSM]dropdownClass:SubmenuOrCurrentListRefresh - refreshMainMenuOrSubmenu: " .. tos(refreshMainMenuOrSubmenu))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 192, tos(getControlName(control))) end
 	local comboBox = self.m_comboBox
@@ -2207,7 +2222,8 @@ function dropdownClass:SubmenuOrCurrentListRefresh(control, override, refreshMai
 	if automaticRefresh == true and ( not self.m_parentMenu or (refreshMainMenuOrSubmenu ~= nil and refreshMainMenuOrSubmenu == true) ) then --dropdown got no submenu? Refresh current scrollList
 --d(">refreshing menu")
 		zo_callLater(function() --delay the update of the entries a bit so all values have been updated properly before
-			comboBox:Show()
+			--Hide the current combobox and then show it again to refresh i, but keep any context menu opened once
+			selfVar:CloseAndReShowDropdown(comboBox) --#2026_23
 		end, 15)
 		checkIfContextMenuVisibleAndBringToTopAgain(self, comboBox, 25) --#2026_13
 		return LSM_normalMenuRefreshDone --Normal menu refresh started
@@ -2218,8 +2234,12 @@ function dropdownClass:SubmenuOrCurrentListRefresh(control, override, refreshMai
 --d(">refreshing submenu")
 			--Reshow the whole submenu of the openingControl again, to update all enabled and checked states of the entries, if any other entry was clicked.
 			-- Must clear now. Otherwise, moving onto a submenu will close it from exiting previous row.
-			clearTimeout()
-			self:ShowSubmenu(owner.openingControl)
+			--clearTimeout() -->Already done in self:ShowSubmenu --#2026_23
+
+			--Hide the current submenu and then show it again to refresh i, but keep any context menu opened once
+			local ownerOpeningControl = owner.openingControl --#2026_23
+			local subMenu = owner:GetSubmenu(true)							--#2026_23
+			self:CloseAndReShowDropdown(subMenu, true, ownerOpeningControl)	--#2026_23
 			checkIfContextMenuVisibleAndBringToTopAgain(self, comboBox, 10) --#2026_13
 			return LSM_submenuRefreshDone --Submenu refresh done
 		end

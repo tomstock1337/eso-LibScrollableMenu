@@ -791,6 +791,7 @@ local function LSM_RefreshLibScrollableMenu(mocCtrl, updateMode, comboBox) -- #2
 			comboBox = (mocCtrl.m_comboBox or (mocCtrl.m_owner and mocCtrl.m_owner.m_comboBox)) or nil
 		end
 		if comboBox == nil then return end
+
 --d(">found combobox")
 		--Main Menu
 		if updateMode == LSM_UPDATE_MODE_BOTH or updateMode == LSM_UPDATE_MODE_MAINMENU then

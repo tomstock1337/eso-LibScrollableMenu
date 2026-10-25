@@ -732,9 +732,15 @@ local libUtil_BelongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 
 function libUtil.hideContextMenu()
 --d("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	local suppressNextHideContextMenu = lib.preventerVars.suppressNextHideContextMenu --#2026_23
 	local suppressNextHideContextMenuClearItems = lib.preventerVars.suppressNextHideContextMenuClearItems
---d(debugPrefix .. "hideContextMenu - suppressClearItems: " .. tos(suppressNextHideContextMenuClearItems))
+--d(debugPrefix .. "hideContextMenu - suppressNextHideContextMenu: " .. tos(suppressNextHideContextMenu) .. ", suppressClearItems: " .. tos(suppressNextHideContextMenuClearItems))
 --d("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	if suppressNextHideContextMenu then
+		lib.preventerVars.suppressNextHideContextMenu = nil --#2026_23
+		return
+	end
+
 	g_contextMenu = getContextMenuReference()
 	if g_contextMenu == nil then return end
 
