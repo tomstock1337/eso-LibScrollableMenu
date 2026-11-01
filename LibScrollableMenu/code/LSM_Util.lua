@@ -81,12 +81,22 @@ local checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect
 --local levelChecked = 0
 local alreadyCheckedSubmenuOpeningItems = {}
 
+
 --------------------------------------------------------------------
+-- Debugging
+--------------------------------------------------------------------
+function libUtil.setupDebugLogging()
+	local libDebug = lib.Debug
+	return libDebug, libDebug.prefix, libDebug.DebugLog
+end
+
+
+-------------------------------------------------------------------
 -- Strings
 --------------------------------------------------------------------
 function libUtil.endsWith(haystack, needle) --#2025_63
-	local suffix = strlow(strsub(haystack, -(#needle)))
-	return suffix == strlow(needle)
+	local suffix = strsub(haystack, -(#needle))
+	return (suffix ~= nil and suffix ~= "" and strlow(suffix) == strlow(needle)) or false
 end
 local endsWith = libUtil.endsWith
 
@@ -276,6 +286,7 @@ function libUtil.recursiveOverEntries(entry, comboBox, callback, ...)
 	recursiveOverEntries = recursiveOverEntries or libUtil.recursiveOverEntries
 	--local doDebug = callback and callback == checkIfSubmenuEntriesAreCurrentlySelectedForMultiSelect
 	----if doDebug then d("!!!!!!!!!! RecursiveOverEntries") end
+	--Reset variable that prevents endless loops, maximum 5000 recursive calls!
 	endlessLoopPreventionCounter = 0
 	--callback = callback or defaultRecursiveCallback
 	--No need to loop all entries just to return false always in the end! Do return it early here
@@ -732,9 +743,15 @@ local libUtil_BelongsToContextMenuCheck = libUtil.belongsToContextMenuCheck
 
 function libUtil.hideContextMenu()
 --d("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	local suppressNextHideContextMenu = lib.preventerVars.suppressNextHideContextMenu --#2026_23
 	local suppressNextHideContextMenuClearItems = lib.preventerVars.suppressNextHideContextMenuClearItems
---d(debugPrefix .. "hideContextMenu - suppressClearItems: " .. tos(suppressNextHideContextMenuClearItems))
+--d(debugPrefix .. "hideContextMenu - suppressNextHideContextMenu: " .. tos(suppressNextHideContextMenu) .. ", suppressClearItems: " .. tos(suppressNextHideContextMenuClearItems))
 --d("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	if suppressNextHideContextMenu then
+		lib.preventerVars.suppressNextHideContextMenu = nil --#2026_23
+		return
+	end
+
 	g_contextMenu = getContextMenuReference()
 	if g_contextMenu == nil then return end
 

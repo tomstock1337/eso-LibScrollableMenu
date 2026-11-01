@@ -8,10 +8,8 @@ local MAJOR = lib.name
 -- For debugging and logging
 --------------------------------------------------------------------
 --Logging and debugging
-local libDebug = lib.Debug
-local debugPrefix = libDebug.prefix
-
-local dlog = libDebug.DebugLog
+local libUtil = lib.Util
+local libDebug, debugPrefix, dlog = libUtil.setupDebugLogging()
 
 
 --------------------------------------------------------------------
@@ -25,6 +23,21 @@ local sfor = string.format
 local tins = table.insert
 local trem = table.remove
 
+-- ESO API globals
+local GetString = GetString
+local GetInterfaceColor = GetInterfaceColor
+
+-- ESO constants
+local ZO_ColorDef = ZO_ColorDef
+local ZO_SORT_ORDER_UP = ZO_SORT_ORDER_UP
+local ZO_SORT_ORDER_DOWN = ZO_SORT_ORDER_DOWN
+local ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
+
+-- Interface color constants
+local INTERFACE_COLOR_TYPE_TEXT_COLORS = INTERFACE_COLOR_TYPE_TEXT_COLORS
+local INTERFACE_TEXT_COLOR_NORMAL = INTERFACE_TEXT_COLOR_NORMAL
+
+--Other constants
 local stringType = "string"
 local numberType = "number"
 local functionType = "function"
@@ -89,7 +102,6 @@ local updateEntryPathCheckFunc = updateEntryPathsData.updateEntryPathCheckFunc
 
 
 --Utility functions
-local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getControlData = libUtil.getControlData
 local getValueOrCallback = libUtil.getValueOrCallback
@@ -696,13 +708,14 @@ local function checkForMultiSelectEnabled(selfVar, control, isOnMouseUp)
 	end
 end
 
-local function onMouseEnter(control, data, hasSubmenu)
+local function onMouseEnter(control, data, hasSubmenu, skipCallbacks)
 	local dropdown = control.m_dropdownObject
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 49, tos(getControlName(control)), tos(hasSubmenu)) end
-	lib:FireCallbacks('EntryOnMouseEnter', control, data)
-	dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
-	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 50, tos(getControlName(control)), tos(hasSubmenu)) end
-
+	if not skipCallbacks then
+		lib:FireCallbacks('EntryOnMouseEnter', control, data)
+		dropdown:Narrate("OnEntryMouseEnter", control, data, hasSubmenu)
+		if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_DEBUG_CALLBACK, 50, tos(getControlName(control)), tos(hasSubmenu)) end
+	end
 	return dropdown
 end
 
@@ -731,6 +744,14 @@ local function onMouseUp(control, data, hasSubmenu)
 end
 
 
+local function onMouseEnterShowSubmenu(selfVar, control, data, skipCallbacks)
+	local dropdown = onMouseEnter(control, data, has_submenu, skipCallbacks)
+	clearTimeout()
+	doSubmenuOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
+	--Show the submenu of the entry
+	dropdown:ShowSubmenu(control)
+end
+
 local handlerFunctions  = {
 	--return false to run default ZO_ComboBox OnMouseEnter handler + tooltip / true to skip original ZO_ComboBox handler and only show tooltip
 	["onMouseEnter"] = {
@@ -749,11 +770,7 @@ local handlerFunctions  = {
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU] = function(selfVar, control, data, ...)
 			--d( debugPrefix .. 'onMouseEnter [entryTypeConstants.LSM_ENTRY_TYPE_SUBMENU]')
-			local dropdown = onMouseEnter(control, data, has_submenu)
-			clearTimeout()
-			doSubmenuOnMouseEnterNestedSubmenuChecks(selfVar, control, data)
-			--Show the submenu of the entry
-			dropdown:ShowSubmenu(control)
+			onMouseEnterShowSubmenu(selfVar, control, data)
 			return false --not control.closeOnSelect
 		end,
 		[entryTypeConstants.LSM_ENTRY_TYPE_CHECKBOX] = function(selfVar, control, data, ...)
@@ -1816,6 +1833,7 @@ function dropdownClass:OnMouseEnterEntry(control)
 end
 
 function dropdownClass:OnMouseExitEntry(control)
+--d(debugPrefix .. "dropdownClass:OnMouseExitEntry - name: " .. tos(getControlName(control)))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 69, tos(getControlName(control))) end
 
 	hideTooltip(control)
@@ -2187,11 +2205,30 @@ function dropdownClass:IsAutomaticRefreshEnabled()
 	end
 end
 
+function dropdownClass:CloseAndReShowDropdown(comboBox, isSubMenu, openingControl)	--#2026_23
+--d(debugPrefix .. "dropdownClass:CloseAndReShowDropdown - isSubMenu: " ..tos(isSubMenu) .. ", openingControl: " .. getControlName(openingControl))
+	if comboBox then
+		--Do not close any opened contextMenu, just keep it opened so it looks like we did not change the comboBox's state
+		lib.preventerVars.suppressNextHideContextMenu = true
+		--self:HideDropdown() --this will close the menu but nothing will be opened afterwards again! Does not work to refresh the list
+		--So how can we only keep the list still opened but refresh all visible menu entries? --##2026_23
+		lib.preventerVars.suppressNextHideContextMenu = nil
+
+		if isSubMenu then
+			onMouseEnterShowSubmenu(self, openingControl, getControlData(openingControl), true)
+			--comboBox:ShowSubmenu(openingControl)	--This will open the submenu again but overlay it above the old opened one. We cannot close the old as else the new cannot open again...
+		else
+--d(">show menu again")
+			comboBox:Show()							--This will open the menu again but overlay it above the old opened one. We cannot close the old as else the new cannot open again...
+		end
+	end
+end
 
 --#2025_42 Automatically update all entries (checkbox/radiobutton checked, and all entries enabled state) in a (sub)menu, if e.g. any other entry was clicked
 function dropdownClass:SubmenuOrCurrentListRefresh(control, override, refreshMainMenuOrSubmenu)
 	override = override or false
---d("[LSM]dropdownClass:SubmenuOrCurrentListRefresh - refreshMainMenuOrSubmenu: " .. tos(refreshMainMenuOrSubmenu))
+	local selfVar = self 															--#2026_23
+--d(debugPrefix .. "dropdownClass:SubmenuOrCurrentListRefresh - refreshMainMenuOrSubmenu: " .. tos(refreshMainMenuOrSubmenu) .. ", override: " .. tos(override))
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 192, tos(getControlName(control))) end
 	local comboBox = self.m_comboBox
 	if not comboBox or not comboBox:IsDropdownVisible() then return end
@@ -2207,7 +2244,8 @@ function dropdownClass:SubmenuOrCurrentListRefresh(control, override, refreshMai
 	if automaticRefresh == true and ( not self.m_parentMenu or (refreshMainMenuOrSubmenu ~= nil and refreshMainMenuOrSubmenu == true) ) then --dropdown got no submenu? Refresh current scrollList
 --d(">refreshing menu")
 		zo_callLater(function() --delay the update of the entries a bit so all values have been updated properly before
-			comboBox:Show()
+			--Hide the current combobox and then show it again to refresh i, but keep any context menu opened once
+			selfVar:CloseAndReShowDropdown(comboBox) --#2026_23
 		end, 15)
 		checkIfContextMenuVisibleAndBringToTopAgain(self, comboBox, 25) --#2026_13
 		return LSM_normalMenuRefreshDone --Normal menu refresh started
@@ -2216,12 +2254,17 @@ function dropdownClass:SubmenuOrCurrentListRefresh(control, override, refreshMai
 		local owner = (control ~= nil and control.m_owner) or self.owner
 		if owner ~= nil and owner.openingControl ~= nil then
 --d(">refreshing submenu")
+			--Hide the current submenu and then show it again to refresh i, but keep any context menu opened once
+			local ownerOpeningControl = owner.openingControl 				--#2026_23
+			--local subMenu = owner:GetSubmenu(true)			 			 	--#2026_23
+
 			--Reshow the whole submenu of the openingControl again, to update all enabled and checked states of the entries, if any other entry was clicked.
-			-- Must clear now. Otherwise, moving onto a submenu will close it from exiting previous row.
-			clearTimeout()
-			self:ShowSubmenu(owner.openingControl)
-			checkIfContextMenuVisibleAndBringToTopAgain(self, comboBox, 10) --#2026_13
-			return LSM_submenuRefreshDone --Submenu refresh done
+			zo_callLater(function() --delay the update of the entries a bit so all values have been updated properly before
+				self:CloseAndReShowDropdown(comboBox, true, ownerOpeningControl)	--#2026_23
+				checkIfContextMenuVisibleAndBringToTopAgain(self, comboBox, 10) --#2026_13
+				return LSM_submenuRefreshDone --Submenu refresh done
+
+			end, 15)
 		end
 	end
 	return false

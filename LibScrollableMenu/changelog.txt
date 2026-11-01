@@ -1,3 +1,9 @@
+-v- ---------------LSM v2.48 - 2026-11-01--------------------------------------------------------------------------- -v--
+[Fixed]
+--#2026_23 (Automatic)refresh opens new LSM dropdown w/o closing old one below (resulting in overlaying dropdowns shown)
+--#2026_24 Performance improvements
+
+
 -v- ---------------LSM v2.47 - 2026-10-06--------------------------------------------------------------------------- -v-
 [Fixed]
 -- ColorPicker closes if any non-colorPicker raising entry is clicked, a contextMenu is opened, etc.
@@ -18,8 +24,6 @@ LibScrollableMenu_ColorPicker_OnColorReset		-	Parameters: ColorPickerObject, com
 --					hidePreview =	false,						--optional boolean or function(colorPickerData) returning a boolean: Hide the previewControl (texture) that shows the current color
 --					title = "Text here", 						--optional string or function(colorPickerData) returning a string for the color picker title. If not specified the title will be the label of the LSM entry clicked on to open the colorpicker. That entry label text is present in colorPickerData.LSMEntryLabel (once the entry was clicked) and can be used that way in your title callback function!
 --					snapToOpeningControl = false,				--optional boolean or function(colorPickerData) returning a boolean: Snap the color picker UI to the LSM entry that opened it? Default: true
-
-
 
 -v- ---------------LSM v2.46 - 2026-10-05--------------------------------------------------------------------------- -v-
 [Added]

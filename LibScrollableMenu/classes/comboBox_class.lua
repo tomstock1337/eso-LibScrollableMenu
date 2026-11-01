@@ -8,10 +8,8 @@ local MAJOR = lib.name
 -- For debugging and logging
 --------------------------------------------------------------------
 --Logging and debugging
-local libDebug = lib.Debug
-local debugPrefix = libDebug.prefix
-
-local dlog = libDebug.DebugLog
+local libUtil = lib.Util
+local libDebug, debugPrefix, dlog = libUtil.setupDebugLogging()
 
 
 --------------------------------------------------------------------
@@ -52,7 +50,6 @@ local LSMOptionsKeyToZO_ComboBoxOptionsKey = comboBoxMappingConstants.LSMOptions
 local LSMOptionsToZO_ComboBoxOptionsCallbacks = comboBoxMappingConstants.LSMOptionsToZO_ComboBoxOptionsCallbacks
 
 
-local libUtil = lib.Util
 local getSavedVariable = libUtil.getSavedVariable
 local updateSavedVariable = libUtil.updateSavedVariable
 

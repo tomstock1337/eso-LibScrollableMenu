@@ -9,17 +9,26 @@ local LSM_ENTRY_TYPE_COLORPICKER = LSM_ENTRY_TYPE_COLORPICKER
 -- For debugging and logging
 --------------------------------------------------------------------
 --Logging and debugging
-local libDebug = lib.Debug
-local debugPrefix = libDebug.prefix
-
-local dlog = libDebug.DebugLog
+local libUtil = lib.Util
+local libDebug, debugPrefix, dlog = libUtil.setupDebugLogging()
 
 
 --------------------------------------------------------------------
 -- Locals
 --------------------------------------------------------------------
 --ZOs local speed-up/reference variables
-local EM = GetEventManager() --EVENT_MANAGER
+-- ESO API globals
+local GetString = GetString
+local EM = GetEventManager()
+local zo_iconTextFormat = zo_iconTextFormat
+
+-- ESO constants
+local ZO_ColorDef = ZO_ColorDef
+local ZO_SORT_ORDER_UP = ZO_SORT_ORDER_UP
+local ZO_SORT_BY_NAME = ZO_SORT_BY_NAME
+local ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT = ZO_COMBO_BOX_ENTRY_TEMPLATE_HEIGHT
+
+-- SI constants
 local SNM = SCREEN_NARRATION_MANAGER
 local tos = tostring
 local strfor = string.format
@@ -85,7 +94,6 @@ local itemTextsOfNothingFound = {
 local editBoxCtrlsContextmenuRegistered = {} --#2026_08
 local sliderCtrlsContextmenuRegistered = {} --#2026_08
 
-local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
 local getControlData = libUtil.getControlData
@@ -354,7 +362,8 @@ local function updateDataValues(comboBox, data, onlyTheseEntries) --#2026_20
 	end
 
 	local checkOnlyProvidedKeys = not ZO_IsTableEmpty(onlyTheseEntries)
-	for key, l_nilToTrue in pairs(comboBoxMappingConstants.possibleEntryDataWithFunction) do
+	local possibleEntryDataWithFunction = comboBoxMappingConstants.possibleEntryDataWithFunction
+	for key, l_nilToTrue in pairs(possibleEntryDataWithFunction) do --#2026_24
 		local goOn = true
 		if checkOnlyProvidedKeys == true and not ZO_IsElementInNumericallyIndexedTable(onlyTheseEntries, key) then
 			goOn = false
@@ -509,11 +518,16 @@ local function updateIcon(control, data, iconIdx, singleIconDataOrTab, multiIcon
 			local tooltipForIcon = (visible and iconDataGotMoreParams and getValueOrCallback(singleIconDataOrTab.tooltip, data)) or nil
 			if tooltipForIcon ~= nil and tooltipForIcon ~= "" then
 				local tooltipTextAtMultiIcon = multiIconCtrl.data.tooltipText
+				--[[ 													--#2026_24
 				if tooltipTextAtMultiIcon == nil then
 					tooltipTextAtMultiIcon =  zo_iconTextFormat(iconValue, 24, 24, tooltipForIcon, iconTint)
 				else
 					tooltipTextAtMultiIcon = tooltipTextAtMultiIcon .. "\n" .. zo_iconTextFormat(iconValue, 24, 24, tooltipForIcon, iconTint)
 				end
+				]]
+				local tooltipLines = tooltipTextAtMultiIcon and {tooltipTextAtMultiIcon} or {} --#2026_24
+				table.insert(tooltipLines, zo_iconTextFormat(iconValue, 24, 24, tooltipForIcon, iconTint))
+				tooltipTextAtMultiIcon = table.concat(tooltipLines, "\n")
 				multiIconCtrl.data.tooltipText = tooltipTextAtMultiIcon
 			end
 
@@ -1145,9 +1159,10 @@ function comboBox_base:GetOptions()
 end
 
 -- Get or create submenu
-function comboBox_base:GetSubmenu()
+function comboBox_base:GetSubmenu(doNotCreateNew) --#2026_23
+	doNotCreateNew = doNotCreateNew or false --#2026_23
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 95) end
-	if not self.m_submenu then
+	if not self.m_submenu and not doNotCreateNew then --#2026_23
 		self.m_submenu = submenuClass:New(self, self.m_container, self:GetOptions(), self.m_nextFree)
 	end
 	return self.m_submenu
@@ -1808,6 +1823,7 @@ end
 
 --Called from normal, submenu and contextmenu
 function comboBox_base:Show()
+--d(debugPrefix .. "comboBox_base:Show()")
 	self.m_dropdownObject:Show(self, self.m_sortedItems, self.containerMinWidth, self.m_containerWidth, self.m_height, self:GetSpacing())
 	self.m_dropdownObject.control:BringWindowToTop()
 end
@@ -1819,10 +1835,12 @@ function comboBox_base:ShowDropdownOnMouseAction(parentControl)
 	if libDebug.doDebug then dlog(libDebug.LSM_LOGTYPE_VERBOSE, 105, tos(getControlName(parentControl))) end
 	if self:IsDropdownVisible() then
 		-- If submenu was currently opened, close it so it can reset.
+--d(">close opened submenu first")
 		self:HideDropdown()
 	end
 
 	if self:IsEnabled() then
+--d(">>show submenu now")
 		self.m_dropdownObject:SetHidden(false)
 		self:AddMenuItems(parentControl)
 

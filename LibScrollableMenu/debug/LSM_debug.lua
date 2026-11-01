@@ -17,7 +17,6 @@ local LDL = LibDebugLogger
 local tos = tostring
 local sfor = string.format
 
-
 ------------------------------------------------------------------------------------------------------------------------
 --Logging and debugging
 local libDebug = lib.Debug

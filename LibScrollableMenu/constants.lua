@@ -6,7 +6,7 @@ if LibScrollableMenu ~= nil then return end -- the same or newer version of this
 local lib = ZO_CallbackObject:New()
 lib.name = "LibScrollableMenu"
 lib.author = "Baertram, IsJustaGhost, tomstock, Kyoma"
-lib.version = "2.47"
+lib.version = "2.48"
 if not lib then return end
 --------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ local constants = lib.constants
 lib.Debug = {}
 lib.Debug.doDebug = false
 lib.Debug.doVerboseDebug = false
-lib.Debug.controlNameCache = {}
+lib.Debug.controlNameCache = setmetatable({}, {__mode = "k"}) --#2026_24 Use weak table key to allow garbage collection of the controls
 
 local debugPrefix = "[" .. MAJOR .. "]"
 lib.Debug.prefix = debugPrefix
