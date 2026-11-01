@@ -8,10 +8,8 @@ local MAJOR = lib.name
 -- For debugging and logging
 --------------------------------------------------------------------
 --Logging and debugging
-local libDebug = lib.Debug
-local debugPrefix = libDebug.prefix
-
-local dlog = libDebug.DebugLog
+local libUtil = lib.Util
+local libDebug, debugPrefix, dlog = libUtil.setupDebugLogging()
 
 
 --------------------------------------------------------------------
@@ -26,7 +24,12 @@ local tableType   = "table"
 local booleanType = "boolean"
 local userDataType = "userdata"
 
-local constants = lib.constants
+-- ESO API globals
+local GetString = GetString
+
+-- ESO constants
+local ZO_SORT_ORDER_UP = ZO_SORT_ORDER_UP
+
 
 --------------------------------------------------------------------
 --Library classes
@@ -56,7 +59,6 @@ local libraryAllowedEntryTypes = entryTypeConstants.libraryAllowedEntryTypes
 local allowedEntryTypesForContextMenu = entryTypeConstants.allowedEntryTypesForContextMenu
 local entryTypesForContextMenuWithoutMandatoryCallback = entryTypeConstants.entryTypesForContextMenuWithoutMandatoryCallback
 
-local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getValueOrCallback = libUtil.getValueOrCallback
 local getContextMenuReference = libUtil.getContextMenuReference

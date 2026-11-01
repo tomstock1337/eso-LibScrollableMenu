@@ -8,10 +8,8 @@ local MAJOR = lib.name
 -- For debugging and logging
 --------------------------------------------------------------------
 --Logging and debugging
-local libDebug = lib.Debug
-local debugPrefix = libDebug.prefix
-
-local dlog = libDebug.DebugLog
+local libUtil = lib.Util
+local libDebug, debugPrefix, dlog = libUtil.setupDebugLogging()
 
 
 --------------------------------------------------------------------
@@ -41,7 +39,6 @@ local submenuClass_exposedVariables = submenuConstants.submenuClass_exposedVaria
 local submenuClass_exposedFunctions = submenuConstants.submenuClass_exposedFunctions
 
 
-local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local getControlData = libUtil.getControlData
 local getValueOrCallback = libUtil.getValueOrCallback

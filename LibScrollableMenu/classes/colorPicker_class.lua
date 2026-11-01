@@ -12,10 +12,8 @@ if not lib then return end
 -- For debugging and logging
 --------------------------------------------------------------------
 --Logging and debugging
---local libDebug = lib.Debug
---local debugPrefix = libDebug.prefix
-
---local dlog = libDebug.DebugLog
+local libUtil = lib.Util
+--local libDebug, debugPrefix, dlog = libUtil.setupDebugLogging()
 
 --------------------------------------------------------------------
 -- Locals
@@ -38,7 +36,6 @@ local constants = lib.constants
 local entryTypeConstants = constants.entryTypes
 
 
-local libUtil = lib.Util
 local getValueOrCallback = libUtil.getValueOrCallback
 local getControlName = libUtil.getControlName
 local checkIfContextMenuOpenedButOtherControlWasClicked = libUtil.checkIfContextMenuOpenedButOtherControlWasClicked
@@ -303,37 +300,35 @@ end
 --Get the controlToColorize's current color, or if that is missing use the OnColorGetFunc(colorPickerData) to get the
 --r, g, b, a values for the color picker UI. If a defaultColor was specified save that to be applied by the "reset" button
 local noColorSpecifiedTable = { r = 1, g = 1, b = 1, a = 1 }
-function colorPickerClass:GetCurrentControlColors(isResetColorSave)
-    local defaultColor
+function colorPickerClass:GetCurrentControlColors(isResetColorSave) --#2026_24 changed order of color determination to a more locgial flow
+    --Handle reset color save case first
     if isResetColorSave == true then
-        defaultColor = self:GetDefaultColor()                                                         --#2026_22
+        local defaultColor = self:GetDefaultColor()                                                         --#2026_22
         --Are we saving the resetToColor on showing of the color picker? If we got any defaultColor defined, use that one as resetToColor!
         if not ZO_IsTableEmpty(defaultColor) then
             return defaultColor
         end
     end
 
-    local currentColors
-
     --Do we have a control to read the current color from? Use that
     local controlToColorize = self:GetControlToColorize()
-    if not controlToColorize or controlToColorize.GetColor == nil then
-        --#2026_22 Added colorPickerData.OnColorGetFunc = function() return r, g, b, a end Return the color values e.g. from SavedVariables, but only if colorPickerData.controlToColorize wasn't provided!
-        --Do we have any OnColorGetFunc callback defined? Use that to get the color values
-        local OnColorGetFunc = self:GetOnColorGetFunc()
-        if type(OnColorGetFunc) == funcType then
-            currentColors = {}
-            currentColors.r, currentColors.g, currentColors.b, currentColors.a = OnColorGetFunc(self:GetComboBox(), self:GetColorPickerData())
-            return currentColors
-        end
-    else
+    if controlToColorize and controlToColorize.GetColor then
         --Use control
-        currentColors = { controlToColorize:GetColor() }
+        local currentColors = { controlToColorize:GetColor() }
         return { r = currentColors[1], g = currentColors[2], b = currentColors[3], a = currentColors[4] }
     end
 
+    --#2026_22 Added colorPickerData.OnColorGetFunc = function() return r, g, b, a end Return the color values e.g. from SavedVariables, but only if colorPickerData.controlToColorize wasn't provided!
+    --Do we have any OnColorGetFunc callback defined? Use that to get the color values
+    local OnColorGetFunc = self:GetOnColorGetFunc()
+    if type(OnColorGetFunc) == funcType then
+        local currentColors = {}
+        currentColors.r, currentColors.g, currentColors.b, currentColors.a = OnColorGetFunc(self:GetComboBox(), self:GetColorPickerData())
+        return currentColors
+    end
+
     --No control and no OnColorGetFunc? Return the defaultColor if specified, or a dummy black value
-    defaultColor = defaultColor or self:GetDefaultColor()                                                     --#2026_22
+    local defaultColor = self:GetDefaultColor()                                                     --#2026_22
     if not ZO_IsTableEmpty(defaultColor) then
         return defaultColor
     end

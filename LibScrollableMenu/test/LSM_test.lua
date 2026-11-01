@@ -1,6 +1,19 @@
 local lib = LibScrollableMenu
 local MAJOR = lib.name
 
+
+-- ESO API globals
+local GetString = GetString
+local GetInterfaceColor = GetInterfaceColor
+
+-- ESO constants
+local ZO_ColorDef = ZO_ColorDef
+local ZO_SORT_ORDER_DOWN = ZO_SORT_ORDER_DOWN
+local ZO_SORT_BY_NAME = ZO_SORT_BY_NAME
+
+-- Interface color constants
+local INTERFACE_COLOR_TYPE_TEXT_COLORS = INTERFACE_COLOR_TYPE_TEXT_COLORS
+
 local debugPrefix = lib.Debug.prefix
 local libUtil = lib.Util
 local getValueOrCallback = libUtil.getValueOrCallback

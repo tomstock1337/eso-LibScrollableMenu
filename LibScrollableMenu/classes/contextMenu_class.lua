@@ -8,10 +8,8 @@ local MAJOR = lib.name
 -- For debugging and logging
 --------------------------------------------------------------------
 --Logging and debugging
-local libDebug = lib.Debug
-local debugPrefix = libDebug.prefix
-
-local dlog = libDebug.DebugLog
+local libUtil = lib.Util
+local libDebug, debugPrefix, dlog = libUtil.setupDebugLogging()
 
 
 --------------------------------------------------------------------
@@ -35,7 +33,6 @@ local comboBoxClass = classes.comboBoxClass
 --------------------------------------------------------------------
 --local constants = lib.constants
 
-local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 
 local SubOrContextMenu_highlightControl = libUtil.SubOrContextMenu_highlightControl

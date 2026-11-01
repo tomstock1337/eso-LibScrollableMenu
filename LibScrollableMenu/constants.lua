@@ -53,7 +53,7 @@ local constants = lib.constants
 lib.Debug = {}
 lib.Debug.doDebug = false
 lib.Debug.doVerboseDebug = false
-lib.Debug.controlNameCache = {}
+lib.Debug.controlNameCache = setmetatable({}, {__mode = "k"}) --#2026_24 Use weak table key to allow garbage collection of the controls
 
 local debugPrefix = "[" .. MAJOR .. "]"
 lib.Debug.prefix = debugPrefix

@@ -309,14 +309,13 @@ EM:RegisterForEvent(MAJOR, EVENT_ADD_ON_LOADED, onAddonLoaded)
 
 
 ---------------------------------------------------------------
-	CHANGELOG Current version: 2.48 - Updated 2026-10-25
+	CHANGELOG Current version: 2.48 - Updated 2026-11-01
 ---------------------------------------------------------------
-Max error/feature #: 2026_23
+Max error/feature #: 2026_24
 
 
 
 [WORKING ON]
---#2026_23 Fixed (automatic)refresh opens new LSM dropdown w/o closing old one below (resulting in overlaying dropdowns shown)
 
 [FEATURE]
 
@@ -331,6 +330,8 @@ Max error/feature #: 2026_23
 
 
 [Fixed]
+--#2026_23 (Automatic)refresh opens new LSM dropdown w/o closing old one below (resulting in overlaying dropdowns shown)
+--#2026_24 Performance improvements
 
 [Added]
 

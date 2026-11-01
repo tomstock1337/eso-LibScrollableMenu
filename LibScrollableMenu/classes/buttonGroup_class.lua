@@ -8,10 +8,8 @@ if not lib then return end
 -- For debugging and logging
 --------------------------------------------------------------------
 --Logging and debugging
---local libDebug = lib.Debug
---local debugPrefix = libDebug.prefix
-
---local dlog = libDebug.DebugLog
+local libUtil = lib.Util
+local libDebug, debugPrefix, dlog = libUtil.setupDebugLogging()
 
 --------------------------------------------------------------------
 -- Locals
@@ -31,7 +29,6 @@ local constants = lib.constants
 local entryTypeConstants = constants.entryTypes
 
 
-local libUtil = lib.Util
 local getControlName = libUtil.getControlName
 local checkIfContextMenuOpenedButOtherControlWasClicked = libUtil.checkIfContextMenuOpenedButOtherControlWasClicked
 local hideTooltip = libUtil.hideTooltip
